@@ -1,0 +1,14 @@
+[package]
+name = "sdkwork-router-deploy-common"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+axum.workspace = true
+serde.workspace = true
+sdkwork-deploy-contract.workspace = true
+sdkwork-iam-web-adapter.workspace = true
+sdkwork-web-core.workspace = true
+tokio.workspace = true
+tracing.workspace = true

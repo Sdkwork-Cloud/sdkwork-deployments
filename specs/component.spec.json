@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-deploy",
+    "displayName": "SDKWork Deploy",
+    "version": "0.1.0",
+    "type": "web-backend-service",
+    "root": "sdkwork-deployments",
+    "domain": "platform",
+    "capability": "deploy",
+    "surface": "backend-service",
+    "languages": ["rust", "typescript"],
+    "generated": false,
+    "status": "active",
+    "manifests": [
+      "sdkwork.app.config.json",
+      "AGENTS.md",
+      "specs/component.spec.json"
+    ]
+  },
+  "canonicalSpecs": [
+    { "file": "SOUL.md", "path": "../sdkwork-specs/SOUL.md", "purpose": "SDKWork execution soul." },
+    { "file": "WEB_FRAMEWORK_SPEC.md", "path": "../sdkwork-specs/WEB_FRAMEWORK_SPEC.md", "purpose": "Mandatory sdkwork-web-framework integration." },
+    { "file": "WEB_BACKEND_SPEC.md", "path": "../sdkwork-specs/WEB_BACKEND_SPEC.md", "purpose": "Backend route, service, and repository boundaries." },
+    { "file": "DATABASE_FRAMEWORK_SPEC.md", "path": "../sdkwork-specs/DATABASE_FRAMEWORK_SPEC.md", "purpose": "Database lifecycle and SPI orchestration." },
+    { "file": "DEPLOYMENT_SPEC.md", "path": "../sdkwork-specs/DEPLOYMENT_SPEC.md", "purpose": "Standalone/cloud deployment profile parity." },
+    { "file": "NGINX_SPEC.md", "path": "../sdkwork-specs/NGINX_SPEC.md", "purpose": "Nginx-compatible public proxy deployment." },
+    { "file": "API_SPEC.md", "path": "../sdkwork-specs/API_SPEC.md", "purpose": "HTTP/OpenAPI contract rules." }
+  ],
+  "contracts": {
+    "publicExports": [
+      "crates/sdkwork-deploy-api-server",
+      "crates/sdkwork-router-deploy-app-api",
+      "crates/sdkwork-router-deploy-backend-api"
+    ],
+    "runtimeEntrypoints": [
+      {
+        "id": "api-server",
+        "crate": "sdkwork-deploy-api-server",
+        "binary": "sdkwork-deploy-api-server"
+      }
+    ]
+  }
+}

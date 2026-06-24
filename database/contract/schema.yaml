@@ -1,0 +1,37 @@
+schema_version: 1
+kind: sdkwork.database.schema
+module_id: deploy
+contract_version: 1.0.0
+owner_team: deploy-platform
+compliance_level: L2
+engines:
+  - postgres
+table_prefix: deploy_
+tables:
+  - name: deploy_site
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_domain
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_nginx_config
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_certificate
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_deployment
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_env_variable
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_health_check
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_health_result
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_audit_log
+    lifecycle_status: active
+    owner: deploy-platform

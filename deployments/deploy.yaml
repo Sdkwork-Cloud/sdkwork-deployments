@@ -1,0 +1,22 @@
+version: 1
+profile: cloud.unified-process.production
+
+install:
+  layout: binary-package
+
+expose:
+  - domain: deploy.sdkwork.com
+    tls: sdkwork.com
+    mode: api
+
+  - domain: deploy-app.sdkwork.com
+    tls: sdkwork.com
+    mode: api
+
+  - domain: deploy-admin.sdkwork.com
+    tls: sdkwork.com
+    mode: api
+
+packages: []
+
+overrides: {}

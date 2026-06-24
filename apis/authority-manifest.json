@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.api.authority.manifest",
+  "surfaces": [
+    {
+      "authorityPath": "apis/app-api/deploy/deploy-app-api.openapi.json",
+      "sdkPath": "sdks/sdkwork-deploy-app-sdk/openapi/deploy-app-api.openapi.json"
+    },
+    {
+      "authorityPath": "apis/backend-api/deploy/deploy-backend-api.openapi.json",
+      "sdkPath": "sdks/sdkwork-deploy-backend-sdk/openapi/deploy-backend-api.openapi.json"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+target/
+**/target/
+node_modules/
+**/node_modules/
+**/.sdkwork/local/
+.env
+.env.*
+!.env.example
+*.db
+*.db-*

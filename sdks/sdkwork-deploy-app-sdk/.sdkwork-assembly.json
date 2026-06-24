@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "sdkFamily": "sdkwork-deploy-app-sdk",
+  "surface": "app-api",
+  "apiAuthority": "sdkwork-deploy.app",
+  "openApiPath": "openapi/deploy-app-api.openapi.json"
+}

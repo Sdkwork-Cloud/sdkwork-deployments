@@ -1,0 +1,23 @@
+[package]
+name = "sdkwork-deploy-api-server"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "sdkwork_deploy_api_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sdkwork-deploy-api-server"
+path = "src/main.rs"
+
+[dependencies]
+axum.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+sdkwork-router-deploy-app-api.workspace = true
+sdkwork-router-deploy-backend-api.workspace = true
+sdkwork-intelligence-deploy-repository-sqlx.workspace = true
+sdkwork-intelligence-deploy-service.workspace = true
+sdkwork-deploy-database-host.workspace = true

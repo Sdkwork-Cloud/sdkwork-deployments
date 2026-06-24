@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sdkwork-deploy-api-server
+  labels:
+    app.kubernetes.io/name: sdkwork-deploy
+    app.kubernetes.io/component: api-server
+    app.kubernetes.io/part-of: sdkwork-deploy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sdkwork-deploy
+      app.kubernetes.io/component: api-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sdkwork-deploy
+        app.kubernetes.io/component: api-server
+        app.kubernetes.io/part-of: sdkwork-deploy
+    spec:
+      containers:
+        - name: api-server
+          image: sdkwork-deploy-api-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: SDKWORK_DEPLOY_APP_ROOT
+              value: /app
+            - name: SDKWORK_DEPLOY_ENVIRONMENT
+              value: production
+            - name: SDKWORK_DEPLOY_CONFIG_PROFILE
+              value: production
+            - name: SDKWORK_DEPLOY_DEPLOYMENT_PROFILE
+              value: cloud
+            - name: SDKWORK_DEPLOY_SERVICE_LAYOUT
+              value: unified-process
+            - name: SDKWORK_DEPLOY_APPLICATION_PUBLIC_INGRESS_BIND
+              value: "0.0.0.0:8080"
+            - name: SDKWORK_DEPLOY_SNOWFLAKE_NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: SDKWORK_DEPLOY_DATABASE_AUTO_MIGRATE
+              value: "false"
+            - name: SDKWORK_DEPLOY_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: sdkwork-deploy-database
+                  key: database-url
+            - name: SDKWORK_IAM_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: sdkwork-deploy-iam-database
+                  key: database-url
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 10001
+            capabilities:
+              drop:
+                - ALL
+      terminationGracePeriodSeconds: 30

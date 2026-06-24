@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.route.manifest",
+  "packageName": "sdkwork-router-deploy-backend-api",
+  "surface": "backend-api",
+  "owner": "sdkwork-deploy",
+  "domain": "platform",
+  "capability": "deploy",
+  "apiAuthority": "sdkwork-deploy.backend",
+  "sdkFamily": "sdkwork-deploy-backend-sdk",
+  "prefix": "/backend/v3/api",
+  "source": {
+    "crateRoot": "crates/sdkwork-router-deploy-backend-api",
+    "crateImport": "sdkwork_router_deploy_backend_api",
+    "openApiAuthority": "sdks/sdkwork-deploy-backend-sdk/openapi/deploy-backend-api.openapi.json"
+  },
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/backend/v3/api/nginx/configs",
+      "operationId": "nginx.configs.list",
+      "tags": [
+        "nginx"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-deploy",
+        "apiAuthority": "sdkwork-deploy.backend"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api",
+      "permission": "deploy.nginx.write",
+      "idempotent": false
+    },
+    {
+      "method": "POST",
+      "path": "/backend/v3/api/nginx/configs",
+      "operationId": "nginx.configs.create",
+      "tags": [
+        "nginx"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-deploy",
+        "apiAuthority": "sdkwork-deploy.backend"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api",
+      "permission": "deploy.nginx.write",
+      "idempotent": true
+    },
+    {
+      "method": "GET",
+      "path": "/backend/v3/api/nginx/configs/{configId}",
+      "operationId": "nginx.configs.retrieve",
+      "tags": [
+        "nginx"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-deploy",
+        "apiAuthority": "sdkwork-deploy.backend"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api",
+      "permission": "deploy.nginx.write",
+      "idempotent": false
+    },
+    {
+      "method": "PUT",
+      "path": "/backend/v3/api/nginx/configs/{configId}",
+      "operationId": "nginx.configs.update",
+      "tags": [
+        "nginx"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-deploy",
+        "apiAuthority": "sdkwork-deploy.backend"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api",
+      "permission": "deploy.nginx.write",
+      "idempotent": false
+    },
+    {
+      "method": "POST",
+      "path": "/backend/v3/api/nginx/configs/{configId}/validate",
+      "operationId": "nginx.configs.validate",
+      "tags": [
+        "nginx"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-deploy",
+        "apiAuthority": "sdkwork-deploy.backend"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api",
+      "permission": "deploy.nginx.write",
+      "idempotent": false
+    },
+    {
+      "method": "POST",
+      "path": "/backend/v3/api/nginx/configs/{configId}/deploy",
+      "operationId": "nginx.configs.deploy",
+      "tags": [
+        "nginx"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-deploy",
+        "apiAuthority": "sdkwork-deploy.backend"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api",
+      "permission": "deploy.nginx.write",
+      "idempotent": true
+    },
+    {
+      "method": "POST",
+      "path": "/backend/v3/api/nginx/reload",
+      "operationId": "nginx.reload",
+      "tags": [
+        "nginx"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-deploy",
+        "apiAuthority": "sdkwork-deploy.backend"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api",
+      "permission": "deploy.nginx.write",
+      "idempotent": true
+    },
+    {
+      "method": "GET",
+      "path": "/backend/v3/api/nginx/status",
+      "operationId": "nginx.status.retrieve",
+      "tags": [
+        "nginx"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-deploy",
+        "apiAuthority": "sdkwork-deploy.backend"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api",
+      "permission": "deploy.nginx.write",
+      "idempotent": false
+    },
+    {
+      "method": "GET",
+      "path": "/backend/v3/api/servers",
+      "operationId": "servers.list",
+      "tags": [
+        "server"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-deploy",
+        "apiAuthority": "sdkwork-deploy.backend"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api",
+      "permission": "deploy.servers.read",
+      "idempotent": false
+    },
+    {
+      "method": "POST",
+      "path": "/backend/v3/api/servers",
+      "operationId": "servers.create",
+      "tags": [
+        "server"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-deploy",
+        "apiAuthority": "sdkwork-deploy.backend"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api",
+      "permission": "deploy.servers.write",
+      "idempotent": true
+    },
+    {
+      "method": "GET",
+      "path": "/backend/v3/api/audit_logs",
+      "operationId": "auditLogs.list",
+      "tags": [
+        "audit"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-deploy",
+        "apiAuthority": "sdkwork-deploy.backend"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "backend-api",
+      "permission": "deploy.auditLogs.read",
+      "idempotent": false
+    }
+  ]
+}
