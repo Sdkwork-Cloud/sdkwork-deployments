@@ -1155,15 +1155,15 @@ let deployment = client.sites().deployments()
   "sdkFamily": "sdkwork-deploy-app-sdk",
   "sdkDependencies": [
     {
-      "workspace": "sdkwork-appbase-app-sdk",
+      "workspace": "sdkwork-iam-app-sdk",
       "role": "foundation",
       "required": true,
       "dependencyMode": "consumer-sdk",
       "apiPrefix": "/app/v3/api",
       "generatedTransportImportPolicy": "forbidden",
       "packageByLanguage": {
-        "typescript": "@sdkwork/appbase-app-sdk",
-        "rust": "sdkwork_appbase_app_sdk"
+        "typescript": "@sdkwork/iam-app-sdk",
+        "rust": "sdkwork_iam_app_sdk"
       }
     }
   ],

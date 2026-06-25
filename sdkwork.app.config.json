@@ -90,11 +90,11 @@
   "sdkFamilies": [],
   "sdkDependencies": [
     {
-      "family": "sdkwork-appbase-app-sdk",
+      "family": "sdkwork-iam-app-sdk",
       "reason": "IAM login/session and tenant request context for protected app-api routes."
     },
     {
-      "family": "sdkwork-appbase-backend-sdk",
+      "family": "sdkwork-iam-backend-sdk",
       "reason": "Platform operator IAM for protected backend-api routes."
     },
     {
