@@ -1,14 +1,14 @@
 [package]
-name = "sdkwork-router-deploy-common"
+name = "sdkwork-routes-deploy-backend-api"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-async-trait.workspace = true
 axum.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 sdkwork-deploy-contract.workspace = true
+sdkwork-routes-deploy-common.workspace = true
 sdkwork-iam-web-adapter.workspace = true
+sdkwork-web-axum.workspace = true
 sdkwork-web-core.workspace = true
-tokio.workspace = true
-tracing.workspace = true

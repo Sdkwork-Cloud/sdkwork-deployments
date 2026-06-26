@@ -14,7 +14,7 @@ use serde::Deserialize;
 use std::sync::Arc;
 
 use crate::{auth::require_app_context, paths};
-use sdkwork_router_deploy_common::DeployApiError;
+use sdkwork_routes_deploy_common::DeployApiError;
 
 #[derive(Clone)]
 struct AppState {

@@ -144,7 +144,7 @@ crates/
 │   │   └── health.rs
 │   └── tests/
 │
-├── sdkwork-router-site-app-api/            # 站点管理路由
+├── sdkwork-routes-site-app-api/            # 站点管理路由
 │   ├── src/
 │   │   ├── lib.rs
 │   │   ├── paths.rs                        # 路径常量
@@ -159,19 +159,19 @@ crates/
 │   │       └── problem.rs
 │   └── tests/
 │
-├── sdkwork-router-nginx-backend-api/       # Nginx 管理路由
+├── sdkwork-routes-nginx-backend-api/       # Nginx 管理路由
 │   └── ...
 │
-├── sdkwork-router-deploy-app-api/          # 部署管理路由
+├── sdkwork-routes-deploy-app-api/          # 部署管理路由
 │   └── ...
 │
-├── sdkwork-router-domain-app-api/          # 域名管理路由
+├── sdkwork-routes-domain-app-api/          # 域名管理路由
 │   └── ...
 │
-├── sdkwork-router-cert-app-api/            # 证书管理路由
+├── sdkwork-routes-cert-app-api/            # 证书管理路由
 │   └── ...
 │
-├── sdkwork-router-monitor-app-api/         # 监控管理路由
+├── sdkwork-routes-monitor-app-api/         # 监控管理路由
 │   └── ...
 │
 ├── sdkwork-deploy-site-service/            # 站点业务逻辑
@@ -276,12 +276,12 @@ crates/
 
 ```text
 sdkwork-deploy-api-server
-  ├── sdkwork-router-site-app-api
-  ├── sdkwork-router-nginx-backend-api
-  ├── sdkwork-router-deploy-app-api
-  ├── sdkwork-router-domain-app-api
-  ├── sdkwork-router-cert-app-api
-  ├── sdkwork-router-monitor-app-api
+  ├── sdkwork-routes-site-app-api
+  ├── sdkwork-routes-nginx-backend-api
+  ├── sdkwork-routes-deploy-app-api
+  ├── sdkwork-routes-domain-app-api
+  ├── sdkwork-routes-cert-app-api
+  ├── sdkwork-routes-monitor-app-api
   ├── sdkwork-deploy-site-service
   ├── sdkwork-deploy-nginx-service
   ├── sdkwork-deploy-deploy-service
@@ -1760,12 +1760,12 @@ SDKWORK_DEPLOY_LOG_FORMAT=json
 resolver = "2"
 members = [
     "crates/sdkwork-deploy-api-server",
-    "crates/sdkwork-router-site-app-api",
-    "crates/sdkwork-router-nginx-backend-api",
-    "crates/sdkwork-router-deploy-app-api",
-    "crates/sdkwork-router-domain-app-api",
-    "crates/sdkwork-router-cert-app-api",
-    "crates/sdkwork-router-monitor-app-api",
+    "crates/sdkwork-routes-site-app-api",
+    "crates/sdkwork-routes-nginx-backend-api",
+    "crates/sdkwork-routes-deploy-app-api",
+    "crates/sdkwork-routes-domain-app-api",
+    "crates/sdkwork-routes-cert-app-api",
+    "crates/sdkwork-routes-monitor-app-api",
     "crates/sdkwork-deploy-site-service",
     "crates/sdkwork-deploy-nginx-service",
     "crates/sdkwork-deploy-deploy-service",
@@ -1813,12 +1813,12 @@ sdkwork-deploy-server/
 │       └── openapi.yaml
 ├── crates/                             # Rust crates
 │   ├── sdkwork-deploy-api-server/
-│   ├── sdkwork-router-site-app-api/
-│   ├── sdkwork-router-nginx-backend-api/
-│   ├── sdkwork-router-deploy-app-api/
-│   ├── sdkwork-router-domain-app-api/
-│   ├── sdkwork-router-cert-app-api/
-│   ├── sdkwork-router-monitor-app-api/
+│   ├── sdkwork-routes-site-app-api/
+│   ├── sdkwork-routes-nginx-backend-api/
+│   ├── sdkwork-routes-deploy-app-api/
+│   ├── sdkwork-routes-domain-app-api/
+│   ├── sdkwork-routes-cert-app-api/
+│   ├── sdkwork-routes-monitor-app-api/
 │   ├── sdkwork-deploy-site-service/
 │   ├── sdkwork-deploy-nginx-service/
 │   ├── sdkwork-deploy-deploy-service/

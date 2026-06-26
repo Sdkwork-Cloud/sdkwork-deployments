@@ -4,8 +4,8 @@ use axum::http::{Request, StatusCode};
 use sdkwork_deploy_contract::{
     DeployAppApi, DeployAppRequestContext, DeployServiceResult, ListSitesQuery, SitePage,
 };
-use sdkwork_iam_web_adapter::IamDatabaseWebRequestContextResolver;
-use sdkwork_router_deploy_app_api::{
+use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
+use sdkwork_routes_deploy_app_api::{
     build_router_with_shared_app_api, web_bootstrap::wrap_router_with_iam_database_web_framework,
 };
 use std::sync::Arc;
@@ -14,7 +14,7 @@ use tower::util::ServiceExt;
 #[tokio::test]
 async fn app_router_web_framework_rejects_unauthenticated_requests() {
     let app = wrap_router_with_iam_database_web_framework(
-        IamDatabaseWebRequestContextResolver::new(None),
+        IamWebRequestContextResolver::new(None),
         build_router_with_shared_app_api(Arc::new(StubAppApi)),
     );
 

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::Router;
 use sdkwork_deploy_contract::DeployBackendRequestContext;
-use sdkwork_router_deploy_common::{
+use sdkwork_routes_deploy_common::{
     deploy_web_auth_mode_from_env, with_problem_correlation, DeployWebAuthMode,
     ProductionFailClosedResolver,
 };

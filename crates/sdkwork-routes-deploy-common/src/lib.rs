@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use sdkwork_deploy_contract::{
     deploy_is_production_like_environment, deploy_use_dev_inline_auth_resolver,
 };
-use sdkwork_iam_web_adapter::IamDatabaseWebRequestContextResolver;
+use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
 use sdkwork_web_core::{WebFrameworkError, WebRequestContextResolver, WebRequestPrincipal};
 
 pub use correlation::{with_problem_correlation, DeployProblemCorrelation};
@@ -17,7 +17,7 @@ const PRODUCTION_AUTH_UNAVAILABLE: &str = "production deploy auth requires IAM P
 
 pub enum DeployWebAuthMode {
     DevInline,
-    IamDatabase(IamDatabaseWebRequestContextResolver),
+    IamDatabase(IamWebRequestContextResolver),
     ProductionFailClosed,
 }
 
@@ -34,7 +34,7 @@ pub async fn deploy_web_auth_mode_from_env() -> DeployWebAuthMode {
         return DeployWebAuthMode::ProductionFailClosed;
     }
 
-    DeployWebAuthMode::IamDatabase(sdkwork_iam_web_adapter::iam_database_resolver_from_env().await)
+    DeployWebAuthMode::IamDatabase(sdkwork_iam_web_adapter::iam_web_request_context_resolver_from_env().await)
 }
 
 #[derive(Clone, Default)]

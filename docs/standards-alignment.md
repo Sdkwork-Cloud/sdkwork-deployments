@@ -6,7 +6,7 @@ SDKWork Deploy standards alignment status for `sdkwork-deployments`.
 
 | Framework | Status | Evidence |
 | --- | --- | --- |
-| `sdkwork-web-framework` | Integrated | `sdkwork-router-deploy-*` web bootstrap, dual-token route manifests, auth context injection |
+| `sdkwork-web-framework` | Integrated | `sdkwork-routes-deploy-*` web bootstrap, dual-token route manifests, auth context injection |
 | `sdkwork-database` | Integrated | `database/` assets, `sdkwork-deploy-database-host`, `pnpm db:*` |
 | `sdkwork-utils-rust` | Integrated | `sdkwork-deploy-core` env parsing, repository slugify |
 | `sdkwork-discovery` | Deferred | V1 is HTTP-only unified-process; add when split-services RPC is required |

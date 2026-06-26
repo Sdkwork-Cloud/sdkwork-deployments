@@ -31,8 +31,8 @@
   "contracts": {
     "publicExports": [
       "crates/sdkwork-deploy-api-server",
-      "crates/sdkwork-router-deploy-app-api",
-      "crates/sdkwork-router-deploy-backend-api"
+      "crates/sdkwork-routes-deploy-app-api",
+      "crates/sdkwork-routes-deploy-backend-api"
     ],
     "runtimeEntrypoints": [
       {
