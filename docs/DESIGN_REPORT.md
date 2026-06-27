@@ -120,7 +120,7 @@ SDKWork Deploy Server 是一个专业的 WebServer 部署管理平台后端服�
 
 ```
 crates/
-├── sdkwork-deploy-api-server/              # HTTP API 服务器进程
+├── sdkwork-deployments-standalone-gateway/              # HTTP API 服务器进程
 │   ├── src/
 │   │   ├── main.rs                         # 进程启动
 │   │   ├── lib.rs                          # 模块组装
@@ -274,7 +274,7 @@ crates/
 ### 2.3 依赖关系图
 
 ```text
-sdkwork-deploy-api-server
+sdkwork-deployments-standalone-gateway
   ├── sdkwork-routes-site-app-api
   ├── sdkwork-routes-nginx-backend-api
   ├── sdkwork-routes-deploy-app-api
@@ -1657,7 +1657,7 @@ WS /app/v3/api/ws?token={access_token}
 ```nginx
 # /etc/nginx/sites-enabled/sdkwork/api.deploy.sdkwork.com.conf
 
-upstream deploy_api_server {
+upstream deploy_standalone_gateway {
     server 127.0.0.1:3900;
     keepalive 32;
 }
@@ -1678,7 +1678,7 @@ server {
     client_max_body_size 1100m;
 
     location / {
-        proxy_pass http://deploy_api_server;
+        proxy_pass http://deploy_standalone_gateway;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -1687,7 +1687,7 @@ server {
     }
 
     location /ws {
-        proxy_pass http://deploy_api_server;
+        proxy_pass http://deploy_standalone_gateway;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -1695,12 +1695,12 @@ server {
     }
 
     location /healthz {
-        proxy_pass http://deploy_api_server;
+        proxy_pass http://deploy_standalone_gateway;
         access_log off;
     }
 
     location /readyz {
-        proxy_pass http://deploy_api_server;
+        proxy_pass http://deploy_standalone_gateway;
         access_log off;
     }
 }
@@ -1758,7 +1758,7 @@ SDKWORK_DEPLOY_LOG_FORMAT=json
 [workspace]
 resolver = "2"
 members = [
-    "crates/sdkwork-deploy-api-server",
+    "crates/sdkwork-deployments-standalone-gateway",
     "crates/sdkwork-routes-site-app-api",
     "crates/sdkwork-routes-nginx-backend-api",
     "crates/sdkwork-routes-deploy-app-api",
@@ -1811,7 +1811,7 @@ sdkwork-deploy-server/
 │   └── backend-api/deploy/
 │       └── openapi.yaml
 ├── crates/                             # Rust crates
-│   ├── sdkwork-deploy-api-server/
+│   ├── sdkwork-deployments-standalone-gateway/
 │   ├── sdkwork-routes-site-app-api/
 │   ├── sdkwork-routes-nginx-backend-api/
 │   ├── sdkwork-routes-deploy-app-api/
@@ -1878,7 +1878,7 @@ sdkwork-deploy-server/
 
 ### 架构合规
 
-- [x] Crate 按职责命名：api-server, router-*-app-api, *-service, *-repository-sqlx, *-adapter, *-worker
+- [x] Crate 按职责命名：standalone-gateway, router-*-app-api, *-service, *-repository-sqlx, *-adapter, *-worker
 - [x] 禁止通用后缀：product, runtime, backend, core, common, manager
 - [x] lib.rs 仅包含模块声明和重导出
 - [x] 路由 crate 包含 paths.rs, routes.rs, handlers.rs, manifest.rs

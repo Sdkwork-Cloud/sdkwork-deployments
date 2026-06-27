@@ -1,4 +1,4 @@
-use sdkwork_deploy_api_server::{build_router, run_database_migrate_only};
+use sdkwork_deployments_standalone_gateway::{build_router, run_database_migrate_only};
 use tokio::signal;
 
 fn init_tracing() {
@@ -25,15 +25,15 @@ async fn main() {
         .unwrap_or_else(|_| "127.0.0.1:3900".to_owned());
     let app = build_router()
         .await
-        .expect("deploy api-server bootstrap failed");
+        .expect("deploy standalone-gateway bootstrap failed");
     let listener = tokio::net::TcpListener::bind(&bind_address)
         .await
-        .expect("bind deploy api-server listener failed");
-    tracing::info!("sdkwork-deploy-api-server listening on {bind_address}");
+        .expect("bind deploy standalone-gateway listener failed");
+    tracing::info!("sdkwork-deployments-standalone-gateway listening on {bind_address}");
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await
-        .expect("serve deploy api-server failed");
+        .expect("serve deploy standalone-gateway failed");
 }
 
 async fn shutdown_signal() {
@@ -59,5 +59,5 @@ async fn shutdown_signal() {
         () = terminate => {},
     }
 
-    tracing::info!("sdkwork-deploy-api-server shutdown signal received");
+    tracing::info!("sdkwork-deployments-standalone-gateway shutdown signal received");
 }

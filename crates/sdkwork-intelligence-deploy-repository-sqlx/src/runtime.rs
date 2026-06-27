@@ -3,7 +3,7 @@
 use sdkwork_database_config::DatabaseConfig;
 use sdkwork_database_sqlx::create_any_pool_from_config;
 use sdkwork_deploy_database_host::bootstrap_deploy_database_from_env;
-use sdkwork_id_core::SnowflakeIdGenerator;
+use sdkwork_database_id::SnowflakeIdGenerator;
 use sdkwork_intelligence_deploy_service::DeployService;
 use sqlx::AnyPool;
 use std::sync::Arc;

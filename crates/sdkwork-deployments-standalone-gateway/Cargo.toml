@@ -1,14 +1,14 @@
 [package]
-name = "sdkwork-deploy-api-server"
+name = "sdkwork-deployments-standalone-gateway"
 version.workspace = true
 edition.workspace = true
 
 [lib]
-name = "sdkwork_deploy_api_server"
+name = "sdkwork_deployments_standalone_gateway"
 path = "src/lib.rs"
 
 [[bin]]
-name = "sdkwork-deploy-api-server"
+name = "sdkwork-deployments-standalone-gateway"
 path = "src/main.rs"
 
 [dependencies]
@@ -23,6 +23,3 @@ sdkwork-intelligence-deploy-service.workspace = true
 sdkwork-deploy-database-host.workspace = true
 sdkwork-web-bootstrap.workspace = true
 
-[[bin]]
-name = "sdkwork-deployments-standalone-gateway"
-path = "src/main.rs"

@@ -9,7 +9,7 @@ members = [
   "crates/sdkwork-intelligence-deploy-repository-sqlx",
   "crates/sdkwork-routes-deploy-app-api",
   "crates/sdkwork-routes-deploy-backend-api",
-  "crates/sdkwork-deploy-api-server",
+  "crates/sdkwork-deployments-standalone-gateway",
 ]
 
 [workspace.package]
@@ -41,7 +41,7 @@ sdkwork-intelligence-deploy-repository-sqlx = { path = "crates/sdkwork-intellige
 sdkwork-routes-deploy-app-api = { path = "crates/sdkwork-routes-deploy-app-api" }
 sdkwork-routes-deploy-backend-api = { path = "crates/sdkwork-routes-deploy-backend-api" }
 sdkwork-routes-deploy-common = { path = "crates/sdkwork-routes-deploy-common" }
-sdkwork-deploy-api-server = { path = "crates/sdkwork-deploy-api-server" }
+sdkwork-deployments-standalone-gateway = { path = "crates/sdkwork-deployments-standalone-gateway" }
 
 sdkwork-iam-web-adapter = { path = "../sdkwork-iam/crates/sdkwork-iam-web-adapter" }
 sdkwork-web-core = { path = "../sdkwork-web-framework/crates/sdkwork-web-core" }
@@ -51,5 +51,5 @@ sdkwork-database-config = { path = "../sdkwork-database/crates/sdkwork-database-
 sdkwork-database-lifecycle = { path = "../sdkwork-database/crates/sdkwork-database-lifecycle", package = "sdkwork-database-lifecycle" }
 sdkwork-database-spi = { path = "../sdkwork-database/crates/sdkwork-database-spi", package = "sdkwork-database-spi" }
 sdkwork-database-sqlx = { path = "../sdkwork-database/crates/sdkwork-database-sqlx", package = "sdkwork-database-sqlx" }
-sdkwork-id-core = { path = "../sdkwork-id/crates/sdkwork-id-core" }
+sdkwork-database-id = { path = "../sdkwork-database/crates/sdkwork-database-id", package = "sdkwork-database-id" }
 sdkwork-utils-rust = { path = "../sdkwork-utils/packages/sdkwork-utils-rust" }

@@ -1,6 +1,6 @@
 use chrono::{DateTime, SecondsFormat, Utc};
 use sdkwork_deploy_contract::DeployServiceError;
-use sdkwork_id_core::SnowflakeIdGenerator;
+use sdkwork_database_id::SnowflakeIdGenerator;
 use sha2::{Digest, Sha256};
 use sqlx::any::AnyRow;
 use sqlx::{AnyPool, Error as SqlxError, Row};
@@ -34,7 +34,7 @@ pub(crate) fn next_id(generator: &SnowflakeIdGenerator) -> Result<i64, DeploySer
 }
 
 pub(crate) fn new_uuid() -> String {
-    sdkwork_id_core::uuid_v4()
+    sdkwork_database_id::uuid_v4()
 }
 
 pub(crate) fn sha256_hex(content: &str) -> String {

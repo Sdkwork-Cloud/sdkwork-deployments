@@ -1,4 +1,4 @@
-use sdkwork_id_core::SnowflakeIdGenerator;
+use sdkwork_database_id::SnowflakeIdGenerator;
 use sqlx::AnyPool;
 
 mod audit;
