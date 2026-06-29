@@ -13,4 +13,8 @@ pub const SITE_DEPLOYMENT_ROLLBACK: &str =
     "/app/v3/api/sites/{siteId}/deployments/{deploymentId}/rollback";
 pub const SITE_ENV_VARIABLES: &str = "/app/v3/api/sites/{siteId}/env_variables";
 pub const CERTIFICATES: &str = "/app/v3/api/certificates";
+pub const UPLOAD_SESSIONS: &str = "/app/v3/api/upload_sessions";
+pub const UPLOAD_SESSION: &str = "/app/v3/api/upload_sessions/{uploadSessionId}";
+pub const UPLOAD_SESSION_COMPLETE: &str = "/app/v3/api/upload_sessions/{uploadSessionId}/complete";
+pub const UPLOAD_SESSION_CANCEL: &str = "/app/v3/api/upload_sessions/{uploadSessionId}/cancel";
 pub const SITE_HEALTH_CHECKS: &str = "/app/v3/api/sites/{siteId}/health_checks";

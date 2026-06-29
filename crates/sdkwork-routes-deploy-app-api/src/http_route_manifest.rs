@@ -146,6 +146,35 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     .with_required_permission("deploy.certificates.write")
     .with_idempotent(true),
     HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/upload_sessions",
+        "uploadSession",
+        "uploadSessions.create",
+    )
+    .with_required_permission("deploy.uploadSessions.write")
+    .with_idempotent(true),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/upload_sessions/{uploadSessionId}",
+        "uploadSession",
+        "uploadSessions.retrieve",
+    )
+    .with_required_permission("deploy.uploadSessions.read"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/upload_sessions/{uploadSessionId}/complete",
+        "uploadSession",
+        "uploadSessions.complete",
+    )
+    .with_required_permission("deploy.uploadSessions.write"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/upload_sessions/{uploadSessionId}/cancel",
+        "uploadSession",
+        "uploadSessions.cancel",
+    )
+    .with_required_permission("deploy.uploadSessions.write"),
+    HttpRoute::dual_token(
         HttpMethod::Get,
         "/app/v3/api/sites/{siteId}/health_checks",
         "monitor",

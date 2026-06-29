@@ -3,8 +3,9 @@
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
     AuditLogPage, CertificatePage, CertificateResponse, CreateCertificateRequest,
-    CreateDeploymentRequest, CreateDomainRequest, CreateEnvVariableRequest,
-    CreateHealthCheckRequest, CreateNginxConfigRequest, CreateServerRequest, CreateSiteRequest,
+    CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainRequest,
+    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateNginxConfigRequest,
+    CreateServerRequest, CreateSiteRequest, DeployAppRequestContext, DeployUploadSessionResponse,
     DeploymentPage, DeploymentResponse, DomainPage, DomainResponse, DomainVerifyResponse,
     EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
     ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage, NginxConfigResponse,
@@ -335,5 +336,36 @@ impl DeployRepositoryPort for DeployRepository {
             target_uuid,
         )
         .await
+    }
+
+    async fn create_upload_session_ref(
+        &self,
+        tenant_id: i64,
+        context: &DeployAppRequestContext,
+        request: &CreateDeployUploadSessionRequest,
+        drive: &DeployUploadSessionResponse,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        self.create_upload_session_ref_repo(tenant_id, context, request, drive)
+            .await
+    }
+
+    async fn retrieve_upload_session_ref(
+        &self,
+        tenant_id: i64,
+        upload_session_id: &str,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        self.retrieve_upload_session_ref_repo(tenant_id, upload_session_id)
+            .await
+    }
+
+    async fn update_upload_session_status(
+        &self,
+        tenant_id: i64,
+        upload_session_id: &str,
+        status: i32,
+        drive_node_id: Option<&str>,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        self.update_upload_session_status_repo(tenant_id, upload_session_id, status, drive_node_id)
+            .await
     }
 }

@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
   "crates/sdkwork-deploy-database-host",
+  "crates/sdkwork-deploy-drive-port",
   "crates/sdkwork-routes-deploy-common",
   "crates/sdkwork-deploy-contract",
   "crates/sdkwork-deploy-core",
@@ -35,6 +36,7 @@ uuid = { version = "1", features = ["v4"] }
 
 sdkwork-deploy-contract = { path = "crates/sdkwork-deploy-contract" }
 sdkwork-deploy-core = { path = "crates/sdkwork-deploy-core" }
+sdkwork-deploy-drive-port = { path = "crates/sdkwork-deploy-drive-port" }
 sdkwork-deploy-database-host = { path = "crates/sdkwork-deploy-database-host" }
 sdkwork-intelligence-deploy-service = { path = "crates/sdkwork-intelligence-deploy-service" }
 sdkwork-intelligence-deploy-repository-sqlx = { path = "crates/sdkwork-intelligence-deploy-repository-sqlx" }
@@ -53,3 +55,4 @@ sdkwork-database-spi = { path = "../sdkwork-database/crates/sdkwork-database-spi
 sdkwork-database-sqlx = { path = "../sdkwork-database/crates/sdkwork-database-sqlx", package = "sdkwork-database-sqlx" }
 sdkwork-database-id = { path = "../sdkwork-database/crates/sdkwork-database-id", package = "sdkwork-database-id" }
 sdkwork-utils-rust = { path = "../sdkwork-utils/packages/sdkwork-utils-rust" }
+sdkwork_drive_app_sdk_generated_rust = { package = "sdkwork-drive-app-sdk-generated-rust", path = "../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-rust/generated/server-openapi" }

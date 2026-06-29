@@ -19,10 +19,10 @@ pub(crate) fn validate_nginx_config_content(content: &str) -> Result<(), String>
 }
 
 pub(crate) fn nginx_reload_enabled() -> bool {
-    matches!(
-        std::env::var("SDKWORK_DEPLOY_NGINX_RELOAD").as_deref(),
-        Ok("1") | Ok("true") | Ok("TRUE")
+    sdkwork_utils_rust::parse_bool(
+        &std::env::var("SDKWORK_DEPLOY_NGINX_RELOAD").unwrap_or_default(),
     )
+    .unwrap_or(false)
 }
 
 pub(crate) fn run_nginx_reload_command() -> Result<(), String> {

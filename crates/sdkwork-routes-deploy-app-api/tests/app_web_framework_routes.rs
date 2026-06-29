@@ -3,18 +3,19 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use sdkwork_deploy_contract::{
     DeployAppApi, DeployAppRequestContext, DeployServiceResult, ListSitesQuery, SitePage,
+    SiteResponse,
 };
-use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
 use sdkwork_routes_deploy_app_api::{
-    build_router_with_shared_app_api, web_bootstrap::wrap_router_with_iam_database_web_framework,
+    build_router_with_shared_app_api, web_bootstrap::wrap_router_with_web_framework,
 };
+use sdkwork_web_core::DefaultWebRequestContextResolver;
 use std::sync::Arc;
 use tower::util::ServiceExt;
 
 #[tokio::test]
 async fn app_router_web_framework_rejects_unauthenticated_requests() {
-    let app = wrap_router_with_iam_database_web_framework(
-        IamWebRequestContextResolver::new(None),
+    let app = wrap_router_with_web_framework(
+        DefaultWebRequestContextResolver::default(),
         build_router_with_shared_app_api(Arc::new(StubAppApi)),
     );
 
@@ -47,7 +48,7 @@ impl DeployAppApi for StubAppApi {
         &self,
         _context: &DeployAppRequestContext,
         _request: &sdkwork_deploy_contract::CreateSiteRequest,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::SiteResponse> {
+    ) -> DeployServiceResult<SiteResponse> {
         Err(sdkwork_deploy_contract::DeployServiceError::Internal(
             "not implemented".into(),
         ))
@@ -57,7 +58,7 @@ impl DeployAppApi for StubAppApi {
         &self,
         _context: &DeployAppRequestContext,
         _site_id: &str,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::SiteResponse> {
+    ) -> DeployServiceResult<SiteResponse> {
         Err(sdkwork_deploy_contract::DeployServiceError::Internal(
             "not implemented".into(),
         ))
@@ -68,7 +69,7 @@ impl DeployAppApi for StubAppApi {
         _context: &DeployAppRequestContext,
         _site_id: &str,
         _request: &sdkwork_deploy_contract::UpdateSiteRequest,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::SiteResponse> {
+    ) -> DeployServiceResult<SiteResponse> {
         Err(sdkwork_deploy_contract::DeployServiceError::Internal(
             "not implemented".into(),
         ))
@@ -88,7 +89,7 @@ impl DeployAppApi for StubAppApi {
         &self,
         _context: &DeployAppRequestContext,
         _site_id: &str,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::SiteResponse> {
+    ) -> DeployServiceResult<SiteResponse> {
         Err(sdkwork_deploy_contract::DeployServiceError::Internal(
             "not implemented".into(),
         ))
@@ -98,7 +99,7 @@ impl DeployAppApi for StubAppApi {
         &self,
         _context: &DeployAppRequestContext,
         _site_id: &str,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::SiteResponse> {
+    ) -> DeployServiceResult<SiteResponse> {
         Err(sdkwork_deploy_contract::DeployServiceError::Internal(
             "not implemented".into(),
         ))
@@ -265,6 +266,48 @@ impl DeployAppApi for StubAppApi {
         _site_id: &str,
         _request: &sdkwork_deploy_contract::CreateHealthCheckRequest,
     ) -> DeployServiceResult<sdkwork_deploy_contract::HealthCheckResponse> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
+    async fn create_upload_session(
+        &self,
+        _context: &DeployAppRequestContext,
+        _request: &sdkwork_deploy_contract::CreateDeployUploadSessionRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::DeployUploadSessionResponse> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
+    async fn retrieve_upload_session(
+        &self,
+        _context: &DeployAppRequestContext,
+        _upload_session_id: &str,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::DeployUploadSessionResponse> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
+    async fn complete_upload_session(
+        &self,
+        _context: &DeployAppRequestContext,
+        _upload_session_id: &str,
+        _request: &sdkwork_deploy_contract::CompleteDeployUploadSessionRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::DeployUploadSessionResponse> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
+    async fn cancel_upload_session(
+        &self,
+        _context: &DeployAppRequestContext,
+        _upload_session_id: &str,
+        _request: &sdkwork_deploy_contract::CancelDeployUploadSessionRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::DeployUploadSessionResponse> {
         Err(sdkwork_deploy_contract::DeployServiceError::Internal(
             "not implemented".into(),
         ))

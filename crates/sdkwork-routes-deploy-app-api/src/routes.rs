@@ -1,20 +1,23 @@
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
-    response::{IntoResponse, Response},
+    response::Response,
     routing::{get, post},
     Extension, Json, Router,
 };
 use sdkwork_deploy_contract::{
-    CreateCertificateRequest, CreateDeploymentRequest, CreateDomainRequest,
+    CancelDeployUploadSessionRequest, CompleteDeployUploadSessionRequest, CreateCertificateRequest,
+    CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainRequest,
     CreateEnvVariableRequest, CreateHealthCheckRequest, CreateSiteRequest, DeployAppApi,
-    DeployAppRequestContext, DeployServiceResult, ListSitesQuery, UpdateSiteRequest,
+    DeployAppRequestContext, ListSitesQuery, UpdateSiteRequest,
 };
+use sdkwork_routes_deploy_common::{
+    envelope, finish_api_json, finish_created_api_json, finish_no_content, ok_json, service_result,
+};
+use sdkwork_web_core::WebRequestContext;
 use serde::Deserialize;
 use std::sync::Arc;
 
 use crate::{auth::require_app_context, paths};
-use sdkwork_routes_deploy_common::DeployApiError;
 
 #[derive(Clone)]
 struct AppState {
@@ -57,6 +60,13 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
             paths::CERTIFICATES,
             get(list_certificates).post(create_certificate),
         )
+        .route(paths::UPLOAD_SESSIONS, post(create_upload_session))
+        .route(paths::UPLOAD_SESSION, get(retrieve_upload_session))
+        .route(
+            paths::UPLOAD_SESSION_COMPLETE,
+            post(complete_upload_session),
+        )
+        .route(paths::UPLOAD_SESSION_CANCEL, post(cancel_upload_session))
         .route(
             paths::SITE_HEALTH_CHECKS,
             get(list_health_checks).post(create_health_check),
@@ -95,300 +105,511 @@ fn default_page_size() -> i32 {
 }
 
 async fn list_sites(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Query(query): Query<ListSitesQuery>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(state.api.list_sites(&context, &query).await)
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let page = state.api.list_sites(&context, &query).await?;
+            ok_json(envelope::site_page(page))
+        }
+        .await,
+    )
 }
 
 async fn create_site(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Json(request): Json<CreateSiteRequest>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    created_json(state.api.create_site(&context, &request).await)
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state.api.create_site(&context, &request).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
 }
 
 async fn retrieve_site(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(site_id): Path<String>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(state.api.retrieve_site(&context, &site_id).await)
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state.api.retrieve_site(&context, &site_id).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
 }
 
 async fn update_site(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(site_id): Path<String>,
     Json(request): Json<UpdateSiteRequest>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(state.api.update_site(&context, &site_id, &request).await)
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state.api.update_site(&context, &site_id, &request).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
 }
 
 async fn delete_site(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(site_id): Path<String>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    no_content(state.api.delete_site(&context, &site_id).await)
+) -> Response {
+    finish_no_content(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            service_result(state.api.delete_site(&context, &site_id).await)
+        }
+        .await,
+    )
 }
 
 async fn activate_site(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(site_id): Path<String>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(state.api.activate_site(&context, &site_id).await)
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state.api.activate_site(&context, &site_id).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
 }
 
 async fn pause_site(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(site_id): Path<String>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(state.api.pause_site(&context, &site_id).await)
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state.api.pause_site(&context, &site_id).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
 }
 
 async fn list_domains(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(site_id): Path<String>,
     Query(query): Query<PageQuery>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(
-        state
-            .api
-            .list_domains(&context, &site_id, query.page, query.page_size)
-            .await,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let page = state
+                .api
+                .list_domains(&context, &site_id, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::domain_page(page, query.page, query.page_size))
+        }
+        .await,
     )
 }
 
 async fn create_domain(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(site_id): Path<String>,
     Json(request): Json<CreateDomainRequest>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    created_json(state.api.create_domain(&context, &site_id, &request).await)
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .create_domain(&context, &site_id, &request)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
 }
 
 async fn retrieve_domain(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path((site_id, domain_id)): Path<(String, String)>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(
-        state
-            .api
-            .retrieve_domain(&context, &site_id, &domain_id)
-            .await,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .retrieve_domain(&context, &site_id, &domain_id)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
     )
 }
 
 async fn delete_domain(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path((site_id, domain_id)): Path<(String, String)>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    no_content(
-        state
-            .api
-            .delete_domain(&context, &site_id, &domain_id)
-            .await,
+) -> Response {
+    finish_no_content(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            service_result(
+                state
+                    .api
+                    .delete_domain(&context, &site_id, &domain_id)
+                    .await,
+            )
+        }
+        .await,
     )
 }
 
 async fn verify_domain(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path((site_id, domain_id)): Path<(String, String)>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(
-        state
-            .api
-            .verify_domain(&context, &site_id, &domain_id)
-            .await,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .verify_domain(&context, &site_id, &domain_id)
+                .await?;
+            ok_json(envelope::domain_verify(item))
+        }
+        .await,
     )
 }
 
 async fn list_deployments(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(site_id): Path<String>,
     Query(query): Query<DeploymentListQuery>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(
-        state
-            .api
-            .list_deployments(
-                &context,
-                &site_id,
-                query.page,
-                query.page_size,
-                query.status,
-            )
-            .await,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let page = state
+                .api
+                .list_deployments(
+                    &context,
+                    &site_id,
+                    query.page,
+                    query.page_size,
+                    query.status,
+                )
+                .await?;
+            ok_json(envelope::deployment_page(page))
+        }
+        .await,
     )
 }
 
 async fn create_deployment(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(site_id): Path<String>,
     Json(request): Json<CreateDeploymentRequest>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    created_json(
-        state
-            .api
-            .create_deployment(&context, &site_id, &request)
-            .await,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .create_deployment(&context, &site_id, &request)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
     )
 }
 
 async fn retrieve_deployment(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path((site_id, deployment_id)): Path<(String, String)>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(
-        state
-            .api
-            .retrieve_deployment(&context, &site_id, &deployment_id)
-            .await,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .retrieve_deployment(&context, &site_id, &deployment_id)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
     )
 }
 
 async fn rollback_deployment(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path((site_id, deployment_id)): Path<(String, String)>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(
-        state
-            .api
-            .rollback_deployment(&context, &site_id, &deployment_id)
-            .await,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .rollback_deployment(&context, &site_id, &deployment_id)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
     )
 }
 
 async fn list_env_variables(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(site_id): Path<String>,
     Query(query): Query<EnvVariableListQuery>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(
-        state
-            .api
-            .list_env_variables(&context, &site_id, query.environment.as_deref())
-            .await,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let page = state
+                .api
+                .list_env_variables(&context, &site_id, query.environment.as_deref())
+                .await?;
+            ok_json(envelope::env_variable_page(page))
+        }
+        .await,
     )
 }
 
 async fn create_env_variable(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(site_id): Path<String>,
     Json(request): Json<CreateEnvVariableRequest>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    created_json(
-        state
-            .api
-            .create_env_variable(&context, &site_id, &request)
-            .await,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .create_env_variable(&context, &site_id, &request)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
     )
 }
 
 async fn list_certificates(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Query(query): Query<PageQuery>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(
-        state
-            .api
-            .list_certificates(&context, query.page, query.page_size)
-            .await,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let page = state
+                .api
+                .list_certificates(&context, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::certificate_page(
+                page,
+                query.page,
+                query.page_size,
+            ))
+        }
+        .await,
     )
 }
 
 async fn create_certificate(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Json(request): Json<CreateCertificateRequest>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    created_json(state.api.create_certificate(&context, &request).await)
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state.api.create_certificate(&context, &request).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
 }
 
 async fn list_health_checks(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(site_id): Path<String>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    ok_json(state.api.list_health_checks(&context, &site_id).await)
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let page = state.api.list_health_checks(&context, &site_id).await?;
+            ok_json(envelope::health_check_page(page))
+        }
+        .await,
+    )
 }
 
 async fn create_health_check(
+    ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(site_id): Path<String>,
     Json(request): Json<CreateHealthCheckRequest>,
-) -> Result<Response, DeployApiError> {
-    let context = require_app_context(context)?;
-    created_json(
-        state
-            .api
-            .create_health_check(&context, &site_id, &request)
-            .await,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .create_health_check(&context, &site_id, &request)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
     )
 }
 
-fn ok_json<T>(result: DeployServiceResult<T>) -> Result<Response, DeployApiError>
-where
-    T: serde::Serialize,
-{
-    match result {
-        Ok(value) => Ok((StatusCode::OK, Json(value)).into_response()),
-        Err(error) => Err(error.into()),
-    }
+async fn create_upload_session(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Json(request): Json<CreateDeployUploadSessionRequest>,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state.api.create_upload_session(&context, &request).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
 }
 
-fn created_json<T>(result: DeployServiceResult<T>) -> Result<Response, DeployApiError>
-where
-    T: serde::Serialize,
-{
-    match result {
-        Ok(value) => Ok((StatusCode::CREATED, Json(value)).into_response()),
-        Err(error) => Err(error.into()),
-    }
+async fn retrieve_upload_session(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(upload_session_id): Path<String>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .retrieve_upload_session(&context, &upload_session_id)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
 }
 
-fn no_content(result: DeployServiceResult<()>) -> Result<Response, DeployApiError> {
-    match result {
-        Ok(()) => Ok(StatusCode::NO_CONTENT.into_response()),
-        Err(error) => Err(error.into()),
-    }
+async fn complete_upload_session(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(upload_session_id): Path<String>,
+    Json(request): Json<CompleteDeployUploadSessionRequest>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .complete_upload_session(&context, &upload_session_id, &request)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+async fn cancel_upload_session(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(upload_session_id): Path<String>,
+    Json(request): Json<CancelDeployUploadSessionRequest>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .cancel_upload_session(&context, &upload_session_id, &request)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
 }

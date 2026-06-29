@@ -1,19 +1,19 @@
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
-    response::{IntoResponse, Response},
+    response::Response,
     routing::{get, post},
     Extension, Json, Router,
 };
 use sdkwork_deploy_contract::{
     CreateNginxConfigRequest, CreateServerRequest, DeployBackendApi, DeployBackendRequestContext,
-    DeployServiceResult, ListNginxConfigsQuery, UpdateNginxConfigRequest,
+    ListNginxConfigsQuery, UpdateNginxConfigRequest,
 };
+use sdkwork_routes_deploy_common::{envelope, finish_api_json, finish_created_api_json, ok_json};
+use sdkwork_web_core::WebRequestContext;
 use serde::Deserialize;
 use std::sync::Arc;
 
 use crate::{auth::require_backend_context, paths};
-use sdkwork_routes_deploy_common::DeployApiError;
 
 #[derive(Clone)]
 struct BackendState {
@@ -63,134 +63,202 @@ fn default_page_size() -> i32 {
 }
 
 async fn list_nginx_configs(
+    ctx: WebRequestContext,
     State(state): State<BackendState>,
     context: Option<Extension<DeployBackendRequestContext>>,
     Query(query): Query<ListNginxConfigsQuery>,
-) -> Result<Response, DeployApiError> {
-    let context = require_backend_context(context)?;
-    ok_json(state.api.list_nginx_configs(&context, &query).await)
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let page = state.api.list_nginx_configs(&context, &query).await?;
+            ok_json(envelope::nginx_config_page(page))
+        }
+        .await,
+    )
 }
 
 async fn create_nginx_config(
+    ctx: WebRequestContext,
     State(state): State<BackendState>,
     context: Option<Extension<DeployBackendRequestContext>>,
     Json(request): Json<CreateNginxConfigRequest>,
-) -> Result<Response, DeployApiError> {
-    let context = require_backend_context(context)?;
-    created_json(state.api.create_nginx_config(&context, &request).await)
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let item = state.api.create_nginx_config(&context, &request).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
 }
 
 async fn retrieve_nginx_config(
+    ctx: WebRequestContext,
     State(state): State<BackendState>,
     context: Option<Extension<DeployBackendRequestContext>>,
     Path(config_id): Path<String>,
-) -> Result<Response, DeployApiError> {
-    let context = require_backend_context(context)?;
-    ok_json(state.api.retrieve_nginx_config(&context, &config_id).await)
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let item = state
+                .api
+                .retrieve_nginx_config(&context, &config_id)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
 }
 
 async fn update_nginx_config(
+    ctx: WebRequestContext,
     State(state): State<BackendState>,
     context: Option<Extension<DeployBackendRequestContext>>,
     Path(config_id): Path<String>,
     Json(request): Json<UpdateNginxConfigRequest>,
-) -> Result<Response, DeployApiError> {
-    let context = require_backend_context(context)?;
-    ok_json(
-        state
-            .api
-            .update_nginx_config(&context, &config_id, &request)
-            .await,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let item = state
+                .api
+                .update_nginx_config(&context, &config_id, &request)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
     )
 }
 
 async fn validate_nginx_config(
+    ctx: WebRequestContext,
     State(state): State<BackendState>,
     context: Option<Extension<DeployBackendRequestContext>>,
     Path(config_id): Path<String>,
-) -> Result<Response, DeployApiError> {
-    let context = require_backend_context(context)?;
-    ok_json(state.api.validate_nginx_config(&context, &config_id).await)
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let item = state
+                .api
+                .validate_nginx_config(&context, &config_id)
+                .await?;
+            ok_json(envelope::nginx_validate(item))
+        }
+        .await,
+    )
 }
 
 async fn deploy_nginx_config(
+    ctx: WebRequestContext,
     State(state): State<BackendState>,
     context: Option<Extension<DeployBackendRequestContext>>,
     Path(config_id): Path<String>,
-) -> Result<Response, DeployApiError> {
-    let context = require_backend_context(context)?;
-    ok_json(state.api.deploy_nginx_config(&context, &config_id).await)
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let item = state.api.deploy_nginx_config(&context, &config_id).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
 }
 
 async fn reload_nginx(
+    ctx: WebRequestContext,
     State(state): State<BackendState>,
     context: Option<Extension<DeployBackendRequestContext>>,
-) -> Result<Response, DeployApiError> {
-    let context = require_backend_context(context)?;
-    ok_json(state.api.reload_nginx(&context).await)
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let item = state.api.reload_nginx(&context).await?;
+            ok_json(envelope::nginx_reload(item))
+        }
+        .await,
+    )
 }
 
 async fn retrieve_nginx_status(
+    ctx: WebRequestContext,
     State(state): State<BackendState>,
     context: Option<Extension<DeployBackendRequestContext>>,
-) -> Result<Response, DeployApiError> {
-    let context = require_backend_context(context)?;
-    ok_json(state.api.retrieve_nginx_status(&context).await)
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let item = state.api.retrieve_nginx_status(&context).await?;
+            ok_json(envelope::nginx_status(item))
+        }
+        .await,
+    )
 }
 
 async fn list_servers(
+    ctx: WebRequestContext,
     State(state): State<BackendState>,
     context: Option<Extension<DeployBackendRequestContext>>,
     Query(query): Query<PageQuery>,
-) -> Result<Response, DeployApiError> {
-    let context = require_backend_context(context)?;
-    ok_json(
-        state
-            .api
-            .list_servers(&context, query.page, query.page_size)
-            .await,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let page = state
+                .api
+                .list_servers(&context, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::server_page(page, query.page, query.page_size))
+        }
+        .await,
     )
 }
 
 async fn create_server(
+    ctx: WebRequestContext,
     State(state): State<BackendState>,
     context: Option<Extension<DeployBackendRequestContext>>,
     Json(request): Json<CreateServerRequest>,
-) -> Result<Response, DeployApiError> {
-    let context = require_backend_context(context)?;
-    created_json(state.api.create_server(&context, &request).await)
-}
-
-async fn list_audit_logs(
-    State(state): State<BackendState>,
-    context: Option<Extension<DeployBackendRequestContext>>,
-    Query(query): Query<PageQuery>,
-) -> Result<Response, DeployApiError> {
-    let context = require_backend_context(context)?;
-    ok_json(
-        state
-            .api
-            .list_audit_logs(&context, query.page, query.page_size)
-            .await,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let item = state.api.create_server(&context, &request).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
     )
 }
 
-fn ok_json<T>(result: DeployServiceResult<T>) -> Result<Response, DeployApiError>
-where
-    T: serde::Serialize,
-{
-    match result {
-        Ok(value) => Ok((StatusCode::OK, Json(value)).into_response()),
-        Err(error) => Err(error.into()),
-    }
-}
-
-fn created_json<T>(result: DeployServiceResult<T>) -> Result<Response, DeployApiError>
-where
-    T: serde::Serialize,
-{
-    match result {
-        Ok(value) => Ok((StatusCode::CREATED, Json(value)).into_response()),
-        Err(error) => Err(error.into()),
-    }
+async fn list_audit_logs(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let page = state
+                .api
+                .list_audit_logs(&context, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::audit_log_page(page))
+        }
+        .await,
+    )
 }

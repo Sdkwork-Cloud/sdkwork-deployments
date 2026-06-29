@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
+import { migrateOpenApiDocument } from "../../sdkwork-specs/tools/lib/migrate-openapi-legacy-envelope.mjs";
 
 const root = process.cwd();
 
@@ -150,7 +151,7 @@ function writeHttpRouteManifestRust(crateDir, fnName, routes) {
 
 for (const profile of surfaces) {
   const yaml = parseYaml(fs.readFileSync(path.join(root, profile.yamlPath), "utf8"));
-  const openapi = enrichOpenApi(yaml, profile);
+  const openapi = migrateOpenApiDocument(enrichOpenApi(yaml, profile));
   writeJson(profile.jsonAuthorityPath, openapi);
   writeJson(profile.sdkJsonPath, openapi);
   const routes = extractRoutes(openapi, profile);

@@ -11,10 +11,11 @@ historical `sdkwork-deploy-server` contract scaffold.
 
 | Framework | Status |
 | --- | --- |
-| `sdkwork-web-framework` | Integrated on app-api and backend-api routers |
+| `sdkwork-web-framework` | Integrated — auth, route manifests, v3 `SdkWorkApiResponse` / `ProblemDetail` mapping |
 | `sdkwork-database` | Integrated through `database/` assets and `sdkwork-deploy-database-host` |
-| `sdkwork-utils-rust` | Used for env parsing and shared validation helpers |
+| `sdkwork-utils-rust` | HTTP envelope types, `parse_bool`, `slugify`, `sha256_hash`, pagination helpers |
 | `sdkwork-discovery` | Deferred until RPC services are introduced |
+| `sdkwork-drive-app-sdk` | Integrated — Drive-backed upload sessions via `sdkwork-deploy-drive-port` |
 
 ## Root Layout
 

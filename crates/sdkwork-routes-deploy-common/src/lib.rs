@@ -1,7 +1,9 @@
 //! Shared Deploy router auth wiring for sdkwork-web-framework integration.
 
 pub mod correlation;
+pub mod envelope;
 pub mod problem;
+pub mod response;
 
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
@@ -11,7 +13,11 @@ use sdkwork_iam_web_adapter::IamWebRequestContextResolver;
 use sdkwork_web_core::{WebFrameworkError, WebRequestContextResolver, WebRequestPrincipal};
 
 pub use correlation::{with_problem_correlation, DeployProblemCorrelation};
-pub use problem::{DeployApiError, DeployApiProblem, DeployApiResult};
+pub use problem::{DeployApiError, DeployApiResult};
+pub use response::{
+    finish_api_json, finish_created_api_json, finish_no_content, ok_json, service_result,
+    ApiProblem, ApiResult,
+};
 
 const PRODUCTION_AUTH_UNAVAILABLE: &str = "production deploy auth requires IAM PostgreSQL database";
 
@@ -34,7 +40,9 @@ pub async fn deploy_web_auth_mode_from_env() -> DeployWebAuthMode {
         return DeployWebAuthMode::ProductionFailClosed;
     }
 
-    DeployWebAuthMode::IamDatabase(sdkwork_iam_web_adapter::iam_web_request_context_resolver_from_env().await)
+    DeployWebAuthMode::IamDatabase(
+        sdkwork_iam_web_adapter::iam_web_request_context_resolver_from_env().await,
+    )
 }
 
 #[derive(Clone, Default)]

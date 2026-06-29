@@ -338,3 +338,76 @@ pub struct AuditLogPage {
     #[serde(rename = "pageSize")]
     pub page_size: i32,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CreateDeployUploadSessionRequest {
+    #[serde(rename = "siteId", default)]
+    pub site_id: Option<String>,
+    #[serde(rename = "packageType")]
+    pub package_type: i32,
+    #[serde(rename = "fileName")]
+    pub file_name: String,
+    #[serde(rename = "contentType")]
+    pub content_type: String,
+    #[serde(rename = "contentLength")]
+    pub content_length: i64,
+    #[serde(default)]
+    pub checksum: Option<String>,
+    #[serde(rename = "idempotencyKey")]
+    pub idempotency_key: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct DeployUploadSessionResponse {
+    pub id: String,
+    #[serde(rename = "siteId", skip_serializing_if = "Option::is_none")]
+    pub site_id: Option<String>,
+    #[serde(rename = "packageType")]
+    pub package_type: i32,
+    #[serde(rename = "fileName")]
+    pub file_name: String,
+    #[serde(rename = "contentType")]
+    pub content_type: String,
+    #[serde(rename = "contentLength")]
+    pub content_length: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub checksum: Option<String>,
+    pub status: i32,
+    #[serde(rename = "driveUploadSessionId")]
+    pub drive_upload_session_id: String,
+    #[serde(rename = "driveUploadItemId", skip_serializing_if = "Option::is_none")]
+    pub drive_upload_item_id: Option<String>,
+    #[serde(rename = "driveSpaceId", skip_serializing_if = "Option::is_none")]
+    pub drive_space_id: Option<String>,
+    #[serde(rename = "driveNodeId", skip_serializing_if = "Option::is_none")]
+    pub drive_node_id: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CompletedUploadPartInput {
+    #[serde(rename = "partNo")]
+    pub part_no: i64,
+    pub etag: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CompleteDeployUploadSessionRequest {
+    #[serde(rename = "checksumSha256Hex")]
+    pub checksum_sha256_hex: String,
+    #[serde(rename = "contentLength", default)]
+    pub content_length: Option<i64>,
+    #[serde(rename = "contentType", default)]
+    pub content_type: Option<String>,
+    #[serde(default)]
+    pub parts: Vec<CompletedUploadPartInput>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct CancelDeployUploadSessionRequest {
+    #[serde(rename = "operatorId", default)]
+    pub operator_id: Option<String>,
+}

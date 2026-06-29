@@ -10,6 +10,10 @@ pub struct DeployAppRequestContext {
     pub actor_id: Option<i64>,
     pub organization_id: Option<i64>,
     pub session_id: Option<String>,
+    #[serde(default, skip_serializing)]
+    pub auth_token: Option<String>,
+    #[serde(default, skip_serializing)]
+    pub access_token: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -180,6 +184,32 @@ pub trait DeployAppApi: Send + Sync {
         site_id: &str,
         request: &CreateHealthCheckRequest,
     ) -> DeployServiceResult<HealthCheckResponse>;
+
+    async fn create_upload_session(
+        &self,
+        context: &DeployAppRequestContext,
+        request: &CreateDeployUploadSessionRequest,
+    ) -> DeployServiceResult<DeployUploadSessionResponse>;
+
+    async fn retrieve_upload_session(
+        &self,
+        context: &DeployAppRequestContext,
+        upload_session_id: &str,
+    ) -> DeployServiceResult<DeployUploadSessionResponse>;
+
+    async fn complete_upload_session(
+        &self,
+        context: &DeployAppRequestContext,
+        upload_session_id: &str,
+        request: &CompleteDeployUploadSessionRequest,
+    ) -> DeployServiceResult<DeployUploadSessionResponse>;
+
+    async fn cancel_upload_session(
+        &self,
+        context: &DeployAppRequestContext,
+        upload_session_id: &str,
+        request: &CancelDeployUploadSessionRequest,
+    ) -> DeployServiceResult<DeployUploadSessionResponse>;
 }
 
 #[async_trait]

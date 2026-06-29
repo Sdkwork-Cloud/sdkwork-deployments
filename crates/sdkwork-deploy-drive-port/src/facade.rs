@@ -1,0 +1,296 @@
+use async_trait::async_trait;
+use sdkwork_deploy_contract::{
+    CancelDeployUploadSessionRequest, CompleteDeployUploadSessionRequest, DeployServiceError,
+    DeployServiceResult, DeployUploadSessionResponse,
+};
+use sdkwork_drive_app_sdk_generated_rust::{
+    CompleteUploadSessionRequest, NodeCommandRequest, PrepareUploaderUploadRequest,
+    SdkworkAppClient, SdkworkError,
+};
+use sdkwork_utils_rust::{format_datetime, now, string::trim};
+
+use crate::{DeployDrivePort, DriveRequestCredentials, PrepareDeployUploadCommand};
+
+const DEPLOY_APP_RESOURCE_TYPE: &str = "deploy_package";
+const DEPLOY_UPLOAD_SCENE: &str = "deploy_artifact";
+const DEPLOY_UPLOAD_PROFILE: &str = "generic";
+const DEPLOY_APP_ID: &str = "sdkwork-deploy";
+
+const STATUS_PENDING: i32 = 0;
+const STATUS_COMPLETED: i32 = 1;
+const STATUS_CANCELLED: i32 = 2;
+
+#[derive(Clone)]
+pub struct SdkDriveAppFacade {
+    base_url: String,
+}
+
+impl SdkDriveAppFacade {
+    pub fn from_env(facade_url: String) -> Result<Self, String> {
+        let base_url = trim(&facade_url);
+        if base_url.is_empty() {
+            return Err("SDKWORK_DRIVE_FACADE_URL must not be blank".to_string());
+        }
+        Ok(Self {
+            base_url: base_url.to_string(),
+        })
+    }
+
+    fn client(
+        &self,
+        credentials: &DriveRequestCredentials,
+    ) -> Result<SdkworkAppClient, DeployServiceError> {
+        let client =
+            SdkworkAppClient::new_with_base_url(&self.base_url).map_err(map_drive_error)?;
+        if let Some(token) = credentials
+            .auth_token
+            .as_deref()
+            .map(trim)
+            .filter(|value| !value.is_empty())
+        {
+            client.set_auth_token(token);
+        }
+        if let Some(token) = credentials
+            .access_token
+            .as_deref()
+            .map(trim)
+            .filter(|value| !value.is_empty())
+        {
+            client.set_access_token(token);
+        }
+        Ok(client)
+    }
+}
+
+fn map_drive_error(error: SdkworkError) -> DeployServiceError {
+    let message = error.to_string();
+    if message.contains("404") || message.contains("not found") {
+        DeployServiceError::not_found(message)
+    } else if message.contains("409") || message.contains("conflict") {
+        DeployServiceError::conflict(message)
+    } else if message.contains("422") || message.contains("validation") {
+        DeployServiceError::validation(message)
+    } else if message.contains("403") || message.contains("forbidden") {
+        DeployServiceError::Forbidden
+    } else {
+        DeployServiceError::Internal(message)
+    }
+}
+
+fn map_session_state(state: &str) -> i32 {
+    match state.to_ascii_lowercase().as_str() {
+        "completed" | "complete" | "succeeded" => STATUS_COMPLETED,
+        "aborted" | "cancelled" | "canceled" => STATUS_CANCELLED,
+        _ => STATUS_PENDING,
+    }
+}
+
+fn timestamp_now() -> String {
+    format_datetime(now(), None)
+}
+
+fn response_from_prepare(
+    request: &sdkwork_deploy_contract::CreateDeployUploadSessionRequest,
+    upload_item_id: &str,
+    session: &sdkwork_drive_app_sdk_generated_rust::UploadSessionMutationResponse,
+    upload_item: &sdkwork_drive_app_sdk_generated_rust::UploaderUploadItem,
+) -> DeployUploadSessionResponse {
+    let now = timestamp_now();
+    DeployUploadSessionResponse {
+        id: upload_item_id.to_string(),
+        site_id: request.site_id.clone(),
+        package_type: request.package_type,
+        file_name: request.file_name.clone(),
+        content_type: request.content_type.clone(),
+        content_length: request.content_length,
+        checksum: request.checksum.clone(),
+        status: map_session_state(&session.state),
+        drive_upload_session_id: session.id.clone(),
+        drive_upload_item_id: Some(upload_item.id.clone()),
+        drive_space_id: Some(session.space_id.clone()),
+        drive_node_id: Some(session.node_id.clone()),
+        created_at: now.clone(),
+        updated_at: now,
+    }
+}
+
+fn response_from_session(
+    session: &sdkwork_drive_app_sdk_generated_rust::UploadSessionMutationResponse,
+    fallback: &DeployUploadSessionResponse,
+) -> DeployUploadSessionResponse {
+    let now = timestamp_now();
+    DeployUploadSessionResponse {
+        status: map_session_state(&session.state),
+        drive_upload_session_id: session.id.clone(),
+        drive_space_id: Some(session.space_id.clone()),
+        drive_node_id: Some(session.node_id.clone()),
+        updated_at: now,
+        ..fallback.clone()
+    }
+}
+
+#[async_trait]
+impl DeployDrivePort for SdkDriveAppFacade {
+    async fn prepare_package_upload(
+        &self,
+        credentials: &DriveRequestCredentials,
+        command: PrepareDeployUploadCommand,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        let client = self.client(credentials)?;
+        let request = &command.request;
+        let upload_item_id = request.idempotency_key.clone();
+        let resource_id = request
+            .site_id
+            .clone()
+            .unwrap_or_else(|| format!("tenant-{}", command.tenant_id));
+        let body = PrepareUploaderUploadRequest {
+            id: upload_item_id.clone(),
+            task_id: upload_item_id.clone(),
+            organization_id: command.organization_id.map(|value| value.to_string()),
+            anonymous_id: None,
+            app_resource_type: DEPLOY_APP_RESOURCE_TYPE.to_string(),
+            app_resource_id: resource_id,
+            upload_profile_code: Some(DEPLOY_UPLOAD_PROFILE.to_string()),
+            file_fingerprint: request
+                .checksum
+                .clone()
+                .unwrap_or_else(|| upload_item_id.clone()),
+            original_file_name: request.file_name.clone(),
+            content_type: request.content_type.clone(),
+            content_length: request.content_length,
+            chunk_size_bytes: request.content_length.max(5 * 1024 * 1024),
+            space_id: None,
+            parent_node_id: None,
+            retention: None,
+            now_epoch_ms: Some(sdkwork_utils_rust::to_unix_millis(now())),
+            scene: Some(DEPLOY_UPLOAD_SCENE.to_string()),
+            source: Some(DEPLOY_APP_ID.to_string()),
+            share_token: None,
+        };
+        let response = client
+            .drive()
+            .uploader_uploads_prepare(&body)
+            .await
+            .map_err(map_drive_error)?;
+        Ok(response_from_prepare(
+            request,
+            &upload_item_id,
+            &response.upload_session,
+            &response.upload_item,
+        ))
+    }
+
+    async fn retrieve_upload_session(
+        &self,
+        credentials: &DriveRequestCredentials,
+        drive_session_id: &str,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        let client = self.client(credentials)?;
+        let session = client
+            .drive()
+            .upload_sessions_get(drive_session_id)
+            .await
+            .map_err(map_drive_error)?;
+        let fallback = DeployUploadSessionResponse {
+            id: drive_session_id.to_string(),
+            site_id: None,
+            package_type: 1,
+            file_name: "package.bin".to_string(),
+            content_type: "application/octet-stream".to_string(),
+            content_length: 0,
+            checksum: None,
+            status: STATUS_PENDING,
+            drive_upload_session_id: drive_session_id.to_string(),
+            drive_upload_item_id: None,
+            drive_space_id: None,
+            drive_node_id: None,
+            created_at: timestamp_now(),
+            updated_at: timestamp_now(),
+        };
+        Ok(response_from_session(&session, &fallback))
+    }
+
+    async fn complete_upload_session(
+        &self,
+        credentials: &DriveRequestCredentials,
+        drive_session_id: &str,
+        request: &CompleteDeployUploadSessionRequest,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        let client = self.client(credentials)?;
+        let body = CompleteUploadSessionRequest {
+            upload_id: None,
+            content_type: request
+                .content_type
+                .clone()
+                .unwrap_or_else(|| "application/octet-stream".to_string()),
+            content_length: request.content_length.unwrap_or(0),
+            checksum_sha256_hex: request.checksum_sha256_hex.clone(),
+            parts: request
+                .parts
+                .iter()
+                .map(
+                    |part| sdkwork_drive_app_sdk_generated_rust::CompletedUploadPart {
+                        part_no: part.part_no,
+                        etag: part.etag.clone(),
+                    },
+                )
+                .collect(),
+        };
+        let session = client
+            .drive()
+            .upload_sessions_complete(drive_session_id, &body)
+            .await
+            .map_err(map_drive_error)?;
+        let fallback = DeployUploadSessionResponse {
+            id: drive_session_id.to_string(),
+            site_id: None,
+            package_type: 1,
+            file_name: "package.bin".to_string(),
+            content_type: body.content_type.clone(),
+            content_length: body.content_length,
+            checksum: Some(body.checksum_sha256_hex.clone()),
+            status: STATUS_COMPLETED,
+            drive_upload_session_id: drive_session_id.to_string(),
+            drive_upload_item_id: None,
+            drive_space_id: None,
+            drive_node_id: None,
+            created_at: timestamp_now(),
+            updated_at: timestamp_now(),
+        };
+        Ok(response_from_session(&session, &fallback))
+    }
+
+    async fn cancel_upload_session(
+        &self,
+        credentials: &DriveRequestCredentials,
+        drive_session_id: &str,
+        request: &CancelDeployUploadSessionRequest,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        let client = self.client(credentials)?;
+        let body = NodeCommandRequest {
+            operator_id: request.operator_id.clone(),
+        };
+        let session = client
+            .drive()
+            .upload_sessions_abort(drive_session_id, &body)
+            .await
+            .map_err(map_drive_error)?;
+        let fallback = DeployUploadSessionResponse {
+            id: drive_session_id.to_string(),
+            site_id: None,
+            package_type: 1,
+            file_name: "package.bin".to_string(),
+            content_type: "application/octet-stream".to_string(),
+            content_length: 0,
+            checksum: None,
+            status: STATUS_CANCELLED,
+            drive_upload_session_id: drive_session_id.to_string(),
+            drive_upload_item_id: None,
+            drive_space_id: None,
+            drive_node_id: None,
+            created_at: timestamp_now(),
+            updated_at: timestamp_now(),
+        };
+        Ok(response_from_session(&session, &fallback))
+    }
+}

@@ -1,16 +1,12 @@
-use axum::{http::StatusCode, Extension};
+use axum::Extension;
 
 use sdkwork_deploy_contract::DeployBackendRequestContext;
-use sdkwork_routes_deploy_common::DeployApiError;
+use sdkwork_routes_deploy_common::ApiProblem;
 
 pub fn require_backend_context(
     context: Option<Extension<DeployBackendRequestContext>>,
-) -> Result<DeployBackendRequestContext, DeployApiError> {
+) -> Result<DeployBackendRequestContext, ApiProblem> {
     context.map(|Extension(context)| context).ok_or_else(|| {
-        DeployApiError::new(
-            StatusCode::UNAUTHORIZED,
-            "missing_backend_request_context",
-            "authenticated backend request context is required",
-        )
+        ApiProblem::unauthorized("authenticated backend request context is required")
     })
 }

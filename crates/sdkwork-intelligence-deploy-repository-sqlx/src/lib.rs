@@ -15,6 +15,7 @@ mod runtime;
 mod servers;
 mod sites;
 mod support;
+mod upload_sessions;
 
 pub use runtime::{bootstrap_deploy_runtime_from_env, DeployRuntime};
 

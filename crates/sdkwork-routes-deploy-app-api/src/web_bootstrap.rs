@@ -29,7 +29,7 @@ struct DeployAppContextInjector;
 
 impl DomainContextInjector for DeployAppContextInjector {
     fn inject(&self, request: &mut axum::extract::Request, context: &WebRequestContext) {
-        if let Some(app_context) = deploy_app_context_from_web_request(context) {
+        if let Some(app_context) = deploy_app_context_from_request(request, context) {
             request.extensions_mut().insert(app_context);
         }
     }
@@ -50,7 +50,19 @@ fn deploy_app_context_from_web_request(
         actor_id,
         organization_id,
         session_id,
+        auth_token: None,
+        access_token: None,
     })
+}
+
+fn deploy_app_context_from_request(
+    request: &axum::extract::Request,
+    context: &WebRequestContext,
+) -> Option<DeployAppRequestContext> {
+    let mut app_context = deploy_app_context_from_web_request(context)?;
+    app_context.auth_token = sdkwork_web_core::extractors::bearer_token(request.headers());
+    app_context.access_token = sdkwork_web_core::extractors::access_token(request.headers());
+    Some(app_context)
 }
 
 pub fn wrap_router_with_web_framework(

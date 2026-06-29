@@ -2,10 +2,13 @@
 
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
-    CreateCertificateRequest, CreateDeploymentRequest, CreateDomainRequest,
+    CancelDeployUploadSessionRequest, CompleteDeployUploadSessionRequest, CreateCertificateRequest,
+    CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainRequest,
     CreateEnvVariableRequest, CreateHealthCheckRequest, CreateSiteRequest, DeployAppApi,
-    DeployAppRequestContext, DeployServiceResult, ListSitesQuery, UpdateSiteRequest,
+    DeployAppRequestContext, DeployServiceResult, DeployUploadSessionResponse, ListSitesQuery,
+    UpdateSiteRequest,
 };
+use sdkwork_deploy_drive_port::{DriveRequestCredentials, PrepareDeployUploadCommand};
 
 use crate::DeployService;
 
@@ -35,6 +38,34 @@ impl DeployService {
                 Some(target_uuid),
             )
             .await
+    }
+
+    fn drive_credentials(context: &DeployAppRequestContext) -> DriveRequestCredentials {
+        DriveRequestCredentials {
+            auth_token: context.auth_token.clone(),
+            access_token: context.access_token.clone(),
+        }
+    }
+
+    fn validate_upload_request(
+        request: &CreateDeployUploadSessionRequest,
+    ) -> DeployServiceResult<()> {
+        if request.file_name.trim().is_empty() {
+            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
+                "fileName is required",
+            ));
+        }
+        if request.idempotency_key.trim().is_empty() {
+            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
+                "idempotencyKey is required",
+            ));
+        }
+        if request.content_length <= 0 {
+            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
+                "contentLength must be positive",
+            ));
+        }
+        Ok(())
     }
 }
 
@@ -317,6 +348,112 @@ impl DeployAppApi for DeployService {
         let tenant_id = Self::require_tenant(context)?;
         self.repository
             .create_health_check(tenant_id, site_id, request)
+            .await
+    }
+
+    async fn create_upload_session(
+        &self,
+        context: &DeployAppRequestContext,
+        request: &CreateDeployUploadSessionRequest,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        let tenant_id = Self::require_tenant(context)?;
+        Self::validate_upload_request(request)?;
+        let drive_response = self
+            .drive
+            .prepare_package_upload(
+                &Self::drive_credentials(context),
+                PrepareDeployUploadCommand {
+                    tenant_id,
+                    organization_id: context.organization_id,
+                    operator_id: context.actor_id,
+                    request: request.clone(),
+                },
+            )
+            .await?;
+        self.repository
+            .create_upload_session_ref(tenant_id, context, request, &drive_response)
+            .await
+    }
+
+    async fn retrieve_upload_session(
+        &self,
+        context: &DeployAppRequestContext,
+        upload_session_id: &str,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        let tenant_id = Self::require_tenant(context)?;
+        let stored = self
+            .repository
+            .retrieve_upload_session_ref(tenant_id, upload_session_id)
+            .await?;
+        let refreshed = self
+            .drive
+            .retrieve_upload_session(
+                &Self::drive_credentials(context),
+                &stored.drive_upload_session_id,
+            )
+            .await?;
+        self.repository
+            .update_upload_session_status(
+                tenant_id,
+                upload_session_id,
+                refreshed.status,
+                refreshed.drive_node_id.as_deref(),
+            )
+            .await
+    }
+
+    async fn complete_upload_session(
+        &self,
+        context: &DeployAppRequestContext,
+        upload_session_id: &str,
+        request: &CompleteDeployUploadSessionRequest,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        let tenant_id = Self::require_tenant(context)?;
+        if request.checksum_sha256_hex.trim().is_empty() {
+            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
+                "checksumSha256Hex is required",
+            ));
+        }
+        let stored = self
+            .repository
+            .retrieve_upload_session_ref(tenant_id, upload_session_id)
+            .await?;
+        self.drive
+            .complete_upload_session(
+                &Self::drive_credentials(context),
+                &stored.drive_upload_session_id,
+                request,
+            )
+            .await?;
+        self.repository
+            .update_upload_session_status(tenant_id, upload_session_id, 1, None)
+            .await
+    }
+
+    async fn cancel_upload_session(
+        &self,
+        context: &DeployAppRequestContext,
+        upload_session_id: &str,
+        request: &CancelDeployUploadSessionRequest,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        let tenant_id = Self::require_tenant(context)?;
+        let stored = self
+            .repository
+            .retrieve_upload_session_ref(tenant_id, upload_session_id)
+            .await?;
+        let mut cancel_request = request.clone();
+        if cancel_request.operator_id.is_none() {
+            cancel_request.operator_id = context.actor_id.map(|value| value.to_string());
+        }
+        self.drive
+            .cancel_upload_session(
+                &Self::drive_credentials(context),
+                &stored.drive_upload_session_id,
+                &cancel_request,
+            )
+            .await?;
+        self.repository
+            .update_upload_session_status(tenant_id, upload_session_id, 2, None)
             .await
     }
 }

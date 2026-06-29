@@ -4,8 +4,9 @@ use async_trait::async_trait;
 use sdkwork_deploy_contract::DeployServiceResult;
 use sdkwork_deploy_contract::{
     AuditLogPage, CertificatePage, CertificateResponse, CreateCertificateRequest,
-    CreateDeploymentRequest, CreateDomainRequest, CreateEnvVariableRequest,
-    CreateHealthCheckRequest, CreateNginxConfigRequest, CreateServerRequest, CreateSiteRequest,
+    CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainRequest,
+    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateNginxConfigRequest,
+    CreateServerRequest, CreateSiteRequest, DeployAppRequestContext, DeployUploadSessionResponse,
     DeploymentPage, DeploymentResponse, DomainPage, DomainResponse, DomainVerifyResponse,
     EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
     ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage, NginxConfigResponse,
@@ -240,4 +241,26 @@ pub trait DeployRepositoryPort: Send + Sync {
         target_id: Option<i64>,
         target_uuid: Option<&str>,
     ) -> DeployServiceResult<()>;
+
+    async fn create_upload_session_ref(
+        &self,
+        tenant_id: i64,
+        context: &DeployAppRequestContext,
+        request: &CreateDeployUploadSessionRequest,
+        drive: &DeployUploadSessionResponse,
+    ) -> DeployServiceResult<DeployUploadSessionResponse>;
+
+    async fn retrieve_upload_session_ref(
+        &self,
+        tenant_id: i64,
+        upload_session_id: &str,
+    ) -> DeployServiceResult<DeployUploadSessionResponse>;
+
+    async fn update_upload_session_status(
+        &self,
+        tenant_id: i64,
+        upload_session_id: &str,
+        status: i32,
+        drive_node_id: Option<&str>,
+    ) -> DeployServiceResult<DeployUploadSessionResponse>;
 }

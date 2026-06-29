@@ -1,7 +1,6 @@
-use chrono::{DateTime, SecondsFormat, Utc};
-use sdkwork_deploy_contract::DeployServiceError;
+use chrono::{SecondsFormat, Utc};
 use sdkwork_database_id::SnowflakeIdGenerator;
-use sha2::{Digest, Sha256};
+use sdkwork_deploy_contract::DeployServiceError;
 use sqlx::any::AnyRow;
 use sqlx::{AnyPool, Error as SqlxError, Row};
 
@@ -21,9 +20,8 @@ pub(crate) fn store_error(context: &str, error: SqlxError) -> DeployServiceError
 }
 
 pub(crate) fn pagination(page: i32, page_size: i32) -> (i32, i32, i64) {
-    let page = page.max(1);
-    let page_size = page_size.clamp(1, 100);
-    let offset = ((page - 1) * page_size) as i64;
+    let (page, page_size) = sdkwork_deploy_core::normalize_pagination(page, page_size);
+    let offset = sdkwork_deploy_core::pagination_offset(page, page_size);
     (page, page_size, offset)
 }
 
@@ -38,8 +36,7 @@ pub(crate) fn new_uuid() -> String {
 }
 
 pub(crate) fn sha256_hex(content: &str) -> String {
-    let digest = Sha256::digest(content.as_bytes());
-    hex::encode(digest)
+    sdkwork_utils_rust::sha256_hash(content.as_bytes())
 }
 
 pub(crate) fn bool_from_row(row: &AnyRow, column: &str) -> Result<bool, SqlxError> {
@@ -56,12 +53,6 @@ pub(crate) fn json_from_row(
 ) -> Result<Option<serde_json::Value>, SqlxError> {
     let raw: Option<String> = row.try_get(column)?;
     Ok(raw.and_then(|text| serde_json::from_str(&text).ok()))
-}
-
-pub(crate) fn parse_rfc3339(value: &str) -> Option<DateTime<Utc>> {
-    DateTime::parse_from_rfc3339(value)
-        .ok()
-        .map(|parsed| parsed.with_timezone(&Utc))
 }
 
 pub(crate) async fn resolve_site_internal_id(
@@ -100,11 +91,4 @@ pub(crate) async fn resolve_site_uuid(
 
     row.and_then(|row| row.try_get::<String, _>("uuid").ok())
         .ok_or_else(|| DeployServiceError::not_found("site not found"))
-}
-
-pub(crate) fn tenant_filter_clause(tenant_id: Option<i64>, base: &str) -> String {
-    match tenant_id {
-        Some(_) => format!("{base} AND tenant_id = $1"),
-        None => base.to_string(),
-    }
 }

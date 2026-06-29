@@ -1,9 +1,10 @@
 //! Deploy runtime bootstrap: database lifecycle + repository + service assembly.
 
 use sdkwork_database_config::DatabaseConfig;
+use sdkwork_database_id::SnowflakeIdGenerator;
 use sdkwork_database_sqlx::create_any_pool_from_config;
 use sdkwork_deploy_database_host::bootstrap_deploy_database_from_env;
-use sdkwork_database_id::SnowflakeIdGenerator;
+use sdkwork_deploy_drive_port::deploy_drive_port_from_env;
 use sdkwork_intelligence_deploy_service::DeployService;
 use sqlx::AnyPool;
 use std::sync::Arc;
@@ -41,7 +42,8 @@ pub async fn bootstrap_deploy_runtime_from_env() -> Result<DeployRuntime, String
     let id_generator = snowflake_from_env()?;
     let repository =
         Arc::new(DeployRepository::new(pool, id_generator)) as Arc<dyn DeployRepositoryPort>;
+    let drive = deploy_drive_port_from_env()?;
     Ok(DeployRuntime {
-        service: DeployService::new(repository),
+        service: DeployService::new(repository, drive),
     })
 }

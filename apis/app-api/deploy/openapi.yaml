@@ -467,6 +467,113 @@ paths:
               schema:
                 $ref: '#/components/schemas/CertificateResponse'
 
+  /app/v3/api/upload_sessions:
+    post:
+      operationId: uploadSessions.create
+      summary: 创建 Drive-backed 包上传会话
+      tags: [uploadSession]
+      security:
+        - AuthToken: []
+          AccessToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDeployUploadSessionRequest'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeployUploadSessionResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /app/v3/api/upload_sessions/{uploadSessionId}:
+    parameters:
+      - name: uploadSessionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: uploadSessions.retrieve
+      summary: 获取上传会话
+      tags: [uploadSession]
+      security:
+        - AuthToken: []
+          AccessToken: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeployUploadSessionResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /app/v3/api/upload_sessions/{uploadSessionId}/complete:
+    parameters:
+      - name: uploadSessionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: uploadSessions.complete
+      summary: 完成上传会话
+      tags: [uploadSession]
+      security:
+        - AuthToken: []
+          AccessToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteDeployUploadSessionRequest'
+      responses:
+        '200':
+          description: 完成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeployUploadSessionResponse'
+
+  /app/v3/api/upload_sessions/{uploadSessionId}/cancel:
+    parameters:
+      - name: uploadSessionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: uploadSessions.cancel
+      summary: 取消上传会话
+      tags: [uploadSession]
+      security:
+        - AuthToken: []
+          AccessToken: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelDeployUploadSessionRequest'
+      responses:
+        '200':
+          description: 已取消
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeployUploadSessionResponse'
+
   /app/v3/api/sites/{siteId}/health_checks:
     parameters:
       - $ref: '#/components/parameters/SiteIdParam'
@@ -924,6 +1031,100 @@ components:
         total:
           type: integer
           format: int64
+
+    CreateDeployUploadSessionRequest:
+      type: object
+      required: [packageType, fileName, contentType, contentLength, idempotencyKey]
+      properties:
+        siteId:
+          type: string
+          format: uuid
+        packageType:
+          type: integer
+          description: "1=archive, 2=static, 3=docker, 4=jar, 5=war"
+        fileName:
+          type: string
+          maxLength: 500
+        contentType:
+          type: string
+        contentLength:
+          type: integer
+          format: int64
+        checksum:
+          type: string
+        idempotencyKey:
+          type: string
+          maxLength: 128
+
+    DeployUploadSessionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        siteId:
+          type: string
+          format: uuid
+        packageType:
+          type: integer
+        fileName:
+          type: string
+        contentType:
+          type: string
+        contentLength:
+          type: integer
+          format: int64
+        checksum:
+          type: string
+        status:
+          type: integer
+          description: "0=pending, 1=completed, 2=cancelled"
+        driveUploadSessionId:
+          type: string
+        driveUploadItemId:
+          type: string
+        driveSpaceId:
+          type: string
+        driveNodeId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CompletedUploadPartInput:
+      type: object
+      required: [partNo, etag]
+      properties:
+        partNo:
+          type: integer
+          format: int64
+        etag:
+          type: string
+
+    CompleteDeployUploadSessionRequest:
+      type: object
+      required: [checksumSha256Hex]
+      properties:
+        checksumSha256Hex:
+          type: string
+        contentLength:
+          type: integer
+          format: int64
+        contentType:
+          type: string
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompletedUploadPartInput'
+
+    CancelDeployUploadSessionRequest:
+      type: object
+      properties:
+        operatorId:
+          type: string
 
   responses:
     BadRequest:
