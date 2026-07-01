@@ -1,11 +1,12 @@
 //! Map deploy domain DTOs to SdkWork HTTP API v3 envelope payloads.
 
 use sdkwork_deploy_contract::{
-    AuditLogPage, AuditLogResponse, CertificatePage, CertificateResponse, DeploymentPage,
-    DeploymentResponse, DomainPage, DomainResponse, DomainVerifyResponse, EnvVariablePage,
-    EnvVariableResponse, HealthCheckPage, HealthCheckResponse, NginxConfigPage,
-    NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
-    ServerPage, ServerResponse, SitePage, SiteResponse,
+    ArtifactPage, ArtifactResponse, AuditLogPage, AuditLogResponse, CertificatePage,
+    CertificateResponse, DeploymentPage, DeploymentResponse, DomainPage, DomainResponse,
+    DomainVerifyResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage,
+    HealthCheckResponse, NginxConfigPage, NginxConfigResponse, NginxReloadResponse,
+    NginxStatusResponse, NginxValidateResponse, ReleasePage, ReleaseResponse, ServerPage,
+    ServerResponse, SitePage, SiteResponse,
 };
 use sdkwork_deploy_core::normalize_pagination;
 use sdkwork_utils_rust::{PageInfo, PageMode, SdkWorkPageData, SdkWorkResourceData};
@@ -37,6 +38,18 @@ pub fn certificate_page(
     page_size: i32,
 ) -> SdkWorkPageData<CertificateResponse> {
     offset_page(page.items, page_num, page_size, page.total)
+}
+
+pub fn artifact_page(
+    page: ArtifactPage,
+    page_num: i32,
+    page_size: i32,
+) -> SdkWorkPageData<ArtifactResponse> {
+    offset_page(page.items, page_num, page_size, page.total)
+}
+
+pub fn release_page(page: ReleasePage) -> SdkWorkPageData<ReleaseResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
 }
 
 pub fn health_check_page(data: HealthCheckPage) -> SdkWorkPageData<HealthCheckResponse> {

@@ -1,11 +1,11 @@
 # SDKWork Deploy
+repository-kind: foundation-dependency
 
 SDKWork Deploy is the SaaS-capable Deploy Web Server control plane. It manages web
 applications, domains, TLS certificates, Nginx-compatible configuration, build and deploy
 pipelines, release history, rollback, health checks, and operational audit.
 
-This repository follows `../sdkwork-specs/SDKWORK_WORKSPACE_SPEC.md` and bootstraps from the
-historical `sdkwork-deploy-server` contract scaffold.
+This repository follows `../sdkwork-specs/SDKWORK_WORKSPACE_SPEC.md`. Application identity is declared in `sdkwork.app.config.json`.
 
 ## Standards Alignment
 
@@ -24,15 +24,16 @@ historical `sdkwork-deploy-server` contract scaffold.
 | `apis/` | active | Authoritative OpenAPI contracts for deploy app/backend surfaces |
 | `crates/` | active | Rust service, repository, route, and API server crates |
 | `database/` | active | Database contract, baseline DDL, migrations, seeds, drift policy |
-| `sdks/` | placeholder | SDK family workspace for generated deploy SDKs |
+| `sdks/` | active | Generated deploy SDK families (`sdkwork-deploy-app-sdk`, `sdkwork-deploy-backend-sdk`); materialized by `pnpm api:materialize` |
 | `specs/` | active | Component and topology contracts |
-| `configs/` | active | Topology profile env templates |
-| `deployments/` | placeholder | Docker, Kubernetes, and release handoff descriptors |
+| `configs/` | active | Topology profile env templates (includes Drive facade env for production) |
+| `deployments/` | active | `deploy.yaml`, Docker, and Kubernetes handoff descriptors |
 | `scripts/` | active | Dev orchestration and verification entrypoints |
-| `docs/` | active | PRD, design notes, ADRs |
+| `docs/` | active | PRD, architecture, standards alignment |
 | `tests/` | active | Cross-package contract tests |
-| `apps/` | placeholder | Reserved for future PC/admin client roots |
-| `jobs/`, `tools/`, `plugins/`, `examples/` | placeholder | Reserved capability directories |
+| `tools/` | active | OpenAPI materialization (`materialize_deploy_phase1_contracts.mjs`) |
+| `apps/` | reserved | Future PC/admin client roots |
+| `jobs/`, `plugins/`, `examples/` | reserved | Future capability directories |
 
 ## Development
 
@@ -52,7 +53,8 @@ pnpm db:plan
 ## Documentation
 
 - PRD: `docs/superpowers/specs/2026-06-14-deploy-web-server-prd.md`
-- Design report: `docs/DESIGN_REPORT.md`
+- Standards alignment: [docs/standards-alignment.md](docs/standards-alignment.md)
+- Design report: [docs/DESIGN_REPORT.md](docs/DESIGN_REPORT.md)
 - Standards entry: `../sdkwork-specs/README.md`
 
 ## Documentation Canon

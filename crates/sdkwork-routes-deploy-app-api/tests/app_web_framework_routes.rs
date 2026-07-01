@@ -207,6 +207,71 @@ impl DeployAppApi for StubAppApi {
         ))
     }
 
+    async fn list_artifacts(
+        &self,
+        _context: &DeployAppRequestContext,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::ArtifactPage> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
+    async fn retrieve_artifact(
+        &self,
+        _context: &DeployAppRequestContext,
+        _artifact_id: &str,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::ArtifactResponse> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
+    async fn retain_artifact(
+        &self,
+        _context: &DeployAppRequestContext,
+        _artifact_id: &str,
+    ) -> DeployServiceResult<()> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
+    async fn list_releases(
+        &self,
+        _context: &DeployAppRequestContext,
+        _site_id: &str,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::ReleasePage> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
+    async fn retrieve_release(
+        &self,
+        _context: &DeployAppRequestContext,
+        _site_id: &str,
+        _release_id: &str,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::ReleaseResponse> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
+    async fn create_release(
+        &self,
+        _context: &DeployAppRequestContext,
+        _site_id: &str,
+        _request: &sdkwork_deploy_contract::CreateReleaseRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::ReleaseResponse> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
     async fn list_env_variables(
         &self,
         _context: &DeployAppRequestContext,
@@ -244,6 +309,46 @@ impl DeployAppApi for StubAppApi {
         &self,
         _context: &DeployAppRequestContext,
         _request: &sdkwork_deploy_contract::CreateCertificateRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::CertificateResponse> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
+    async fn upload_custom_certificate(
+        &self,
+        _context: &DeployAppRequestContext,
+        _request: &sdkwork_deploy_contract::UploadCustomCertificateRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::CertificateResponse> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
+    async fn retrieve_certificate(
+        &self,
+        _context: &DeployAppRequestContext,
+        _certificate_id: &str,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::CertificateResponse> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
+    async fn delete_certificate(
+        &self,
+        _context: &DeployAppRequestContext,
+        _certificate_id: &str,
+    ) -> DeployServiceResult<()> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
+    async fn renew_certificate(
+        &self,
+        _context: &DeployAppRequestContext,
+        _certificate_id: &str,
     ) -> DeployServiceResult<sdkwork_deploy_contract::CertificateResponse> {
         Err(sdkwork_deploy_contract::DeployServiceError::Internal(
             "not implemented".into(),

@@ -92,3 +92,62 @@ pub(crate) async fn resolve_site_uuid(
     row.and_then(|row| row.try_get::<String, _>("uuid").ok())
         .ok_or_else(|| DeployServiceError::not_found("site not found"))
 }
+
+pub(crate) async fn resolve_domain_internal_id(
+    pool: &AnyPool,
+    tenant_id: i64,
+    domain_uuid: &str,
+) -> Result<i64, DeployServiceError> {
+    let row = sqlx::query(
+        "SELECT id FROM deploy_domain
+         WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL",
+    )
+    .bind(tenant_id)
+    .bind(domain_uuid)
+    .fetch_optional(pool)
+    .await
+    .map_err(|error| store_error("resolve deploy_domain id", error))?;
+
+    row.and_then(|row| row.try_get::<i64, _>("id").ok())
+        .ok_or_else(|| DeployServiceError::not_found("domain not found"))
+}
+
+pub(crate) async fn resolve_artifact_internal_id(
+    pool: &AnyPool,
+    tenant_id: i64,
+    artifact_uuid: &str,
+) -> Result<i64, DeployServiceError> {
+    let row = sqlx::query(
+        "SELECT id FROM deploy_artifact
+         WHERE tenant_id = $1 AND uuid = $2 AND status <> 2",
+    )
+    .bind(tenant_id)
+    .bind(artifact_uuid)
+    .fetch_optional(pool)
+    .await
+    .map_err(|error| store_error("resolve deploy_artifact id", error))?;
+
+    row.and_then(|row| row.try_get::<i64, _>("id").ok())
+        .ok_or_else(|| DeployServiceError::not_found("artifact not found"))
+}
+
+pub(crate) async fn resolve_release_internal_id(
+    pool: &AnyPool,
+    tenant_id: i64,
+    site_internal_id: i64,
+    release_uuid: &str,
+) -> Result<i64, DeployServiceError> {
+    let row = sqlx::query(
+        "SELECT id FROM deploy_release
+         WHERE tenant_id = $1 AND site_id = $2 AND uuid = $3 AND status = 1",
+    )
+    .bind(tenant_id)
+    .bind(site_internal_id)
+    .bind(release_uuid)
+    .fetch_optional(pool)
+    .await
+    .map_err(|error| store_error("resolve deploy_release id", error))?;
+
+    row.and_then(|row| row.try_get::<i64, _>("id").ok())
+        .ok_or_else(|| DeployServiceError::not_found("release not found"))
+}

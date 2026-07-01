@@ -1120,6 +1120,224 @@
         "x-sdkwork-idempotent": true
       }
     },
+    "/app/v3/api/sites/{siteId}/releases": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/SiteIdParam"
+        }
+      ],
+      "get": {
+        "operationId": "sites.releases.list",
+        "summary": "获取站点发布版本列表",
+        "tags": [
+          "release"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/PageSizeParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SdkWorkApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "data"
+                      ],
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "items",
+                            "pageInfo"
+                          ],
+                          "properties": {
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/ReleaseResponse"
+                              }
+                            },
+                            "pageInfo": {
+                              "$ref": "#/components/schemas/PageInfo"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-api-authority": "sdkwork-deploy.app",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-permission": "deploy.sites.write"
+      },
+      "post": {
+        "operationId": "sites.releases.create",
+        "summary": "从制品创建不可变发布版本",
+        "tags": [
+          "release"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReleaseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SdkWorkApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "data"
+                      ],
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "item"
+                          ],
+                          "properties": {
+                            "item": {
+                              "$ref": "#/components/schemas/ReleaseResponse"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        },
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-api-authority": "sdkwork-deploy.app",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-permission": "deploy.sites.write",
+        "x-sdkwork-idempotent": true
+      }
+    },
+    "/app/v3/api/sites/{siteId}/releases/{releaseId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/SiteIdParam"
+        },
+        {
+          "$ref": "#/components/parameters/ReleaseIdParam"
+        }
+      ],
+      "get": {
+        "operationId": "sites.releases.retrieve",
+        "summary": "获取发布版本详情",
+        "tags": [
+          "release"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SdkWorkApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "data"
+                      ],
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "item"
+                          ],
+                          "properties": {
+                            "item": {
+                              "$ref": "#/components/schemas/ReleaseResponse"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-api-authority": "sdkwork-deploy.app",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-permission": "deploy.sites.write"
+      }
+    },
     "/app/v3/api/sites/{siteId}/env_variables": {
       "parameters": [
         {
@@ -1397,6 +1615,244 @@
         "x-sdkwork-idempotent": true
       }
     },
+    "/app/v3/api/certificates/{certificateId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CertificateIdParam"
+        }
+      ],
+      "get": {
+        "operationId": "certificates.retrieve",
+        "summary": "获取证书详情",
+        "tags": [
+          "certificate"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SdkWorkApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "data"
+                      ],
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "item"
+                          ],
+                          "properties": {
+                            "item": {
+                              "$ref": "#/components/schemas/CertificateResponse"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-api-authority": "sdkwork-deploy.app",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-permission": "deploy.certificates.read"
+      },
+      "delete": {
+        "operationId": "certificates.delete",
+        "summary": "撤销证书",
+        "description": "将证书标记为已撤销；私钥与证书文件仍由 Drive 生命周期管理。",
+        "tags": [
+          "certificate"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "撤销成功"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-api-authority": "sdkwork-deploy.app",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-permission": "deploy.certificates.write"
+      }
+    },
+    "/app/v3/api/certificates/{certificateId}/renew": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CertificateIdParam"
+        }
+      ],
+      "post": {
+        "operationId": "certificates.renew",
+        "summary": "计划托管证书续期",
+        "description": "仅适用于 Let's Encrypt 托管证书（certType=1）。将 renewal_status 置为已计划；\nACME 自动化 worker 尚未上线时不会立即签发新证书。自定义证书须通过 certificates.upload 替换。\n",
+        "tags": [
+          "certificate"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "续期已计划",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SdkWorkApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "data"
+                      ],
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "item"
+                          ],
+                          "properties": {
+                            "item": {
+                              "$ref": "#/components/schemas/CertificateResponse"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        },
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-api-authority": "sdkwork-deploy.app",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-permission": "deploy.certificates.write"
+      }
+    },
+    "/app/v3/api/certificates/upload": {
+      "post": {
+        "operationId": "certificates.upload",
+        "summary": "从已完成的 Drive 上传会话注册自定义 TLS 证书",
+        "description": "客户端须先通过 uploadSessions 上传并完成证书 PEM（packageType=6）\n与私钥 PEM（packageType=7），再调用本接口绑定元数据。响应不包含私钥内容。\n",
+        "tags": [
+          "certificate"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadCustomCertificateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "证书已注册",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SdkWorkApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "data"
+                      ],
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "item"
+                          ],
+                          "properties": {
+                            "item": {
+                              "$ref": "#/components/schemas/CertificateResponse"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        },
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-api-authority": "sdkwork-deploy.app",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-permission": "deploy.certificates.write"
+      }
+    },
     "/app/v3/api/upload_sessions": {
       "post": {
         "operationId": "uploadSessions.create",
@@ -1550,6 +2006,7 @@
       "post": {
         "operationId": "uploadSessions.complete",
         "summary": "完成上传会话",
+        "description": "完成 Drive 上传；packageType 1–5 时同步创建不可变 deploy_artifact 记录。",
         "tags": [
           "uploadSession"
         ],
@@ -1685,6 +2142,171 @@
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
         "x-sdkwork-permission": "deploy.uploadSessions.write"
+      }
+    },
+    "/app/v3/api/artifacts": {
+      "get": {
+        "operationId": "artifacts.list",
+        "summary": "获取租户制品列表",
+        "description": "包上传会话完成（packageType 1–5）后自动创建不可变制品记录。",
+        "tags": [
+          "artifact"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/PageSizeParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SdkWorkApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "data"
+                      ],
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "items",
+                            "pageInfo"
+                          ],
+                          "properties": {
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/ArtifactResponse"
+                              }
+                            },
+                            "pageInfo": {
+                              "$ref": "#/components/schemas/PageInfo"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-api-authority": "sdkwork-deploy.app",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-permission": "deploy.artifacts.read"
+      }
+    },
+    "/app/v3/api/artifacts/{artifactId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ArtifactIdParam"
+        }
+      ],
+      "get": {
+        "operationId": "artifacts.retrieve",
+        "summary": "获取制品详情",
+        "tags": [
+          "artifact"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SdkWorkApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "data"
+                      ],
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "item"
+                          ],
+                          "properties": {
+                            "item": {
+                              "$ref": "#/components/schemas/ArtifactResponse"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-api-authority": "sdkwork-deploy.app",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-permission": "deploy.artifacts.read"
+      },
+      "delete": {
+        "operationId": "artifacts.retain",
+        "summary": "保留并下架制品",
+        "description": "将制品标记为 retained；Drive 节点生命周期仍由 Drive 管理。",
+        "tags": [
+          "artifact"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "已保留"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-api-authority": "sdkwork-deploy.app",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-permission": "deploy.artifacts.write"
       }
     },
     "/app/v3/api/sites/{siteId}/health_checks": {
@@ -1878,6 +2500,33 @@
       },
       "DeploymentIdParam": {
         "name": "deploymentId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "CertificateIdParam": {
+        "name": "certificateId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "ArtifactIdParam": {
+        "name": "artifactId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "ReleaseIdParam": {
+        "name": "releaseId",
         "in": "path",
         "required": true,
         "schema": {
@@ -2177,6 +2826,10 @@
             "type": "string",
             "default": "production"
           },
+          "releaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "idempotencyKey": {
             "type": "string",
             "maxLength": 200
@@ -2196,6 +2849,10 @@
           },
           "deployType": {
             "type": "integer"
+          },
+          "releaseId": {
+            "type": "string",
+            "format": "uuid"
           },
           "versionTag": {
             "type": "string"
@@ -2300,25 +2957,55 @@
       "CreateCertificateRequest": {
         "type": "object",
         "required": [
-          "domainId",
-          "certType"
+          "certName"
         ],
         "properties": {
+          "certName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "domainId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "UploadCustomCertificateRequest": {
+        "type": "object",
+        "required": [
+          "certName",
+          "certificateUploadSessionId",
+          "privateKeyUploadSessionId",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "certName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "domainId": {
             "type": "string",
             "format": "uuid"
           },
-          "certType": {
-            "type": "integer",
-            "enum": [
-              1,
-              2,
-              3
-            ]
+          "certificateUploadSessionId": {
+            "type": "string",
+            "format": "uuid"
           },
-          "autoRenew": {
-            "type": "boolean",
-            "default": true
+          "privateKeyUploadSessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "maxLength": 128
           }
         }
       },
@@ -2445,6 +3132,127 @@
           }
         }
       },
+      "ArtifactResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "packageType": {
+            "type": "integer"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "contentLength": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "checksumSha256": {
+            "type": "string"
+          },
+          "driveNodeId": {
+            "type": "string"
+          },
+          "uploadSessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ArtifactPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtifactResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "CreateReleaseRequest": {
+        "type": "object",
+        "required": [
+          "artifactId",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "artifactId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionTag": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "maxLength": 128
+          }
+        }
+      },
+      "ReleaseResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "artifactId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionTag": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ReleasePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReleaseResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "CreateDeployUploadSessionRequest": {
         "type": "object",
         "required": [
@@ -2461,7 +3269,7 @@
           },
           "packageType": {
             "type": "integer",
-            "description": "1=archive, 2=static, 3=docker, 4=jar, 5=war"
+            "description": "1=archive, 2=static, 3=docker, 4=jar, 5=war, 6=tls_certificate, 7=tls_private_key"
           },
           "fileName": {
             "type": "string",

@@ -23,7 +23,7 @@ OpenAPI authorities under `apis/` and materialized SDK contracts under `sdks/` a
 
 ## Upload Sessions (Drive)
 
-App-api upload session routes (`POST/GET /app/v3/api/upload_sessions`, complete, cancel) orchestrate Drive-backed package uploads. Deploy stores metadata in `deploy_upload_session_ref`; binary storage stays in Drive.
+App-api upload session routes (`POST/GET /app/v3/api/upload_sessions`, complete, cancel) orchestrate Drive-backed package uploads. Deploy stores metadata in `deploy_upload_session_ref` (registered in `database/contract/`); binary storage stays in Drive. Create is idempotent on `idempotencyKey`.
 
 | Env | Purpose |
 | --- | --- |
@@ -39,8 +39,20 @@ node ../sdkwork-specs/tools/check-api-response-envelope.mjs --workspace .
 pnpm api:materialize
 ```
 
+## V1 Delivery Status (control plane)
+
+| Capability | Status | Notes |
+| --- | --- | --- |
+| Site / domain / deployment / env / health APIs | Shipped | app-api v3 envelope |
+| Nginx config backend-api | Shipped | validate / deploy / reload |
+| Drive package upload sessions | Shipped | `uploadSessions.*`, auto `deploy_artifact` on complete |
+| Artifact / release pipeline | Shipped | `artifacts.*`, `sites.releases.*`, deployment `releaseId` |
+| Certificate metadata API | Shipped | list/create/retrieve/delete/renew + `certificates.upload` via Drive sessions |
+| Git import / build job | Planned | PRD Phase 2+ (async build worker) |
+| ACME automation | Planned | PRD Phase 2+ |
+| Public open-api `/deploy/v3/api` | Planned | when scoped |
+
 ## Remaining Product Scope (not standards debt)
 
 - Publish generated SDK client packages from `sdks/sdkwork-deploy-*-sdk`
-- Certificate file upload route (`certificates.upload`) when TLS custom cert upload ships
 - Public open-api surface `/deploy/v3/api` when scoped

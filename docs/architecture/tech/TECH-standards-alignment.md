@@ -11,7 +11,7 @@ Updated: 2026-06-29
 | `sdkwork-database` | Complete | Lifecycle host, SQLx repository, `pnpm db:*` |
 | `sdkwork-utils-rust` | Complete | HTTP envelope types, crypto, env parsing, pagination |
 | `sdkwork-discovery` | N/A (V1) | No RPC services yet |
-| `sdkwork-drive` | Complete | `sdkwork-deploy-drive-port` + app-api upload session routes; production uses `SDKWORK_DRIVE_FACADE_URL` |
+| `sdkwork-drive` | Complete | `sdkwork-deploy-drive-port` + app-api upload session routes; `deploy_upload_session_ref` table; production uses `SDKWORK_DRIVE_FACADE_URL` |
 
 ## API Contract
 

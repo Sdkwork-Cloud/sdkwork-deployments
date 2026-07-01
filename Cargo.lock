@@ -1704,10 +1704,10 @@ name = "sdkwork-deploy-drive-port"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "sdkwork-database-id",
  "sdkwork-deploy-contract",
  "sdkwork-drive-app-sdk-generated-rust",
  "sdkwork-utils-rust",
- "uuid",
 ]
 
 [[package]]

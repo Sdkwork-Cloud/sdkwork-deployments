@@ -101,6 +101,38 @@ impl DeployRepository {
         Ok(map_upload_session_row(row, site_uuid))
     }
 
+    pub(crate) async fn find_upload_session_by_idempotency_key_repo(
+        &self,
+        tenant_id: i64,
+        idempotency_key: &str,
+    ) -> DeployServiceResult<Option<DeployUploadSessionResponse>> {
+        let row = sqlx::query(
+            "SELECT uuid, site_id, package_type, file_name, content_type, content_length,
+                    checksum, status, drive_upload_session_id, drive_upload_item_id,
+                    drive_space_id, drive_node_id, created_at, updated_at
+             FROM deploy_upload_session_ref
+             WHERE tenant_id = $1 AND idempotency_key = $2 AND deleted_at IS NULL",
+        )
+        .bind(tenant_id)
+        .bind(idempotency_key)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|error| store_error("find deploy upload session ref", error))?;
+
+        let Some(row) = row else {
+            return Ok(None);
+        };
+
+        let site_uuid = match row.try_get::<Option<i64>, _>("site_id").ok().flatten() {
+            Some(site_id) => {
+                Some(crate::support::resolve_site_uuid(&self.pool, tenant_id, site_id).await?)
+            }
+            None => None,
+        };
+
+        Ok(Some(map_upload_session_row(row, site_uuid)))
+    }
+
     pub(crate) async fn update_upload_session_status_repo(
         &self,
         tenant_id: i64,

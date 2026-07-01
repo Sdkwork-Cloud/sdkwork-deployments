@@ -2,15 +2,16 @@
 
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
-    AuditLogPage, CertificatePage, CertificateResponse, CreateCertificateRequest,
-    CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainRequest,
-    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateNginxConfigRequest,
-    CreateServerRequest, CreateSiteRequest, DeployAppRequestContext, DeployUploadSessionResponse,
-    DeploymentPage, DeploymentResponse, DomainPage, DomainResponse, DomainVerifyResponse,
-    EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
-    ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage, NginxConfigResponse,
-    NginxReloadResponse, NginxStatusResponse, NginxValidateResponse, ServerPage, ServerResponse,
-    SitePage, SiteResponse, UpdateNginxConfigRequest, UpdateSiteRequest,
+    ArtifactPage, ArtifactResponse, AuditLogPage, CertificatePage, CertificateResponse,
+    CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDeploymentRequest,
+    CreateDomainRequest, CreateEnvVariableRequest, CreateHealthCheckRequest,
+    CreateNginxConfigRequest, CreateReleaseRequest, CreateServerRequest, CreateSiteRequest,
+    DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
+    DomainPage, DomainResponse, DomainVerifyResponse, EnvVariablePage, EnvVariableResponse,
+    HealthCheckPage, HealthCheckResponse, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
+    NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
+    ReleasePage, ReleaseResponse, ServerPage, ServerResponse, SitePage, SiteResponse,
+    UpdateNginxConfigRequest, UpdateSiteRequest, UploadCustomCertificateRequest,
 };
 use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
 use sdkwork_intelligence_deploy_service::DeployRepositoryPort;
@@ -173,6 +174,77 @@ impl DeployRepositoryPort for DeployRepository {
             .await
     }
 
+    async fn list_artifacts(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<ArtifactPage> {
+        self.list_artifacts_repo(tenant_id, page, page_size).await
+    }
+
+    async fn retrieve_artifact(
+        &self,
+        tenant_id: i64,
+        artifact_id: &str,
+    ) -> DeployServiceResult<ArtifactResponse> {
+        self.retrieve_artifact_repo(tenant_id, artifact_id).await
+    }
+
+    async fn retain_artifact(&self, tenant_id: i64, artifact_id: &str) -> DeployServiceResult<()> {
+        self.retain_artifact_repo(tenant_id, artifact_id).await
+    }
+
+    async fn create_artifact_from_upload_session(
+        &self,
+        tenant_id: i64,
+        upload_session_id: &str,
+        checksum_sha256: &str,
+    ) -> DeployServiceResult<ArtifactResponse> {
+        self.create_artifact_from_upload_session_repo(tenant_id, upload_session_id, checksum_sha256)
+            .await
+    }
+
+    async fn list_releases(
+        &self,
+        tenant_id: i64,
+        site_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<ReleasePage> {
+        self.list_releases_repo(tenant_id, site_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_release(
+        &self,
+        tenant_id: i64,
+        site_id: &str,
+        release_id: &str,
+    ) -> DeployServiceResult<ReleaseResponse> {
+        self.retrieve_release_repo(tenant_id, site_id, release_id)
+            .await
+    }
+
+    async fn create_release(
+        &self,
+        tenant_id: i64,
+        site_id: &str,
+        request: &CreateReleaseRequest,
+    ) -> DeployServiceResult<ReleaseResponse> {
+        self.create_release_repo(tenant_id, site_id, request).await
+    }
+
+    async fn find_release_by_idempotency_key(
+        &self,
+        tenant_id: i64,
+        site_id: &str,
+        idempotency_key: &str,
+    ) -> DeployServiceResult<Option<ReleaseResponse>> {
+        self.find_release_by_idempotency_key_repo(tenant_id, site_id, idempotency_key)
+            .await
+    }
+
     async fn list_env_variables(
         &self,
         tenant_id: i64,
@@ -209,6 +281,57 @@ impl DeployRepositoryPort for DeployRepository {
         request: &CreateCertificateRequest,
     ) -> DeployServiceResult<CertificateResponse> {
         self.create_certificate_repo(tenant_id, request).await
+    }
+
+    async fn upload_custom_certificate(
+        &self,
+        tenant_id: i64,
+        request: &UploadCustomCertificateRequest,
+        certificate_upload: &DeployUploadSessionResponse,
+        private_key_upload: &DeployUploadSessionResponse,
+    ) -> DeployServiceResult<CertificateResponse> {
+        self.upload_custom_certificate_repo(
+            tenant_id,
+            request,
+            certificate_upload,
+            private_key_upload,
+        )
+        .await
+    }
+
+    async fn find_certificate_by_idempotency_key(
+        &self,
+        tenant_id: i64,
+        idempotency_key: &str,
+    ) -> DeployServiceResult<Option<CertificateResponse>> {
+        self.find_certificate_by_idempotency_key_repo(tenant_id, idempotency_key)
+            .await
+    }
+
+    async fn retrieve_certificate(
+        &self,
+        tenant_id: i64,
+        certificate_id: &str,
+    ) -> DeployServiceResult<CertificateResponse> {
+        self.retrieve_certificate_repo(tenant_id, certificate_id)
+            .await
+    }
+
+    async fn delete_certificate(
+        &self,
+        tenant_id: i64,
+        certificate_id: &str,
+    ) -> DeployServiceResult<()> {
+        self.delete_certificate_repo(tenant_id, certificate_id)
+            .await
+    }
+
+    async fn renew_certificate(
+        &self,
+        tenant_id: i64,
+        certificate_id: &str,
+    ) -> DeployServiceResult<CertificateResponse> {
+        self.renew_certificate_repo(tenant_id, certificate_id).await
     }
 
     async fn list_health_checks(
@@ -346,6 +469,15 @@ impl DeployRepositoryPort for DeployRepository {
         drive: &DeployUploadSessionResponse,
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         self.create_upload_session_ref_repo(tenant_id, context, request, drive)
+            .await
+    }
+
+    async fn find_upload_session_by_idempotency_key(
+        &self,
+        tenant_id: i64,
+        idempotency_key: &str,
+    ) -> DeployServiceResult<Option<DeployUploadSessionResponse>> {
+        self.find_upload_session_by_idempotency_key_repo(tenant_id, idempotency_key)
             .await
     }
 

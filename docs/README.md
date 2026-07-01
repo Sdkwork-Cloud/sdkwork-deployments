@@ -9,7 +9,7 @@
 | Developer | [guides/developer/README.md](guides/developer/README.md) | [engineering/plans/](engineering/plans/) |
 | Operator | [guides/operator/README.md](guides/operator/README.md) | [runbooks/](runbooks/) |
 | Integrator | [guides/integrator/README.md](guides/integrator/README.md) | repository `apis/` and `sdks/` |
-| Agent | [../AGENTS.md](../AGENTS.md) | [INDEX.yaml](INDEX.yaml) |
+| Agent | [../AGENTS.md](../AGENTS.md) | [standards-alignment.md](../standards-alignment.md), [INDEX.yaml](INDEX.yaml) |
 
 ## Canon Documents
 

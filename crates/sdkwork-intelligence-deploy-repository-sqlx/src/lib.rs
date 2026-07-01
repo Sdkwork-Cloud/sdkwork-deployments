@@ -1,6 +1,7 @@
 use sdkwork_database_id::SnowflakeIdGenerator;
 use sqlx::AnyPool;
 
+mod artifacts;
 mod audit;
 mod certificates;
 mod deployments;
@@ -11,6 +12,7 @@ mod nginx_configs;
 mod nginx_orchestrator;
 mod nginx_security;
 mod port;
+mod releases;
 mod runtime;
 mod servers;
 mod sites;

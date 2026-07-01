@@ -75,7 +75,10 @@ impl DeployDrivePort for DeployDrivePortAdapter {
         match self {
             Self::Memory(port) => port.prepare_package_upload(credentials, command).await,
             Self::Facade(port) => port.prepare_package_upload(credentials, command).await,
-            Self::Unconfigured => Err(DeployServiceError::DatabaseUnavailable),
+            Self::Unconfigured => Err(DeployServiceError::Internal(
+                "Drive facade is not configured; set SDKWORK_DRIVE_FACADE_URL and SDKWORK_DEPLOY_USE_MEMORY_DRIVE=false"
+                    .into(),
+            )),
         }
     }
 
@@ -93,7 +96,10 @@ impl DeployDrivePort for DeployDrivePortAdapter {
                 port.retrieve_upload_session(credentials, drive_session_id)
                     .await
             }
-            Self::Unconfigured => Err(DeployServiceError::DatabaseUnavailable),
+            Self::Unconfigured => Err(DeployServiceError::Internal(
+                "Drive facade is not configured; set SDKWORK_DRIVE_FACADE_URL and SDKWORK_DEPLOY_USE_MEMORY_DRIVE=false"
+                    .into(),
+            )),
         }
     }
 
@@ -112,7 +118,10 @@ impl DeployDrivePort for DeployDrivePortAdapter {
                 port.complete_upload_session(credentials, drive_session_id, request)
                     .await
             }
-            Self::Unconfigured => Err(DeployServiceError::DatabaseUnavailable),
+            Self::Unconfigured => Err(DeployServiceError::Internal(
+                "Drive facade is not configured; set SDKWORK_DRIVE_FACADE_URL and SDKWORK_DEPLOY_USE_MEMORY_DRIVE=false"
+                    .into(),
+            )),
         }
     }
 
@@ -131,7 +140,10 @@ impl DeployDrivePort for DeployDrivePortAdapter {
                 port.cancel_upload_session(credentials, drive_session_id, request)
                     .await
             }
-            Self::Unconfigured => Err(DeployServiceError::DatabaseUnavailable),
+            Self::Unconfigured => Err(DeployServiceError::Internal(
+                "Drive facade is not configured; set SDKWORK_DRIVE_FACADE_URL and SDKWORK_DEPLOY_USE_MEMORY_DRIVE=false"
+                    .into(),
+            )),
         }
     }
 }

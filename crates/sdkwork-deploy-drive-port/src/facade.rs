@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
     CancelDeployUploadSessionRequest, CompleteDeployUploadSessionRequest, DeployServiceError,
-    DeployServiceResult, DeployUploadSessionResponse,
+    DeployServiceResult, DeployUploadSessionResponse, UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE,
+    UPLOAD_PACKAGE_TYPE_TLS_PRIVATE_KEY,
 };
 use sdkwork_drive_app_sdk_generated_rust::{
     CompleteUploadSessionRequest, NodeCommandRequest, PrepareUploaderUploadRequest,
@@ -85,6 +86,29 @@ fn map_session_state(state: &str) -> i32 {
     }
 }
 
+fn upload_scene_for_package_type(package_type: i32) -> &'static str {
+    match package_type {
+        UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE => "deploy_tls_certificate",
+        UPLOAD_PACKAGE_TYPE_TLS_PRIVATE_KEY => "deploy_tls_private_key",
+        _ => DEPLOY_UPLOAD_SCENE,
+    }
+}
+
+fn app_resource_type_for_package_type(package_type: i32) -> &'static str {
+    match package_type {
+        UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE => "deploy_tls_certificate",
+        UPLOAD_PACKAGE_TYPE_TLS_PRIVATE_KEY => "deploy_tls_private_key",
+        _ => DEPLOY_APP_RESOURCE_TYPE,
+    }
+}
+
+fn upload_profile_for_package_type(package_type: i32) -> &'static str {
+    match package_type {
+        UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE | UPLOAD_PACKAGE_TYPE_TLS_PRIVATE_KEY => "tls",
+        _ => DEPLOY_UPLOAD_PROFILE,
+    }
+}
+
 fn timestamp_now() -> String {
     format_datetime(now(), None)
 }
@@ -148,9 +172,11 @@ impl DeployDrivePort for SdkDriveAppFacade {
             task_id: upload_item_id.clone(),
             organization_id: command.organization_id.map(|value| value.to_string()),
             anonymous_id: None,
-            app_resource_type: DEPLOY_APP_RESOURCE_TYPE.to_string(),
+            app_resource_type: app_resource_type_for_package_type(request.package_type).to_string(),
             app_resource_id: resource_id,
-            upload_profile_code: Some(DEPLOY_UPLOAD_PROFILE.to_string()),
+            upload_profile_code: Some(
+                upload_profile_for_package_type(request.package_type).to_string(),
+            ),
             file_fingerprint: request
                 .checksum
                 .clone()
@@ -163,7 +189,7 @@ impl DeployDrivePort for SdkDriveAppFacade {
             parent_node_id: None,
             retention: None,
             now_epoch_ms: Some(sdkwork_utils_rust::to_unix_millis(now())),
-            scene: Some(DEPLOY_UPLOAD_SCENE.to_string()),
+            scene: Some(upload_scene_for_package_type(request.package_type).to_string()),
             source: Some(DEPLOY_APP_ID.to_string()),
             share_token: None,
         };

@@ -117,6 +117,28 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     .with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Get,
+        "/app/v3/api/sites/{siteId}/releases",
+        "release",
+        "sites.releases.list",
+    )
+    .with_required_permission("deploy.sites.write"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/sites/{siteId}/releases",
+        "release",
+        "sites.releases.create",
+    )
+    .with_required_permission("deploy.sites.write")
+    .with_idempotent(true),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/sites/{siteId}/releases/{releaseId}",
+        "release",
+        "sites.releases.retrieve",
+    )
+    .with_required_permission("deploy.sites.write"),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
         "/app/v3/api/sites/{siteId}/env_variables",
         "envVariable",
         "sites.envVariables.list",
@@ -146,6 +168,34 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     .with_required_permission("deploy.certificates.write")
     .with_idempotent(true),
     HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/certificates/{certificateId}",
+        "certificate",
+        "certificates.retrieve",
+    )
+    .with_required_permission("deploy.certificates.read"),
+    HttpRoute::dual_token(
+        HttpMethod::Delete,
+        "/app/v3/api/certificates/{certificateId}",
+        "certificate",
+        "certificates.delete",
+    )
+    .with_required_permission("deploy.certificates.write"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/certificates/{certificateId}/renew",
+        "certificate",
+        "certificates.renew",
+    )
+    .with_required_permission("deploy.certificates.write"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/certificates/upload",
+        "certificate",
+        "certificates.upload",
+    )
+    .with_required_permission("deploy.certificates.write"),
+    HttpRoute::dual_token(
         HttpMethod::Post,
         "/app/v3/api/upload_sessions",
         "uploadSession",
@@ -174,6 +224,27 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "uploadSessions.cancel",
     )
     .with_required_permission("deploy.uploadSessions.write"),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/artifacts",
+        "artifact",
+        "artifacts.list",
+    )
+    .with_required_permission("deploy.artifacts.read"),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/artifacts/{artifactId}",
+        "artifact",
+        "artifacts.retrieve",
+    )
+    .with_required_permission("deploy.artifacts.read"),
+    HttpRoute::dual_token(
+        HttpMethod::Delete,
+        "/app/v3/api/artifacts/{artifactId}",
+        "artifact",
+        "artifacts.retain",
+    )
+    .with_required_permission("deploy.artifacts.write"),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/app/v3/api/sites/{siteId}/health_checks",

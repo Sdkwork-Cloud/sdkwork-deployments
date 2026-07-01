@@ -1,16 +1,16 @@
 > Migrated from `docs/superpowers/specs/2026-06-14-deploy-web-server-prd.md` on 2026-06-24.
 > Owner: SDKWork maintainers
 
-Status: draft
+Status: active
 Date: 2026-06-14
-Owner: SDKWork Deploy Server
-Repository: sdkwork-deploy-server
+Owner: SDKWork Deploy
+Repository: sdkwork-deployments
 Primary requirement: REQ-DEPLOY-2026-0001
 Related specs: REQUIREMENTS_SPEC.md, ARCHITECTURE_DECISION_SPEC.md, API_SPEC.md, DATABASE_SPEC.md, SDK_SPEC.md, SECURITY_SPEC.md, DEPLOYMENT_SPEC.md, NGINX_SPEC.md, RUNTIME_DIRECTORY_SPEC.md, OBSERVABILITY_SPEC.md, DRIVE_SPEC.md
 
 ## 1. Product Positioning
 
-SDKWork Deploy Server is a SaaS-capable Deploy Web Server control plane. It manages web applications, domains, TLS certificates, Nginx-compatible configuration, build and deploy pipelines, release history, rollback, health checks, and operational audit.
+SDKWork Deploy is a SaaS-capable web deployment control plane. It manages web applications, domains, TLS certificates, Nginx-compatible configuration, build and deploy pipelines, release history, rollback, health checks, and operational audit.
 
 The product must be compatible with standard Nginx configuration as the data-plane contract. Nginx remains the primary public traffic serving layer for V1. Rust services provide the control plane, configuration rendering, validation, deployment orchestration, certificate lifecycle automation, observability, and APIs.
 
@@ -20,7 +20,7 @@ This PRD is the source requirement document for later architecture design, datab
 
 Teams need a professional web server deployment platform that can deploy applications from Git or uploaded packages, bind domains and certificates, manage Nginx-compatible configuration, support multi-tenant SaaS isolation, and provide clear operational visibility.
 
-Current design artifacts already describe site, domain, deployment, Nginx, certificate, health check, and audit concepts, but the product model is not yet strict enough for professional implementation. The missing gaps are first-class application/repository/artifact/release/build objects, certificate lifecycle modeling, upload lifecycle modeling, explicit SaaS authorization semantics, and a stronger Nginx compatibility contract.
+Current design artifacts already describe site, domain, deployment, Nginx, certificate, health check, and audit concepts, but the product model is not yet strict enough for professional implementation. Remaining gaps are first-class application/repository/artifact/release/build objects, ACME issuance automation, explicit SaaS authorization semantics refinement, and a stronger Nginx compatibility contract. Drive-backed upload lifecycle and certificate metadata APIs (including custom import) are implemented in `sdkwork-deployments`.
 
 ## 3. Goals
 
@@ -364,18 +364,20 @@ V1 must include:
 - Policy-as-code for deployment approvals.
 - Billing, quotas, and tenant plan entitlements.
 
-## 16. Decisions To Record Before Implementation
+## 16. Architecture Decisions
 
-The following architecture decisions must be recorded or embedded in follow-up architecture docs before implementation:
+Recorded in repository docs and implementation:
 
-- API authority and SDK family ownership for deploy app-api, backend-api, and open-api.
-- Domain model split between application, site, release, deployment, artifact, build job, and config set.
-- Drive-backed upload integration contract for package artifacts.
-- Certificate private key storage policy and ACME provider model.
-- Nginx compatibility policy for unsupported or custom directives.
-- Runtime node model: local, SSH-managed, and future agent-managed.
-- Database table prefix and bounded context compliance for `deploy_` tables.
-- Event/job model for long-running build, deploy, renewal, and reload operations.
+| Decision | Status |
+| --- | --- |
+| API authority (app-api / backend-api OpenAPI under `apis/`) | Implemented |
+| Drive-backed upload for package artifacts | Implemented — upload sessions + auto `deploy_artifact` on complete |
+| Artifact and release pipeline | Implemented — `artifacts.*`, `sites.releases.*`, deployment `releaseId` |
+| `deploy_` table prefix and bounded contexts | Implemented — see `database/contract/` |
+| Certificate private key storage policy | Implemented | Drive node refs only; wire never returns key material |
+| Certificate lifecycle APIs (retrieve/delete/renew) | Implemented | renew schedules ACME-managed certs; ACME worker Phase 2+ |
+| Nginx plan/render/validate/deploy/reload | Implemented — backend-api + orchestrator |
+| Event/job model for long-running Git build | Planned — PRD Phase 2+ |
 
 ## 17. Verification Checklist
 

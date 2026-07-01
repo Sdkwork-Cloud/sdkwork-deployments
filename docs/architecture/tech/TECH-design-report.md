@@ -1,6 +1,9 @@
 > Migrated from `docs/DESIGN_REPORT.md` on 2026-06-24.
 > Owner: SDKWork maintainers
 
+> **Canonical implementation status:** [../../standards-alignment.md](../../standards-alignment.md) and [TECH-standards-alignment.md](TECH-standards-alignment.md).  
+> **Repository root:** `sdkwork-deployments`. Historical crate names in this shard may differ from the current workspace.
+
 - 版本：1.0
 - 日期：2026-06-14
 - 定位：基于 Rust 的专业 WebServer 部署管理服务，完美兼容 Nginx 配置
@@ -1796,82 +1799,7 @@ chrono = { version = "0.4", features = ["serde"] }
 
 ## 附录 B：目录结构总览
 
-```
-sdkwork-deploy-server/
-├── AGENTS.md
-├── CLAUDE.md
-├── GEMINI.md
-├── CODEX.md
-├── Cargo.toml                          # Workspace 配置
-├── README.md
-├── apis/                               # API 合约
-│   ├── open-api/deploy/
-│   │   └── openapi.yaml
-│   ├── app-api/deploy/
-│   │   └── openapi.yaml
-│   └── backend-api/deploy/
-│       └── openapi.yaml
-├── crates/                             # Rust crates
-│   ├── sdkwork-deployments-standalone-gateway/
-│   ├── sdkwork-routes-site-app-api/
-│   ├── sdkwork-routes-nginx-backend-api/
-│   ├── sdkwork-routes-deploy-app-api/
-│   ├── sdkwork-routes-domain-app-api/
-│   ├── sdkwork-routes-cert-app-api/
-│   ├── sdkwork-routes-monitor-app-api/
-│   ├── sdkwork-deploy-site-service/
-│   ├── sdkwork-deploy-nginx-service/
-│   ├── sdkwork-deploy-deploy-service/
-│   ├── sdkwork-deploy-domain-service/
-│   ├── sdkwork-deploy-cert-service/
-│   ├── sdkwork-deploy-monitor-service/
-│   ├── sdkwork-deploy-site-repository-sqlx/
-│   ├── sdkwork-deploy-nginx-repository-sqlx/
-│   ├── sdkwork-deploy-deploy-repository-sqlx/
-│   ├── sdkwork-deploy-nginx-adapter/
-│   ├── sdkwork-deploy-ssh-adapter/
-│   ├── sdkwork-deploy-cert-adapter/
-│   └── sdkwork-deploy-worker/
-├── sdks/                               # SDK 族
-│   ├── sdkwork-deploy-sdk/
-│   ├── sdkwork-deploy-app-sdk/
-│   └── sdkwork-deploy-backend-sdk/
-├── configs/                            # 配置模板
-│   ├── deploy.toml
-│   └── nginx/
-│       ├── static-site.conf.template
-│       ├── spa-site.conf.template
-│       ├── node-proxy.conf.template
-│       └── php-fpm.conf.template
-├── deployments/                        # 部署配置
-│   ├── docker/
-│   │   ├── Dockerfile
-│   │   └── docker-compose.yml
-│   └── systemd/
-│       └── sdkwork-deploy.service
-├── migrations/                         # 数据库迁移
-│   ├── 001_create_deploy_site.sql
-│   ├── 002_create_deploy_domain.sql
-│   ├── 003_create_deploy_nginx_config.sql
-│   ├── 004_create_deploy_certificate.sql
-│   ├── 005_create_deploy_deployment.sql
-│   ├── 006_create_deploy_env_variable.sql
-│   ├── 007_create_deploy_health_check.sql
-│   ├── 008_create_deploy_health_result.sql
-│   └── 009_create_deploy_audit_log.sql
-├── scripts/                            # 脚本
-│   ├── nginx-plan.sh
-│   ├── nginx-render.sh
-│   └── nginx-deploy.sh
-├── tests/                              # 集成测试
-├── tools/                              # 开发工具
-├── docs/                               # 文档
-│   └── DESIGN_REPORT.md
-└── .sdkwork/                           # 本地 workspace
-    ├── README.md
-    ├── skills/
-    └── plugins/
-```
+See [DESIGN_REPORT.md](../../DESIGN_REPORT.md) appendix B for the current `sdkwork-deployments/` workspace layout.
 
 ---
 

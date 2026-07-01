@@ -145,6 +145,47 @@ pub trait DeployAppApi: Send + Sync {
         deployment_id: &str,
     ) -> DeployServiceResult<DeploymentResponse>;
 
+    async fn list_artifacts(
+        &self,
+        context: &DeployAppRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<ArtifactPage>;
+
+    async fn retrieve_artifact(
+        &self,
+        context: &DeployAppRequestContext,
+        artifact_id: &str,
+    ) -> DeployServiceResult<ArtifactResponse>;
+
+    async fn retain_artifact(
+        &self,
+        context: &DeployAppRequestContext,
+        artifact_id: &str,
+    ) -> DeployServiceResult<()>;
+
+    async fn list_releases(
+        &self,
+        context: &DeployAppRequestContext,
+        site_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<ReleasePage>;
+
+    async fn retrieve_release(
+        &self,
+        context: &DeployAppRequestContext,
+        site_id: &str,
+        release_id: &str,
+    ) -> DeployServiceResult<ReleaseResponse>;
+
+    async fn create_release(
+        &self,
+        context: &DeployAppRequestContext,
+        site_id: &str,
+        request: &CreateReleaseRequest,
+    ) -> DeployServiceResult<ReleaseResponse>;
+
     async fn list_env_variables(
         &self,
         context: &DeployAppRequestContext,
@@ -170,6 +211,30 @@ pub trait DeployAppApi: Send + Sync {
         &self,
         context: &DeployAppRequestContext,
         request: &CreateCertificateRequest,
+    ) -> DeployServiceResult<CertificateResponse>;
+
+    async fn upload_custom_certificate(
+        &self,
+        context: &DeployAppRequestContext,
+        request: &UploadCustomCertificateRequest,
+    ) -> DeployServiceResult<CertificateResponse>;
+
+    async fn retrieve_certificate(
+        &self,
+        context: &DeployAppRequestContext,
+        certificate_id: &str,
+    ) -> DeployServiceResult<CertificateResponse>;
+
+    async fn delete_certificate(
+        &self,
+        context: &DeployAppRequestContext,
+        certificate_id: &str,
+    ) -> DeployServiceResult<()>;
+
+    async fn renew_certificate(
+        &self,
+        context: &DeployAppRequestContext,
+        certificate_id: &str,
     ) -> DeployServiceResult<CertificateResponse>;
 
     async fn list_health_checks(

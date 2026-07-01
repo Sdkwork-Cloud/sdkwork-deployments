@@ -30,3 +30,9 @@ Architecture detail lives in the linked TECH shards below.
 ## 8. Architecture Decision Index
 
 ## 9. Verification
+
+Implementation status and framework integration: [TECH-standards-alignment.md](TECH-standards-alignment.md).
+
+```powershell
+pnpm verify
+```

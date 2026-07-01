@@ -7,8 +7,9 @@ use axum::{
 use sdkwork_deploy_contract::{
     CancelDeployUploadSessionRequest, CompleteDeployUploadSessionRequest, CreateCertificateRequest,
     CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainRequest,
-    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateSiteRequest, DeployAppApi,
-    DeployAppRequestContext, ListSitesQuery, UpdateSiteRequest,
+    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest,
+    DeployAppApi, DeployAppRequestContext, ListSitesQuery, UpdateSiteRequest,
+    UploadCustomCertificateRequest,
 };
 use sdkwork_routes_deploy_common::{
     envelope, finish_api_json, finish_created_api_json, finish_no_content, ok_json, service_result,
@@ -53,6 +54,11 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
         .route(paths::SITE_DEPLOYMENT, get(retrieve_deployment))
         .route(paths::SITE_DEPLOYMENT_ROLLBACK, post(rollback_deployment))
         .route(
+            paths::SITE_RELEASES,
+            get(list_releases).post(create_release),
+        )
+        .route(paths::SITE_RELEASE, get(retrieve_release))
+        .route(
             paths::SITE_ENV_VARIABLES,
             get(list_env_variables).post(create_env_variable),
         )
@@ -60,6 +66,12 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
             paths::CERTIFICATES,
             get(list_certificates).post(create_certificate),
         )
+        .route(
+            paths::CERTIFICATE,
+            get(retrieve_certificate).delete(delete_certificate),
+        )
+        .route(paths::CERTIFICATE_RENEW, post(renew_certificate))
+        .route(paths::CERTIFICATES_UPLOAD, post(upload_custom_certificate))
         .route(paths::UPLOAD_SESSIONS, post(create_upload_session))
         .route(paths::UPLOAD_SESSION, get(retrieve_upload_session))
         .route(
@@ -67,6 +79,11 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
             post(complete_upload_session),
         )
         .route(paths::UPLOAD_SESSION_CANCEL, post(cancel_upload_session))
+        .route(paths::ARTIFACTS, get(list_artifacts))
+        .route(
+            paths::ARTIFACT,
+            get(retrieve_artifact).delete(retain_artifact),
+        )
         .route(
             paths::SITE_HEALTH_CHECKS,
             get(list_health_checks).post(create_health_check),
@@ -414,6 +431,121 @@ async fn rollback_deployment(
     )
 }
 
+async fn list_releases(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(site_id): Path<String>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let page = state
+                .api
+                .list_releases(&context, &site_id, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::release_page(page))
+        }
+        .await,
+    )
+}
+
+async fn create_release(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(site_id): Path<String>,
+    Json(request): Json<CreateReleaseRequest>,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .create_release(&context, &site_id, &request)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+async fn retrieve_release(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((site_id, release_id)): Path<(String, String)>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .retrieve_release(&context, &site_id, &release_id)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+async fn list_artifacts(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let page = state
+                .api
+                .list_artifacts(&context, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::artifact_page(page, query.page, query.page_size))
+        }
+        .await,
+    )
+}
+
+async fn retrieve_artifact(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(artifact_id): Path<String>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state.api.retrieve_artifact(&context, &artifact_id).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+async fn retain_artifact(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(artifact_id): Path<String>,
+) -> Response {
+    finish_no_content(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            service_result(state.api.retain_artifact(&context, &artifact_id).await)
+        }
+        .await,
+    )
+}
+
 async fn list_env_variables(
     ctx: WebRequestContext,
     State(state): State<AppState>,
@@ -491,6 +623,87 @@ async fn create_certificate(
         async {
             let context = require_app_context(context)?;
             let item = state.api.create_certificate(&context, &request).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+async fn upload_custom_certificate(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Json(request): Json<UploadCustomCertificateRequest>,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .upload_custom_certificate(&context, &request)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+async fn retrieve_certificate(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(certificate_id): Path<String>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .retrieve_certificate(&context, &certificate_id)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+async fn delete_certificate(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(certificate_id): Path<String>,
+) -> Response {
+    finish_no_content(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            service_result(
+                state
+                    .api
+                    .delete_certificate(&context, &certificate_id)
+                    .await,
+            )
+        }
+        .await,
+    )
+}
+
+async fn renew_certificate(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(certificate_id): Path<String>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .renew_certificate(&context, &certificate_id)
+                .await?;
             ok_json(envelope::resource(item))
         }
         .await,

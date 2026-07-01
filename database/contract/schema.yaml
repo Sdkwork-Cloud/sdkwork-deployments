@@ -35,3 +35,15 @@ tables:
   - name: deploy_audit_log
     lifecycle_status: active
     owner: deploy-platform
+  - name: deploy_server
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_upload_session_ref
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_artifact
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_release
+    lifecycle_status: active
+    owner: deploy-platform

@@ -1,10 +1,10 @@
 use async_trait::async_trait;
+use sdkwork_database_id::uuid_v4;
 use sdkwork_deploy_contract::{
     CancelDeployUploadSessionRequest, CompleteDeployUploadSessionRequest,
     CreateDeployUploadSessionRequest, DeployServiceResult, DeployUploadSessionResponse,
 };
 use sdkwork_utils_rust::{format_datetime, now};
-use uuid::Uuid;
 
 use crate::{DeployDrivePort, DriveRequestCredentials, PrepareDeployUploadCommand};
 
@@ -22,7 +22,7 @@ impl MemoryDeployDrivePort {
         status: i32,
     ) -> DeployUploadSessionResponse {
         DeployUploadSessionResponse {
-            id: Uuid::new_v4().to_string(),
+            id: uuid_v4(),
             site_id: request.site_id.clone(),
             package_type: request.package_type,
             file_name: request.file_name.clone(),
@@ -47,7 +47,7 @@ impl DeployDrivePort for MemoryDeployDrivePort {
         _credentials: &DriveRequestCredentials,
         command: PrepareDeployUploadCommand,
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
-        let drive_session_id = format!("mem-session-{}", Uuid::new_v4());
+        let drive_session_id = format!("mem-session-{}", uuid_v4());
         Ok(Self::build_response(
             &command.request,
             &drive_session_id,
@@ -61,7 +61,7 @@ impl DeployDrivePort for MemoryDeployDrivePort {
         drive_session_id: &str,
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         Ok(DeployUploadSessionResponse {
-            id: Uuid::new_v4().to_string(),
+            id: uuid_v4(),
             site_id: None,
             package_type: 1,
             file_name: "package.zip".to_string(),
@@ -85,7 +85,7 @@ impl DeployDrivePort for MemoryDeployDrivePort {
         request: &CompleteDeployUploadSessionRequest,
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         Ok(DeployUploadSessionResponse {
-            id: Uuid::new_v4().to_string(),
+            id: uuid_v4(),
             site_id: None,
             package_type: 1,
             file_name: "package.zip".to_string(),
@@ -109,7 +109,7 @@ impl DeployDrivePort for MemoryDeployDrivePort {
         _request: &CancelDeployUploadSessionRequest,
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         Ok(DeployUploadSessionResponse {
-            id: Uuid::new_v4().to_string(),
+            id: uuid_v4(),
             site_id: None,
             package_type: 1,
             file_name: "package.zip".to_string(),

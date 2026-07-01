@@ -3,15 +3,16 @@
 use async_trait::async_trait;
 use sdkwork_deploy_contract::DeployServiceResult;
 use sdkwork_deploy_contract::{
-    AuditLogPage, CertificatePage, CertificateResponse, CreateCertificateRequest,
-    CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainRequest,
-    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateNginxConfigRequest,
-    CreateServerRequest, CreateSiteRequest, DeployAppRequestContext, DeployUploadSessionResponse,
-    DeploymentPage, DeploymentResponse, DomainPage, DomainResponse, DomainVerifyResponse,
-    EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
-    ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage, NginxConfigResponse,
-    NginxReloadResponse, NginxStatusResponse, NginxValidateResponse, ServerPage, ServerResponse,
-    SitePage, SiteResponse, UpdateNginxConfigRequest, UpdateSiteRequest,
+    ArtifactPage, ArtifactResponse, AuditLogPage, CertificatePage, CertificateResponse,
+    CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDeploymentRequest,
+    CreateDomainRequest, CreateEnvVariableRequest, CreateHealthCheckRequest,
+    CreateNginxConfigRequest, CreateReleaseRequest, CreateServerRequest, CreateSiteRequest,
+    DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
+    DomainPage, DomainResponse, DomainVerifyResponse, EnvVariablePage, EnvVariableResponse,
+    HealthCheckPage, HealthCheckResponse, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
+    NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
+    ReleasePage, ReleaseResponse, ServerPage, ServerResponse, SitePage, SiteResponse,
+    UpdateNginxConfigRequest, UpdateSiteRequest, UploadCustomCertificateRequest,
 };
 
 #[async_trait]
@@ -127,6 +128,57 @@ pub trait DeployRepositoryPort: Send + Sync {
         actor_id: Option<i64>,
     ) -> DeployServiceResult<DeploymentResponse>;
 
+    async fn list_artifacts(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<ArtifactPage>;
+
+    async fn retrieve_artifact(
+        &self,
+        tenant_id: i64,
+        artifact_id: &str,
+    ) -> DeployServiceResult<ArtifactResponse>;
+
+    async fn retain_artifact(&self, tenant_id: i64, artifact_id: &str) -> DeployServiceResult<()>;
+
+    async fn create_artifact_from_upload_session(
+        &self,
+        tenant_id: i64,
+        upload_session_id: &str,
+        checksum_sha256: &str,
+    ) -> DeployServiceResult<ArtifactResponse>;
+
+    async fn list_releases(
+        &self,
+        tenant_id: i64,
+        site_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<ReleasePage>;
+
+    async fn retrieve_release(
+        &self,
+        tenant_id: i64,
+        site_id: &str,
+        release_id: &str,
+    ) -> DeployServiceResult<ReleaseResponse>;
+
+    async fn create_release(
+        &self,
+        tenant_id: i64,
+        site_id: &str,
+        request: &CreateReleaseRequest,
+    ) -> DeployServiceResult<ReleaseResponse>;
+
+    async fn find_release_by_idempotency_key(
+        &self,
+        tenant_id: i64,
+        site_id: &str,
+        idempotency_key: &str,
+    ) -> DeployServiceResult<Option<ReleaseResponse>>;
+
     async fn list_env_variables(
         &self,
         tenant_id: i64,
@@ -152,6 +204,38 @@ pub trait DeployRepositoryPort: Send + Sync {
         &self,
         tenant_id: i64,
         request: &CreateCertificateRequest,
+    ) -> DeployServiceResult<CertificateResponse>;
+
+    async fn upload_custom_certificate(
+        &self,
+        tenant_id: i64,
+        request: &UploadCustomCertificateRequest,
+        certificate_upload: &DeployUploadSessionResponse,
+        private_key_upload: &DeployUploadSessionResponse,
+    ) -> DeployServiceResult<CertificateResponse>;
+
+    async fn find_certificate_by_idempotency_key(
+        &self,
+        tenant_id: i64,
+        idempotency_key: &str,
+    ) -> DeployServiceResult<Option<CertificateResponse>>;
+
+    async fn retrieve_certificate(
+        &self,
+        tenant_id: i64,
+        certificate_id: &str,
+    ) -> DeployServiceResult<CertificateResponse>;
+
+    async fn delete_certificate(
+        &self,
+        tenant_id: i64,
+        certificate_id: &str,
+    ) -> DeployServiceResult<()>;
+
+    async fn renew_certificate(
+        &self,
+        tenant_id: i64,
+        certificate_id: &str,
     ) -> DeployServiceResult<CertificateResponse>;
 
     async fn list_health_checks(
@@ -249,6 +333,12 @@ pub trait DeployRepositoryPort: Send + Sync {
         request: &CreateDeployUploadSessionRequest,
         drive: &DeployUploadSessionResponse,
     ) -> DeployServiceResult<DeployUploadSessionResponse>;
+
+    async fn find_upload_session_by_idempotency_key(
+        &self,
+        tenant_id: i64,
+        idempotency_key: &str,
+    ) -> DeployServiceResult<Option<DeployUploadSessionResponse>>;
 
     async fn retrieve_upload_session_ref(
         &self,
