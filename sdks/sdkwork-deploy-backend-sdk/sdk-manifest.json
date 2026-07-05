@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "apiAuthority": "sdkwork-deploy.backend",
+  "sdkOwner": "sdkwork-deployments",
+  "sdkDependencies": [],
+  "sdkFamily": "sdkwork-deploy-backend-sdk",
+  "sdkName": "sdkwork-deploy-backend-sdk",
+  "packageName": "@sdkwork/deploy-backend-sdk",
+  "transportPackageName": "sdkwork-deploy-backend-sdk-generated-typescript",
+  "openApiPath": "openapi/deploy-backend-api.openapi.json",
+  "surface": "backend-api",
+  "authoritySpec": "openapi/deploy-backend-api.openapi.json"
+}

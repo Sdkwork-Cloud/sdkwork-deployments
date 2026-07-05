@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "apiAuthority": "sdkwork-deploy.app",
+  "sdkOwner": "sdkwork-deployments",
+  "sdkDependencies": [],
+  "sdkFamily": "sdkwork-deploy-app-sdk",
+  "sdkName": "sdkwork-deploy-app-sdk",
+  "packageName": "@sdkwork/deploy-app-sdk",
+  "transportPackageName": "sdkwork-deploy-app-sdk-generated-typescript",
+  "openApiPath": "openapi/deploy-app-api.openapi.json",
+  "surface": "app-api",
+  "authoritySpec": "openapi/deploy-app-api.openapi.json"
+}
