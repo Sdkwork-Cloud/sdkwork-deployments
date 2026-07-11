@@ -24,8 +24,7 @@ pub struct SitePage {
     pub items: Vec<SiteResponse>,
     pub total: i64,
     pub page: i32,
-    #[serde(rename = "pageSize")]
-    pub page_size: i32,
+        pub page_size: i32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -123,8 +122,7 @@ pub struct DeploymentPage {
     pub items: Vec<DeploymentResponse>,
     pub total: i64,
     pub page: i32,
-    #[serde(rename = "pageSize")]
-    pub page_size: i32,
+        pub page_size: i32,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -289,8 +287,7 @@ pub struct ReleasePage {
     pub items: Vec<ReleaseResponse>,
     pub total: i64,
     pub page: i32,
-    #[serde(rename = "pageSize")]
-    pub page_size: i32,
+        pub page_size: i32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -358,15 +355,14 @@ pub struct NginxConfigPage {
     pub items: Vec<NginxConfigResponse>,
     pub total: i64,
     pub page: i32,
-    #[serde(rename = "pageSize")]
-    pub page_size: i32,
+        pub page_size: i32,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct ListNginxConfigsQuery {
     #[serde(default = "crate::dto::default_page")]
     pub page: i32,
-    #[serde(default = "crate::dto::default_page_size", rename = "pageSize")]
+    #[serde(default = "crate::dto::default_page_size")]
     pub page_size: i32,
     #[serde(rename = "siteId", default)]
     pub site_id: Option<String>,
@@ -459,8 +455,7 @@ pub struct AuditLogPage {
     pub items: Vec<AuditLogResponse>,
     pub total: i64,
     pub page: i32,
-    #[serde(rename = "pageSize")]
-    pub page_size: i32,
+        pub page_size: i32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

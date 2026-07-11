@@ -50,7 +50,7 @@ pub fn build_router_with_shared_backend_api(api: Arc<dyn DeployBackendApi>) -> R
 struct PageQuery {
     #[serde(default = "default_page")]
     page: i32,
-    #[serde(default = "default_page_size", rename = "pageSize")]
+    #[serde(default = "default_page_size")]
     page_size: i32,
 }
 

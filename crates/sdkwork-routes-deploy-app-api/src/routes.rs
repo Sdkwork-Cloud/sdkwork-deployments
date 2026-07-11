@@ -95,7 +95,7 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
 struct PageQuery {
     #[serde(default = "default_page")]
     page: i32,
-    #[serde(default = "default_page_size", rename = "pageSize")]
+    #[serde(default = "default_page_size")]
     page_size: i32,
 }
 
@@ -103,7 +103,7 @@ struct PageQuery {
 struct DeploymentListQuery {
     #[serde(default = "default_page")]
     page: i32,
-    #[serde(default = "default_page_size", rename = "pageSize")]
+    #[serde(default = "default_page_size")]
     page_size: i32,
     status: Option<i32>,
 }
