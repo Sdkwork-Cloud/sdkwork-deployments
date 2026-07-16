@@ -5,6 +5,8 @@ edition.workspace = true
 
 [dependencies]
 async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 sdkwork-deploy-contract.workspace = true
 sdkwork-utils-rust.workspace = true
 sdkwork-database-id.workspace = true

@@ -1052,7 +1052,7 @@ DeploymentResponse:
 ```
 sdks/
 ├── sdkwork-deploy-sdk/
-│   ├── .sdkwork-assembly.json
+│   ├── sdk-manifest.json
 │   ├── specs/
 │   │   └── component.spec.json
 │   ├── openapi/
@@ -1063,7 +1063,7 @@ sdks/
 │           └── rust/
 │
 ├── sdkwork-deploy-app-sdk/
-│   ├── .sdkwork-assembly.json
+│   ├── sdk-manifest.json
 │   ├── specs/
 │   │   └── component.spec.json
 │   ├── openapi/
@@ -1075,7 +1075,7 @@ sdks/
 │           └── dart/
 │
 └── sdkwork-deploy-backend-sdk/
-    ├── .sdkwork-assembly.json
+    ├── sdk-manifest.json
     ├── specs/
     │   └── component.spec.json
     ├── openapi/
@@ -1151,7 +1151,7 @@ let deployment = client.sites().deployments()
 ### 5.4 SDK 依赖声明
 
 ```yaml
-# .sdkwork-assembly.json
+# sdk-manifest.json
 {
   "sdkOwner": "sdkwork-deploy",
   "apiAuthority": "sdkwork-deploy-app-api",
@@ -1837,7 +1837,7 @@ See [DESIGN_REPORT.md](../../DESIGN_REPORT.md) appendix B for the current `sdkwo
 ### SDK 合规
 
 - [x] SDK Family 命名：sdkwork-deploy-*-sdk
-- [x] .sdkwork-assembly.json 元数据
+- [x] sdk-manifest.json 元数据
 - [x] sdkDependencies 声明
 - [x] 生成代码不手编辑
 

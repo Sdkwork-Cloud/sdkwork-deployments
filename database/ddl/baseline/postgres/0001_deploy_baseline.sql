@@ -185,7 +185,7 @@ CREATE TABLE deploy_certificate (
 );
 
 COMMENT ON TABLE deploy_certificate IS 'SSL证书表';
-COMMENT ON COLUMN deploy_certificate.cert_type IS '证书类型：1=Let\'s Encrypt，2=自定义，3=自签名';
+COMMENT ON COLUMN deploy_certificate.cert_type IS '证书类型：1=Let''s Encrypt，2=自定义，3=自签名';
 COMMENT ON COLUMN deploy_certificate.san_list IS 'Subject Alternative Names，逗号分隔';
 COMMENT ON COLUMN deploy_certificate.auto_renew IS '是否自动续期';
 COMMENT ON COLUMN deploy_certificate.renewal_status IS '续期状态：0=无，1=已计划，2=处理中，3=失败';

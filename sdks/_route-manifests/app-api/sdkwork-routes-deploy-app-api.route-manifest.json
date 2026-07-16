@@ -810,7 +810,7 @@
     {
       "method": "DELETE",
       "path": "/app/v3/api/artifacts/{artifactId}",
-      "operationId": "artifacts.retain",
+      "operationId": "artifacts.delete",
       "tags": [
         "artifact"
       ],

@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "crates/sdkwork-deployments-gateway-assembly",
   "crates/sdkwork-deploy-database-host",
   "crates/sdkwork-deploy-drive-port",
   "crates/sdkwork-routes-deploy-common",

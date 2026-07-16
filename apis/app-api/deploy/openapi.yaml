@@ -1,64 +1,93 @@
 openapi: 3.1.2
 info:
   title: SDKWork Deploy App API
-  description: SDKWork Deploy Server 应用端 API，供前端应用客户端调用
+  description: "SDKWork Deploy Server 鎼存梻鏁ょ粩\uDCAF API閿涘奔绶甸崜宥嘰udcab\uDCAF鎼存梻鏁ょ\uDC80\
+    广垺鍩涚粩\uDCAF鐠嬪啰鏁\uDCA4"
   version: 1.0.0
   contact:
     name: SDKWork Team
 servers:
-  - url: https://api.deploy.sdkwork.com
-    description: Production
-  - url: http://localhost:3900
-    description: Local Development
-
+- url: https://api.deploy.sdkwork.com
+  description: Production
+- url: http://localhost:3900
+  description: Local Development
 security:
-  - AuthToken: []
-    AccessToken: []
-
+- AuthToken: []
+  AccessToken: []
 paths:
   /app/v3/api/sites:
     get:
       operationId: sites.list
-      summary: 获取站点列表
-      tags: [site]
+      summary: "閼惧嘲褰囩粩娆戝仯閸掓\uDCA5勩\uDC80\uDC83"
+      tags:
+      - site
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
-        - name: status
-          in: query
-          schema:
-            type: integer
-            enum: [0, 1, 2, 3]
-        - name: siteType
-          in: query
-          schema:
-            type: integer
-            enum: [1, 2, 3, 4, 5, 6]
-        - name: keyword
-          in: query
-          schema:
-            type: string
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
+      - name: status
+        in: query
+        schema:
+          type: integer
+          enum:
+          - 0
+          - 1
+          - 2
+          - 3
+      - name: siteType
+        in: query
+        schema:
+          type: integer
+          enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
+      - name: keyword
+        in: query
+        schema:
+          type: string
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SitePage'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/SiteResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '429':
           $ref: '#/components/responses/RateLimited'
     post:
       operationId: sites.create
-      summary: 创建站点
-      tags: [site]
+      summary: 閸掓稑缂撶粩娆戝仯
+      tags:
+      - site
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       requestBody:
         required: true
         content:
@@ -67,11 +96,23 @@ paths:
               $ref: '#/components/schemas/CreateSiteRequest'
       responses:
         '201':
-          description: 创建成功
+          description: "閸掓稑缂撻幋鎰\uDCAC濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SiteResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/SiteResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -80,35 +121,48 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/ValidationError'
-
   /app/v3/api/sites/{siteId}:
     parameters:
-      - $ref: '#/components/parameters/SiteIdParam'
+    - $ref: '#/components/parameters/SiteIdParam'
     get:
       operationId: sites.retrieve
-      summary: 获取站点详情
-      tags: [site]
+      summary: "閼惧嘲褰囩粩娆戝仯鐠囷附鍎\uDC8F"
+      tags:
+      - site
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SiteResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/SiteResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
       operationId: sites.update
-      summary: 更新站点
-      tags: [site]
+      summary: 閺囧瓨鏌婄粩娆戝仯
+      tags:
+      - site
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       requestBody:
         required: true
         content:
@@ -117,11 +171,23 @@ paths:
               $ref: '#/components/schemas/UpdateSiteRequest'
       responses:
         '200':
-          description: 更新成功
+          description: "閺囧瓨鏌婇幋鎰\uDCAC濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SiteResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/SiteResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -130,92 +196,136 @@ paths:
           $ref: '#/components/responses/ValidationError'
     delete:
       operationId: sites.delete
-      summary: 删除站点
-      tags: [site]
+      summary: 閸掔娀娅庣粩娆戝仯
+      tags:
+      - site
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '204':
-          description: 删除成功
+          description: "閸掔娀娅庨幋鎰\uDCAC濮\uDC9B"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-
   /app/v3/api/sites/{siteId}/activate:
     parameters:
-      - $ref: '#/components/parameters/SiteIdParam'
+    - $ref: '#/components/parameters/SiteIdParam'
     post:
       operationId: sites.activate
-      summary: 激活站点
-      tags: [site]
+      summary: "濠礬udc80濞茶崵鐝\uDCAF閻怽udcb9"
+      tags:
+      - site
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
-          description: 激活成功
+          description: "濠礬udc80濞茬粯鍨氶崝\uDC9F"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SiteResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/SiteResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-
   /app/v3/api/sites/{siteId}/pause:
     parameters:
-      - $ref: '#/components/parameters/SiteIdParam'
+    - $ref: '#/components/parameters/SiteIdParam'
     post:
       operationId: sites.pause
-      summary: 暂停站点
-      tags: [site]
+      summary: 閺嗗倸浠犵粩娆戝仯
+      tags:
+      - site
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
-          description: 暂停成功
+          description: "閺嗗倸浠犻幋鎰\uDCAC濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SiteResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/SiteResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-
   /app/v3/api/sites/{siteId}/domains:
     parameters:
-      - $ref: '#/components/parameters/SiteIdParam'
+    - $ref: '#/components/parameters/SiteIdParam'
     get:
       operationId: sites.domains.list
-      summary: 获取站点域名列表
-      tags: [domain]
+      summary: "閼惧嘲褰囩粩娆戝仯閸╃喎鎮曢崚妤勩\uDC80\uDC83"
+      tags:
+      - domain
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DomainPage'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/DomainResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
       operationId: sites.domains.create
-      summary: 绑定域名
-      tags: [domain]
+      summary: 缂佹垵鐣鹃崺鐔锋倳
+      tags:
+      - domain
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       requestBody:
         required: true
         content:
@@ -224,106 +334,168 @@ paths:
               $ref: '#/components/schemas/CreateDomainRequest'
       responses:
         '201':
-          description: 创建成功
+          description: "閸掓稑缂撻幋鎰\uDCAC濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DomainResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/DomainResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '409':
           $ref: '#/components/responses/Conflict'
-
   /app/v3/api/sites/{siteId}/domains/{domainId}:
     parameters:
-      - $ref: '#/components/parameters/SiteIdParam'
-      - $ref: '#/components/parameters/DomainIdParam'
+    - $ref: '#/components/parameters/SiteIdParam'
+    - $ref: '#/components/parameters/DomainIdParam'
     get:
       operationId: sites.domains.retrieve
-      summary: 获取域名详情
-      tags: [domain]
+      summary: "閼惧嘲褰囬崺鐔锋倳鐠囷附鍎\uDC8F"
+      tags:
+      - domain
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DomainResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/DomainResponse'
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
       operationId: sites.domains.delete
-      summary: 解绑域名
-      tags: [domain]
+      summary: 鐟欙絿绮﹂崺鐔锋倳
+      tags:
+      - domain
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '204':
-          description: 删除成功
+          description: "閸掔娀娅庨幋鎰\uDCAC濮\uDC9B"
         '404':
           $ref: '#/components/responses/NotFound'
-
   /app/v3/api/sites/{siteId}/domains/{domainId}/verify:
     parameters:
-      - $ref: '#/components/parameters/SiteIdParam'
-      - $ref: '#/components/parameters/DomainIdParam'
+    - $ref: '#/components/parameters/SiteIdParam'
+    - $ref: '#/components/parameters/DomainIdParam'
     post:
       operationId: sites.domains.verify
-      summary: 验证域名所有权
-      tags: [domain]
+      summary: "妤犲矁鐦夐崺鐔锋倳閹礬udc80閺堝\uDCA4嬫綀"
+      tags:
+      - domain
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
-          description: 验证成功
+          description: "妤犲矁鐦夐幋鎰\uDCAC濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DomainVerifyResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/DomainVerifyResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
-
   /app/v3/api/sites/{siteId}/deployments:
     parameters:
-      - $ref: '#/components/parameters/SiteIdParam'
+    - $ref: '#/components/parameters/SiteIdParam'
     get:
       operationId: sites.deployments.list
-      summary: 获取部署历史
-      tags: [deployment]
+      summary: "閼惧嘲褰囬柈銊ц\uDCAE查崢鍡楀蕉"
+      tags:
+      - deployment
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
-        - name: status
-          in: query
-          schema:
-            type: integer
-            enum: [0, 1, 2, 3, 4, 5]
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
+      - name: status
+        in: query
+        schema:
+          type: integer
+          enum:
+          - 0
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeploymentPage'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/DeploymentResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
         '401':
           $ref: '#/components/responses/Unauthorized'
     post:
       operationId: sites.deployments.create
-      summary: 发起部署
-      tags: [deployment]
+      summary: "閸欐垼鎹ｉ柈銊ц\uDCAE\uDCB2"
+      tags:
+      - deployment
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       requestBody:
         required: true
         content:
@@ -332,89 +504,144 @@ paths:
               $ref: '#/components/schemas/CreateDeploymentRequest'
       responses:
         '201':
-          description: 部署已触发
+          description: "闁\uDCAE銊ц\uDCAE插\uDCAE歌尪袝閸橽udc91"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeploymentResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/DeploymentResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '409':
           $ref: '#/components/responses/Conflict'
-
   /app/v3/api/sites/{siteId}/deployments/{deploymentId}:
     parameters:
-      - $ref: '#/components/parameters/SiteIdParam'
-      - $ref: '#/components/parameters/DeploymentIdParam'
+    - $ref: '#/components/parameters/SiteIdParam'
+    - $ref: '#/components/parameters/DeploymentIdParam'
     get:
       operationId: sites.deployments.retrieve
-      summary: 获取部署详情
-      tags: [deployment]
+      summary: "閼惧嘲褰囬柈銊ц\uDCAE茬拠锔藉剰"
+      tags:
+      - deployment
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeploymentResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/DeploymentResponse'
         '404':
           $ref: '#/components/responses/NotFound'
-
   /app/v3/api/sites/{siteId}/deployments/{deploymentId}/rollback:
     parameters:
-      - $ref: '#/components/parameters/SiteIdParam'
-      - $ref: '#/components/parameters/DeploymentIdParam'
+    - $ref: '#/components/parameters/SiteIdParam'
+    - $ref: '#/components/parameters/DeploymentIdParam'
     post:
       operationId: sites.deployments.rollback
-      summary: 回滚部署
-      tags: [deployment]
+      summary: "閸ョ偞绮撮柈銊ц\uDCAE\uDCB2"
+      tags:
+      - deployment
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
-          description: 回滚成功
+          description: "閸ョ偞绮撮幋鎰\uDCAC濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeploymentResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/DeploymentResponse'
         '404':
           $ref: '#/components/responses/NotFound'
-
   /app/v3/api/sites/{siteId}/releases:
     parameters:
-      - $ref: '#/components/parameters/SiteIdParam'
+    - $ref: '#/components/parameters/SiteIdParam'
     get:
       operationId: sites.releases.list
-      summary: 获取站点发布版本列表
-      tags: [release]
+      summary: "閼惧嘲褰囩粩娆戝仯閸欐垵绔烽悧鍫熸拱閸掓\uDCA5勩\uDC80\uDC83"
+      tags:
+      - release
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReleasePage'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/ReleaseResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
     post:
       operationId: sites.releases.create
-      summary: 从制品创建不可变发布版本
-      tags: [release]
+      summary: "娴犲骸鍩楅崫浣稿灡瀵よ桨绗夐崣\uDCAF閸欐ê褰傜敮鍐\uDCAA澧楅張\uDCAC"
+      tags:
+      - release
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       requestBody:
         required: true
         content:
@@ -423,67 +650,110 @@ paths:
               $ref: '#/components/schemas/CreateReleaseRequest'
       responses:
         '201':
-          description: 创建成功
+          description: "閸掓稑缂撻幋鎰\uDCAC濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReleaseResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/ReleaseResponse'
         '409':
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/ValidationError'
-
   /app/v3/api/sites/{siteId}/releases/{releaseId}:
     parameters:
-      - $ref: '#/components/parameters/SiteIdParam'
-      - $ref: '#/components/parameters/ReleaseIdParam'
+    - $ref: '#/components/parameters/SiteIdParam'
+    - $ref: '#/components/parameters/ReleaseIdParam'
     get:
       operationId: sites.releases.retrieve
-      summary: 获取发布版本详情
-      tags: [release]
+      summary: "閼惧嘲褰囬崣鎴濈\uDCAB烽悧鍫熸拱鐠囷附鍎\uDC8F"
+      tags:
+      - release
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReleaseResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/ReleaseResponse'
         '404':
           $ref: '#/components/responses/NotFound'
-
   /app/v3/api/sites/{siteId}/env_variables:
     parameters:
-      - $ref: '#/components/parameters/SiteIdParam'
+    - $ref: '#/components/parameters/SiteIdParam'
     get:
       operationId: sites.envVariables.list
-      summary: 获取环境变量列表
-      tags: [envVariable]
+      summary: "閼惧嘲褰囬悳\uDCAF婢у啫褰夐柌蹇撳灙鐞沑udca8"
+      tags:
+      - envVariable
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       parameters:
-        - name: environment
-          in: query
-          schema:
-            type: string
-            default: production
+      - name: environment
+        in: query
+        schema:
+          type: string
+          default: production
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EnvVariablePage'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/EnvVariableResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
     post:
       operationId: sites.envVariables.create
-      summary: 创建环境变量
-      tags: [envVariable]
+      summary: "閸掓稑缂撻悳\uDCAF婢у啫褰夐柌\uDC8F"
+      tags:
+      - envVariable
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       requestBody:
         required: true
         content:
@@ -492,37 +762,68 @@ paths:
               $ref: '#/components/schemas/CreateEnvVariableRequest'
       responses:
         '201':
-          description: 创建成功
+          description: "閸掓稑缂撻幋鎰\uDCAC濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EnvVariableResponse'
-
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/EnvVariableResponse'
   /app/v3/api/certificates:
     get:
       operationId: certificates.list
-      summary: 获取证书列表
-      tags: [certificate]
+      summary: "閼惧嘲褰囩拠浣峰姛閸掓\uDCA5勩\uDC80\uDC83"
+      tags:
+      - certificate
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CertificatePage'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/CertificateResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
     post:
       operationId: certificates.create
-      summary: 申请证书
-      tags: [certificate]
+      summary: "閻㈠疇\uDCAF鐤\uDCAF鐦夋稊\uDCA6"
+      tags:
+      - certificate
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       requestBody:
         required: true
         content:
@@ -531,87 +832,126 @@ paths:
               $ref: '#/components/schemas/CreateCertificateRequest'
       responses:
         '201':
-          description: 证书申请已触发
+          description: "鐠囦椒鍔熼悽瀹燶udcaf宄板嚒鐟欙箑褰\uDC82"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CertificateResponse'
-
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/CertificateResponse'
   /app/v3/api/certificates/{certificateId}:
     parameters:
-      - $ref: '#/components/parameters/CertificateIdParam'
+    - $ref: '#/components/parameters/CertificateIdParam'
     get:
       operationId: certificates.retrieve
-      summary: 获取证书详情
-      tags: [certificate]
+      summary: "閼惧嘲褰囩拠浣峰姛鐠囷附鍎\uDC8F"
+      tags:
+      - certificate
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CertificateResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/CertificateResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
       operationId: certificates.delete
-      summary: 撤销证书
-      description: 将证书标记为已撤销；私钥与证书文件仍由 Drive 生命周期管理。
-      tags: [certificate]
+      summary: 閹俱倝鏀㈢拠浣峰姛
+      description: "鐏忓棜鐦夋稊锔界垼鐠侀\uDCA2佽礋瀹稿弶鎸欓柨\uDC80閿涙稓\uDCA7渚\uDC80鎸滄稉搴ょ槈娑旓附鏋冩禒鏈电矝閻\uDCA2\
+        \uDCB1 Drive 閻㈢喎鎳￠崨銊︽埂缁狅紕鎮婇妴\uDC82"
+      tags:
+      - certificate
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '204':
-          description: 撤销成功
+          description: "閹俱倝鏀㈤幋鎰\uDCAC濮\uDC9B"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
-
   /app/v3/api/certificates/{certificateId}/renew:
     parameters:
-      - $ref: '#/components/parameters/CertificateIdParam'
+    - $ref: '#/components/parameters/CertificateIdParam'
     post:
       operationId: certificates.renew
-      summary: 计划托管证书续期
-      description: |
-        仅适用于 Let's Encrypt 托管证书（certType=1）。将 renewal_status 置为已计划；
-        ACME 自动化 worker 尚未上线时不会立即签发新证书。自定义证书须通过 certificates.upload 替换。
-      tags: [certificate]
+      summary: "鐠佲\uDC80冲灊閹垫\uDCA8糪udcae陇鐦夋稊锔剧敾閺圽udc9f"
+      description: "娴犲懘\uDC80鍌滄暏娴淺udc8e Let's Encrypt 閹垫\uDCA8糪udcae陇鐦夋稊锔肩礄certType=1閿涘\uDCA4\
+        圽udc80鍌氱殺 renewal_status 缂僜udcae娑撳搫鍑＄拋鈥冲灊閿涙矐nACME 閼穃udcaa閸斻劌瀵\uDCB2 worker\
+        \ 鐏忔碍婀\uDCAD娑撳﹦鍤庨弮鏈电瑝娴兼氨鐝涢崡宕嘰udcad鎯у絺閺傛媽鐦夋稊锔篭udc80鍌濆殰鐎规矮绠熺拠浣峰姛妞ゅ\uDCA9歕udc80姘崇箖\
+        \ certificates.upload 閺囨寧宕查妴淇搉"
+      tags:
+      - certificate
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
-          description: 续期已计划
+          description: 缂乗udcad閺堢喎鍑＄拋鈥冲灊
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CertificateResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/CertificateResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/ValidationError'
-
   /app/v3/api/certificates/upload:
     post:
       operationId: certificates.upload
-      summary: 从已完成的 Drive 上传会话注册自定义 TLS 证书
-      description: |
-        客户端须先通过 uploadSessions 上传并完成证书 PEM（packageType=6）
-        与私钥 PEM（packageType=7），再调用本接口绑定元数据。响应不包含私钥内容。
-      tags: [certificate]
+      summary: "娴犲骸鍑＄\uDC80瑰本鍨氶惃\uDC84 Drive 娑撳﹣绱舵导姘崇樈濞夈劌鍞介懛\uDCAA鐎规矮绠\uDC9F TLS 鐠囦椒鍔\uDC9F"
+      description: "鐎广垺鍩涚粩\uDCAF妞よ\uDCAF插帥闁\uDCAB姘崇箖 uploadSessions 娑撳﹣绱堕獮璺虹暚閹存劘鐦夋稊\uDCA6\
+        \ PEM閿涘潷ackageType=6閿涘　n娑撳海\uDCA7渚\uDC80鎸\uDC9C PEM閿涘潷ackageType=7閿涘\uDCA4\
+        涚礉閸愬秷鐨熼悽銊︽拱閹恒儱褰涚紒鎴濈暰閸忓啯鏆熼幑\uDCAE閵嗗倸鎼锋惔鏂剧瑝閸栧懎鎯堢粔渚\uDC80鎸滈崘鍛璡udcae骞縗udc80淇搉"
+      tags:
+      - certificate
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       requestBody:
         required: true
         content:
@@ -619,25 +959,37 @@ paths:
             schema:
               $ref: '#/components/schemas/UploadCustomCertificateRequest'
       responses:
-        '201':
-          description: 证书已注册
+        '200':
+          description: "鐠囦椒鍔熷\uDCAE稿弶鏁為崘\uDC8C"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CertificateResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/CertificateResponse'
         '409':
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/ValidationError'
-
   /app/v3/api/upload_sessions:
     post:
       operationId: uploadSessions.create
-      summary: 创建 Drive-backed 包上传会话
-      tags: [uploadSession]
+      summary: "閸掓稑缂\uDC93 Drive-backed 閸栧懍绗傛导鐘辩窗鐠嘰udc9d"
+      tags:
+      - uploadSession
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       requestBody:
         required: true
         content:
@@ -646,55 +998,80 @@ paths:
               $ref: '#/components/schemas/CreateDeployUploadSessionRequest'
       responses:
         '201':
-          description: 创建成功
+          description: "閸掓稑缂撻幋鎰\uDCAC濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeployUploadSessionResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/DeployUploadSessionResponse'
         '422':
           $ref: '#/components/responses/ValidationError'
-
   /app/v3/api/upload_sessions/{uploadSessionId}:
     parameters:
-      - name: uploadSessionId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+    - name: uploadSessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     get:
       operationId: uploadSessions.retrieve
-      summary: 获取上传会话
-      tags: [uploadSession]
+      summary: "閼惧嘲褰囨稉濠佺炊娴兼俺鐦\uDCBD"
+      tags:
+      - uploadSession
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeployUploadSessionResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/DeployUploadSessionResponse'
         '404':
           $ref: '#/components/responses/NotFound'
-
   /app/v3/api/upload_sessions/{uploadSessionId}/complete:
     parameters:
-      - name: uploadSessionId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+    - name: uploadSessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     post:
       operationId: uploadSessions.complete
-      summary: 完成上传会话
-      description: 完成 Drive 上传；packageType 1–5 时同步创建不可变 deploy_artifact 记录。
-      tags: [uploadSession]
+      summary: "鐎瑰本鍨氭稉濠佺炊娴兼俺鐦\uDCBD"
+      description: "鐎瑰本鍨\uDC9A Drive 娑撳﹣绱堕敍娌篴ckageType 1閳\uDCA5\uDC935 閺冭泛鎮撳\uDCA7\
+        濄儱鍨卞\uDCAFよ桨绗夐崣\uDCAF閸橽udc98 deploy_artifact 鐠佹澘缍嶉妴\uDC82"
+      tags:
+      - uploadSession
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       requestBody:
         required: true
         content:
@@ -703,27 +1080,39 @@ paths:
               $ref: '#/components/schemas/CompleteDeployUploadSessionRequest'
       responses:
         '200':
-          description: 完成
+          description: "鐎瑰本鍨\uDC9A"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeployUploadSessionResponse'
-
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/DeployUploadSessionResponse'
   /app/v3/api/upload_sessions/{uploadSessionId}/cancel:
     parameters:
-      - name: uploadSessionId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+    - name: uploadSessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     post:
       operationId: uploadSessions.cancel
-      summary: 取消上传会话
-      tags: [uploadSession]
+      summary: "閸欐牗绉锋稉濠佺炊娴兼俺鐦\uDCBD"
+      tags:
+      - uploadSession
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       requestBody:
         required: false
         content:
@@ -732,91 +1121,154 @@ paths:
               $ref: '#/components/schemas/CancelDeployUploadSessionRequest'
       responses:
         '200':
-          description: 已取消
+          description: "瀹告彃褰囧☉\uDC88"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DeployUploadSessionResponse'
-
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/DeployUploadSessionResponse'
   /app/v3/api/artifacts:
     get:
       operationId: artifacts.list
-      summary: 获取租户制品列表
-      description: 包上传会话完成（packageType 1–5）后自动创建不可变制品记录。
-      tags: [artifact]
+      summary: "閼惧嘲褰囩粔鐔稿煕閸掕泛鎼ч崚妤勩\uDC80\uDC83"
+      description: "閸栧懍绗傛导鐘辩窗鐠囨繂鐣\uDCAC閹存劧绱檖ackageType 1閳\uDCA5\uDC935閿涘\uDCA4婃倵閼穃udcaa閸斻劌鍨卞\uDCAF\
+        よ桨绗夐崣\uDCAF閸欐ê鍩楅崫浣絓udcae鏉跨秿閵哱udc82"
+      tags:
+      - artifact
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ArtifactPage'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/ArtifactResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
   /app/v3/api/artifacts/{artifactId}:
     parameters:
-      - $ref: '#/components/parameters/ArtifactIdParam'
+    - $ref: '#/components/parameters/ArtifactIdParam'
     get:
       operationId: artifacts.retrieve
-      summary: 获取制品详情
-      tags: [artifact]
+      summary: "閼惧嘲褰囬崚璺烘惂鐠囷附鍎\uDC8F"
+      tags:
+      - artifact
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ArtifactResponse'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/ArtifactResponse'
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
-      operationId: artifacts.retain
-      summary: 保留并下架制品
-      description: 将制品标记为 retained；Drive 节点生命周期仍由 Drive 管理。
-      tags: [artifact]
+      operationId: artifacts.delete
+      summary: "娣囨繄鏆\uDC80楠炴湹绗呴弸璺哄煑閸漒udc81"
+      description: "鐏忓棗鍩楅崫浣圭垼鐠侀\uDCA2佽礋 retained閿涙饱rive 閼哄倻鍋ｉ悽鐔锋嚒閸涖劍婀℃禒宥囨暠 Drive 缁狅紕鎮婇妴\uDC82"
+      tags:
+      - artifact
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '204':
-          description: 已保留
+          description: "瀹歌弓绻氶悾\uDC99"
         '404':
           $ref: '#/components/responses/NotFound'
-
   /app/v3/api/sites/{siteId}/health_checks:
     parameters:
-      - $ref: '#/components/parameters/SiteIdParam'
+    - $ref: '#/components/parameters/SiteIdParam'
     get:
       operationId: sites.healthChecks.list
-      summary: 获取健康检查配置
-      tags: [monitor]
+      summary: "閼惧嘲褰囬崑銉ユ倣濡玕udc80閺屻儵鍘ょ純\uDCAE"
+      tags:
+      - monitor
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
-          description: 成功
+          description: "閹存劕濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthCheckPage'
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/HealthCheckResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
     post:
       operationId: sites.healthChecks.create
-      summary: 创建健康检查
-      tags: [monitor]
+      summary: 閸掓稑缂撻崑銉ユ倣濡玕udc80閺孿udca5
+      tags:
+      - monitor
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       requestBody:
         required: true
         content:
@@ -825,12 +1277,23 @@ paths:
               $ref: '#/components/schemas/CreateHealthCheckRequest'
       responses:
         '201':
-          description: 创建成功
+          description: "閸掓稑缂撻幋鎰\uDCAC濮\uDC9B"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthCheckResponse'
-
+                allOf:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/HealthCheckResponse'
 components:
   securitySchemes:
     AuthToken:
@@ -845,7 +1308,6 @@ components:
       type: apiKey
       in: header
       name: X-API-Key
-
   parameters:
     PageParam:
       name: page
@@ -859,9 +1321,8 @@ components:
       in: query
       schema:
         type: integer
-          maximum: 200
         minimum: 1
-        maximum: 100
+        maximum: 200
         default: 20
     SiteIdParam:
       name: siteId
@@ -905,28 +1366,52 @@ components:
       schema:
         type: string
         format: uuid
-
   schemas:
     ProblemDetail:
       type: object
+      additionalProperties: true
+      required:
+      - type
+      - title
+      - status
+      - code
+      - traceId
       properties:
         type:
           type: string
-          format: uri
+          format: uri-reference
         title:
           type: string
         status:
           type: integer
+          minimum: 100
+          maximum: 599
         detail:
           type: string
         instance:
           type: string
-        requestId:
+        code:
+          $ref: '#/components/schemas/SdkWorkPlatformErrorCode'
+        traceId:
           type: string
-
+          format: uuid
+          description: Server-owned request correlation id.
+        i18nKey:
+          type: string
+          description: Optional stable localization key such as errors.result.40001.
+        locale:
+          type: string
+          description: Optional effective BCP 47 locale used by framework message
+            mapping.
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
     CreateSiteRequest:
       type: object
-      required: [name, siteType]
+      required:
+      - name
+      - siteType
       properties:
         name:
           type: string
@@ -936,13 +1421,19 @@ components:
           type: string
           minLength: 1
           maxLength: 100
-          pattern: '^[a-z0-9][a-z0-9\-]*[a-z0-9]$'
+          pattern: ^[a-z0-9][a-z0-9\-]*[a-z0-9]$
         description:
           type: string
           maxLength: 500
         siteType:
           type: integer
-          enum: [1, 2, 3, 4, 5, 6]
+          enum:
+          - 1
+          - 2
+          - 3
+          - 4
+          - 5
+          - 6
         runtimeConfig:
           type: object
           properties:
@@ -956,7 +1447,6 @@ components:
               type: string
             startCommand:
               type: string
-
     UpdateSiteRequest:
       type: object
       properties:
@@ -969,7 +1459,6 @@ components:
           maxLength: 500
         runtimeConfig:
           type: object
-
     SiteResponse:
       type: object
       properties:
@@ -994,7 +1483,6 @@ components:
         updatedAt:
           type: string
           format: date-time
-
     SitePage:
       type: object
       properties:
@@ -1009,10 +1497,10 @@ components:
           type: integer
         pageSize:
           type: integer
-
     CreateDomainRequest:
       type: object
-      required: [hostname]
+      required:
+      - hostname
       properties:
         hostname:
           type: string
@@ -1025,8 +1513,10 @@ components:
           default: true
         sslProvider:
           type: string
-          enum: [letsencrypt, custom, none]
-
+          enum:
+          - letsencrypt
+          - custom
+          - none
     DomainResponse:
       type: object
       properties:
@@ -1048,7 +1538,6 @@ components:
         createdAt:
           type: string
           format: date-time
-
     DomainPage:
       type: object
       properties:
@@ -1059,7 +1548,6 @@ components:
         total:
           type: integer
           format: int64
-
     DomainVerifyResponse:
       type: object
       properties:
@@ -1069,14 +1557,18 @@ components:
           type: string
         token:
           type: string
-
     CreateDeploymentRequest:
       type: object
-      required: [deployType]
+      required:
+      - deployType
       properties:
         deployType:
           type: integer
-          enum: [1, 2, 3, 4]
+          enum:
+          - 1
+          - 2
+          - 3
+          - 4
         versionTag:
           type: string
           maxLength: 100
@@ -1093,7 +1585,6 @@ components:
         idempotencyKey:
           type: string
           maxLength: 200
-
     DeploymentResponse:
       type: object
       properties:
@@ -1124,7 +1615,6 @@ components:
         createdAt:
           type: string
           format: date-time
-
     DeploymentPage:
       type: object
       properties:
@@ -1135,10 +1625,11 @@ components:
         total:
           type: integer
           format: int64
-
     CreateEnvVariableRequest:
       type: object
-      required: [key, value]
+      required:
+      - key
+      - value
       properties:
         key:
           type: string
@@ -1151,7 +1642,6 @@ components:
         isSecret:
           type: boolean
           default: true
-
     EnvVariableResponse:
       type: object
       properties:
@@ -1167,7 +1657,6 @@ components:
         createdAt:
           type: string
           format: date-time
-
     EnvVariablePage:
       type: object
       properties:
@@ -1178,10 +1667,10 @@ components:
         total:
           type: integer
           format: int64
-
     CreateCertificateRequest:
       type: object
-      required: [certName]
+      required:
+      - certName
       properties:
         certName:
           type: string
@@ -1192,14 +1681,13 @@ components:
         domainId:
           type: string
           format: uuid
-
     UploadCustomCertificateRequest:
       type: object
       required:
-        - certName
-        - certificateUploadSessionId
-        - privateKeyUploadSessionId
-        - idempotencyKey
+      - certName
+      - certificateUploadSessionId
+      - privateKeyUploadSessionId
+      - idempotencyKey
       properties:
         certName:
           type: string
@@ -1219,7 +1707,6 @@ components:
         idempotencyKey:
           type: string
           maxLength: 128
-
     CertificateResponse:
       type: object
       properties:
@@ -1245,7 +1732,6 @@ components:
         createdAt:
           type: string
           format: date-time
-
     CertificatePage:
       type: object
       properties:
@@ -1256,14 +1742,17 @@ components:
         total:
           type: integer
           format: int64
-
     CreateHealthCheckRequest:
       type: object
-      required: [checkType]
+      required:
+      - checkType
       properties:
         checkType:
           type: integer
-          enum: [1, 2, 3]
+          enum:
+          - 1
+          - 2
+          - 3
         checkUrl:
           type: string
           maxLength: 2000
@@ -1276,7 +1765,6 @@ components:
         retryCount:
           type: integer
           default: 3
-
     HealthCheckResponse:
       type: object
       properties:
@@ -1294,7 +1782,6 @@ components:
         createdAt:
           type: string
           format: date-time
-
     HealthCheckPage:
       type: object
       properties:
@@ -1305,7 +1792,6 @@ components:
         total:
           type: integer
           format: int64
-
     ArtifactResponse:
       type: object
       properties:
@@ -1336,7 +1822,6 @@ components:
         createdAt:
           type: string
           format: date-time
-
     ArtifactPage:
       type: object
       properties:
@@ -1347,10 +1832,11 @@ components:
         total:
           type: integer
           format: int64
-
     CreateReleaseRequest:
       type: object
-      required: [artifactId, idempotencyKey]
+      required:
+      - artifactId
+      - idempotencyKey
       properties:
         artifactId:
           type: string
@@ -1361,7 +1847,6 @@ components:
         idempotencyKey:
           type: string
           maxLength: 128
-
     ReleaseResponse:
       type: object
       properties:
@@ -1381,7 +1866,6 @@ components:
         createdAt:
           type: string
           format: date-time
-
     ReleasePage:
       type: object
       properties:
@@ -1392,17 +1876,22 @@ components:
         total:
           type: integer
           format: int64
-
     CreateDeployUploadSessionRequest:
       type: object
-      required: [packageType, fileName, contentType, contentLength, idempotencyKey]
+      required:
+      - packageType
+      - fileName
+      - contentType
+      - contentLength
+      - idempotencyKey
       properties:
         siteId:
           type: string
           format: uuid
         packageType:
           type: integer
-          description: "1=archive, 2=static, 3=docker, 4=jar, 5=war, 6=tls_certificate, 7=tls_private_key"
+          description: 1=archive, 2=static, 3=docker, 4=jar, 5=war, 6=tls_certificate,
+            7=tls_private_key
         fileName:
           type: string
           maxLength: 500
@@ -1416,7 +1905,6 @@ components:
         idempotencyKey:
           type: string
           maxLength: 128
-
     DeployUploadSessionResponse:
       type: object
       properties:
@@ -1439,7 +1927,7 @@ components:
           type: string
         status:
           type: integer
-          description: "0=pending, 1=completed, 2=cancelled"
+          description: 0=pending, 1=completed, 2=cancelled
         driveUploadSessionId:
           type: string
         driveUploadItemId:
@@ -1454,20 +1942,21 @@ components:
         updatedAt:
           type: string
           format: date-time
-
     CompletedUploadPartInput:
       type: object
-      required: [partNo, etag]
+      required:
+      - partNo
+      - etag
       properties:
         partNo:
           type: integer
           format: int64
         etag:
           type: string
-
     CompleteDeployUploadSessionRequest:
       type: object
-      required: [checksumSha256Hex]
+      required:
+      - checksumSha256Hex
       properties:
         checksumSha256Hex:
           type: string
@@ -1480,46 +1969,192 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CompletedUploadPartInput'
-
     CancelDeployUploadSessionRequest:
       type: object
       properties:
         operatorId:
           type: string
-
+    SdkWorkApiResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - data
+      - traceId
+      properties:
+        code:
+          type: integer
+          format: int32
+          enum:
+          - 0
+          default: 0
+          minimum: 0
+          maximum: 0
+        data:
+          description: Operation-specific payload typed per response schema.
+        traceId:
+          type: string
+          format: uuid
+          description: Server-owned request correlation id.
+    SdkWorkResourceData:
+      type: object
+      additionalProperties: false
+      required:
+      - item
+      properties:
+        item:
+          type: object
+          additionalProperties: true
+          description: Typed domain resource for the operation.
+    SdkWorkPageData:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - pageInfo
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        pageInfo:
+          $ref: '#/components/schemas/PageInfo'
+    SdkWorkCommandData:
+      type: object
+      additionalProperties: false
+      required:
+      - accepted
+      properties:
+        accepted:
+          type: boolean
+          const: true
+        resourceId:
+          type: string
+        status:
+          type: string
+    PageInfo:
+      type: object
+      additionalProperties: false
+      required:
+      - mode
+      properties:
+        mode:
+          type: string
+          enum:
+          - offset
+          - cursor
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 200
+        totalItems:
+          type: string
+          pattern: ^[0-9]+$
+        totalPages:
+          type: integer
+          minimum: 0
+        nextCursor:
+          type:
+          - string
+          - 'null'
+        hasMore:
+          type: boolean
+    SdkWorkPlatformErrorCode:
+      type: integer
+      format: int32
+      minimum: 40001
+      maximum: 79999
+      description: "Platform or domain error code per API_SPEC.md 鎼\uDC8215.3."
+    FieldError:
+      type: object
+      additionalProperties: false
+      required:
+      - field
+      - message
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+        code:
+          type: integer
+          format: int32
+          minimum: 40011
+          maximum: 40099
+        i18nKey:
+          type: string
+        params:
+          type: object
+          additionalProperties:
+            oneOf:
+            - type: string
+            - type: number
+            - type: integer
+            - type: boolean
+    SdkWorkResourceResponse:
+      allOf:
+      - $ref: '#/components/schemas/SdkWorkApiResponse'
+      - type: object
+        required:
+        - data
+        properties:
+          data:
+            $ref: '#/components/schemas/SdkWorkResourceData'
+    SdkWorkListResponse:
+      allOf:
+      - $ref: '#/components/schemas/SdkWorkApiResponse'
+      - type: object
+        required:
+        - data
+        properties:
+          data:
+            $ref: '#/components/schemas/SdkWorkPageData'
+    SdkWorkCommandResponse:
+      allOf:
+      - $ref: '#/components/schemas/SdkWorkApiResponse'
+      - type: object
+        required:
+        - data
+        properties:
+          data:
+            $ref: '#/components/schemas/SdkWorkCommandData'
   responses:
     BadRequest:
-      description: 请求参数错误
+      description: "鐠囬攱鐪伴崣鍌涙殶闁挎瑨\uDCAF\uDCAF"
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetail'
     Unauthorized:
-      description: 未认证
+      description: "閺圽udcaa鐠併倛鐦\uDC89"
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetail'
     NotFound:
-      description: 资源不存在
+      description: "鐠у嫭绨\uDCAE娑撳秴鐡ㄩ崷\uDCA8"
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetail'
     Conflict:
-      description: 资源冲突
+      description: "鐠у嫭绨\uDCAE閸愯尙鐛\uDC8A"
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetail'
     ValidationError:
-      description: 校验错误
+      description: "閺嶏繝鐛欓柨娆抃udcaf\uDCAF"
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetail'
     RateLimited:
-      description: 请求过于频繁
+      description: "鐠囬攱鐪版潻鍥︾艾妫版垹绠\uDC92"
       content:
         application/problem+json:
           schema:

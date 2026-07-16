@@ -9,7 +9,7 @@
     "yaml": "^2.8.0"
   },
   "scripts": {
-    "dev": "cargo run -p sdkwork-deployments-standalone-gateway --bin sdkwork-deployments-standalone-gateway",
+    "stop": "node ../sdkwork-specs/tools/stop-sdkwork-workspace-processes.mjs --workspace .",    "dev": "cargo run -p sdkwork-deployments-standalone-gateway --bin sdkwork-deployments-standalone-gateway",
     "build": "cargo build --workspace --release",
     "test": "cargo test --workspace && node --test tests/contract/database-framework.contract.test.mjs tests/contract/deploy-standard.contract.test.mjs tests/contract/deploy-orchestrator.contract.test.mjs",
     "check": "pnpm run check:app-composition && pnpm check:pnpm-script-standard && pnpm check:agent-workflow-standard && pnpm topology:validate && pnpm db:validate && pnpm api:check && pnpm deploy:validate",
@@ -38,7 +38,9 @@
     "gateway:package:cloud": "node ../sdkwork-app-topology/scripts/gateway-cloud-bundle.mjs bundle --root .",
     "gateway:validate:cloud": "node ../sdkwork-app-topology/scripts/gateway-cloud-bundle.mjs validate --root .",
     "test:contract:database": "node ../sdkwork-specs/tools/check-database-framework-standard.mjs --root .",
-    "check:app-composition": "node ../sdkwork-specs/tools/verify-repo.mjs --root ."
+    "check:app-composition": "node ../sdkwork-specs/tools/verify-repo.mjs --root .",
+    "gateway:assembly:materialize": "node scripts/gateway/assembly-materialize.mjs",
+    "gateway:assembly:validate": "node scripts/gateway/assembly-validate.mjs"
   },
   "exports": {
     ".": {

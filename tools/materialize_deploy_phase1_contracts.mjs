@@ -185,7 +185,7 @@ writeJson("apis/authority-manifest.json", {
   })),
 });
 
-writeJson("sdks/sdkwork-deploy-app-sdk/.sdkwork-assembly.json", {
+writeJson("sdks/sdkwork-deploy-app-sdk/sdk-manifest.json", {
   schemaVersion: 1,
   sdkFamily: "sdkwork-deploy-app-sdk",
   surface: "app-api",
@@ -193,7 +193,7 @@ writeJson("sdks/sdkwork-deploy-app-sdk/.sdkwork-assembly.json", {
   openApiPath: "openapi/deploy-app-api.openapi.json",
 });
 
-writeJson("sdks/sdkwork-deploy-backend-sdk/.sdkwork-assembly.json", {
+writeJson("sdks/sdkwork-deploy-backend-sdk/sdk-manifest.json", {
   schemaVersion: 1,
   sdkFamily: "sdkwork-deploy-backend-sdk",
   surface: "backend-api",

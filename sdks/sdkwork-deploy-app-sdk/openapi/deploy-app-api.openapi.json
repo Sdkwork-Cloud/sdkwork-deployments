@@ -1806,7 +1806,7 @@
           }
         },
         "responses": {
-          "201": {
+          "200": {
             "description": "证书已注册",
             "content": {
               "application/json": {
@@ -2282,7 +2282,7 @@
         "x-sdkwork-permission": "deploy.artifacts.read"
       },
       "delete": {
-        "operationId": "artifacts.retain",
+        "operationId": "artifacts.delete",
         "summary": "保留并下架制品",
         "description": "将制品标记为 retained；Drive 节点生命周期仍由 Drive 管理。",
         "tags": [
