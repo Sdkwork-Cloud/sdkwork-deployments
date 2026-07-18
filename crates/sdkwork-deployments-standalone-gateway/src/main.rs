@@ -1,3 +1,4 @@
+use sdkwork_deployments_gateway_assembly::assemble_application_router;
 use sdkwork_deployments_standalone_gateway::{build_router, run_database_migrate_only};
 use tokio::signal;
 
@@ -23,9 +24,10 @@ async fn main() {
 
     let bind_address = std::env::var("SDKWORK_DEPLOY_APPLICATION_PUBLIC_INGRESS_BIND")
         .unwrap_or_else(|_| "127.0.0.1:3900".to_owned());
-    let app = build_router()
+    let assembly = assemble_application_router()
         .await
         .expect("deploy standalone-gateway bootstrap failed");
+    let app = build_router(assembly);
     let listener = tokio::net::TcpListener::bind(&bind_address)
         .await
         .expect("bind deploy standalone-gateway listener failed");

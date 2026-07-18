@@ -1748,6 +1748,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "sdkwork-intelligence-deploy-repository-sqlx",
+ "sdkwork-intelligence-deploy-service",
  "sdkwork-routes-deploy-app-api",
  "sdkwork-routes-deploy-backend-api",
  "tokio",
@@ -1759,10 +1760,8 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "sdkwork-deploy-database-host",
- "sdkwork-intelligence-deploy-repository-sqlx",
+ "sdkwork-deployments-gateway-assembly",
  "sdkwork-intelligence-deploy-service",
- "sdkwork-routes-deploy-app-api",
- "sdkwork-routes-deploy-backend-api",
  "sdkwork-web-bootstrap",
  "tokio",
  "tracing",
