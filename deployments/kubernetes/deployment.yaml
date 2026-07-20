@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sdkwork-deployments-standalone-gateway
+  name: sdkwork-api-deployments-standalone-gateway
   labels:
     app.kubernetes.io/name: sdkwork-deploy
     app.kubernetes.io/component: standalone-gateway
@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: standalone-gateway
-          image: sdkwork-deployments-standalone-gateway:latest
+          image: sdkwork-api-deployments-standalone-gateway:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

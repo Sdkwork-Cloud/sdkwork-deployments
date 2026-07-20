@@ -3,5 +3,5 @@
 Runnable HTTP API server for SDKWork Deploy app-api and backend-api surfaces.
 
 ```powershell
-cargo run -p sdkwork-deployments-standalone-gateway --bin sdkwork-deployments-standalone-gateway
+cargo run -p sdkwork-api-deployments-standalone-gateway --bin sdkwork-api-deployments-standalone-gateway
 ```

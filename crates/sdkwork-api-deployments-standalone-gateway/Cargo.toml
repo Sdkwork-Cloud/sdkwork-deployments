@@ -1,14 +1,14 @@
 [package]
-name = "sdkwork-deployments-standalone-gateway"
+name = "sdkwork-api-deployments-standalone-gateway"
 version.workspace = true
 edition.workspace = true
 
 [lib]
-name = "sdkwork_deployments_standalone_gateway"
+name = "sdkwork_api_deployments_standalone_gateway"
 path = "src/lib.rs"
 
 [[bin]]
-name = "sdkwork-deployments-standalone-gateway"
+name = "sdkwork-api-deployments-standalone-gateway"
 path = "src/main.rs"
 
 [dependencies]
@@ -19,4 +19,4 @@ tracing-subscriber = { workspace = true, features = ["env-filter"] }
 sdkwork-intelligence-deploy-service.workspace = true
 sdkwork-deploy-database-host.workspace = true
 sdkwork-web-bootstrap.workspace = true
-sdkwork-deployments-gateway-assembly.workspace = true
+sdkwork-api-deployments-assembly.workspace = true

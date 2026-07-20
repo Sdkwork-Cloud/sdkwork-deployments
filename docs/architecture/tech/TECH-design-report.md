@@ -124,7 +124,7 @@ SDKWork Deploy Server 是一个专业的 WebServer 部署管理平台后端服�
 
 ```
 crates/
-├── sdkwork-deployments-standalone-gateway/              # HTTP API 服务器进程
+├── sdkwork-api-deployments-standalone-gateway/              # HTTP API 服务器进程
 │   ├── src/
 │   │   ├── main.rs                         # 进程启动
 │   │   ├── lib.rs                          # 模块组装
@@ -278,7 +278,7 @@ crates/
 ### 2.3 依赖关系图
 
 ```text
-sdkwork-deployments-standalone-gateway
+sdkwork-api-deployments-standalone-gateway
   ├── sdkwork-routes-site-app-api
   ├── sdkwork-routes-nginx-backend-api
   ├── sdkwork-routes-deploy-app-api
@@ -1762,7 +1762,7 @@ SDKWORK_DEPLOY_LOG_FORMAT=json
 [workspace]
 resolver = "2"
 members = [
-    "crates/sdkwork-deployments-standalone-gateway",
+    "crates/sdkwork-api-deployments-standalone-gateway",
     "crates/sdkwork-routes-site-app-api",
     "crates/sdkwork-routes-nginx-backend-api",
     "crates/sdkwork-routes-deploy-app-api",

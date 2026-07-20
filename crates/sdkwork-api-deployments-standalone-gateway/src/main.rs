@@ -1,5 +1,5 @@
-use sdkwork_deployments_gateway_assembly::assemble_application_router;
-use sdkwork_deployments_standalone_gateway::{build_router, run_database_migrate_only};
+use sdkwork_api_deployments_assembly::assemble_api_router;
+use sdkwork_api_deployments_standalone_gateway::{build_router, run_database_migrate_only};
 use tokio::signal;
 
 fn init_tracing() {
@@ -24,14 +24,14 @@ async fn main() {
 
     let bind_address = std::env::var("SDKWORK_DEPLOY_APPLICATION_PUBLIC_INGRESS_BIND")
         .unwrap_or_else(|_| "127.0.0.1:3900".to_owned());
-    let assembly = assemble_application_router()
+    let assembly = assemble_api_router()
         .await
         .expect("deploy standalone-gateway bootstrap failed");
     let app = build_router(assembly);
     let listener = tokio::net::TcpListener::bind(&bind_address)
         .await
         .expect("bind deploy standalone-gateway listener failed");
-    tracing::info!("sdkwork-deployments-standalone-gateway listening on {bind_address}");
+    tracing::info!("sdkwork-api-deployments-standalone-gateway listening on {bind_address}");
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await
@@ -61,5 +61,5 @@ async fn shutdown_signal() {
         () = terminate => {},
     }
 
-    tracing::info!("sdkwork-deployments-standalone-gateway shutdown signal received");
+    tracing::info!("sdkwork-api-deployments-standalone-gateway shutdown signal received");
 }

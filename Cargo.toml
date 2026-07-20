@@ -1,7 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/sdkwork-deployments-gateway-assembly",
+    "crates/sdkwork-api-deployments-assembly",
+    "crates/sdkwork-api-deployments-assembly",
   "crates/sdkwork-deploy-database-host",
   "crates/sdkwork-deploy-drive-port",
   "crates/sdkwork-routes-deploy-common",
@@ -11,7 +12,7 @@ members = [
   "crates/sdkwork-intelligence-deploy-repository-sqlx",
   "crates/sdkwork-routes-deploy-app-api",
   "crates/sdkwork-routes-deploy-backend-api",
-  "crates/sdkwork-deployments-standalone-gateway",
+  "crates/sdkwork-api-deployments-standalone-gateway",
 ]
 
 [workspace.package]
@@ -44,8 +45,8 @@ sdkwork-intelligence-deploy-repository-sqlx = { path = "crates/sdkwork-intellige
 sdkwork-routes-deploy-app-api = { path = "crates/sdkwork-routes-deploy-app-api" }
 sdkwork-routes-deploy-backend-api = { path = "crates/sdkwork-routes-deploy-backend-api" }
 sdkwork-routes-deploy-common = { path = "crates/sdkwork-routes-deploy-common" }
-sdkwork-deployments-standalone-gateway = { path = "crates/sdkwork-deployments-standalone-gateway" }
-sdkwork-deployments-gateway-assembly = { path = "crates/sdkwork-deployments-gateway-assembly" }
+sdkwork-api-deployments-standalone-gateway = { path = "crates/sdkwork-api-deployments-standalone-gateway" }
+sdkwork-api-deployments-assembly = { path = "crates/sdkwork-api-deployments-assembly" }
 
 sdkwork-iam-web-adapter = { path = "../sdkwork-iam/crates/sdkwork-iam-web-adapter" }
 sdkwork-web-core = { path = "../sdkwork-web-framework/crates/sdkwork-web-core" }
