@@ -1,0 +1,16 @@
+[package]
+name = "sdkwork-api-deployments-assembly"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+description = "Generated API assembly for sdkwork-deployments application HTTP plane."
+
+[lib]
+name = "sdkwork_api_deployments_assembly"
+path = "src/lib.rs"
+
+[dependencies]
+axum.workspace = true
+tokio.workspace = true
+sdkwork-routes-deploy-app-api.workspace = true
+sdkwork-routes-deploy-backend-api.workspace = true

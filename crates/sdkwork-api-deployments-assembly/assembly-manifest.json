@@ -1,0 +1,32 @@
+{
+  "kind": "sdkwork.api.assembly",
+  "schemaVersion": 1,
+  "applicationCode": "deployments",
+  "apiMode": "served",
+  "packageName": "sdkwork-api-deployments-assembly",
+  "crateDir": "crates/sdkwork-api-deployments-assembly",
+  "routeCrates": [
+    {
+      "packageName": "sdkwork-routes-deploy-app-api",
+      "memberDir": "crates/sdkwork-routes-deploy-app-api",
+      "libName": "sdkwork_routes_deploy_app_api",
+      "surface": "app-api",
+      "pathPrefix": null,
+      "mountOrder": 0,
+      "componentRef": "crates/sdkwork-routes-deploy-app-api/specs/component.spec.json",
+      "routeManifestRef": "crates/sdkwork-routes-deploy-app-api/sdks/_route-manifests/app-api/sdkwork-routes-deploy-app-api.route-manifest.json",
+      "sourceRef": "crates/sdkwork-routes-deploy-app-api/Cargo.toml"
+    },
+    {
+      "packageName": "sdkwork-routes-deploy-backend-api",
+      "memberDir": "crates/sdkwork-routes-deploy-backend-api",
+      "libName": "sdkwork_routes_deploy_backend_api",
+      "surface": "backend-api",
+      "pathPrefix": null,
+      "mountOrder": 1,
+      "componentRef": "crates/sdkwork-routes-deploy-backend-api/specs/component.spec.json",
+      "routeManifestRef": "crates/sdkwork-routes-deploy-backend-api/sdks/_route-manifests/backend-api/sdkwork-routes-deploy-backend-api.route-manifest.json",
+      "sourceRef": "crates/sdkwork-routes-deploy-backend-api/Cargo.toml"
+    }
+  ]
+}
