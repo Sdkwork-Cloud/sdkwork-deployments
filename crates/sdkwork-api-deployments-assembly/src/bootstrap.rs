@@ -16,7 +16,7 @@ pub struct ApiAssembly {
     pub service: Arc<DeployService>,
 }
 
-pub async fn assemble_business_router() -> Result<ApiAssembly, String> {
+pub async fn assemble_business_routes() -> Result<ApiAssembly, String> {
     let runtime = bootstrap_deploy_runtime_from_env().await?;
     let service = Arc::new(runtime.service);
     let app = wrap_app(mount_app(service.clone())).await;
@@ -31,5 +31,5 @@ pub async fn assemble_business_router() -> Result<ApiAssembly, String> {
 }
 
 pub async fn assemble_api_router() -> Result<ApiAssembly, String> {
-    assemble_business_router().await
+    assemble_business_routes().await
 }
