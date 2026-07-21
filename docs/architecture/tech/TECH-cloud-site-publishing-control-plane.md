@@ -1,0 +1,678 @@
+# SDKWork Cloud Site Publishing Control-Plane Architecture
+
+Status: proposed
+Owner: SDKWork Deploy maintainers
+Updated: 2026-07-21
+Requirement: REQ-2026-0001
+Decision: ADR-20260721-unified-cloud-site-publishing-control-plane
+Specs: ARCHITECTURE_DECISION_SPEC.md, DOMAIN_SPEC.md, DATABASE_SPEC.md, DRIVE_SPEC.md,
+API_SPEC.md, SDK_SPEC.md, APP_SDK_INTEGRATION_SPEC.md, CONFIG_SPEC.md, DEPLOYMENT_SPEC.md,
+NGINX_SPEC.md, SECURITY_SPEC.md, PRIVACY_SPEC.md, PERFORMANCE_SPEC.md,
+OBSERVABILITY_SPEC.md, TEST_SPEC.md, RELEASE_SPEC.md, MIGRATION_SPEC.md
+
+## 1. Authority And Bounded Contexts
+
+| Bounded context | System of record | Write owner | Public responsibility |
+| --- | --- | --- | --- |
+| Site publishing | `deploy_*` | sdkwork-deployments | Site/resources/mounts/bindings/variants/revisions |
+| Files and directories | `dr_*` | sdkwork-drive | Spaces/nodes/versions/uploads/storage/atomic sync |
+| Wiki content | `kb_*` | sdkwork-knowledgebase | Wiki enablement/page state/render/navigation/index |
+| HTTP/TLS runtime | runtime snapshots and observations | sdkwork-web-server | request routing/static/proxy/Wiki streaming/TLS hot load |
+| Identity and permissions | IAM authority | sdkwork-iam/appbase | tenant/user/org/session/roles/permissions |
+| Price and billing | Commerce authority | sdkwork-commerce | catalog/price/invoice/payment/tax/credit |
+| Usage facts | `deploy_*` plus events | sdkwork-deployments | delivery measurement and reconciliation feed |
+
+Services must not write another service's owned tables. Cross-repository foreign keys are not used;
+stable public UUIDs/references are validated through generated SDKs or approved service ports.
+
+## 2. Logical Architecture
+
+```mermaid
+flowchart TB
+  subgraph Clients["Management clients"]
+    Tenant["Tenant console"]
+    Platform["Platform admin"]
+    Automation["Generated SDK automation"]
+  end
+
+  subgraph Control["Deploy control plane"]
+    API["App/backend API"]
+    Service["Site application service"]
+    Domain["Domain and TLS orchestrators"]
+    Compiler["Descriptor compiler/validator"]
+    Rollout["Revision rollout controller"]
+    Meter["Meter aggregator/exporter"]
+    DB[("deploy_* PostgreSQL")]
+  end
+
+  subgraph Sources["Resource providers"]
+    Drive["Drive directory provider"]
+    KB["Knowledgebase Wiki provider"]
+  end
+
+  subgraph Runtime["Delivery data plane"]
+    Distributor["Snapshot distribution"]
+    Web["Web Node Daemon fleet"]
+    Cache["Metadata/content cache"]
+    TLSRuntime["TLS snapshot store"]
+  end
+
+  Clients --> API --> Service --> DB
+  Service --> Drive
+  Service --> KB
+  Service --> Compiler --> Rollout --> Distributor --> Web
+  Domain --> DB
+  Domain --> TLSRuntime --> Web
+  Drive --> Cache
+  KB --> Cache
+  Web --> Cache
+  Web --> Meter --> DB
+```
+
+## 3. Core Domain Model
+
+```text
+Site
+  +- Resource[1..n]
+  +- Variant[1..n]
+  |    +- Mount[1..n] -> Resource
+  +- VariantRule[0..n] -> Variant
+  +- Binding[1..n] -> Domain + optional forced Variant
+  +- DeliveryPolicy[1]
+  +- SecurityPolicy[1]
+  +- SiteRevision[0..n] -> WebsiteRuntimeDescriptor
+  +- TargetObservation[0..n]
+
+Domain
+  +- Verification[1..n]
+  +- Binding[0..n]
+  +- TlsPolicy[0..1]
+       +- Certificate[0..n]
+            +- CertificateVersion[1..n]
+            +- Order/Challenge[0..n]
+            +- TargetObservation[0..n]
+```
+
+Invariants:
+
+- every active Site has exactly one default Variant;
+- every active Variant has at least one active Mount;
+- every Mount references one active, tenant-compatible Resource;
+- one active host/path/environment tuple maps to one Binding;
+- redirect Bindings cannot form cycles and cannot redirect to themselves;
+- a canonical Binding is unique per Site/environment;
+- a descriptor references only active, validated configuration rows from one consistent snapshot;
+- content versions are not copied into configuration revisions except as optional diagnostic
+  observations; content remains live;
+- TLS snapshots advance independently from SiteRevision.
+
+## 4. Target Database Contract
+
+This section defines the planned portable contract. Physical DDL, RLS policy, migration identifiers,
+and ORM code require separate human-reviewed implementation. All runtime business tables use
+SDKWork-generated `BIGINT id`, stable `uuid`, tenant scope, audit timestamps/actors, lifecycle state,
+and optimistic `version` as required by `DATABASE_SPEC.md`.
+
+### 4.1 Common Columns
+
+Unless a table is an immutable append-only ledger/version table, it includes:
+
+| Column | Logical type | Contract |
+| --- | --- | --- |
+| `id` | int64 | application-generated primary key |
+| `uuid` | string | stable public identifier, unique |
+| `tenant_id` | int64 | required tenant scope and leading authorization predicate |
+| `organization_id` | int64 nullable | optional organization scope; never inferred from input headers |
+| `lifecycle_status` | enum/string | active/deleted/archived as appropriate |
+| `version` | int64 | optimistic concurrency, starts at 1 |
+| `created_by`, `updated_by` | int64 | verified actor IDs |
+| `created_at`, `updated_at` | instant | UTC instants |
+| `deleted_at` | instant nullable | soft-delete time where deletion is supported |
+
+Enum strings below are canonical API/storage vocabulary for the target design; implementation shall
+centralize validation and shall not assign ad hoc integer meanings.
+
+### 4.2 Existing Aggregate Tables To Extend
+
+#### `deploy_site`
+
+Purpose: tenant-owned Site aggregate and active configuration pointer.
+
+Specific columns:
+
+| Column | Contract |
+| --- | --- |
+| `name`, `slug` | tenant display name and unique tenant slug |
+| `site_kind` | `STATIC`, `SPA`, `WIKI`, `HYBRID` |
+| `environment` | `development`, `test`, `staging`, `production` |
+| `site_status` | `DRAFT`, `VALIDATING`, `READY`, `ACTIVE`, `DEGRADED`, `PAUSED`, `ARCHIVED`, `FAILED` |
+| `default_variant_id` | nullable until ready; references a Site-owned Variant |
+| `current_revision_id` | nullable immutable revision pointer |
+| `desired_revision_id` | nullable rollout target |
+| `entitlement_projection_id` | nullable entitlement read-model version used at last activation |
+| `activated_at`, `paused_at`, `archived_at` | lifecycle observations |
+
+Unique/index contract: `(tenant_id, slug)`, `(tenant_id, site_status, updated_at)`, and active
+revision lookup. Existing numeric `site_type`/`status` require expand-and-contract mapping rather
+than silent reinterpretation.
+
+#### `deploy_domain`
+
+Purpose: globally unique normalized domain ownership and verification aggregate, separate from where
+the domain is mounted.
+
+Specific columns: `hostname_ascii`, `hostname_display`, `domain_type` (`SYSTEM`, `CUSTOM`,
+`WILDCARD`), `verification_status`, `verification_method`, `verification_token_hash`,
+`verification_expires_at`, `verified_at`, `last_revalidated_at`, `takeover_hold_until`,
+`dns_observation_json`, and `status_reason_code`.
+
+Unique/index contract: globally unique active `hostname_ascii`; tenant/status/updated list; expiry
+and revalidation worker indexes. TXT values and DNS credentials are never stored as reusable secret
+material.
+
+#### `deploy_deployment`
+
+Purpose: rollout execution record. Add `site_revision_id`, `deployment_kind`
+(`ARTIFACT_RELEASE`, `SITE_CONFIG`, `TLS_CONFIG`), `desired_hash`, `rollout_strategy`, `quorum`,
+`started_at`, `completed_at`, and failure summary. Live source file updates do not create rows.
+
+#### `deploy_release`
+
+Purpose remains frozen artifact/package/Git release. No live Drive or Wiki content Release is added.
+
+### 4.3 Site Composition Tables
+
+#### `deploy_site_resource`
+
+| Column | Contract |
+| --- | --- |
+| `site_id` | owning Site |
+| `resource_key` | unique stable key inside Site |
+| `provider_type` | `DRIVE_DIRECTORY` or `KNOWLEDGEBASE_WIKI` |
+| `provider_resource_uuid` | provider aggregate/publication UUID |
+| `provider_space_uuid` | Drive Space UUID when applicable |
+| `provider_root_node_uuid` | selected folder or fixed `sources/raw` root UUID |
+| `provider_owner_revision` | last validated provider contract revision, diagnostic only |
+| `resource_status` | `PENDING`, `VALID`, `INVALID`, `UNAVAILABLE`, `REVOKED` |
+| `capabilities_json` | bounded provider capability snapshot, no secrets/URLs/object keys |
+| `last_validated_at`, `last_error_code` | validation observation |
+
+Checks require Drive fields for `DRIVE_DIRECTORY` and Knowledgebase publication identity for
+`KNOWLEDGEBASE_WIKI`. Cross-service ownership is validated through the provider, not a database FK.
+
+#### `deploy_site_variant`
+
+Columns: `site_id`, `variant_key`, `variant_type`, `display_name`, `is_default`, `variant_status`,
+`priority`, and optional `metadata_json`. Unique `(site_id, variant_key)` and one active default per
+Site are required.
+
+#### `deploy_site_variant_rule`
+
+Columns: `site_id`, `target_variant_id`, `rule_type` (`PREFERENCE`, `PATH`, `CLIENT_HINT`,
+`USER_AGENT`, `BOT`), `operator`, bounded `match_value`, `priority`, `enabled`, and `expires_at`.
+Rules are declarative; arbitrary regular expressions/scripts are prohibited. Index by
+`(site_id, enabled, priority)`.
+
+#### `deploy_site_mount`
+
+| Column | Contract |
+| --- | --- |
+| `site_id`, `variant_id`, `resource_id` | composition ownership |
+| `url_prefix` | normalized absolute prefix beginning `/` |
+| `resource_subpath` | normalized provider-relative subpath or empty |
+| `mount_mode` | `ROOT` or `ALIAS` |
+| `handler_type` | `STATIC`, `SPA`, or `WIKI` |
+| `index_files_json` | bounded ordered filenames |
+| `spa_fallback_path` | nullable, resource-relative and file-only |
+| `directory_listing` | false by default; forced false for WIKI |
+| `priority` | tie-break only after path length; ambiguity rejected |
+| `mount_status` | draft/active/disabled/invalid |
+
+Unique active `(variant_id, url_prefix)`; lookup index `(variant_id, mount_status, url_prefix)`.
+
+#### `deploy_site_binding`
+
+| Column | Contract |
+| --- | --- |
+| `site_id`, `domain_id` | Site/domain ownership |
+| `hostname_ascii` | denormalized immutable comparison key for bounded hot lookup |
+| `path_prefix` | normalized binding prefix |
+| `binding_type` | `SYSTEM`, `CUSTOM`, `WILDCARD`, `PREVIEW` |
+| `binding_role` | `PRIMARY`, `ALIAS`, `REDIRECT` |
+| `forced_variant_id` | nullable Site-owned Variant |
+| `default_variant_id` | nullable Binding-specific default |
+| `redirect_binding_id` | nullable target for alias redirect |
+| `tls_policy_id` | nullable while draft; required for active HTTPS |
+| `binding_status` | pending/verified/active/paused/failed/archived |
+| `verified_at`, `activated_at` | state evidence |
+
+Active global unique `(hostname_ascii, path_prefix, environment)` is enforced using a conflict-safe
+claim strategy. Add Site list, domain list, and routing lookup indexes. The authoritative row is
+tenant-scoped even though conflict detection is global.
+
+#### `deploy_site_file_policy`
+
+Columns: `site_id`, nullable `mount_id`, `policy_name`, `cache_profile`, `html_max_age_seconds`,
+`asset_max_age_seconds`, `stale_while_revalidate_seconds`, `compression_policy`, `mime_policy`,
+`security_headers_json`, `custom_headers_json`, `robots_policy`, `not_found_mode`, and `policy_status`.
+Header names/values are allowlisted and size-bounded; hop-by-hop, auth, cookie, CORS credential, and
+security-weakening headers are rejected.
+
+### 4.4 Revision And Runtime Observation Tables
+
+#### `deploy_site_revision`
+
+Immutable columns: `site_id`, `revision_no`, `descriptor_schema_version`, `descriptor_json`,
+`descriptor_sha256`, `compiler_version`, `source_config_version`, `validation_status`,
+`validation_report_json`, `created_by`, `created_at`, and optional `supersedes_revision_id`.
+
+Unique `(site_id, revision_no)` and `descriptor_sha256`. Rows are append-only. Descriptor JSON is
+bounded and contains no secrets.
+
+#### `deploy_site_target_observation`
+
+Columns: `site_id`, `site_revision_id`, `target_uuid`, `region`, `observed_revision_no`,
+`observed_descriptor_sha256`, `observation_status`, `loaded_at`, `last_seen_at`, `probe_status`,
+`probe_latency_millis`, and bounded `error_code`. Unique `(site_revision_id, target_uuid)`; indexes
+support desired-vs-observed drift and stale-node queries.
+
+### 4.5 TLS And Certificate Tables
+
+#### `deploy_tls_policy`
+
+Columns: `policy_name`, `certificate_source`, `certificate_mode`, `challenge_preference`,
+`acme_account_id`, `renew_before_days`, `key_algorithm`, `min_tls_version`, `hsts_mode`,
+`ocsp_stapling_mode`, `fallback_policy`, `policy_status`, and version/audit fields.
+
+#### `deploy_acme_account`
+
+Columns: `directory_url`, `environment`, `contact_hash`, `external_account_binding_key_id`,
+`account_secret_ref`, `terms_version`, `terms_accepted_at`, `account_status`, `last_error_code`, and
+audit fields. Unique `(tenant_id, directory_url, environment, account identity)`. Account keys and
+EAB secrets are secret references only.
+
+#### `deploy_certificate`
+
+Columns: `certificate_name`, `certificate_source`, `certificate_mode`, `key_algorithm`,
+`current_version_id`, `desired_version_id`, `certificate_status`, `not_before`, `not_after`,
+`renewal_state`, `next_renewal_at`, `last_renewal_at`, `failure_count`, `last_error_code`,
+`issuer_name`, and audit/version fields. Existing certificate rows migrate to this aggregate without
+copying plaintext private keys.
+
+#### `deploy_certificate_domain`
+
+Columns: `certificate_id`, `domain_id`, `hostname_ascii`, `san_position`, `is_common_name`,
+`coverage_status`, and timestamps. Unique `(certificate_id, hostname_ascii)`; reverse index supports
+domain coverage lookup.
+
+#### `deploy_certificate_version`
+
+Immutable columns: `certificate_id`, `version_no`, `certificate_secret_ref`, `private_key_secret_ref`,
+`chain_secret_ref`, `leaf_sha256`, `spki_sha256`, `serial_number_hash`, `issuer_name`, `not_before`,
+`not_after`, `key_algorithm`, `source_order_id`, `validation_status`, and `created_at`. Secret values
+are never returned through list APIs.
+
+#### `deploy_certificate_order`
+
+Columns: `certificate_id`, `acme_account_id`, `order_url_hash`, `ca_order_ref`, `order_status`,
+`attempt_no`, `requested_names_hash`, `started_at`, `ready_at`, `finalized_at`, `completed_at`,
+`next_attempt_at`, `last_error_code`, and idempotency identity. Provider URLs/tokens are redacted or
+secret-referenced as classified by the ACME adapter.
+
+#### `deploy_certificate_challenge`
+
+Columns: `order_id`, `domain_id`, `challenge_type`, `challenge_status`, `token_hash`,
+`key_authorization_secret_ref`, `dns_provider_binding_ref`, `dns_record_name`, `dns_value_hash`,
+`presented_at`, `validated_at`, `cleanup_at`, `next_attempt_at`, and `last_error_code`. Wildcard rows
+must use `DNS01`.
+
+#### `deploy_certificate_target_observation`
+
+Columns: `certificate_id`, `certificate_version_id`, `target_uuid`, `region`,
+`observed_leaf_sha256`, `observed_spki_sha256`, `sni_probe_status`, `loaded_at`, `last_seen_at`, and
+`last_error_code`. Unique `(certificate_version_id, target_uuid)`.
+
+### 4.6 Entitlement And Usage Read Models
+
+#### `deploy_tenant_entitlement_projection`
+
+Columns: `source_system`, `source_subscription_uuid`, `source_revision`, `plan_key`,
+`entitlements_json`, `effective_at`, `expires_at`, `projection_status`, and timestamps. This is a
+read model; Commerce remains the write authority. Stale/absent behavior is defined per entitlement
+and fails closed for resource creation, not for already active delivery unless policy explicitly
+requires suspension.
+
+#### `deploy_usage_event`
+
+Append-only columns: `event_uuid`, `tenant_id`, `site_id`, optional `binding_id`, `period_start`,
+`dimension`, `quantity`, `unit`, `source_target_uuid`, `source_window_id`, `deduplication_key`,
+`observed_at`, `ingested_at`, and bounded attribution JSON. Unique deduplication identity prevents
+double billing.
+
+#### `deploy_site_usage_daily`
+
+Columns: `tenant_id`, `site_id`, `usage_date`, `dimension`, `quantity`, `unit`, `source_revision`,
+`finalization_status`, `finalized_at`, and timestamps. Unique `(tenant_id, site_id, usage_date,
+dimension, unit)`. Aggregates are rebuildable from retained usage facts or an approved metering
+source.
+
+## 5. WebsiteRuntimeDescriptor
+
+### 5.1 Envelope
+
+```json
+{
+  "schemaVersion": "sdkwork.website-runtime.v1",
+  "revisionUuid": "stable-revision-uuid",
+  "siteUuid": "stable-site-uuid",
+  "tenantScopeHash": "non-reversible-scope-hash",
+  "environment": "production",
+  "generatedAt": "2026-07-21T00:00:00Z",
+  "compilerVersion": "deploy-descriptor-compiler/1",
+  "descriptorSha256": "sha256-of-canonical-payload",
+  "bindings": [],
+  "variants": [],
+  "variantRules": [],
+  "resources": [],
+  "mounts": [],
+  "deliveryPolicy": {},
+  "securityPolicy": {},
+  "limits": {},
+  "observabilityPolicy": {}
+}
+```
+
+`descriptorSha256` is computed over canonical serialized content excluding the hash field. Unknown
+major schema versions fail closed. Minor additive fields follow an explicit compatibility policy.
+
+### 5.2 Resource Descriptor
+
+Resources contain `resourceUuid`, `providerType`, stable provider aggregate/Space/root UUIDs,
+required provider contract version, and bounded capability flags. They never contain a token,
+SDK/base URL, bucket, object key, presigned URL, database connection, DNS credential, certificate
+private key, or secret reference that the data plane does not need.
+
+### 5.3 Compilation And Activation
+
+1. Read Site composition in a consistent database transaction/snapshot.
+2. Authorize and validate provider ownership/eligibility through typed provider clients.
+3. Normalize hostnames, path prefixes, redirects, headers, cache, indexes, and fallback paths.
+4. Reject conflicts, cycles, unreachable Variants, missing defaults, unsafe headers, and exceeded
+   entitlements.
+5. Serialize canonically, hash, store immutable revision, and sign/distribute through the approved
+   runtime configuration channel.
+6. Web Nodes validate schema/hash/signature/limits and stage the snapshot.
+7. Run routing and public probes against staged targets.
+8. Activate at quorum; keep the prior snapshot until rollback retention expires.
+9. Reconcile desired and observed revisions continuously.
+
+## 6. Browser-To-Resource Request Flow
+
+```mermaid
+sequenceDiagram
+  participant B as Browser
+  participant E as Edge/Web Node
+  participant R as Runtime snapshot
+  participant C as Cache
+  participant P as Drive or Wiki provider
+  participant O as Observability/metering
+
+  B->>E: DNS -> TLS SNI -> HTTP request
+  E->>E: Normalize host, path, method, headers
+  E->>E: Serve ACME HTTP-01 challenge first when active
+  E->>R: Exact/wildcard host and longest binding prefix lookup
+  R-->>E: Site, binding, defaults, policy
+  E->>E: Select Variant using bounded precedence
+  E->>R: Longest mount prefix lookup
+  R-->>E: Handler and stable provider reference
+  E->>C: Lookup resource/path/version-aware cache key
+  alt cache hit and valid
+    C-->>E: Metadata/body or rendered Wiki page
+  else cache miss or revalidation
+    E->>P: Typed resolve/open request with runtime identity
+    P-->>E: Authorized public result, version, metadata, stream
+    E->>E: Enforce visibility, MIME, size, range, render and headers
+    E->>C: Store bounded policy-compliant result
+  end
+  E-->>B: Stream response
+  E->>O: Correlated metrics/log/usage fact
+```
+
+Detailed order:
+
+1. DNS resolves the customer/system domain to the edge endpoint.
+2. TLS selects a verified certificate version by normalized SNI before HTTP routing.
+3. The node applies listener limits and canonicalizes Host/path without decoding into ambiguity.
+4. Active ACME HTTP-01 challenges are handled before ordinary Site routing.
+5. Binding lookup uses exact host before approved wildcard and longest path prefix.
+6. Missing, paused, unverified, cross-tenant, or conflicting bindings return the same bounded
+   external not-found behavior.
+7. Variant selection follows the PRD precedence and records an internal reason code.
+8. Mount selection uses longest prefix; `ROOT` and `ALIAS` translate the remaining path
+   deterministically.
+9. Static/SPA handlers apply index and fallback only within the mounted resource. A SPA fallback is
+   not used for a missing asset path that clearly contains a file extension unless policy says so.
+10. Wiki handler asks Knowledgebase for public route/page resolution; it does not infer visibility
+    from Drive alone.
+11. The provider validates tenant/resource/root/path/version and returns a typed outcome and stream
+    or renderer input. Web Server never opens arbitrary bucket/object references from a descriptor.
+12. Conditional/range/MIME/cache/security policies are applied. Bodies remain streamed and bounded.
+13. The response records trace, revision, provider, cache, status, bytes, and latency using bounded
+    labels. Billable usage is emitted asynchronously with a deduplication identity.
+
+## 7. Content Freshness And Cache Consistency
+
+Cache keys include Site/Binding/Variant/Mount/resource identity, normalized provider path, public
+content version, renderer/template version, and representation encoding where relevant. Tenant and
+visibility scope cannot be omitted.
+
+Drive and Knowledgebase emit create/update/move/delete/visibility/publication/root-switch events.
+Web Server consumes idempotently and invalidates exact keys or resource generations. On event gap,
+reconnect, or unknown generation, the node marks the resource for read-through revalidation.
+
+Recommended profiles:
+
+- hashed static assets: immutable long cache after provider marks the path/version immutable;
+- HTML entry points: short TTL plus conditional revalidation;
+- Wiki HTML/navigation/search: short TTL and event invalidation;
+- negative results: very short TTL to avoid hiding newly uploaded files;
+- provider outage: optionally serve bounded stale public content only when policy permits and never
+  promote private or previously unknown content.
+
+## 8. Domain And Variant Routing Algorithm
+
+1. Normalize SNI and Host using the same IDNA/case/trailing-dot rules.
+2. Reject Host/SNI policy mismatch unless an explicit HTTP redirect listener handles it.
+3. Look up exact active host; if absent, evaluate only registered wildcard suffixes with label
+   boundaries.
+4. Choose the longest active Binding path prefix using segment-aware matching.
+5. Apply forced Variant, valid preference cookie, exact path rule, Client Hints, bounded User-Agent,
+   bot, Binding default, then Site default.
+6. Choose the longest Mount path inside the selected Variant.
+7. Return an internal routing explanation containing rule IDs and reason codes; never expose tenant
+   metadata to the anonymous client.
+
+Preference cookies are signed, scoped, SameSite, bounded, and contain only a Variant key/expiry.
+Automated classification uses a versioned classifier and cache-vary policy. Operators receive a
+routing simulator that accepts host, path, headers, and preference without sending live traffic.
+
+## 9. Certificate Lifecycle
+
+```mermaid
+stateDiagram-v2
+  [*] --> Pending
+  Pending --> Ordering: domain and policy ready
+  Ordering --> Challenging
+  Challenging --> Issued: CA validates
+  Challenging --> RetryWaiting: transient failure
+  RetryWaiting --> Challenging
+  Issued --> Distributing
+  Distributing --> Verifying
+  Verifying --> Active: SNI probes pass at quorum
+  Active --> Renewing: renewal window
+  Renewing --> Distributing: new immutable version
+  Renewing --> Active: renewal fails, old cert valid
+  Active --> Expiring: urgent threshold
+  Expiring --> Failed: no valid version remains
+  Active --> Revoked
+```
+
+Renewal workers use leader election or durable claims, bounded concurrency, per-CA rate-limit
+awareness, exponential backoff with jitter, and durable next-attempt time. DNS-01 adapters obtain
+credentials through secret references and clean challenge records after validation. Distribution
+verifies secret retrieval, key/certificate match, chain, names, validity, policy, node load, and real
+TLS/SNI handshake before current-version switch.
+
+TLS snapshots contain the minimum runtime secret handles/material required by the node and use an
+encrypted authenticated distribution channel. They are separate from website descriptors so
+certificate renewal never creates a SiteRevision or content deployment.
+
+## 10. API And SDK Boundaries
+
+Proposed resource groups, subject to owner OpenAPI review:
+
+- app API: `sites`, `siteResources`, `siteVariants`, `siteVariantRules`, `siteMounts`,
+  `siteBindings`, `domains`, `tlsPolicies`, `certificates`, `siteRevisions`, `siteAnalytics`,
+  `siteUsage`, and validation/preview/activation commands;
+- backend API: tenant publishing administration, domain conflicts/holds, certificate orders and
+  challenges, runtime revisions/targets, provider health, entitlement projections, metering
+  reconciliation, abuse actions, and incident evidence;
+- internal provider ports: Drive resource eligibility/resolution, Knowledgebase Wiki
+  eligibility/resolution, Web Server snapshot distribution/observation, Commerce entitlement/usage
+  exchange.
+
+Owner repositories generate their own SDKs. Deploy declares Drive, Knowledgebase, and Web Server as
+dependency SDKs/service ports. The application bootstrap resolves all base URLs and credentials
+before construction and injects the appropriate shared TokenManager/runtime context. Protected
+open-API credentials remain separate from app/backend session credentials.
+
+## 11. Security And Privacy Architecture
+
+Threat controls include:
+
+- tenant predicates in every management and provider request plus tenant-qualified cache keys;
+- global domain claim transaction with verification, hold, audit, and no information-rich conflict
+  response to unauthorized tenants;
+- strict Host/SNI/path normalization, segment-aware matching, traversal rejection, and bounded
+  redirects;
+- provider-root confinement, shortcut/symlink escape prevention, hidden/reserved path deny policy,
+  and no directory listing by default;
+- server-controlled MIME, `nosniff`, CSP/referrer/frame policies, safe download disposition, and
+  Wiki sanitization;
+- descriptor schema/hash/signature/size validation and last-known-good activation;
+- KMS/Secret Manager key custody, least-privilege certificate access, rotation, zeroized temporary
+  material, and sensitive audit redaction;
+- bounded request, header, path, range, render, cache, event, resolver, and background job resources;
+- support impersonation with explicit permission, reason, expiry, audit, and tenant visibility;
+- retention/export/deletion policies for IP/user-agent logs, usage, audit, domains, certificates,
+  and archived Sites.
+
+`UNLISTED` means not linked/indexed and is not an authorization boundary. `PRIVATE` means public
+resolution is denied and requires an authenticated product route outside the anonymous data plane.
+
+## 12. Reliability And Failure Semantics
+
+| Failure | Required behavior |
+| --- | --- |
+| Deploy database unavailable | Web Nodes continue last-known-good descriptor/TLS snapshots; management fails explicitly |
+| Snapshot distribution partial | no activation without quorum; previous snapshot remains current |
+| Drive/Knowledgebase unavailable | bounded retry/circuit; serve allowed stale cache or explicit 5xx, never infer content |
+| Event stream gap | mark resource generation unknown and read-through revalidate |
+| Content removed/private | high-priority invalidation; provider revalidation overrides stale public cache |
+| Certificate renewal failure | retain valid version, retry/escalate; never activate unverified version |
+| Node drift | remove from ready targets or resynchronize; expose desired/observed mismatch |
+| Usage pipeline delayed | delivery continues within buffer policy; durable/replayable facts reconcile later |
+| Entitlement service unavailable | cached versioned projection; fail closed for new capacity, preserve policy-approved active service |
+
+Backup/restore covers Deploy database, descriptor history, encrypted certificate secret references,
+audit, and usage facts. Provider content backup remains owned by Drive/Knowledgebase. Disaster
+recovery validates domain claim integrity and certificate key availability before traffic return.
+
+## 13. Observability
+
+Correlation fields: `trace_id`, `tenant_id` (restricted), `site_uuid`, `binding_uuid`,
+`site_revision_uuid`, `variant_key`, `mount_uuid`, `resource_uuid`, `provider_type`, `target_uuid`,
+`certificate_uuid`, and `certificate_version_uuid`. Raw host/path, IP, query, user agent, and content
+title are classified and excluded from low-cardinality metrics.
+
+Required metrics:
+
+- requests, status classes, bytes, latency, active connections, queue/rejection, cache hit/miss/stale;
+- provider resolve/open latency, error class, event lag, invalidation count, generation gaps;
+- descriptor compile/validation/distribution/activation latency and desired-observed drift;
+- domain verification attempts/outcomes and takeover holds;
+- certificate expiry buckets, order/challenge outcomes, renewal lead time, distribution/probe status;
+- usage event backlog, deduplication, aggregation lag, and reconciliation difference;
+- per-plan quota utilization and rejection/throttle counts.
+
+Dashboards and alerts align to SLOs. Audit records cover all management mutations, privileged reads,
+secret-reference operations, domain claims, certificate transitions, revision activation/rollback,
+support sessions, entitlement override, and abuse actions.
+
+## 14. Capacity And Limits
+
+Every descriptor and runtime collection is bounded: Bindings/Site, Variants/Site, rules/Site,
+Mounts/Variant, headers/policy, index filenames, redirect depth, certificates/domain, SANs/cert,
+challenges/order, cache object size, Wiki render size/time, and concurrent provider calls. Product
+plan limits may be lower than platform safety ceilings but never higher.
+
+Capacity planning separates request rate, connection concurrency, egress, cache memory/disk, origin
+bandwidth, provider latency, event throughput, certificate order rate, descriptor size/activation
+rate, log volume, and usage aggregation. Load tests include skewed hot domains, many cold domains,
+large path tables, cache stampede, provider slowdown, mass invalidation, and renewal spikes.
+
+## 15. Commercial Readiness Gates
+
+Commercial GA requires:
+
+- approved product terms, privacy disclosures, abuse process, retention, and support escalation;
+- entitlement/usage reconciliation with Finance/Commerce approval;
+- production PostgreSQL, backup/restore and region recovery evidence;
+- tenant isolation review and external penetration/security review for public ingress;
+- load/capacity evidence at advertised plan ceilings;
+- domain claim/takeover and DNS provider incident drills;
+- certificate issue/renew/revoke/distribute/expiry drills across selected CAs/challenges;
+- descriptor rollout/canary/rollback and Web Node version compatibility matrix;
+- provider outage/event-gap/stale-cache/private-transition drills;
+- SLO dashboards, error-budget policy, paging, runbooks, and customer status communication;
+- signed release artifacts, SBOM/provenance, and staged rollout evidence for participating services.
+
+## 16. Implementation Sequence
+
+1. Approve requirement/ADR/table and API vocabulary.
+2. Add Deploy schema and owner OpenAPI sources through reviewed migrations.
+3. Implement descriptor compiler, validator, revision store, and shadow rollout.
+4. Implement Drive Website Space/provider and `ATOMIC_SYNC` contracts.
+5. Implement Web Server descriptor/TLS snapshots and Drive delivery adapter.
+6. Cut Site/domain/TLS writes over from Web Server to Deploy.
+7. Implement Knowledgebase live Wiki provider and replace release-oriented publication.
+8. Add tenant console and source-product views through generated SDKs.
+9. Add platform admin, entitlement, usage, abuse, and support workflows.
+10. Run pilot, security, load, recovery, renewal, reconciliation, and staged GA gates.
+
+## 17. Verification Matrix
+
+| Boundary | Evidence |
+| --- | --- |
+| Documentation/trace | repository docs validator, requirement/ADR/migration links |
+| Database | contract validator, migration plan/drift, RLS/tenant/index tests |
+| API/SDK | envelope, operation, pagination, owner-generation, consumer-import checks |
+| Descriptor | schema, canonicalization, golden hash, compatibility, size, signature, fuzz |
+| Routing | host/IDNA/wildcard/path/redirect/Variant/Mount property and integration tests |
+| Drive | eligibility, root confinement, atomic sync, versions, events, range/MIME tests |
+| Wiki | state/visibility, render/sanitize, routes/nav/search/assets/redirects tests |
+| TLS | ACME challenges, wildcard policy, custom validation, renewal, hot load, SNI probes |
+| Security/privacy | tenant/cache isolation, traversal, poisoning, secrets, retention, abuse tests |
+| Reliability | provider/control-plane/event outage, last-known-good, backup/restore, rollback |
+| Performance | edge/origin latency, throughput, memory, descriptor scale, invalidation storm |
+| Commercial | entitlement, quota, usage dedupe/reconciliation, plan change, retention/export |
+| UI | user/admin E2E including all asynchronous and permission states |
+
+## 18. Industry Protocol Alignment
+
+The implementation should align with HTTP semantics/caching/range standards in the RFC 9110 family,
+TLS 1.2/1.3, SNI, IDNA, ACME RFC 8555 and applicable challenge RFCs, DNS CAA, OWASP ASVS/API
+Security guidance, Nginx virtual host/location behavior for the supported profile, and supply-chain
+evidence requirements selected by SDKWork standards. These references guide protocol behavior; the
+SDKWork specs and approved product contracts remain the repository authority.
+

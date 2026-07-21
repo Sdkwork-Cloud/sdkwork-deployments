@@ -4,5 +4,13 @@ repository: sdkwork-deploy
 canon:
   prd: docs/product/prd/PRD.md
   techArchitecture: docs/architecture/tech/TECH_ARCHITECTURE.md
-entries: []
+entries:
+  - id: REQ-2026-0001
+    path: docs/product/requirements/REQ-2026-0001-cloud-site-publishing-platform.md
+    kind: req
+    status: ready
+  - id: ADR-20260721-unified-cloud-site-publishing-control-plane
+    path: docs/architecture/decisions/ADR-20260721-unified-cloud-site-publishing-control-plane.md
+    kind: adr
+    status: proposed
 domains: []
