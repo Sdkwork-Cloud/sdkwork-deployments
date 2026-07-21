@@ -26,11 +26,14 @@ without weakening source ownership or creating two writable authorities.
 2. `sdkwork-web-server` owns the HTTP/TLS data plane and consumes immutable compiled descriptors and
    separate TLS runtime snapshots. It does not originate business site state.
 3. `sdkwork-drive` owns Space, folder, node, upload, version, storage, and `ATOMIC_SYNC` behavior. A
-   new `website` Space type establishes eligibility but never publication by itself.
+   new `website` Space type establishes eligibility but never publication by itself. Drive owns
+   `SPACE_ROOT`/`FOLDER` WebsiteRoot selection and `LIVE_TREE`/`ATOMIC_GENERATION` content mode.
 4. `sdkwork-knowledgebase` owns Wiki publication, `sources/raw`, page state, visibility, rendering,
-   navigation, search, and source projection. Only active Wiki publications are provider resources.
-5. The public composition is `Space -> Folder Node -> Site Resource -> Variant Mount -> Host/Path
-   Binding`. Space is the project/security/quota boundary; folder node is the document root.
+   navigation, search, and source projection. Every Knowledgebase has one canonical DRAFT/PRIVATE
+   WikiPublication; only ACTIVE publications are publicly provider-eligible.
+5. The public composition is `Source -> Provider Resource -> Site Resource -> Variant Mount ->
+   Host/Path Binding`. A Drive source is a Website Space plus Space-root/folder WebsiteRoot; a
+   Knowledgebase source is its canonical WikiPublication.
 6. Provider types are `DRIVE_DIRECTORY` and `KNOWLEDGEBASE_WIKI`; handlers are `STATIC`, `SPA`, and
    `WIKI`; mount semantics are `ROOT` and `ALIAS` with longest path prefix matching.
 7. Drive/Wiki content mutation is live and does not create a Deploy Release or SiteRevision.
@@ -50,6 +53,11 @@ without weakening source ownership or creating two writable authorities.
     or are retired. They cannot remain a second writable source.
 13. All cross-repository calls use owner-generated SDKs or approved typed service ports with shared
     SDKWork authentication/runtime context. Raw HTTP and manual auth headers are not accepted.
+14. Deploy resource creation accepts a discriminated source selector, resolves a stable provider
+    resource through the owner, and persists no duplicate source authority. One provider resource may
+    be reused by multiple authorized Sites/Variants/Mounts.
+15. Changing the selected Drive root changes Site configuration and creates a SiteRevision. File
+    mutation and atomic generation switch behind the same WebsiteRoot remain provider lifecycle.
 
 ## Architecture View
 
@@ -124,4 +132,3 @@ This decision supersedes any design that requires a Knowledgebase content Releas
 content change or treats Web Server `web_*` tables as an independent writable cloud publishing
 authority. Repository-local ADRs retain history and point to this decision and their local
 replacement.
-

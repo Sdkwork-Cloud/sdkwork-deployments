@@ -1,12 +1,7 @@
-# migrations
-
-See `DOCUMENTATION_SPEC.md` section 2.
-
-See `DOCUMENTATION_SPEC.md` section 2.
 # Migrations
 
-Migration plans in this directory follow `MIGRATION_SPEC.md`; executable database migrations remain
-under the repository database lifecycle.
+Migration plans in this directory follow `MIGRATION_SPEC.md` and `DOCUMENTATION_SPEC.md` section 2;
+executable database migrations remain under the repository database lifecycle.
 
 ## Proposed
 

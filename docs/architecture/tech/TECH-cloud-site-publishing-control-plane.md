@@ -106,6 +106,30 @@ Invariants:
   observations; content remains live;
 - TLS snapshots advance independently from SiteRevision.
 
+Source selection is an API/orchestration input, not Deploy-owned source state:
+
+```text
+CreateSiteResourceSource =
+  DRIVE_DIRECTORY {
+    websiteSpaceUuid,
+    root: SPACE_ROOT | FOLDER { folderNodeUuid }
+  }
+  | KNOWLEDGEBASE_WIKI {
+      knowledgebaseUuid
+    }
+```
+
+Deploy resolves the selector through the owner SDK/service. Drive creates or idempotently reuses a
+stable WebsiteRoot; Knowledgebase returns its one canonical WikiPublication. Deploy persists the
+resulting `provider_resource_uuid`, not the selector as an independent authority. The same provider
+resource may appear in multiple tenant-authorized Site Resources; different domains/Variants/Mounts
+do not require duplicate source aggregates.
+
+Changing a Drive source from `SPACE_ROOT` to `FOLDER`, or to another folder, resolves another
+WebsiteRoot and changes Site composition, so it creates a SiteRevision. File mutation,
+`LIVE_TREE` observation, or `ATOMIC_GENERATION` switch behind an unchanged WebsiteRoot advances only
+provider versions/generations.
+
 ## 4. Target Database Contract
 
 This section defines the planned portable contract. Physical DDL, RLS policy, migration identifiers,
@@ -189,9 +213,9 @@ Purpose remains frozen artifact/package/Git release. No live Drive or Wiki conte
 | `site_id` | owning Site |
 | `resource_key` | unique stable key inside Site |
 | `provider_type` | `DRIVE_DIRECTORY` or `KNOWLEDGEBASE_WIKI` |
-| `provider_resource_uuid` | provider aggregate/publication UUID |
+| `provider_resource_uuid` | stable Drive WebsiteRoot UUID or Knowledgebase Wiki publication UUID |
 | `provider_space_uuid` | Drive Space UUID when applicable |
-| `provider_root_node_uuid` | selected folder or fixed `sources/raw` root UUID |
+| `provider_root_node_uuid` | last validated active folder or fixed `sources/raw` root UUID; diagnostic, not the Drive resource identity |
 | `provider_owner_revision` | last validated provider contract revision, diagnostic only |
 | `resource_status` | `PENDING`, `VALID`, `INVALID`, `UNAVAILABLE`, `REVOKED` |
 | `capabilities_json` | bounded provider capability snapshot, no secrets/URLs/object keys |
@@ -199,6 +223,10 @@ Purpose remains frozen artifact/package/Git release. No live Drive or Wiki conte
 
 Checks require Drive fields for `DRIVE_DIRECTORY` and Knowledgebase publication identity for
 `KNOWLEDGEBASE_WIKI`. Cross-service ownership is validated through the provider, not a database FK.
+`provider_space_uuid`, `provider_root_node_uuid`, root mode, and content mode are bounded validation
+observations only. They cannot replace `provider_resource_uuid`, authorize a request, or be edited to
+retarget the provider. No uniqueness constraint prevents the same provider resource from serving
+multiple authorized Sites; tenant/provider validation remains mandatory for every attachment.
 
 #### `deploy_site_variant`
 
@@ -387,15 +415,18 @@ major schema versions fail closed. Minor additive fields follow an explicit comp
 
 ### 5.2 Resource Descriptor
 
-Resources contain `resourceUuid`, `providerType`, stable provider aggregate/Space/root UUIDs,
-required provider contract version, and bounded capability flags. They never contain a token,
+Resources contain `resourceUuid`, `providerType`, stable provider aggregate UUID, diagnostic
+provider Space/root observations, required provider contract version, and bounded capability flags.
+Drive root-selector/content-mode details may be included only as non-authoritative diagnostics; Web
+Server always opens the opaque WebsiteRoot. They never contain a token,
 SDK/base URL, bucket, object key, presigned URL, database connection, DNS credential, certificate
 private key, or secret reference that the data plane does not need.
 
 ### 5.3 Compilation And Activation
 
 1. Read Site composition in a consistent database transaction/snapshot.
-2. Authorize and validate provider ownership/eligibility through typed provider clients.
+2. Resolve source-selection commands and authorize/validate provider ownership/eligibility through
+   typed provider clients. Public activation requires a valid WebsiteRoot or ACTIVE WikiPublication.
 3. Normalize hostnames, path prefixes, redirects, headers, cache, indexes, and fallback paths.
 4. Reject conflicts, cycles, unreachable Variants, missing defaults, unsafe headers, and exceeded
    entitlements.
@@ -467,8 +498,17 @@ content version, renderer/template version, and representation encoding where re
 visibility scope cannot be omitted.
 
 Drive and Knowledgebase emit create/update/move/delete/visibility/publication/root-switch events.
-Web Server consumes idempotently and invalidates exact keys or resource generations. On event gap,
+Web Server consumes idempotently and invalidates exact keys or provider generations. On event gap,
 reconnect, or unknown generation, the node marks the resource for read-through revalidation.
+Deploy is not an ordinary content-event relay and does not create a Release, Deployment, or
+SiteRevision for those events. It revalidates provider eligibility during attachment, preview,
+activation, explicit reconciliation, and provider-wide failure recovery. Drive/Knowledgebase
+provider events flow directly to authorized Web Server consumers.
+
+Knowledgebase uses a Drive source checkpoint internally, then emits provider-facing events with a
+provider-wide generation and route-scoped page public versions. Private ingest/preview work must
+not advance public generations. Navigation/search generations remain distinct, and a normal page
+body update must not flush every route of a reused WikiPublication.
 
 Recommended profiles:
 
@@ -537,14 +577,17 @@ Proposed resource groups, subject to owner OpenAPI review:
 - backend API: tenant publishing administration, domain conflicts/holds, certificate orders and
   challenges, runtime revisions/targets, provider health, entitlement projections, metering
   reconciliation, abuse actions, and incident evidence;
-- internal provider ports: Drive resource eligibility/resolution, Knowledgebase Wiki
-  eligibility/resolution, Web Server snapshot distribution/observation, Commerce entitlement/usage
-  exchange.
+- internal provider SDKs/ports: Drive-owned `sdkwork-drive-internal-sdk` for WebsiteRoot
+  eligibility/resolution and Knowledgebase source events, Knowledgebase-owned
+  `sdkwork-knowledgebase-internal-sdk` for Wiki eligibility/resolution/generation, Web Server-owned
+  internal snapshot distribution/observation, and Commerce entitlement/usage exchange.
 
 Owner repositories generate their own SDKs. Deploy declares Drive, Knowledgebase, and Web Server as
 dependency SDKs/service ports. The application bootstrap resolves all base URLs and credentials
 before construction and injects the appropriate shared TokenManager/runtime context. Protected
 open-API credentials remain separate from app/backend session credentials.
+The runtime descriptor contains provider identity and contract version, never a provider base URL,
+token, manual authorization header, object key, or database locator.
 
 ## 11. Security And Privacy Architecture
 
@@ -577,7 +620,7 @@ resolution is denied and requires an authenticated product route outside the ano
 | Deploy database unavailable | Web Nodes continue last-known-good descriptor/TLS snapshots; management fails explicitly |
 | Snapshot distribution partial | no activation without quorum; previous snapshot remains current |
 | Drive/Knowledgebase unavailable | bounded retry/circuit; serve allowed stale cache or explicit 5xx, never infer content |
-| Event stream gap | mark resource generation unknown and read-through revalidate |
+| Event stream gap | mark provider generation unknown and read-through revalidate |
 | Content removed/private | high-priority invalidation; provider revalidation overrides stale public cache |
 | Certificate renewal failure | retain valid version, retry/escalate; never activate unverified version |
 | Node drift | remove from ready targets or resynchronize; expose desired/observed mismatch |
@@ -625,6 +668,15 @@ large path tables, cache stampede, provider slowdown, mass invalidation, and ren
 
 Commercial GA requires:
 
+- one proven Deploy writer for Site/Domain/Certificate-policy/Revision state; all overlapping Web
+  Server app-api write routes and `web_site`, `web_domain`, `web_deployment`, and `web_certificate`
+  authority are retired after shadow comparison and reconciliation;
+- implemented Site Resource/Variant/Mount/Binding/SiteRevision schema and APIs; the current
+  `releaseId`/`deploy_release` path alone is not live-provider evidence;
+- accepted Drive and Knowledgebase internal SDK plus AsyncAPI authorities and declared component
+  dependency/event inventories;
+- an operating ACME issuance/renewal/distribution worker; setting `renewal_status=planned` is not
+  renewal evidence;
 - approved product terms, privacy disclosures, abuse process, retention, and support escalation;
 - entitlement/usage reconciliation with Finance/Commerce approval;
 - production PostgreSQL, backup/restore and region recovery evidence;
@@ -642,7 +694,8 @@ Commercial GA requires:
 1. Approve requirement/ADR/table and API vocabulary.
 2. Add Deploy schema and owner OpenAPI sources through reviewed migrations.
 3. Implement descriptor compiler, validator, revision store, and shadow rollout.
-4. Implement Drive Website Space/provider and `ATOMIC_SYNC` contracts.
+4. Implement Drive Website Space/provider, `SPACE_ROOT`/`FOLDER` selectors, and `ATOMIC_SYNC`
+   contracts.
 5. Implement Web Server descriptor/TLS snapshots and Drive delivery adapter.
 6. Cut Site/domain/TLS writes over from Web Server to Deploy.
 7. Implement Knowledgebase live Wiki provider and replace release-oriented publication.
@@ -659,8 +712,8 @@ Commercial GA requires:
 | API/SDK | envelope, operation, pagination, owner-generation, consumer-import checks |
 | Descriptor | schema, canonicalization, golden hash, compatibility, size, signature, fuzz |
 | Routing | host/IDNA/wildcard/path/redirect/Variant/Mount property and integration tests |
-| Drive | eligibility, root confinement, atomic sync, versions, events, range/MIME tests |
-| Wiki | state/visibility, render/sanitize, routes/nav/search/assets/redirects tests |
+| Drive | website-only eligibility, Space-root/folder selectors, reserved namespaces, root reuse/change, confinement, atomic sync, versions, events, range/MIME tests |
+| Wiki | one canonical publication per Knowledgebase, multi-Site reuse, ACTIVE eligibility, state/visibility, render/sanitize, routes/nav/search/assets/redirects tests |
 | TLS | ACME challenges, wildcard policy, custom validation, renewal, hot load, SNI probes |
 | Security/privacy | tenant/cache isolation, traversal, poisoning, secrets, retention, abuse tests |
 | Reliability | provider/control-plane/event outage, last-known-good, backup/restore, rollback |
@@ -675,4 +728,3 @@ TLS 1.2/1.3, SNI, IDNA, ACME RFC 8555 and applicable challenge RFCs, DNS CAA, OW
 Security guidance, Nginx virtual host/location behavior for the supported profile, and supply-chain
 evidence requirements selected by SDKWork standards. These references guide protocol behavior; the
 SDKWork specs and approved product contracts remain the repository authority.
-

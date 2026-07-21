@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-deploy-drive-port",
+    "displayName": "SDKWork Deploy Drive Provider Adapter",
+    "version": "0.1.0",
+    "type": "rust-crate",
+    "root": "crates/sdkwork-deploy-drive-port",
+    "domain": "deploy",
+    "capability": "deploy-drive-provider",
+    "surface": "backend-provider",
+    "languages": [
+      "rust"
+    ],
+    "generated": false,
+    "manifests": [
+      "Cargo.toml"
+    ]
+  },
+  "canonicalSpecs": [
+    {
+      "file": "CODE_STYLE_SPEC.md",
+      "path": "../../../sdkwork-specs/CODE_STYLE_SPEC.md",
+      "purpose": "Authored provider adapter boundaries."
+    },
+    {
+      "file": "RUST_CODE_SPEC.md",
+      "path": "../../../sdkwork-specs/RUST_CODE_SPEC.md",
+      "purpose": "Rust provider and public export rules."
+    },
+    {
+      "file": "SDK_SPEC.md",
+      "path": "../../../sdkwork-specs/SDK_SPEC.md",
+      "purpose": "Generated Drive App SDK consumption."
+    },
+    {
+      "file": "APP_SDK_INTEGRATION_SPEC.md",
+      "path": "../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md",
+      "purpose": "Injected authenticated app SDK integration."
+    },
+    {
+      "file": "TEST_SPEC.md",
+      "path": "../../../sdkwork-specs/TEST_SPEC.md",
+      "purpose": "Provider adapter verification."
+    }
+  ],
+  "contracts": {
+    "layerRole": "backend-provider",
+    "publicExports": [
+      "."
+    ],
+    "providedPorts": [
+      {
+        "name": "deployDrivePort",
+        "export": "."
+      }
+    ],
+    "requiredPorts": [
+      {
+        "name": "driveAppSdk",
+        "export": "."
+      }
+    ],
+    "runtimeEntrypoints": [],
+    "routeManifest": null,
+    "sdkClients": [
+      "SdkworkAppClient"
+    ],
+    "sdkDependencies": [
+      {
+        "workspace": "sdkwork-drive-app-sdk",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      }
+    ],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "events": [],
+    "configKeys": [
+      "SDKWORK_DRIVE_FACADE_URL",
+      "SDKWORK_DEPLOY_USE_MEMORY_DRIVE"
+    ]
+  },
+  "verification": {
+    "commands": [
+      "cargo test -p sdkwork-deploy-drive-port",
+      "node ../sdkwork-specs/tools/check-component-port-bindings.mjs --root ."
+    ]
+  }
+}

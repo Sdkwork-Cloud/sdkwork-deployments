@@ -10,8 +10,8 @@ Specs: REQUIREMENTS_SPEC.md, DOCUMENTATION_SPEC.md
 
 - [PRD-2026-06-14-deploy-web-server-prd.md](PRD-2026-06-14-deploy-web-server-prd.md)
 - [PRD-cloud-site-publishing-platform.md](PRD-cloud-site-publishing-platform.md) - commercial live
-  Drive directory and Knowledgebase Wiki publishing product, user console, admin console, domains,
-  client Variants, TLS, metering, and launch gates.
+  Drive Space-root/folder directory and every-Knowledgebase Wiki publishing product, user console,
+  admin console, domains, client Variants, TLS, metering, and launch gates.
 - [Standards alignment](../../standards-alignment.md)
 - [Technical standards alignment](../../architecture/tech/TECH-standards-alignment.md)
 

@@ -1,12 +1,7 @@
-# Engineering Requirements
-
-Implementable `REQ-*` records governed by `REQUIREMENTS_SPEC.md`.
-
-See `DOCUMENTATION_SPEC.md` section 2.
 # Product Requirements
 
-Requirement records in this directory follow `REQUIREMENTS_SPEC.md` and are linked from the product
-Canon.
+Requirement records in this directory follow `REQUIREMENTS_SPEC.md` and
+`DOCUMENTATION_SPEC.md` section 2 and are linked from the product Canon.
 
 ## Active Requirements
 

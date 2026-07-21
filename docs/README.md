@@ -9,7 +9,7 @@
 | Developer | [guides/developer/README.md](guides/developer/README.md) | [engineering/plans/](engineering/plans/) |
 | Operator | [guides/operator/README.md](guides/operator/README.md) | [runbooks/](runbooks/) |
 | Integrator | [guides/integrator/README.md](guides/integrator/README.md) | repository `apis/` and `sdks/` |
-| Agent | [../AGENTS.md](../AGENTS.md) | [standards-alignment.md](../standards-alignment.md), [INDEX.yaml](INDEX.yaml) |
+| Agent | [../AGENTS.md](../AGENTS.md) | [standards-alignment.md](standards-alignment.md), [INDEX.yaml](INDEX.yaml) |
 
 ## Canon Documents
 
@@ -20,6 +20,7 @@
 | Cloud publishing PRD | [product/prd/PRD-cloud-site-publishing-platform.md](product/prd/PRD-cloud-site-publishing-platform.md) |
 | Cloud publishing architecture | [architecture/tech/TECH-cloud-site-publishing-control-plane.md](architecture/tech/TECH-cloud-site-publishing-control-plane.md) |
 | Control-plane convergence migration | [migrations/MIG-2026-0001-cloud-site-control-plane-convergence.md](migrations/MIG-2026-0001-cloud-site-control-plane-convergence.md) |
+| Commercial readiness review | [engineering/reviews/REVIEW-20260721-cloud-site-publishing-commercial-readiness.md](engineering/reviews/REVIEW-20260721-cloud-site-publishing-commercial-readiness.md) |
 
 ## Related Specs
 

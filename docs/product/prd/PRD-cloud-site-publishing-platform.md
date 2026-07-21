@@ -37,7 +37,7 @@ Customers need the behavior they already understand from professional static hos
 products:
 
 - upload a built React directory and see the whole directory behave as one website;
-- upload Markdown and assets to a Wiki source tree and make eligible pages available quickly;
+- upload governed multi-format sources and assets to a Wiki source tree and make eligible pages available quickly;
 - bind one or more custom domains;
 - route desktop, mobile, tablet, TV, or bot traffic to different site resources when required;
 - obtain and renew free certificates automatically, or upload managed custom certificates;
@@ -49,7 +49,7 @@ products:
 | Persona | Primary outcome |
 | --- | --- |
 | Individual developer | Publish a static build from Drive with minimal operations work. |
-| Knowledge author | Publish a navigable Wiki from Markdown and static assets. |
+| Knowledge author | Publish a navigable Wiki from governed pages, documents, media, and static assets. |
 | Tenant site administrator | Govern sites, domains, variants, permissions, and quotas. |
 | Application operator | Inspect activation, cache, origin, and certificate health. |
 | Security administrator | Control public exposure, certificate keys, headers, and abuse response. |
@@ -60,8 +60,8 @@ products:
 
 ## 4. Product Principles
 
-1. **Explicit eligibility.** Ordinary Drive Spaces and ordinary Knowledgebases are private by
-   default and cannot become websites accidentally.
+1. **Explicit eligibility.** Ordinary Drive Spaces are not website providers. Every Knowledgebase is
+   Wiki-capable but remains private by default; neither source becomes publicly exposed by inference.
 2. **Directory fidelity.** A mounted directory is served with its hierarchy intact, subject to
    explicit path, MIME, visibility, and security policies.
 3. **Live content, revisioned configuration.** Content mutation and runtime configuration activation
@@ -84,21 +84,26 @@ products:
 A Drive resource is eligible only when all of the following are true:
 
 - the Space has `spaceType=website`;
-- the Space and selected folder node are active and owned by the same tenant as the Site;
-- an active `DRIVE_DIRECTORY` resource references the selected folder;
+- a Drive-owned WebsiteRoot selects either `SPACE_ROOT` or one active same-Space descendant
+  `FOLDER`, excludes reserved/internal namespaces, and is owned by the same tenant as the Site;
+- an active `DRIVE_DIRECTORY` resource references that stable WebsiteRoot; its `LIVE_TREE` or
+  `ATOMIC_GENERATION` content mode is provider-owned;
 - an active Site Variant mounts the resource;
 - an active and verified Site Binding points to the Site;
 - the Site and its current configuration revision are active.
 
-Creating a `website` Space is not publication. It establishes the project, ownership, quota, and
-security boundary. The selected folder node establishes the document root.
+Creating a `website` Space provisions a default whole-Space WebsiteRoot but is not publication. The
+Space establishes project/ownership/quota/security; the WebsiteRoot selector establishes either the
+complete eligible Space tree or a chosen folder as document root. Additional folder roots are
+entitlement-controlled. The same root can be reused by multiple Sites/Variants/Mounts.
 
 ### 5.2 Knowledgebase Wiki
 
 A Knowledgebase resource is eligible only when all of the following are true:
 
-- the Knowledgebase owns a Drive Space with `spaceType=knowledge_base`;
-- its publication has `publicationType=wiki` and `wikiStatus=active`;
+- the Knowledgebase owns a Drive Space with `spaceType=knowledge_base` and its one canonical
+  WikiPublication has been provisioned;
+- its publication has `publicationType=wiki` and `wikiStatus=ACTIVE`;
 - the fixed public source root resolves to `sources/raw`;
 - an active `KNOWLEDGEBASE_WIKI` resource references that Wiki publication;
 - an active WIKI mount and Site Binding exist;
@@ -126,11 +131,28 @@ The resource provider types are:
 - `DRIVE_DIRECTORY`
 - `KNOWLEDGEBASE_WIKI`
 
+The resource creation UI/API uses a discriminated source selector:
+
+```text
+DRIVE_DIRECTORY    { websiteSpaceUuid, root: SPACE_ROOT | FOLDER(folderNodeUuid) }
+KNOWLEDGEBASE_WIKI { knowledgebaseUuid }
+```
+
+For Drive, Deploy asks Drive to create or reuse the stable WebsiteRoot and persists only its
+`providerResourceUuid`. For Knowledgebase, Deploy resolves the one canonical WikiPublication. A
+draft/paused Wiki may be connected for authenticated configuration/preview, but public activation
+requires `ACTIVE`. Source selectors, node UUIDs, and publication UUIDs are never accepted from a
+different tenant, and Deploy does not duplicate their business state.
+
+The same provider resource may be attached to multiple Sites and mounted by multiple Variants or URL
+prefixes. A Site-local Resource remains the configuration identity, while
+`providerResourceUuid` remains the source identity.
+
 The handler types are:
 
 - `STATIC` for directory-faithful assets and HTML;
 - `SPA` for static assets plus a controlled application fallback;
-- `WIKI` for Markdown/page resolution, navigation, search, and Wiki metadata.
+- `WIKI` for provider-owned page/document/media resolution, navigation, search, and Wiki metadata.
 
 Mounts use normalized URL prefixes and `ROOT` or `ALIAS` semantics comparable to Nginx
 `location`/`root`/`alias`. Longest normalized path prefix wins. Directory listing is disabled by
@@ -141,6 +163,15 @@ default and cannot be enabled for a Wiki source root.
 Ordinary file create, update, move, rename, and delete operations become visible without a Deploy
 Release. Provider events invalidate affected cache keys, and read-through resolution covers event
 delay or loss. The product freshness objective is stated in section 12.
+Deploy does not synchronously process, relay, or acknowledge each content event. Drive and
+Knowledgebase commit provider state/events and Web Server consumes them directly. Deploy remains
+the configuration authority and enters the path only for attachment, activation, explicit
+reconciliation, provider-wide health policy, or a Site configuration change.
+
+For Wiki sources, realtime is policy-aware: review-required changes update author state and private
+preview but wait for a version-fenced publish/republish command; auto-public changes may become
+public after all gates. Provider generation, route page public version, navigation/search
+generation, and SiteRevision policy generation remain independent.
 
 For hashed application bundles, the Drive console and SDK shall offer `ATOMIC_SYNC`: upload into an
 isolated tree, validate completeness and quotas, then atomically switch the active root pointer.
@@ -201,7 +232,7 @@ The Wiki handler shall provide:
 - theme tokens and templates that cannot execute untrusted server-side code.
 
 The default upload policy is `REVIEW_REQUIRED`. Authorized tenants may select
-`AUTO_PUBLIC_AFTER_CHECKS`; eligible Markdown becomes public only after upload completion, malware
+`AUTO_PUBLIC_AFTER_CHECKS`; eligible source content becomes public only after upload completion, malware
 and format checks, projection, sanitization, and index readiness. Generic uploads never silently
 inherit public visibility.
 
@@ -286,17 +317,18 @@ terminal error states. Destructive commands require resource identity and impact
 
 ### 8.1 Drive Views
 
-Drive adds Website Space creation, a site-aware file explorer, current mounted root indicator,
+Drive adds Website Space creation, a site-aware file explorer, default whole-Space root, additional
+folder-root selector, content mode, current mounted root indicator,
 `ATOMIC_SYNC`, validation results, preview/open-site commands, file version rollback, and a link to
 the Deploy Site workspace. A normal Space does not show public-site controls.
 
 ### 8.2 Knowledgebase Views
 
-Knowledgebase adds Wiki Settings and a `sources/raw` publication explorer with columns for path,
+Every Knowledgebase adds Wiki capability/settings and a `sources/raw` publication explorer with columns for path,
 content type, ingest state, publication state, visibility, public route, source version, index state,
 last error, and updated time. It supports bulk review/publish/unpublish, navigation editing,
 homepage selection, route preview, broken-link review, redirects, theme, SEO, domains, and analytics.
-Knowledgebases not published as Wiki do not show public Wiki URLs.
+Knowledgebases not activated as Wiki show setup/preview readiness but no public Wiki URLs.
 
 ## 9. Platform Admin Information Architecture
 
@@ -418,6 +450,9 @@ platform does not promise application-authored frontend performance.
 
 Approve cross-repository ownership, database migration, descriptor schema, permissions, and naming.
 No public production claim is permitted.
+The current Release-oriented Deploy DTO/schema, duplicate Web Server control plane, missing
+provider SDK/events/runtime, and planned-only certificate renewal are explicit Phase 0 blockers,
+not partial proof of the target capability.
 
 ### Phase 1 - Static Website Pilot
 
@@ -443,12 +478,15 @@ origins, advanced traffic policy, and certified 99.99% data-plane tier.
 
 ## 16. Acceptance Criteria
 
-- An ordinary Drive Space cannot be exposed; an eligible Website Space folder can be mounted and
-  served with directory fidelity.
+- An ordinary Drive Space cannot be exposed; an eligible Website Space can serve either its complete
+  eligible root or an explicit descendant folder with directory fidelity.
+- Root selector union/default/idempotency, reserved namespace rejection, multiple folder roots,
+  provider-resource reuse, and root-change SiteRevision tests pass.
 - A React `dist/` tree can be atomically synchronized and switched without a Deploy Release and
   without mixed old/new hashed assets.
-- A Wiki serves only active Wiki publication content under `sources/raw` and respects each page's
-  state and visibility.
+- Every Knowledgebase has one canonical DRAFT/PRIVATE WikiPublication; a Wiki serves only after it is
+  ACTIVE and then only eligible content under `sources/raw`, respecting each page's state and
+  visibility. One publication may back multiple authorized Sites/Mounts without cloning content.
 - One Site supports multiple domains and distinct desktop/mobile resources with deterministic rule
   precedence and an explainable routing simulator.
 - Domain verification prevents cross-tenant claims and custom-domain takeover.
@@ -460,6 +498,15 @@ origins, advanced traffic policy, and certified 99.99% data-plane tier.
 - Configuration rollback, source rollback, and certificate rollback are separate and tested.
 - The control plane remains the only writable site/domain/TLS authority; Web Server runtime state is
   a one-way projection.
+- Current overlapping Web Server app-api control-plane routes/tables are removed or made
+  non-authoritative through an approved single-writer migration with shadow-compare and rollback
+  evidence.
+- Drive and Knowledgebase provider input/output AsyncAPI plus generated internal SDK dependencies
+  are accepted, declared in component/app manifests, and verified in standalone/cloud integration.
+- Native auto-public, explicit publish, and priority revocation meet their measured p95/p99 targets;
+  private processing does not cause a global public cache flush.
+- Managed renewal performs real ACME issue/challenge/version/distribution/SNI verification;
+  `renewal_status=planned` alone fails acceptance.
 - Required security, load, isolation, backup/restore, renewal, and rollout evidence exists before
   commercial GA.
 
@@ -477,4 +524,3 @@ origins, advanced traffic policy, and certified 99.99% data-plane tier.
 - Initial cloud regions, residency guarantees, and multi-region activation date.
 - Legal process and response times for public-content abuse, DMCA-equivalent notices, and appeals.
 - Whether customer-managed CDN/origin integrations enter Enterprise or a later product line.
-

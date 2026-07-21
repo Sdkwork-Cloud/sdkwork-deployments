@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use serde::Deserialize;
 use sdkwork_deploy_contract::{
     CancelDeployUploadSessionRequest, CompleteDeployUploadSessionRequest, DeployServiceError,
     DeployServiceResult, DeployUploadSessionResponse, UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE,
@@ -7,7 +6,7 @@ use sdkwork_deploy_contract::{
 };
 use sdkwork_drive_app_sdk_generated_rust::{
     CompleteUploadSessionRequest, DriveUploadSession, NodeCommandRequest,
-    PrepareUploaderUploadRequest, PrepareUploaderUploadResponse, SdkworkAppClient, SdkworkError,
+    PrepareUploaderUploadRequest, SdkworkAppClient, SdkworkError,
 };
 use sdkwork_utils_rust::{format_datetime, now, string::trim};
 
@@ -154,22 +153,6 @@ fn response_from_session(
     }
 }
 
-#[derive(Deserialize)]
-struct DriveUploadSessionData {
-    item: DriveUploadSession,
-}
-
-fn parse_drive_data<T: serde::de::DeserializeOwned>(
-    data: serde_json::Value,
-    operation: &str,
-) -> DeployServiceResult<T> {
-    serde_json::from_value(data).map_err(|error| {
-        DeployServiceError::Internal(format!(
-            "Drive SDK {operation} response data did not match its generated contract: {error}"
-        ))
-    })
-}
-
 #[async_trait]
 impl DeployDrivePort for SdkDriveAppFacade {
     async fn prepare_package_upload(
@@ -215,8 +198,6 @@ impl DeployDrivePort for SdkDriveAppFacade {
             .uploader_uploads_create(&body)
             .await
             .map_err(map_drive_error)?;
-        let response: PrepareUploaderUploadResponse =
-            parse_drive_data(response.data, "uploader_uploads_create")?;
         Ok(response_from_prepare(
             request,
             &upload_item_id,
@@ -236,8 +217,6 @@ impl DeployDrivePort for SdkDriveAppFacade {
             .upload_sessions_retrieve(drive_session_id)
             .await
             .map_err(map_drive_error)?;
-        let session: DriveUploadSessionData =
-            parse_drive_data(session.data, "upload_sessions_retrieve")?;
         let fallback = DeployUploadSessionResponse {
             id: drive_session_id.to_string(),
             site_id: None,
@@ -254,7 +233,7 @@ impl DeployDrivePort for SdkDriveAppFacade {
             created_at: timestamp_now(),
             updated_at: timestamp_now(),
         };
-        Ok(response_from_session(&session.item, &fallback))
+        Ok(response_from_session(&session, &fallback))
     }
 
     async fn complete_upload_session(
@@ -288,8 +267,6 @@ impl DeployDrivePort for SdkDriveAppFacade {
             .upload_sessions_complete(drive_session_id, &body)
             .await
             .map_err(map_drive_error)?;
-        let session: DriveUploadSessionData =
-            parse_drive_data(session.data, "upload_sessions_complete")?;
         let fallback = DeployUploadSessionResponse {
             id: drive_session_id.to_string(),
             site_id: None,
@@ -306,7 +283,7 @@ impl DeployDrivePort for SdkDriveAppFacade {
             created_at: timestamp_now(),
             updated_at: timestamp_now(),
         };
-        Ok(response_from_session(&session.item, &fallback))
+        Ok(response_from_session(&session, &fallback))
     }
 
     async fn cancel_upload_session(
@@ -324,8 +301,6 @@ impl DeployDrivePort for SdkDriveAppFacade {
             .upload_sessions_abort(drive_session_id, &body)
             .await
             .map_err(map_drive_error)?;
-        let session: DriveUploadSessionData =
-            parse_drive_data(session.data, "upload_sessions_abort")?;
         let fallback = DeployUploadSessionResponse {
             id: drive_session_id.to_string(),
             site_id: None,
@@ -342,6 +317,6 @@ impl DeployDrivePort for SdkDriveAppFacade {
             created_at: timestamp_now(),
             updated_at: timestamp_now(),
         };
-        Ok(response_from_session(&session.item, &fallback))
+        Ok(response_from_session(&session, &fallback))
     }
 }
