@@ -4541,6 +4541,16 @@
           }
         }
       },
+      "Forbidden": {
+        "description": "Access denied",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetail"
+            }
+          }
+        }
+      },
       "NotFound": {
         "description": "资源不存在",
         "content": {
