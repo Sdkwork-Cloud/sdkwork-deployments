@@ -114,7 +114,7 @@ pub async fn wrap_router_with_web_framework_from_env(router: Router) -> Router {
             build_deploy_app_api_framework_layer(ProductionFailClosedResolver),
         ),
         DeployWebAuthMode::IamDatabase(resolver) => {
-            wrap_router_with_iam_database_web_framework(resolver, router)
+            wrap_router_with_iam_database_web_framework(*resolver, router)
         }
     }
 }

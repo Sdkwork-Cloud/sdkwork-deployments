@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "apiAuthority": "sdkwork-deploy.backend",
-  "sdkOwner": "sdkwork-deployments",
+  "apiAuthority": "sdkwork-deploy-backend-api",
+  "sdkOwner": "sdkwork-deploy",
   "sdkDependencies": [],
   "sdkFamily": "sdkwork-deploy-backend-sdk",
   "sdkName": "sdkwork-deploy-backend-sdk",

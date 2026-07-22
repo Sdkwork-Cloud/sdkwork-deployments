@@ -4,8 +4,8 @@ Generated deploy SDK artifacts for app-api and backend-api consumers.
 
 | Family | OpenAPI | Assembly |
 | --- | --- | --- |
-| `sdkwork-deploy-app-sdk` | `openapi/deploy-app-api.openapi.json` | `sdk-manifest.json` |
-| `sdkwork-deploy-backend-sdk` | `openapi/deploy-backend-api.openapi.json` | `sdk-manifest.json` |
+| `sdkwork-deploy-app-sdk` | `openapi/deploy-app-api.openapi.json` | `sdk-manifest.json`, `specs/component.spec.json` |
+| `sdkwork-deploy-backend-sdk` | `openapi/deploy-backend-api.openapi.json` | `sdk-manifest.json`, `specs/component.spec.json` |
 
 Route manifests for Rust handlers live under `_route-manifests/`.
 

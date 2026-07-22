@@ -1,14 +1,37 @@
 # SDKWork Cloud Site Publishing Control-Plane Architecture
 
-Status: proposed
+Status: implementation in progress
 Owner: SDKWork Deploy maintainers
-Updated: 2026-07-21
+Updated: 2026-07-22
 Requirement: REQ-2026-0001
 Decision: ADR-20260721-unified-cloud-site-publishing-control-plane
 Specs: ARCHITECTURE_DECISION_SPEC.md, DOMAIN_SPEC.md, DATABASE_SPEC.md, DRIVE_SPEC.md,
 API_SPEC.md, SDK_SPEC.md, APP_SDK_INTEGRATION_SPEC.md, CONFIG_SPEC.md, DEPLOYMENT_SPEC.md,
 NGINX_SPEC.md, SECURITY_SPEC.md, PRIVACY_SPEC.md, PERFORMANCE_SPEC.md,
 OBSERVABILITY_SPEC.md, TEST_SPEC.md, RELEASE_SPEC.md, MIGRATION_SPEC.md
+
+## Implementation Evidence
+
+The prelaunch control plane now has executable foundations rather than a Release-only design:
+
+- portable PostgreSQL and SQLite baseline tables for Site resources, Variants, rules, Mounts,
+  Bindings, immutable Site revisions, Web Node targets, and durable runtime assignments;
+- `sdkwork-deploy-runtime-compiler`, which emits stable-ID-ordered descriptors and complete
+  node/environment runtime sets with canonical SHA-256 hashes;
+- golden compatibility tests that feed Deploy output into the Web Server's real descriptor and
+  runtime-set compilers;
+- `sdkwork-deploy-web-port`, which publishes through the generated
+  `sdkwork-web-internal-sdk`, reads the ingress credential from a rotatable secret file, and
+  redacts transport failures;
+- a durable assignment/outbox service with same-state idempotency, transactionally serialized
+  generation, supersession, bounded retry, expiring multi-worker claims, exact receipt validation,
+  and concurrent SQLite transaction-path evidence.
+
+This evidence does not yet close production readiness. Site composition app/backend APIs and owner
+SDK validation must feed the new tables; Site mutations must transactionally create revisions and
+enqueue every affected Node; Web observations need a Deploy-visible contract for probe/quorum/drift
+decisions; and certificate material custody, SNI hot activation, metering, load, recovery, and
+multi-Node rollout evidence remain required.
 
 ## 1. Authority And Bounded Contexts
 
@@ -130,10 +153,12 @@ WebsiteRoot and changes Site composition, so it creates a SiteRevision. File mut
 `LIVE_TREE` observation, or `ATOMIC_GENERATION` switch behind an unchanged WebsiteRoot advances only
 provider versions/generations.
 
-## 4. Target Database Contract
+## 4. Portable Database Contract
 
-This section defines the planned portable contract. Physical DDL, RLS policy, migration identifiers,
-and ORM code require separate human-reviewed implementation. All runtime business tables use
+This section defines the portable contract. The prelaunch PostgreSQL and SQLite baselines now own
+the Site composition, revision, Node target, and runtime assignment tables described below. TLS,
+entitlement, usage, observation projection, RLS, and their repository/API implementations remain
+open and must not be inferred from the implemented subset. All runtime business tables use
 SDKWork-generated `BIGINT id`, stable `uuid`, tenant scope, audit timestamps/actors, lifecycle state,
 and optimistic `version` as required by `DATABASE_SPEC.md`.
 
@@ -286,7 +311,7 @@ Columns: `site_id`, nullable `mount_id`, `policy_name`, `cache_profile`, `html_m
 Header names/values are allowlisted and size-bounded; hop-by-hop, auth, cookie, CORS credential, and
 security-weakening headers are rejected.
 
-### 4.4 Revision And Runtime Observation Tables
+### 4.4 Revision And Runtime Assignment Tables
 
 #### `deploy_site_revision`
 
@@ -303,6 +328,28 @@ Columns: `site_id`, `site_revision_id`, `target_uuid`, `region`, `observed_revis
 `observed_descriptor_sha256`, `observation_status`, `loaded_at`, `last_seen_at`, `probe_status`,
 `probe_latency_millis`, and bounded `error_code`. Unique `(site_revision_id, target_uuid)`; indexes
 support desired-vs-observed drift and stale-node queries.
+
+This observation projection is not implemented because the current Web Internal owner contract
+accepts Node observations inside Web Server but does not expose a Deploy-consumable observation
+stream or read API. Deployments must not read `web_*` tables directly. The next contract round must
+add an owner-generated observation surface or event before this table and rollout quorum logic are
+activated.
+
+#### `deploy_web_node_target`
+
+Implemented target registry columns include tenant, opaque Node UUID, environment,
+`tenant_scope_hash`, optional region, lifecycle status, and optimistic version. Node/environment is
+globally unique in the current dedicated single-tenant fleet baseline. Shared multi-tenant fleet
+semantics require a separate approved ownership contract.
+
+#### `deploy_runtime_assignment`
+
+Implemented append-only desired-state/outbox rows contain target, monotonic generation, snapshot
+UUID/hash, a hash of the ordered descriptor state, the exact bounded runtime-set JSON, byte count,
+publication status, remote assignment UUID, bounded attempt state, next-attempt time, stable error
+code, and publication timestamps. Web Server remains the owner of its delivery projection and Node
+observations; this table provides Deploy reconciliation and crash recovery without cross-database
+access.
 
 ### 4.5 TLS And Certificate Tables
 
@@ -391,6 +438,7 @@ source.
 ```json
 {
   "schemaVersion": "sdkwork.website-runtime.v1",
+  "kind": "sdkwork.website-runtime.descriptor",
   "revisionUuid": "stable-revision-uuid",
   "siteUuid": "stable-site-uuid",
   "tenantScopeHash": "non-reversible-scope-hash",
@@ -398,6 +446,7 @@ source.
   "generatedAt": "2026-07-21T00:00:00Z",
   "compilerVersion": "deploy-descriptor-compiler/1",
   "descriptorSha256": "sha256-of-canonical-payload",
+  "siteDefaultVariantUuid": "stable-variant-uuid",
   "bindings": [],
   "variants": [],
   "variantRules": [],
@@ -412,13 +461,52 @@ source.
 
 `descriptorSha256` is computed over canonical serialized content excluding the hash field. Unknown
 major schema versions fail closed. Minor additive fields follow an explicit compatibility policy.
+The currently executable consumer contract is
+`sdkwork-web-server/specs/sdkwork.website-runtime.descriptor.schema.json`. Object keys are
+recursively ordered for hashing; unordered entity collections are emitted in stable-ID order, while
+meaningful ordered arrays such as index-file preference preserve authored order.
+
+#### Node Runtime Set Envelope
+
+Deploy distributes complete Site descriptors through one node/environment assignment envelope; it
+does not stream independent map mutations to the Web Node:
+
+```json
+{
+  "schemaVersion": "sdkwork.website-runtime-set.v1",
+  "kind": "sdkwork.website-runtime-set.snapshot",
+  "snapshotUuid": "stable-node-snapshot-uuid",
+  "nodeUuid": "stable-web-node-uuid",
+  "environment": "production",
+  "generation": 42,
+  "generatedAt": "2026-07-21T00:00:00Z",
+  "compilerVersion": "deploy-runtime-set-compiler/1",
+  "snapshotSha256": "sha256-of-canonical-runtime-set",
+  "maximumSites": 10000,
+  "descriptors": []
+}
+```
+
+`generation` is a strictly increasing positive integer per `(nodeUuid, environment)` and remains
+within the JSON safe-integer range. Reusing one generation with different bytes is a control-plane
+integrity error; a lower or replayed generation cannot reactivate after a newer generation or local
+rollback. `descriptors` contains complete, individually hash-verified WebsiteRuntimeDescriptors in
+unique ascending `siteUuid` order. `snapshotSha256` covers the canonical envelope excluding only
+its own field and therefore includes every nested descriptor and descriptor hash. `nodeUuid` and
+`environment` are mandatory activation scope, not diagnostics. Cross-Site duplicate
+`(hostname,pathPrefix)` ownership fails the entire set. The executable consumer contract is
+`sdkwork-web-server/specs/sdkwork.website-runtime-set.snapshot.schema.json`; the Web Node compiles
+the complete set before one pointer swap, accepts an empty assigned set, and never exposes a
+partially updated routing map.
 
 ### 5.2 Resource Descriptor
 
-Resources contain `resourceUuid`, `providerType`, stable provider aggregate UUID, diagnostic
-provider Space/root observations, required provider contract version, and bounded capability flags.
-Drive root-selector/content-mode details may be included only as non-authoritative diagnostics; Web
-Server always opens the opaque WebsiteRoot. They never contain a token,
+Resources contain a Site-local `resourceUuid`, a nested opaque provider reference with
+`providerType`, stable provider aggregate UUID and required provider contract version, plus bounded
+capability flags. The v1 descriptor does not carry Space paths, folder UUIDs, root-selector mode,
+object observations, or Wiki source paths; those remain provider-owned activation diagnostics.
+Web Server always opens the opaque WebsiteRoot or canonical WikiPublication. Resources never
+contain a token,
 SDK/base URL, bucket, object key, presigned URL, database connection, DNS credential, certificate
 private key, or secret reference that the data plane does not need.
 
@@ -430,9 +518,11 @@ private key, or secret reference that the data plane does not need.
 3. Normalize hostnames, path prefixes, redirects, headers, cache, indexes, and fallback paths.
 4. Reject conflicts, cycles, unreachable Variants, missing defaults, unsafe headers, and exceeded
    entitlements.
-5. Serialize canonically, hash, store immutable revision, and sign/distribute through the approved
+5. Serialize and hash each immutable Site descriptor, then build a stable-ordered node/environment
+   runtime set with its own hash and distribute the authenticated artifact through the approved
    runtime configuration channel.
-6. Web Nodes validate schema/hash/signature/limits and stage the snapshot.
+6. Web Nodes validate both schema/hash layers, signature/source, scope, limits, and all cross-Site
+   ownership before staging the complete set.
 7. Run routing and public probes against staged targets.
 8. Activate at quorum; keep the prior snapshot until rollback retention expires.
 9. Reconcile desired and observed revisions continuously.

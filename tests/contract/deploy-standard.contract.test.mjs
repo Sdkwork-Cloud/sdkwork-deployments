@@ -9,10 +9,8 @@ import { renderNginxSite } from '../../../sdkwork-specs/tools/deploy/nginx-rende
 import { validateDeploySchema } from '../../../sdkwork-specs/tools/deploy/schema-validate.mjs';
 import { inspectNginxConfig } from '../../../sdkwork-specs/tools/deploy/nginx-lifecycle.mjs';
 import { resolveDomainSurfaceId } from '../../../sdkwork-specs/tools/deploy/topology-env.mjs';
-import { loadTopology } from '../../../sdkwork-specs/tools/deploy/load-manifest.mjs';
 
 const repoRoot = process.cwd();
-const workspaceRoot = path.resolve(repoRoot, '..');
 
 const deployResult = validateDeploy(repoRoot);
 assert.equal(
@@ -64,51 +62,64 @@ assert.match(
   'strip-prefix must proxy to upstream root',
 );
 
-const mailTopology = loadTopology(path.join(workspaceRoot, 'sdkwork-mail'));
+const caseInsensitiveTopology = {
+  ...plan.topology,
+  cloudPublicHosts: {
+    ...plan.topology.cloudPublicHosts,
+    'application.public-ingress': { httpHost: 'Deploy.SDKWork.com' },
+  },
+};
 assert.equal(
-  resolveDomainSurfaceId(mailTopology, 'mail.sdkwork.com'),
+  resolveDomainSurfaceId(caseInsensitiveTopology, 'deploy.sdkwork.com'),
   'application.public-ingress',
   'domain matching must be case-insensitive against topology hosts',
 );
 
 assert.deepEqual(
-  validateDeploySchema({ version: 2, profile: 'x', expose: [] }),
-  ['version: must be 1'],
+  validateDeploySchema({ version: 3, profile: 'cloud.production', expose: [] }),
+  ['version: must be 1 or 2'],
   'schema validation must reject invalid version',
 );
 
 const nginxInspection = inspectNginxConfig(deployPublicSite.mainConfig);
 assert.equal(nginxInspection.valid, true, nginxInspection.errors?.join('; '));
 
-const imResult = validateDeploy(path.join(workspaceRoot, 'sdkwork-im'));
-assert.equal(
-  imResult.ok,
-  true,
-  `sdkwork-im deploy validation failed: ${(imResult.errors ?? []).join('; ')}`,
-);
-
-const mailPlan = planDeploy(path.join(workspaceRoot, 'sdkwork-mail'));
-assert.equal(mailPlan.ok, true, 'sdkwork-mail deploy plan must succeed');
-const mailSite = renderNginxSite(mailPlan, 'mail.sdkwork.com');
+const adaptivePlan = {
+  ...plan,
+  expose: plan.expose.map((item) =>
+    item.domain === 'deploy.sdkwork.com'
+      ? {
+          ...item,
+          mode: 'web+api',
+          web: { mode: 'adaptive', surfaces: ['pc', 'h5'], warnings: [] },
+          webRoots: [
+            { surface: 'pc', path: '/usr/share/sdkwork/deploy/web/pc/' },
+            { surface: 'h5', path: '/usr/share/sdkwork/deploy/web/h5/' },
+          ],
+        }
+      : item,
+  ),
+};
+const adaptiveSite = renderNginxSite(adaptivePlan, 'deploy.sdkwork.com');
 assert.match(
-  mailSite.mainConfig,
-  /map \$http_user_agent \$sdkwork_sdkwork_mail_surface \{/,
+  adaptiveSite.mainConfig,
+  /map \$http_user_agent \$sdkwork_sdkwork_deployments_surface \{/,
   'adaptive nginx must define UA map',
 );
 assert.match(
-  mailSite.mainConfig,
-  /include\s+\/etc\/nginx\/snippets\/sdkwork\/mail\.sdkwork\.com\.web\.\$sdkwork_sdkwork_mail_surface_final\.conf;/,
+  adaptiveSite.mainConfig,
+  /include\s+\/etc\/nginx\/snippets\/sdkwork\/deploy\.sdkwork\.com\.web\.\$sdkwork_sdkwork_deployments_surface_final\.conf;/,
   'adaptive nginx must include variable snippet selector',
 );
 assert.doesNotMatch(
-  mailSite.mainConfig,
+  adaptiveSite.mainConfig,
   /set\s+\$root\s+/,
   'adaptive nginx must not use variable root SPA fallback',
 );
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdkwork-deploy-contract-'));
 try {
-  const rendered = renderNginxSite(mailPlan, 'mail.sdkwork.com', { snippetDir: tmpDir });
+  const rendered = renderNginxSite(adaptivePlan, 'deploy.sdkwork.com', { snippetDir: tmpDir });
   assert.ok(rendered.snippets.length >= 2, 'nginx render must emit pc and h5 web snippets');
 } finally {
   fs.rmSync(tmpDir, { recursive: true, force: true });

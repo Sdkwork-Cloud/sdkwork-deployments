@@ -6,7 +6,8 @@
   "displayName": "DEPLOY Database",
   "owner": "deploy-platform",
   "engines": [
-    "postgres"
+    "postgres",
+    "sqlite"
   ],
   "defaultEngine": "postgres",
   "tablePrefix": "deploy_",

@@ -1,0 +1,18 @@
+[package]
+name = "sdkwork-deploy-service-host"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+dotenvy.workspace = true
+sqlx.workspace = true
+sdkwork-database-config.workspace = true
+sdkwork-database-id.workspace = true
+sdkwork-database-sqlx.workspace = true
+sdkwork-deploy-core.workspace = true
+sdkwork-deploy-database-host.workspace = true
+sdkwork-deploy-drive-port.workspace = true
+sdkwork-deploy-content-provider-port.workspace = true
+sdkwork-deploy-web-port.workspace = true
+sdkwork-intelligence-deploy-repository-sqlx.workspace = true
+sdkwork-intelligence-deploy-service.workspace = true

@@ -1,0 +1,14 @@
+[package]
+name = "sdkwork-deploy-runtime-compiler"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sdkwork-utils-rust.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+sdkwork-webserver-core.workspace = true

@@ -77,7 +77,10 @@
       "architecture": "x64",
       "formats": ["tar.gz"],
       "runner": "ubuntu-24.04",
-      "outputGlobs": ["target/release/sdkwork-api-deployments-standalone-gateway*"],
+      "outputGlobs": [
+        "target/release/sdkwork-api-deployments-standalone-gateway*",
+        "target/release/sdkwork-deploy-runtime-assignment-worker*"
+      ],
       "deploymentProfile": "cloud",
       "runtimeTarget": "server"
     }

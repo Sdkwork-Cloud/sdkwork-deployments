@@ -1,10 +1,14 @@
 ﻿[workspace]
 resolver = "2"
 members = [
-    "crates/sdkwork-api-deployments-assembly",
-    "crates/sdkwork-api-deployments-assembly",
+  "crates/sdkwork-api-deployments-assembly",
   "crates/sdkwork-deploy-database-host",
   "crates/sdkwork-deploy-drive-port",
+  "crates/sdkwork-deploy-content-provider-port",
+  "crates/sdkwork-deploy-runtime-compiler",
+  "crates/sdkwork-deploy-runtime-assignment-worker",
+  "crates/sdkwork-deploy-service-host",
+  "crates/sdkwork-deploy-web-port",
   "crates/sdkwork-routes-deploy-common",
   "crates/sdkwork-deploy-contract",
   "crates/sdkwork-deploy-core",
@@ -29,7 +33,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite", "postgres", "any", "migrate"] }
 thiserror = "2"
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "time"] }
 tower = { version = "0.5", features = ["util"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -39,6 +43,10 @@ uuid = { version = "1", features = ["v4"] }
 sdkwork-deploy-contract = { path = "crates/sdkwork-deploy-contract" }
 sdkwork-deploy-core = { path = "crates/sdkwork-deploy-core" }
 sdkwork-deploy-drive-port = { path = "crates/sdkwork-deploy-drive-port" }
+sdkwork-deploy-content-provider-port = { path = "crates/sdkwork-deploy-content-provider-port" }
+sdkwork-deploy-runtime-compiler = { path = "crates/sdkwork-deploy-runtime-compiler" }
+sdkwork-deploy-service-host = { path = "crates/sdkwork-deploy-service-host" }
+sdkwork-deploy-web-port = { path = "crates/sdkwork-deploy-web-port" }
 sdkwork-deploy-database-host = { path = "crates/sdkwork-deploy-database-host" }
 sdkwork-intelligence-deploy-service = { path = "crates/sdkwork-intelligence-deploy-service" }
 sdkwork-intelligence-deploy-repository-sqlx = { path = "crates/sdkwork-intelligence-deploy-repository-sqlx" }
@@ -59,3 +67,7 @@ sdkwork-database-sqlx = { path = "../sdkwork-database/crates/sdkwork-database-sq
 sdkwork-database-id = { path = "../sdkwork-database/crates/sdkwork-database-id", package = "sdkwork-database-id" }
 sdkwork-utils-rust = { path = "../sdkwork-utils/packages/sdkwork-utils-rust" }
 sdkwork_drive_app_sdk_generated_rust = { package = "sdkwork-drive-app-sdk-generated-rust", path = "../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-rust/generated/server-openapi" }
+sdkwork-drive-internal-sdk-generated-rust = { package = "sdkwork-drive-internal-sdk-generated-rust", path = "../sdkwork-drive/sdks/sdkwork-drive-internal-sdk/sdkwork-drive-internal-sdk-rust/generated/server-openapi" }
+sdkwork-knowledgebase-internal-sdk-generated-rust = { package = "sdkwork-knowledgebase-internal-sdk-generated-rust", path = "../sdkwork-knowledgebase/sdks/sdkwork-knowledgebase-internal-sdk/sdkwork-knowledgebase-internal-sdk-rust/generated/server-openapi" }
+sdkwork-web-internal-sdk = { path = "../sdkwork-web-server/sdks/sdkwork-web-internal-sdk/sdkwork-web-internal-sdk-rust/generated/server-openapi" }
+sdkwork-webserver-core = { path = "../sdkwork-web-server/crates/sdkwork-webserver-core" }

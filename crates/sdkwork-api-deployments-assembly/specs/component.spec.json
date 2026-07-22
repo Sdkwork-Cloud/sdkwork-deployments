@@ -3,11 +3,11 @@
   "kind": "sdkwork.component.spec",
   "component": {
     "name": "sdkwork-api-deployments-assembly",
-    "displayName": "SDKWork deployments Gateway Assembly",
+    "displayName": "SDKWork Deployments API Assembly",
     "version": "0.1.0",
     "type": "rust-api-assembly",
     "root": "crates/sdkwork-api-deployments-assembly",
-    "domain": "application",
+    "domain": "deploy",
     "capability": "api-assembly",
     "surface": "api-assembly",
     "languages": [
@@ -16,10 +16,26 @@
     "generated": false,
     "manifests": [
       "Cargo.toml",
-      "assembly-manifest.json"
+      "assembly-manifest.json",
+      "specs/component.spec.json"
     ]
   },
   "canonicalSpecs": [
+    {
+      "file": "CODE_STYLE_SPEC.md",
+      "path": "../../../sdkwork-specs/CODE_STYLE_SPEC.md",
+      "purpose": "Authored API assembly and bootstrap boundaries."
+    },
+    {
+      "file": "NAMING_SPEC.md",
+      "path": "../../../sdkwork-specs/NAMING_SPEC.md",
+      "purpose": "API assembly and runtime identity naming."
+    },
+    {
+      "file": "RUST_CODE_SPEC.md",
+      "path": "../../../sdkwork-specs/RUST_CODE_SPEC.md",
+      "purpose": "Rust API assembly and runtime composition rules."
+    },
     {
       "file": "APPLICATION_GATEWAY_SPEC.md",
       "path": "../../../sdkwork-specs/APPLICATION_GATEWAY_SPEC.md",
@@ -34,21 +50,40 @@
       "file": "DATABASE_FRAMEWORK_SPEC.md",
       "path": "../../../sdkwork-specs/DATABASE_FRAMEWORK_SPEC.md",
       "purpose": "Database lifecycle bootstrap ownership for embedded assemblies."
+    },
+    {
+      "file": "TEST_SPEC.md",
+      "path": "../../../sdkwork-specs/TEST_SPEC.md",
+      "purpose": "API assembly and dependency wiring verification."
     }
   ],
   "contracts": {
+    "layerRole": "runtime-composition",
     "publicExports": [
       "."
     ],
-    "runtimeEntrypoints": [],
+    "providedPorts": [
+      {"name": "deployApiAssembly", "export": "."}
+    ],
+    "requiredPorts": [
+      {"name": "deployServiceHost", "export": ".", "provider": "sdkwork-deploy-service-host"},
+      {"name": "deployService", "export": ".", "provider": "sdkwork-intelligence-deploy-service"}
+    ],
+    "runtimeEntrypoints": ["assemble_api_router"],
     "routeManifest": "assembly-manifest.json",
     "sdkClients": [],
     "sdkDependencies": [],
     "dependencyApiExports": [],
     "dependencyApiSurfaces": [],
     "events": [],
-    "configKeys": [],
-    "layerRole": "runtime-composition"
+    "configKeys": [
+      "SDKWORK_DEPLOY_USE_MEMORY_CONTENT_PROVIDER",
+      "SDKWORK_DRIVE_FACADE_URL",
+      "SDKWORK_DEPLOY_DRIVE_INTERNAL_API_URL",
+      "SDKWORK_DEPLOY_DRIVE_INTERNAL_API_INGRESS_TOKEN_FILE",
+      "SDKWORK_DEPLOY_KNOWLEDGEBASE_INTERNAL_API_URL",
+      "SDKWORK_DEPLOY_KNOWLEDGEBASE_INTERNAL_API_INGRESS_TOKEN_FILE"
+    ]
   },
   "verification": {
     "commands": [

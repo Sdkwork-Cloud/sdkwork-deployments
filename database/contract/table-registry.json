@@ -79,6 +79,54 @@
       "owner": "deploy-platform",
       "compliance_level": "L2",
       "lifecycle_status": "active"
+    },
+    {
+      "table_name": "deploy_site_resource",
+      "owner": "deploy-platform",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "deploy_site_variant",
+      "owner": "deploy-platform",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "deploy_site_variant_rule",
+      "owner": "deploy-platform",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "deploy_site_mount",
+      "owner": "deploy-platform",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "deploy_site_binding",
+      "owner": "deploy-platform",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "deploy_site_revision",
+      "owner": "deploy-platform",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "deploy_web_node_target",
+      "owner": "deploy-platform",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "deploy_runtime_assignment",
+      "owner": "deploy-platform",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
     }
   ]
 }

@@ -1,0 +1,90 @@
+mode = "embedded"
+
+[service]
+name = "sdkwork-api-cloud-gateway"
+environment = "production"
+
+[server]
+bind = "0.0.0.0:3900"
+
+[[dependencySurfaces]]
+serviceId = "sdkwork-deployments-app-api"
+workspace = "sdkwork-deployments"
+sdkFamily = "sdkwork-deploy-app-sdk"
+apiAuthority = "sdkwork-deploy-app-api"
+surface = "app"
+apiPrefix = "/app/v3/api"
+runtimeMode = "split"
+sameOriginAllowed = true
+requiredBaseUrlKey = "SDKWORK_DEPLOY_APPLICATION_PUBLIC_HTTP_URL"
+coverage = "deploy-app-api-upstream-routes"
+
+[[upstreams]]
+serviceId = "sdkwork-deployments-app-api"
+baseUrl = "http://127.0.0.1:8080"
+
+[cors]
+allowAnyOrigin = false
+allowedOrigins = ["https://deploy.sdkwork.com"]
+
+[request]
+maxBodyBytes = 33554432
+timeoutMs = 30000
+
+[readiness]
+checkUpstreams = true
+timeoutMs = 5000
+
+[observability]
+accessLogEnabled = true
+auditLogEnabled = true
+accessLogSampleRateBasisPoints = 10000
+auditLogSampleRateBasisPoints = 10000
+metricsEnabled = true
+metricsPath = "/metrics"
+tracingEnabled = true
+redactHeaders = ["authorization", "access-token", "cookie", "x-api-key", "set-cookie"]
+
+[diagnostics]
+enabled = false
+path = "/internal/gateway/diagnostics"
+includePolicyInventory = true
+includeRouteInventory = true
+
+[security]
+allowedHosts = ["deploy.sdkwork.com"]
+trustedProxyCidrs = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]
+secureHeadersEnabled = true
+maxHeaderBytes = 65536
+maxHeaderCount = 128
+rejectCredentialHeadersOnAnonymousAuthRoutes = true
+csrfGuardEnabled = true
+
+[security.waf]
+enabled = true
+mode = "monitor"
+inspectQuery = true
+inspectHeaders = true
+inspectJsonBody = true
+
+[traffic]
+rateLimitEnabled = true
+compatXRateLimitHeaders = true
+globalMaxInFlight = 1024
+rateLimits = []
+concurrencyLimits = []
+
+[policy]
+enabled = true
+dryRun = false
+rules = []
+
+[resilience]
+retryEnabled = true
+maxAttempts = 3
+retryStatuses = [502, 503, 504]
+retryBackoffMs = 100
+circuitBreakerEnabled = true
+failureThreshold = 5
+openSeconds = 30
+halfOpenMaxAttempts = 1

@@ -99,7 +99,19 @@
     },
     {
       "family": "sdkwork-drive-app-sdk",
-      "reason": "Drive-backed package upload lifecycle for deployment artifacts."
+      "reason": "Drive-backed package uploads and user-authorized WebsiteRoot creation for live website resources."
+    },
+    {
+      "family": "sdkwork-drive-internal-sdk",
+      "reason": "Ingress-token validation of stable Drive WebsiteRoot eligibility and delivery capabilities."
+    },
+    {
+      "family": "sdkwork-knowledgebase-internal-sdk",
+      "reason": "Ingress-token validation of active canonical Knowledgebase Wiki publications."
+    },
+    {
+      "family": "sdkwork-web-internal-sdk",
+      "reason": "Authenticated publication of immutable Website runtime-set assignments to Web Nodes."
     }
   ],
   "dependencyApiExports": [],

@@ -1,5 +1,5 @@
 version: 1
-profile: cloud.unified-process.production
+profile: cloud.production
 
 install:
   layout: binary-package

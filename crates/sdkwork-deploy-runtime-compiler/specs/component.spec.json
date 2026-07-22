@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-deploy-runtime-compiler",
+    "displayName": "SDKWork Deploy Website Runtime Compiler",
+    "version": "0.1.0",
+    "type": "rust-crate",
+    "root": "crates/sdkwork-deploy-runtime-compiler",
+    "domain": "deploy",
+    "capability": "website-runtime-compilation",
+    "surface": "backend-domain",
+    "languages": ["rust"],
+    "generated": false,
+    "manifests": ["Cargo.toml", "specs/component.spec.json"]
+  },
+  "canonicalSpecs": [
+    {"file": "CODE_STYLE_SPEC.md", "path": "../../../sdkwork-specs/CODE_STYLE_SPEC.md", "purpose": "Authored domain compiler boundaries."},
+    {"file": "RUST_CODE_SPEC.md", "path": "../../../sdkwork-specs/RUST_CODE_SPEC.md", "purpose": "Rust implementation rules."},
+    {"file": "DEPLOYMENT_SPEC.md", "path": "../../../sdkwork-specs/DEPLOYMENT_SPEC.md", "purpose": "Immutable deployment projection rules."},
+    {"file": "SECURITY_SPEC.md", "path": "../../../sdkwork-specs/SECURITY_SPEC.md", "purpose": "Descriptor input and secret safety."},
+    {"file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md", "purpose": "Golden compatibility verification."}
+  ],
+  "contracts": {
+    "layerRole": "backend-domain",
+    "publicExports": ["."],
+    "providedPorts": [
+      {"name": "websiteRuntimeDescriptorCompiler", "export": "."},
+      {"name": "websiteRuntimeSetCompiler", "export": "."}
+    ],
+    "requiredPorts": [],
+    "runtimeEntrypoints": [],
+    "routeManifest": null,
+    "sdkClients": [],
+    "sdkDependencies": [],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "events": [],
+    "configKeys": []
+  },
+  "verification": {
+    "commands": ["cargo test -p sdkwork-deploy-runtime-compiler"]
+  }
+}

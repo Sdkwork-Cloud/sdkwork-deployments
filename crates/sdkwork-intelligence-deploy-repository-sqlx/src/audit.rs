@@ -1,6 +1,7 @@
 use sdkwork_deploy_contract::{
     AuditLogPage, AuditLogResponse, DeployServiceError, DeployServiceResult,
 };
+use sdkwork_intelligence_deploy_service::repository::InsertAuditLogCommand;
 use sqlx::{any::AnyRow, Row};
 
 use crate::support::{new_uuid, next_id, now_rfc3339, pagination, store_error};
@@ -75,13 +76,7 @@ impl DeployRepository {
 
     pub(super) async fn insert_audit_log_repo(
         &self,
-        tenant_id: i64,
-        organization_id: i64,
-        operator_id: i64,
-        action: &str,
-        target_type: &str,
-        target_id: Option<i64>,
-        target_uuid: Option<&str>,
+        command: &InsertAuditLogCommand,
     ) -> DeployServiceResult<()> {
         let id = next_id(self.id_generator())?;
         let uuid = new_uuid();
@@ -97,13 +92,13 @@ impl DeployRepository {
         )
         .bind(id)
         .bind(&uuid)
-        .bind(tenant_id)
-        .bind(organization_id)
-        .bind(operator_id)
-        .bind(action)
-        .bind(target_type)
-        .bind(target_id)
-        .bind(target_uuid)
+        .bind(command.tenant_id)
+        .bind(command.organization_id)
+        .bind(command.operator_id)
+        .bind(&command.action)
+        .bind(&command.target_type)
+        .bind(command.target_id)
+        .bind(command.target_uuid.as_deref())
         .bind(&now)
         .execute(&self.pool)
         .await

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-intelligence-deploy-service",
+    "displayName": "SDKWork Deploy Application Service",
+    "version": "0.1.0",
+    "type": "rust-crate",
+    "root": "crates/sdkwork-intelligence-deploy-service",
+    "domain": "deploy",
+    "capability": "control-plane-service",
+    "surface": "backend-service",
+    "languages": ["rust"],
+    "generated": false,
+    "manifests": ["Cargo.toml", "specs/component.spec.json"]
+  },
+  "canonicalSpecs": [
+    {"file": "CODE_STYLE_SPEC.md", "path": "../../../sdkwork-specs/CODE_STYLE_SPEC.md", "purpose": "Authored service boundaries and test placement."},
+    {"file": "NAMING_SPEC.md", "path": "../../../sdkwork-specs/NAMING_SPEC.md", "purpose": "Public service and port naming."},
+    {"file": "RUST_CODE_SPEC.md", "path": "../../../sdkwork-specs/RUST_CODE_SPEC.md", "purpose": "Rust service, port, transaction, and async rules."},
+    {"file": "DATABASE_SPEC.md", "path": "../../../sdkwork-specs/DATABASE_SPEC.md", "purpose": "Idempotency, concurrency, and persistence port semantics."},
+    {"file": "SECURITY_SPEC.md", "path": "../../../sdkwork-specs/SECURITY_SPEC.md", "purpose": "Tenant scope and provider error safety."},
+    {"file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md", "purpose": "Service transaction, idempotency, and retry verification."}
+  ],
+  "contracts": {
+    "layerRole": "backend-service",
+    "publicExports": ["."],
+    "providedPorts": [
+      {"name": "deployService", "export": "."},
+      {"name": "deployRepositoryPort", "export": "."},
+      {"name": "runtimePublicationService", "export": "."},
+      {"name": "runtimeAssignmentRepositoryPort", "export": "."},
+      {"name": "runtimeAssignmentMutationPort", "export": "."},
+      {"name": "siteCompositionRepositoryPort", "export": "."}
+    ],
+    "requiredPorts": [
+      {"name": "deployRepository", "export": "."},
+      {"name": "deployDrive", "export": ".", "provider": "sdkwork-deploy-drive-port"},
+      {"name": "contentProvider", "export": ".", "provider": "sdkwork-deploy-content-provider-port"},
+      {"name": "deployWebRuntime", "export": ".", "provider": "sdkwork-deploy-web-port"}
+    ],
+    "runtimeEntrypoints": [],
+    "routeManifest": null,
+    "sdkClients": [],
+    "sdkDependencies": [],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "events": [],
+    "configKeys": []
+  },
+  "verification": {
+    "commands": ["cargo test -p sdkwork-intelligence-deploy-service"]
+  }
+}

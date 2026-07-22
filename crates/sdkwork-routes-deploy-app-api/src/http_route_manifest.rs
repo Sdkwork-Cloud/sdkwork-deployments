@@ -42,6 +42,14 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     )
     .with_required_permission("deploy.sites.write"),
     HttpRoute::dual_token(
+        HttpMethod::Put,
+        "/app/v3/api/sites/{siteId}/composition",
+        "site",
+        "sites.composition.update",
+    )
+    .with_required_permission("deploy.sites.write")
+    .with_idempotent(true),
+    HttpRoute::dual_token(
         HttpMethod::Post,
         "/app/v3/api/sites/{siteId}/pause",
         "site",
@@ -242,7 +250,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Delete,
         "/app/v3/api/artifacts/{artifactId}",
         "artifact",
-        "artifacts.retain",
+        "artifacts.delete",
     )
     .with_required_permission("deploy.artifacts.write"),
     HttpRoute::dual_token(

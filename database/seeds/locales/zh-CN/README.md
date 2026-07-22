@@ -1,3 +1,4 @@
 # zh-CN locale seeds
 
-Add locale-specific seed SQL referenced from `seeds/seed.manifest.json`.
+This is the default active seed locale. It currently has no locale-specific persisted initialization
+data; future files must be ordered and checksummed in `seeds/seed.manifest.json`.

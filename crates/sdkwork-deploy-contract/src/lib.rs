@@ -4,6 +4,7 @@ pub mod app_ports;
 pub mod dto;
 pub mod problem;
 pub mod runtime_env;
+pub mod site_composition;
 
 pub use app_ports::{
     DeployAppApi, DeployAppRequestContext, DeployBackendApi, DeployBackendRequestContext,
@@ -15,3 +16,4 @@ pub use runtime_env::{
     deploy_dev_auth_bypass_enabled, deploy_environment_name, deploy_is_production_like_environment,
     deploy_use_dev_inline_auth_resolver,
 };
+pub use site_composition::*;

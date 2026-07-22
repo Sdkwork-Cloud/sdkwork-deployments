@@ -5,7 +5,7 @@ const binding = parseSdkworkDeployBinding(
   {
     sdkworkDeploy: {
       appRoot: 'E:/sdkwork-space/sdkwork-im',
-      profileId: 'cloud.split-services.production',
+      profileId: 'cloud.production',
     },
   },
   'im.sdkwork.com',
@@ -13,6 +13,6 @@ const binding = parseSdkworkDeployBinding(
 
 assert.equal(binding.appRoot, 'E:/sdkwork-space/sdkwork-im');
 assert.equal(binding.domain, 'im.sdkwork.com');
-assert.equal(binding.profileId, 'cloud.split-services.production');
+assert.equal(binding.profileId, 'cloud.production');
 
 process.stdout.write('deploy-orchestrator.contract.test.mjs passed\n');

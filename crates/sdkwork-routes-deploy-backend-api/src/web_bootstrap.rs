@@ -61,7 +61,7 @@ pub async fn wrap_router_with_web_framework_from_env(router: Router) -> Router {
         ),
         DeployWebAuthMode::IamDatabase(resolver) => with_web_request_context(
             with_problem_correlation(router),
-            build_deploy_backend_api_framework_layer(resolver),
+            build_deploy_backend_api_framework_layer(*resolver),
         ),
     }
 }

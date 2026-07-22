@@ -16,8 +16,10 @@ const surfaces = [
     manifestFn: "app_route_manifest",
     packageName: "sdkwork-routes-deploy-app-api",
     surface: "app-api",
-    apiAuthority: "sdkwork-deploy.app",
+    apiAuthority: "sdkwork-deploy-app-api",
     sdkFamily: "sdkwork-deploy-app-sdk",
+    packageName: "@sdkwork/deploy-app-sdk",
+    transportPackageName: "sdkwork-deploy-app-sdk-generated-typescript",
     prefix: "/app/v3/api",
     domainTag: "deploy",
   },
@@ -31,8 +33,10 @@ const surfaces = [
     manifestFn: "backend_route_manifest",
     packageName: "sdkwork-routes-deploy-backend-api",
     surface: "backend-api",
-    apiAuthority: "sdkwork-deploy.backend",
+    apiAuthority: "sdkwork-deploy-backend-api",
     sdkFamily: "sdkwork-deploy-backend-sdk",
+    packageName: "@sdkwork/deploy-backend-sdk",
+    transportPackageName: "sdkwork-deploy-backend-sdk-generated-typescript",
     prefix: "/backend/v3/api",
     domainTag: "deploy",
   },
@@ -49,6 +53,48 @@ function writeJson(relativePath, value) {
   writeText(relativePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+function assertWellFormedUnicode(value, sourcePath, pathSegments = []) {
+  if (typeof value === "string") {
+    if (/[\uD800-\uDFFF]/.test(value)) {
+      const pointer = pathSegments.length === 0 ? "/" : `/${pathSegments.join("/")}`;
+      throw new Error(`${sourcePath}${pointer} contains an unpaired UTF-16 surrogate`);
+    }
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) =>
+      assertWellFormedUnicode(item, sourcePath, [...pathSegments, String(index)]),
+    );
+    return;
+  }
+  if (value && typeof value === "object") {
+    for (const [key, item] of Object.entries(value)) {
+      assertWellFormedUnicode(item, sourcePath, [...pathSegments, key]);
+    }
+  }
+}
+
+function sdkManifest(profile) {
+  const familyRoot = `sdks/${profile.sdkFamily}/`;
+  if (!profile.sdkJsonPath.startsWith(familyRoot)) {
+    throw new Error(`${profile.sdkJsonPath} is outside ${familyRoot}`);
+  }
+  const familyOpenApiPath = profile.sdkJsonPath.slice(familyRoot.length);
+  return {
+    schemaVersion: 1,
+    apiAuthority: profile.apiAuthority,
+    sdkOwner: "sdkwork-deploy",
+    sdkDependencies: [],
+    sdkFamily: profile.sdkFamily,
+    sdkName: profile.sdkFamily,
+    packageName: profile.packageName,
+    transportPackageName: profile.transportPackageName,
+    openApiPath: familyOpenApiPath,
+    surface: profile.surface,
+    authoritySpec: familyOpenApiPath,
+  };
+}
+
 function enrichOpenApi(openapi, profile) {
   const enriched = structuredClone(openapi);
   for (const [pathKey, pathItem] of Object.entries(enriched.paths ?? {})) {
@@ -57,6 +103,7 @@ function enrichOpenApi(openapi, profile) {
         continue;
       }
       operation["x-sdkwork-api-surface"] = profile.surface;
+      operation["x-sdkwork-owner"] = "sdkwork-deploy";
       operation["x-sdkwork-api-authority"] = profile.apiAuthority;
       operation["x-sdkwork-request-context"] = "WebRequestContext";
       operation["x-sdkwork-auth-mode"] =
@@ -151,6 +198,7 @@ function writeHttpRouteManifestRust(crateDir, fnName, routes) {
 
 for (const profile of surfaces) {
   const yaml = parseYaml(fs.readFileSync(path.join(root, profile.yamlPath), "utf8"));
+  assertWellFormedUnicode(yaml, profile.yamlPath);
   const openapi = migrateOpenApiDocument(enrichOpenApi(yaml, profile));
   writeJson(profile.jsonAuthorityPath, openapi);
   writeJson(profile.sdkJsonPath, openapi);
@@ -185,20 +233,8 @@ writeJson("apis/authority-manifest.json", {
   })),
 });
 
-writeJson("sdks/sdkwork-deploy-app-sdk/sdk-manifest.json", {
-  schemaVersion: 1,
-  sdkFamily: "sdkwork-deploy-app-sdk",
-  surface: "app-api",
-  apiAuthority: "sdkwork-deploy.app",
-  openApiPath: "openapi/deploy-app-api.openapi.json",
-});
-
-writeJson("sdks/sdkwork-deploy-backend-sdk/sdk-manifest.json", {
-  schemaVersion: 1,
-  sdkFamily: "sdkwork-deploy-backend-sdk",
-  surface: "backend-api",
-  apiAuthority: "sdkwork-deploy.backend",
-  openApiPath: "openapi/deploy-backend-api.openapi.json",
-});
+for (const profile of surfaces) {
+  writeJson(`sdks/${profile.sdkFamily}/sdk-manifest.json`, sdkManifest(profile));
+}
 
 console.log("deploy phase-1 contracts materialized");

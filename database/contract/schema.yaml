@@ -6,6 +6,7 @@ owner_team: deploy-platform
 compliance_level: L2
 engines:
   - postgres
+  - sqlite
 table_prefix: deploy_
 tables:
   - name: deploy_site
@@ -45,5 +46,29 @@ tables:
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_release
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_site_resource
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_site_variant
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_site_variant_rule
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_site_mount
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_site_binding
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_site_revision
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_web_node_target
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_runtime_assignment
     lifecycle_status: active
     owner: deploy-platform

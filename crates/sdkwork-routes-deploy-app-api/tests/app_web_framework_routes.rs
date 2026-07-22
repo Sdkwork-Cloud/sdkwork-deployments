@@ -75,6 +75,19 @@ impl DeployAppApi for StubAppApi {
         ))
     }
 
+    async fn update_site_composition(
+        &self,
+        _context: &DeployAppRequestContext,
+        _site_id: &str,
+        _expected_site_version: i64,
+        _idempotency_key: &str,
+        _request: &sdkwork_deploy_contract::UpdateSiteCompositionRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::SiteCompositionResponse> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
     async fn delete_site(
         &self,
         _context: &DeployAppRequestContext,

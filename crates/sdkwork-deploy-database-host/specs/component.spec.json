@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-deploy-database-host",
+    "displayName": "SDKWork Deploy Database Host",
+    "version": "0.1.0",
+    "type": "rust-crate",
+    "root": "crates/sdkwork-deploy-database-host",
+    "domain": "deploy",
+    "capability": "database-lifecycle",
+    "surface": "backend-service",
+    "languages": ["rust"],
+    "generated": false,
+    "manifests": ["Cargo.toml", "specs/component.spec.json"]
+  },
+  "canonicalSpecs": [
+    {"file": "DATABASE_SPEC.md", "path": "../../../sdkwork-specs/DATABASE_SPEC.md", "purpose": "Deploy database ownership."},
+    {"file": "DATABASE_FRAMEWORK_SPEC.md", "path": "../../../sdkwork-specs/DATABASE_FRAMEWORK_SPEC.md", "purpose": "Lifecycle and SPI composition."},
+    {"file": "CONFIG_SPEC.md", "path": "../../../sdkwork-specs/CONFIG_SPEC.md", "purpose": "Typed database runtime configuration."},
+    {"file": "CODE_STYLE_SPEC.md", "path": "../../../sdkwork-specs/CODE_STYLE_SPEC.md", "purpose": "Runtime host structure."},
+    {"file": "NAMING_SPEC.md", "path": "../../../sdkwork-specs/NAMING_SPEC.md", "purpose": "Database host naming."},
+    {"file": "RUST_CODE_SPEC.md", "path": "../../../sdkwork-specs/RUST_CODE_SPEC.md", "purpose": "Rust host implementation."},
+    {"file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md", "purpose": "Database lifecycle verification."}
+  ],
+  "contracts": {
+    "layerRole": "runtime-service-host",
+    "publicExports": ["."],
+    "providedPorts": [{"name": "deployDatabaseHost", "export": "."}],
+    "requiredPorts": [
+      {"name": "databaseLifecycle", "export": ".", "provider": "sdkwork-database-lifecycle"},
+      {"name": "databaseSqlx", "export": ".", "provider": "sdkwork-database-sqlx"}
+    ],
+    "runtimeEntrypoints": ["bootstrap_deploy_database", "bootstrap_deploy_database_from_env"],
+    "routeManifest": null,
+    "sdkClients": [],
+    "sdkDependencies": [],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "events": [],
+    "configKeys": ["SDKWORK_DEPLOY_APP_ROOT", "SDKWORK_DEPLOY_DATABASE_*"]
+  },
+  "verification": {
+    "commands": ["cargo test -p sdkwork-deploy-database-host", "pnpm db:validate"]
+  }
+}

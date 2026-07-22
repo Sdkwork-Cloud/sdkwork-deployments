@@ -11,7 +11,11 @@
 pnpm dev
 ```
 
-Default topology profile: `standalone.unified-process.development` (`configs/topology/`). Upload sessions use in-memory Drive unless `SDKWORK_DEPLOY_USE_MEMORY_DRIVE=false` and `SDKWORK_DRIVE_FACADE_URL` are set.
+The default topology profile is `standalone.development` under `etc/topology/`. It uses in-memory
+Drive and publishes Web runtime assignments to the local Web Server at `http://127.0.0.1:3800`.
+Create the ignored `.runtime/secrets/deploy-web-internal-ingress-token` file before exercising the
+runtime publication path. Cloud development uses only the explicit remote endpoints in
+`etc/topology/cloud.development.env`.
 
 ## Verification
 

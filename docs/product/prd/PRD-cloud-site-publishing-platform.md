@@ -1,13 +1,26 @@
 # SDKWork Cloud Site Publishing Platform PRD
 
-Status: draft
+Status: implementation in progress
 Owner: SDKWork Deploy maintainers
 Application: sdkwork-deploy
-Updated: 2026-07-21
+Updated: 2026-07-22
 Requirement: REQ-2026-0001
 Specs: REQUIREMENTS_SPEC.md, DOCUMENTATION_SPEC.md, DRIVE_SPEC.md, SECURITY_SPEC.md,
 PRIVACY_SPEC.md, PERFORMANCE_SPEC.md, OBSERVABILITY_SPEC.md, DEPLOYMENT_SPEC.md,
 RELEASE_SPEC.md
+
+## Current Implementation Boundary
+
+The configuration-to-runtime foundation is implemented for the prelaunch baseline: normalized Site
+composition/revision/target/assignment tables, a deterministic descriptor and runtime-set compiler,
+generated Web Internal SDK publication, and a durable idempotent assignment outbox. Ordinary Drive
+and Knowledgebase content changes are deliberately absent from the compiler input and therefore do
+not create Releases or Site revisions.
+
+The product is not yet commercially releasable. The tenant/admin composition APIs and UI, owner SDK
+validation during resource attachment, automatic mutation-to-revision orchestration, Web
+observation/quorum feedback, complete certificate material and ACME rotation path, provider-aware
+cache controls, metering, and production operational evidence remain launch blockers.
 
 ## 1. Product Summary
 
@@ -27,9 +40,10 @@ The product deliberately separates content synchronization from deployment:
 
 ## 2. Problem
 
-The platform currently has useful but fragmented primitives: Drive owns files, Knowledgebase owns
-documents, Deploy owns site/domain/deployment records, and Web Server owns delivery and ACME
-execution. Without a unified publishing contract, teams must either republish every file change,
+The platform has the unified publishing contract and its first executable control/data-plane
+boundary, while management orchestration and operational closure remain incomplete. Drive owns
+files, Knowledgebase owns documents, Deploy owns configuration, and Web Server owns delivery
+execution. Without completing the remaining product workflows, teams would still have to republish every file change,
 duplicate domain and certificate state, expose entire Spaces too broadly, or build product-specific
 public routers that cannot share routing, observability, quotas, or commercial controls.
 
@@ -450,9 +464,10 @@ platform does not promise application-authored frontend performance.
 
 Approve cross-repository ownership, database migration, descriptor schema, permissions, and naming.
 No public production claim is permitted.
-The current Release-oriented Deploy DTO/schema, duplicate Web Server control plane, missing
-provider SDK/events/runtime, and planned-only certificate renewal are explicit Phase 0 blockers,
-not partial proof of the target capability.
+The old Release-only runtime assumption has been removed from the descriptor/assignment foundation.
+Remaining Phase 0 blockers are the incomplete normalized API/service orchestration, provider
+attachment validation, duplicate writable Web control-plane cutover, Deploy-visible Node
+observations, and planned-only certificate renewal.
 
 ### Phase 1 - Static Website Pilot
 

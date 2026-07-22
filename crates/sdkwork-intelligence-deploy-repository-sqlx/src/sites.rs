@@ -20,7 +20,7 @@ impl DeployRepository {
              WHERE tenant_id = $1 AND deleted_at IS NULL",
         );
         let mut list_sql = String::from(
-            "SELECT uuid, name, slug, description, site_type, status, runtime_config, created_at, updated_at
+            "SELECT uuid, name, slug, description, site_type, status, runtime_config, created_at, updated_at, version
              FROM deploy_site
              WHERE tenant_id = $1 AND deleted_at IS NULL",
         );
@@ -156,7 +156,7 @@ impl DeployRepository {
         site_id: &str,
     ) -> DeployServiceResult<SiteResponse> {
         let row = sqlx::query(
-            "SELECT uuid, name, slug, description, site_type, status, runtime_config, created_at, updated_at
+            "SELECT uuid, name, slug, description, site_type, status, runtime_config, created_at, updated_at, version
              FROM deploy_site
              WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL",
         )
@@ -277,5 +277,6 @@ fn map_site_row(row: &AnyRow) -> Result<SiteResponse, sqlx::Error> {
         runtime_config: json_from_row(row, "runtime_config")?,
         created_at: row.try_get("created_at")?,
         updated_at: row.try_get("updated_at")?,
+        version: row.try_get::<i64, _>("version")?.to_string(),
     })
 }

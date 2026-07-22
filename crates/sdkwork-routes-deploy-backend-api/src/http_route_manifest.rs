@@ -7,83 +7,68 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Get,
         "/backend/v3/api/nginx/configs",
         "nginx",
-        "nginx.configs.list",
-    )
-    .with_required_permission("deploy.nginx.write"),
+        "configs.list",
+    ).with_required_permission("deploy.configs.read"),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/nginx/configs",
         "nginx",
-        "nginx.configs.create",
-    )
-    .with_required_permission("deploy.nginx.write")
-    .with_idempotent(true),
+        "configs.create",
+    ).with_required_permission("deploy.configs.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/nginx/configs/{configId}",
         "nginx",
-        "nginx.configs.retrieve",
-    )
-    .with_required_permission("deploy.nginx.write"),
+        "configs.retrieve",
+    ).with_required_permission("deploy.configs.read"),
     HttpRoute::dual_token(
         HttpMethod::Put,
         "/backend/v3/api/nginx/configs/{configId}",
         "nginx",
-        "nginx.configs.update",
-    )
-    .with_required_permission("deploy.nginx.write"),
+        "configs.update",
+    ).with_required_permission("deploy.configs.write"),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/nginx/configs/{configId}/validate",
         "nginx",
-        "nginx.configs.validate",
-    )
-    .with_required_permission("deploy.nginx.write"),
+        "configs.validate",
+    ).with_required_permission("deploy.configs.write"),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/nginx/configs/{configId}/deploy",
         "nginx",
-        "nginx.configs.deploy",
-    )
-    .with_required_permission("deploy.nginx.write")
-    .with_idempotent(true),
+        "configs.deploy",
+    ).with_required_permission("deploy.configs.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/nginx/reload",
         "nginx",
-        "nginx.reload",
-    )
-    .with_required_permission("deploy.nginx.write")
-    .with_idempotent(true),
+        "runtime.reload",
+    ).with_required_permission("deploy.runtime.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/nginx/status",
         "nginx",
-        "nginx.status.retrieve",
-    )
-    .with_required_permission("deploy.nginx.write"),
+        "runtime.retrieve",
+    ).with_required_permission("deploy.runtime.read"),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/servers",
         "server",
         "servers.list",
-    )
-    .with_required_permission("deploy.servers.read"),
+    ).with_required_permission("deploy.servers.read"),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/servers",
         "server",
         "servers.create",
-    )
-    .with_required_permission("deploy.servers.write")
-    .with_idempotent(true),
+    ).with_required_permission("deploy.servers.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/audit_logs",
         "audit",
         "auditLogs.list",
-    )
-    .with_required_permission("deploy.auditLogs.read"),
+    ).with_required_permission("deploy.auditLogs.read"),
 ];
 
 pub fn backend_route_manifest() -> HttpRouteManifest {

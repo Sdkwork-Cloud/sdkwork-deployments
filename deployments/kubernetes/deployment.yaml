@@ -19,6 +19,9 @@ spec:
         app.kubernetes.io/component: standalone-gateway
         app.kubernetes.io/part-of: sdkwork-deploy
     spec:
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: standalone-gateway
           image: sdkwork-api-deployments-standalone-gateway:latest
@@ -32,18 +35,38 @@ spec:
               value: /app
             - name: SDKWORK_DEPLOY_ENVIRONMENT
               value: production
-            - name: SDKWORK_DEPLOY_CONFIG_PROFILE
+            - name: SDKWORK_ENVIRONMENT
               value: production
             - name: SDKWORK_DEPLOY_DEPLOYMENT_PROFILE
               value: cloud
-            - name: SDKWORK_DEPLOY_SERVICE_LAYOUT
-              value: unified-process
+            - name: SDKWORK_DEPLOY_PROFILE_ID
+              value: cloud.production
             - name: SDKWORK_DEPLOY_APPLICATION_PUBLIC_INGRESS_BIND
               value: "0.0.0.0:8080"
-            - name: SDKWORK_DEPLOY_SNOWFLAKE_NODE_ID
+            - name: SDKWORK_CORS_ALLOWED_ORIGINS
+              value: https://deploy.sdkwork.com
+            - name: SDKWORK_NODE_INSTANCE_ID
               valueFrom:
                 fieldRef:
-                  fieldPath: metadata.name
+                  fieldPath: metadata.uid
+            - name: SDKWORK_DEPLOY_USE_MEMORY_DRIVE
+              value: "false"
+            - name: SDKWORK_DRIVE_FACADE_URL
+              value: https://api.sdkwork.com
+            - name: SDKWORK_DEPLOY_USE_MEMORY_CONTENT_PROVIDER
+              value: "false"
+            - name: SDKWORK_DEPLOY_DRIVE_INTERNAL_API_URL
+              value: https://drive-internal.sdkwork.com
+            - name: SDKWORK_DEPLOY_DRIVE_INTERNAL_API_INGRESS_TOKEN_FILE
+              value: /run/secrets/sdkwork/deploy-drive-internal-ingress-token
+            - name: SDKWORK_DEPLOY_KNOWLEDGEBASE_INTERNAL_API_URL
+              value: https://knowledgebase.sdkwork.com
+            - name: SDKWORK_DEPLOY_KNOWLEDGEBASE_INTERNAL_API_INGRESS_TOKEN_FILE
+              value: /run/secrets/sdkwork/deploy-knowledgebase-internal-ingress-token
+            - name: SDKWORK_DEPLOY_WEB_INTERNAL_API_URL
+              value: https://web-internal.sdkwork.com
+            - name: SDKWORK_DEPLOY_WEB_INTERNAL_API_INGRESS_TOKEN_FILE
+              value: /run/secrets/sdkwork/deploy-web-internal-ingress-token
             - name: SDKWORK_DEPLOY_DATABASE_AUTO_MIGRATE
               value: "false"
             - name: SDKWORK_DEPLOY_DATABASE_URL
@@ -56,6 +79,10 @@ spec:
                 secretKeyRef:
                   name: sdkwork-deploy-iam-database
                   key: database-url
+          volumeMounts:
+            - name: provider-ingress-tokens
+              mountPath: /run/secrets/sdkwork
+              readOnly: true
           readinessProbe:
             httpGet:
               path: /readyz
@@ -77,10 +104,33 @@ spec:
               memory: 1Gi
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 10001
             capabilities:
               drop:
                 - ALL
+            seccompProfile:
+              type: RuntimeDefault
+      automountServiceAccountToken: false
+      volumes:
+        - name: provider-ingress-tokens
+          projected:
+            defaultMode: 0440
+            sources:
+              - secret:
+                  name: sdkwork-deploy-web-internal
+                  items:
+                    - key: ingress-token
+                      path: deploy-web-internal-ingress-token
+              - secret:
+                  name: sdkwork-deploy-drive-internal
+                  items:
+                    - key: ingress-token
+                      path: deploy-drive-internal-ingress-token
+              - secret:
+                  name: sdkwork-deploy-knowledgebase-internal
+                  items:
+                    - key: ingress-token
+                      path: deploy-knowledgebase-internal-ingress-token
       terminationGracePeriodSeconds: 30

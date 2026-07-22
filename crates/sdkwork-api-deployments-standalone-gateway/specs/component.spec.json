@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-api-deployments-standalone-gateway",
+    "displayName": "SDKWork Deploy Standalone Gateway",
+    "version": "0.1.0",
+    "type": "rust-api-standalone-gateway",
+    "root": "crates/sdkwork-api-deployments-standalone-gateway",
+    "domain": "deploy",
+    "capability": "application-ingress",
+    "surface": "backend-service",
+    "languages": ["rust"],
+    "generated": false,
+    "manifests": ["Cargo.toml", "specs/component.spec.json"]
+  },
+  "canonicalSpecs": [
+    {"file": "API_ASSEMBLY_SPEC.md", "path": "../../../sdkwork-specs/API_ASSEMBLY_SPEC.md", "purpose": "Host-neutral route assembly consumption."},
+    {"file": "APPLICATION_GATEWAY_SPEC.md", "path": "../../../sdkwork-specs/APPLICATION_GATEWAY_SPEC.md", "purpose": "Standalone gateway ownership and naming."},
+    {"file": "APP_RUNTIME_TOPOLOGY_SPEC.md", "path": "../../../sdkwork-specs/APP_RUNTIME_TOPOLOGY_SPEC.md", "purpose": "Runtime process and ingress topology."},
+    {"file": "WEB_FRAMEWORK_SPEC.md", "path": "../../../sdkwork-specs/WEB_FRAMEWORK_SPEC.md", "purpose": "Web Framework gateway composition."},
+    {"file": "WEB_BACKEND_SPEC.md", "path": "../../../sdkwork-specs/WEB_BACKEND_SPEC.md", "purpose": "Backend host boundaries."},
+    {"file": "DATABASE_FRAMEWORK_SPEC.md", "path": "../../../sdkwork-specs/DATABASE_FRAMEWORK_SPEC.md", "purpose": "Migration-only startup behavior."},
+    {"file": "CODE_STYLE_SPEC.md", "path": "../../../sdkwork-specs/CODE_STYLE_SPEC.md", "purpose": "Authored gateway structure."},
+    {"file": "NAMING_SPEC.md", "path": "../../../sdkwork-specs/NAMING_SPEC.md", "purpose": "Canonical gateway and binary naming."},
+    {"file": "RUST_CODE_SPEC.md", "path": "../../../sdkwork-specs/RUST_CODE_SPEC.md", "purpose": "Rust host implementation."},
+    {"file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md", "purpose": "Gateway and topology verification."}
+  ],
+  "contracts": {
+    "layerRole": "runtime-gateway",
+    "publicExports": ["."],
+    "providedPorts": [
+      {"name": "standaloneGatewayRouter", "export": "."},
+      {"name": "databaseMigrationEntrypoint", "export": "."}
+    ],
+    "requiredPorts": [
+      {"name": "apiAssembly", "export": ".", "provider": "sdkwork-api-deployments-assembly"},
+      {"name": "deployDatabaseHost", "export": ".", "provider": "sdkwork-deploy-database-host"}
+    ],
+    "runtimeEntrypoints": [
+      "sdkwork-api-deployments-standalone-gateway",
+      "sdkwork-api-deployments-standalone-gateway db-migrate"
+    ],
+    "routeManifest": null,
+    "sdkClients": [],
+    "sdkDependencies": [],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "events": [],
+    "configKeys": [
+      "SDKWORK_DEPLOY_APPLICATION_PUBLIC_INGRESS_BIND",
+      "SDKWORK_DEPLOY_ENVIRONMENT",
+      "SDKWORK_DEPLOY_DATABASE_*"
+    ]
+  },
+  "verification": {
+    "commands": [
+      "cargo test -p sdkwork-api-deployments-standalone-gateway",
+      "pnpm api:assembly:validate",
+      "pnpm topology:validate"
+    ]
+  }
+}

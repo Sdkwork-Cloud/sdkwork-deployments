@@ -14,6 +14,12 @@ use sdkwork_deploy_contract::{
     UpdateNginxConfigRequest, UpdateSiteRequest, UploadCustomCertificateRequest,
 };
 use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
+use sdkwork_deploy_web_port::RuntimeAssignmentReceipt;
+use sdkwork_intelligence_deploy_service::repository::InsertAuditLogCommand;
+use sdkwork_intelligence_deploy_service::runtime_publication::{
+    DeployRuntimeAssignmentMutationPort, DeployRuntimeAssignmentRepositoryPort,
+    RuntimeAssignmentState,
+};
 use sdkwork_intelligence_deploy_service::DeployRepositoryPort;
 
 use crate::DeployRepository;
@@ -439,26 +445,8 @@ impl DeployRepositoryPort for DeployRepository {
         self.list_audit_logs_repo(tenant_id, page, page_size).await
     }
 
-    async fn insert_audit_log(
-        &self,
-        tenant_id: i64,
-        organization_id: i64,
-        operator_id: i64,
-        action: &str,
-        target_type: &str,
-        target_id: Option<i64>,
-        target_uuid: Option<&str>,
-    ) -> DeployServiceResult<()> {
-        self.insert_audit_log_repo(
-            tenant_id,
-            organization_id,
-            operator_id,
-            action,
-            target_type,
-            target_id,
-            target_uuid,
-        )
-        .await
+    async fn insert_audit_log(&self, command: InsertAuditLogCommand) -> DeployServiceResult<()> {
+        self.insert_audit_log_repo(&command).await
     }
 
     async fn create_upload_session_ref(
@@ -499,5 +487,77 @@ impl DeployRepositoryPort for DeployRepository {
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         self.update_upload_session_status_repo(tenant_id, upload_session_id, status, drive_node_id)
             .await
+    }
+}
+
+#[async_trait]
+impl DeployRuntimeAssignmentRepositoryPort for DeployRepository {
+    async fn latest_runtime_assignment(
+        &self,
+        target_uuid: &str,
+    ) -> sdkwork_deploy_contract::DeployServiceResult<Option<RuntimeAssignmentState>> {
+        self.latest_runtime_assignment_repo(target_uuid).await
+    }
+
+    async fn begin_runtime_assignment_mutation(
+        &self,
+        target_uuid: &str,
+        tenant_id: i64,
+    ) -> sdkwork_deploy_contract::DeployServiceResult<Box<dyn DeployRuntimeAssignmentMutationPort>>
+    {
+        self.begin_runtime_assignment_mutation_repo(target_uuid, tenant_id)
+            .await
+    }
+
+    async fn claim_due_runtime_assignments(
+        &self,
+        maximum_items: i64,
+        now: &str,
+        lease_owner: &str,
+        lease_expires_at: &str,
+        maximum_attempts: i32,
+    ) -> sdkwork_deploy_contract::DeployServiceResult<Vec<RuntimeAssignmentState>> {
+        self.claim_due_runtime_assignments_repo(
+            maximum_items,
+            now,
+            lease_owner,
+            lease_expires_at,
+            maximum_attempts,
+        )
+        .await
+    }
+
+    async fn mark_runtime_assignment_published(
+        &self,
+        assignment_uuid: &str,
+        lease_owner: &str,
+        receipt: &RuntimeAssignmentReceipt,
+        published_at: &str,
+    ) -> sdkwork_deploy_contract::DeployServiceResult<()> {
+        self.mark_runtime_assignment_published_repo(
+            assignment_uuid,
+            lease_owner,
+            receipt,
+            published_at,
+        )
+        .await
+    }
+
+    async fn mark_runtime_assignment_failed(
+        &self,
+        assignment_uuid: &str,
+        lease_owner: &str,
+        error_code: &str,
+        next_attempt_at: Option<&str>,
+        updated_at: &str,
+    ) -> sdkwork_deploy_contract::DeployServiceResult<()> {
+        self.mark_runtime_assignment_failed_repo(
+            assignment_uuid,
+            lease_owner,
+            error_code,
+            next_attempt_at,
+            updated_at,
+        )
+        .await
     }
 }

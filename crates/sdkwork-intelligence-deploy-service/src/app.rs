@@ -13,10 +13,10 @@ use sdkwork_deploy_contract::{
 };
 use sdkwork_deploy_drive_port::{DriveRequestCredentials, PrepareDeployUploadCommand};
 
-use crate::DeployService;
+use crate::{repository::InsertAuditLogCommand, DeployService};
 
 impl DeployService {
-    fn require_tenant(context: &DeployAppRequestContext) -> DeployServiceResult<i64> {
+    pub(crate) fn require_tenant(context: &DeployAppRequestContext) -> DeployServiceResult<i64> {
         if context.tenant_id <= 0 {
             return Err(sdkwork_deploy_contract::DeployServiceError::Forbidden);
         }
@@ -31,15 +31,15 @@ impl DeployService {
     ) -> DeployServiceResult<()> {
         let operator_id = context.actor_id.unwrap_or(0);
         self.repository
-            .insert_audit_log(
-                context.tenant_id,
-                context.organization_id.unwrap_or(0),
+            .insert_audit_log(InsertAuditLogCommand {
+                tenant_id: context.tenant_id,
+                organization_id: context.organization_id.unwrap_or(0),
                 operator_id,
-                action,
-                "site",
-                None,
-                Some(target_uuid),
-            )
+                action: action.to_owned(),
+                target_type: "site".to_owned(),
+                target_id: None,
+                target_uuid: Some(target_uuid.to_owned()),
+            })
             .await
     }
 
@@ -219,6 +219,24 @@ impl DeployAppApi for DeployService {
             .audit_site_action(context, "sites.update", site_id)
             .await;
         Ok(site)
+    }
+
+    async fn update_site_composition(
+        &self,
+        context: &DeployAppRequestContext,
+        site_id: &str,
+        expected_site_version: i64,
+        idempotency_key: &str,
+        request: &sdkwork_deploy_contract::UpdateSiteCompositionRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::SiteCompositionResponse> {
+        self.update_composition(
+            context,
+            site_id,
+            expected_site_version,
+            idempotency_key,
+            request,
+        )
+        .await
     }
 
     async fn delete_site(

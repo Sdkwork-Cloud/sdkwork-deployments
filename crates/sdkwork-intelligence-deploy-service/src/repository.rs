@@ -15,8 +15,19 @@ use sdkwork_deploy_contract::{
     UpdateNginxConfigRequest, UpdateSiteRequest, UploadCustomCertificateRequest,
 };
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InsertAuditLogCommand {
+    pub tenant_id: i64,
+    pub organization_id: i64,
+    pub operator_id: i64,
+    pub action: String,
+    pub target_type: String,
+    pub target_id: Option<i64>,
+    pub target_uuid: Option<String>,
+}
+
 #[async_trait]
-pub trait DeployRepositoryPort: Send + Sync {
+pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sync {
     async fn ready_check(&self) -> DeployServiceResult<()>;
 
     async fn list_sites(
@@ -315,16 +326,7 @@ pub trait DeployRepositoryPort: Send + Sync {
         page_size: i32,
     ) -> DeployServiceResult<AuditLogPage>;
 
-    async fn insert_audit_log(
-        &self,
-        tenant_id: i64,
-        organization_id: i64,
-        operator_id: i64,
-        action: &str,
-        target_type: &str,
-        target_id: Option<i64>,
-        target_uuid: Option<&str>,
-    ) -> DeployServiceResult<()>;
+    async fn insert_audit_log(&self, command: InsertAuditLogCommand) -> DeployServiceResult<()>;
 
     async fn create_upload_session_ref(
         &self,

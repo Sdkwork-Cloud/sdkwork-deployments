@@ -1,116 +1,102 @@
 # MIG-2026-0001 Cloud Site Control-Plane Convergence
 
-Status: proposed
+Status: active prelaunch convergence
 Requirement: REQ-2026-0001
 Owner: SDKWork Deploy maintainers
-Updated: 2026-07-21
+Updated: 2026-07-22
 Specs: MIGRATION_SPEC.md, DATABASE_SPEC.md, API_SPEC.md, SDK_SPEC.md, DEPLOYMENT_SPEC.md,
 RELEASE_SPEC.md, SECURITY_SPEC.md, TEST_SPEC.md
 
 ## 1. Scope
 
-Converge cloud Site, domain, route, deployment, and certificate authority on normalized `deploy_*`
-tables. Convert overlapping Web Server `web_*` records into a one-way runtime projection or retire
-them. Introduce live Drive directory and Knowledgebase Wiki resources without translating ordinary
-content changes into Releases.
+Establish `sdkwork-deployments` as the single writable authority for Site composition, domains,
+certificate policy, immutable configuration revisions, and desired Web runtime assignments.
+Drive remains the file/directory authority, Knowledgebase remains the Wiki publication authority,
+and Web Server remains the runtime projection and delivery executor.
 
-This document is a migration plan only. It does not authorize schema execution or production
-cutover.
+The application has not launched and has no production compatibility population to preserve.
+Convergence therefore updates the initialization baseline directly and removes obsolete authority
+instead of adding backfill columns, dual writes, compatibility shims, or a legacy migration window.
+Frozen package/Git artifacts continue to use `deploy_release`; live Drive/Wiki content never does.
 
-## 2. Compatibility Contract
+## 2. Implemented Prelaunch Baseline
 
-- Existing Git/package/artifact Releases remain valid and continue through `deploy_release`.
-- Existing active Web Server bindings and certificates must remain serviceable throughout cutover.
-- No domain may become claimable by another tenant during backfill or rollback.
-- Certificate private keys are not copied through business tables; secret references are re-bound
-  and certificate fingerprints are compared.
-- The old and new systems must not accept independent writes to the same business record.
-- Public APIs require a reviewed compatibility window and generated SDK regeneration from owner
-  OpenAPI sources; generated transports are not hand-edited.
+- `deploy_site_resource`, `deploy_site_variant`, `deploy_site_variant_rule`,
+  `deploy_site_mount`, and `deploy_site_binding` own normalized Site composition.
+- `deploy_site_revision` owns immutable, hash-addressed Web runtime descriptors.
+- `deploy_web_node_target` owns Deploy's tenant/environment target inventory.
+- `deploy_runtime_assignment` is the durable desired-state/outbox record; it does not replace Web
+  Server's delivery projection or Node observation store.
+- PostgreSQL and SQLite initialization DDL have the same logical tables, constraints, and indexes.
+- Deploy compiles canonical runtime documents and publishes only through the generated Web Internal
+  Rust SDK using a rotatable secret-file ingress credential.
+- Same desired state is idempotent, generations are monotonic and JSON-safe, retries are bounded,
+  and remote receipts must match UUID/hash/generation before publication is committed.
 
-## 3. Migration Stages
+## 3. Remaining Convergence Work
 
-### Stage 0 - Inventory And Freeze
+### Stage 1 - Management Contract
 
-Inventory `deploy_*` and `web_*` tables, routes, SDK methods, background jobs, certificate stores,
-domain uniqueness behavior, and current production data. Freeze new Web Server management features
-that would expand the overlapping model. Establish record mapping and reconciliation queries.
+Replace opaque `runtimeConfig` authoring with typed Site Resource, Variant, rule, Mount, Binding,
+policy, validation, preview, revision, activation, pause, and rollback app/backend API resources.
+Update owner OpenAPI documents, regenerate Deploy SDK families, and implement tenant/admin views.
 
-Exit evidence: approved ownership matrix, row counts, conflict report, secret-reference inventory,
-and rollback owner.
+Exit evidence: generated SDK-only clients, bounded pagination, optimistic concurrency, tenant
+isolation, route simulation, and API/service/repository transaction tests.
 
-### Stage 1 - Expand Deploy Schema
+### Stage 2 - Provider Attachment
 
-Add the normalized resource, Variant, rule, Mount, Binding, policy, revision, observation, TLS, and
-metering tables described by the target architecture. Add source columns to existing Site/domain/
-deployment/certificate tables through additive migrations. Do not remove old columns.
+Resolve Drive `SPACE_ROOT`/`FOLDER` selectors to stable WebsiteRoot UUIDs and Knowledgebase selectors
+to the canonical WikiPublication through owner-generated internal SDKs. Persist opaque provider
+identity and bounded capabilities only.
 
-Exit evidence: PostgreSQL and supported standalone migration validation, schema contract, indexes,
-RLS/tenant checks, backup, and restore rehearsal.
+Exit evidence: website-Space eligibility, folder confinement, active Wiki eligibility, tenant
+scope, idempotent reuse, revocation, and negative tests. No raw HTTP or cross-database reads.
 
-### Stage 2 - Backfill And Reconcile
+### Stage 3 - Revision And Assignment Orchestration
 
-Backfill stable UUID mappings from Web Server records into Deploy. Invalid or ambiguous host/path,
-tenant, certificate, and Site mappings enter a quarantine table/report and are never auto-activated.
-Compile descriptors in shadow mode and compare route/TLS behavior without serving them.
+Within one Deploy transaction, validate optimistic Site state, store a SiteRevision, update desired
+state, and enqueue complete assignments for every affected Node. Run the bounded outbox publisher
+continuously and reconcile failed or stale assignments.
 
-Exit evidence: deterministic rerun, zero unexplained active-record differences, certificate
-fingerprint match, and sampled public route parity.
+Exit evidence: PostgreSQL and SQLite parity, concurrent generation conflict tests, crash recovery,
+same-state replay, rollback, empty-set removal, and multi-Node assignment evidence.
 
-### Stage 3 - Single-Writer Cutover
+### Stage 4 - Observation And Single Writer
 
-Change management APIs and workers to write Deploy only. Web Server consumes signed/versioned
-runtime snapshots. If a temporary projection is required, it is produced only from an accepted
-Deploy revision and includes source revision/hash. Web Server write endpoints become read-only or
-return an explicit migration response.
+Add an owner-generated Web observation event/read contract so Deploy can evaluate staged load,
+probe, quorum, drift, and rollback without reading `web_*` tables. Remove writable Web Site/domain/
+certificate business APIs and authority tables before any public launch.
 
-Exit evidence: dependency SDK integration checks, audit continuity, mutation rejection tests on the
-old authority, and staged tenant canary.
+Exit evidence: Web rejects obsolete writes, one-way projection tests pass, desired/observed drift is
+visible, and no compatibility or dual-write code remains.
 
-### Stage 4 - Live Provider Enablement
+### Stage 5 - TLS And Production Gates
 
-Enable Drive Website Space resources, then Wiki resources, behind tenant-scoped feature flags.
-Provider events invalidate caches; read-through resolution verifies freshness. Content mutation
-must not create Release/Deployment/SiteRevision rows.
+Complete ACME/custom certificate secret custody, version validation, lossless SNI hot activation,
+renewal, rollback, metering, backup/restore, load, security, provider outage, and Kubernetes
+multi-Node drills.
 
-Exit evidence: React atomic-sync, Wiki visibility, event loss/replay, provider outage, and rollback
-tests.
+Exit evidence: every commercial gate in the PRD has measured production-like evidence. A status
+flag or planned renewal row is not accepted as operational proof.
 
-### Stage 5 - Retire Compatibility State
+## 4. Rollback Semantics
 
-After the compatibility window and rollback freeze expire, stop projecting unused business state,
-remove old write code, archive reconciliation evidence, and schedule destructive schema cleanup as
-a separately approved contract migration.
+Configuration rollback creates a new monotonic runtime assignment containing a previously accepted
+Site descriptor set. Source rollback remains Drive/Knowledgebase-owned. Certificate rollback uses a
+separate TLS snapshot. Database baseline contraction is not a runtime rollback mechanism.
 
-Exit evidence: no consumers, no writes, no rollback dependency, approved deletion plan, and current
-backup.
+## 5. Human Review Gates
 
-## 4. Rollout
+- public API and generated SDK contract changes;
+- tenant isolation, global hostname/path claim, and RLS decisions;
+- disabling and deleting obsolete Web writable authority;
+- certificate secret custody and ACME provider policy;
+- destructive data/filesystem operations and production rollout.
 
-Roll out by internal tenant, pilot tenant, low-risk production cohort, then general availability.
-Each cohort has descriptor, TLS, origin, latency, error, cache, and reconciliation guardrails.
-Automatic rollback returns serving to the last-known-good descriptor/TLS snapshot; it does not
-reverse completed source writes.
+## 6. Verification
 
-## 5. Rollback
-
-Before single-writer cutover, stop new Deploy mutation traffic and resume the previous management
-path only from the last reconciled checkpoint. After cutover, prefer forward-fix. Runtime rollback
-selects the last-known-good descriptor and certificate snapshots. Schema contraction is never used
-as an emergency rollback after new-shape writes begin.
-
-## 6. Human Review Gates
-
-- approval of table prefix, table/column names, enum vocabulary, and RLS strategy;
-- approval of public API compatibility and generated SDK ownership;
-- approval of domain conflict and certificate secret-reference mapping;
-- approval before disabling Web Server writes;
-- approval before any destructive cleanup or production migration.
-
-## 7. Verification
-
-Required evidence includes database contract validation, migration plan/status/drift checks,
-backfill idempotency, source/target row reconciliation, domain uniqueness, tenant isolation,
-descriptor golden tests, TLS fingerprint and SNI probes, API/SDK contract checks, staged traffic
-comparison, backup/restore, and rollback drills.
-
+Required evidence includes database contract validation, real PostgreSQL and SQLite repository
+tests, descriptor/runtime-set golden compatibility, generated SDK transport tests, concurrency and
+idempotency tests, source-owner negative authorization, Web observation/quorum tests, TLS/SNI
+drills, backup/restore, load/security testing, and staged production smoke checks.

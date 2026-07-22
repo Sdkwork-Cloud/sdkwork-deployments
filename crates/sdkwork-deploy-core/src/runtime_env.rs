@@ -13,7 +13,6 @@ pub fn env_test_lock() -> std::sync::MutexGuard<'static, ()> {
 
 pub fn deploy_environment_name() -> String {
     std::env::var("SDKWORK_DEPLOY_ENVIRONMENT")
-        .or_else(|_| std::env::var("SDKWORK_DEPLOY_CONFIG_PROFILE"))
         .unwrap_or_else(|_| "development".to_string())
         .to_ascii_lowercase()
 }

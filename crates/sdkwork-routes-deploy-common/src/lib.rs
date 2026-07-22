@@ -23,7 +23,7 @@ const PRODUCTION_AUTH_UNAVAILABLE: &str = "production deploy auth requires IAM P
 
 pub enum DeployWebAuthMode {
     DevInline,
-    IamDatabase(IamWebRequestContextResolver),
+    IamDatabase(Box<IamWebRequestContextResolver>),
     ProductionFailClosed,
 }
 
@@ -40,9 +40,9 @@ pub async fn deploy_web_auth_mode_from_env() -> DeployWebAuthMode {
         return DeployWebAuthMode::ProductionFailClosed;
     }
 
-    DeployWebAuthMode::IamDatabase(
+    DeployWebAuthMode::IamDatabase(Box::new(
         sdkwork_iam_web_adapter::iam_web_request_context_resolver_from_env().await,
-    )
+    ))
 }
 
 #[derive(Clone, Default)]

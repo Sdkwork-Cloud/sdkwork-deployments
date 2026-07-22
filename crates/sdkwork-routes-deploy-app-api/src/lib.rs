@@ -14,8 +14,8 @@ pub use web_bootstrap::{
     wrap_router_with_web_framework_from_env,
 };
 
-use std::sync::Arc;
 use sdkwork_web_core::HttpRouteManifest;
+use std::sync::Arc;
 
 pub fn gateway_route_manifest() -> HttpRouteManifest {
     app_route_manifest()

@@ -1,15 +1,16 @@
 use axum::{
     extract::{Path, Query, State},
+    http::HeaderMap,
     response::Response,
-    routing::{get, post},
+    routing::{get, post, put},
     Extension, Json, Router,
 };
 use sdkwork_deploy_contract::{
     CancelDeployUploadSessionRequest, CompleteDeployUploadSessionRequest, CreateCertificateRequest,
     CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainRequest,
     CreateEnvVariableRequest, CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest,
-    DeployAppApi, DeployAppRequestContext, ListSitesQuery, UpdateSiteRequest,
-    UploadCustomCertificateRequest,
+    DeployAppApi, DeployAppRequestContext, ListSitesQuery, UpdateSiteCompositionRequest,
+    UpdateSiteRequest, UploadCustomCertificateRequest,
 };
 use sdkwork_routes_deploy_common::{
     envelope, finish_api_json, finish_created_api_json, finish_no_content, ok_json, service_result,
@@ -39,6 +40,7 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
             paths::SITE,
             get(retrieve_site).patch(update_site).delete(delete_site),
         )
+        .route(paths::SITE_COMPOSITION, put(update_site_composition))
         .route(paths::SITE_ACTIVATE, post(activate_site))
         .route(paths::SITE_PAUSE, post(pause_site))
         .route(paths::SITE_DOMAINS, get(list_domains).post(create_domain))
@@ -188,6 +190,81 @@ async fn update_site(
         }
         .await,
     )
+}
+
+async fn update_site_composition(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(site_id): Path<String>,
+    headers: HeaderMap,
+    Json(request): Json<UpdateSiteCompositionRequest>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let expected_site_version = parse_if_match(&headers)?;
+            let idempotency_key = required_header(&headers, "idempotency-key")?;
+            let item = state
+                .api
+                .update_site_composition(
+                    &context,
+                    &site_id,
+                    expected_site_version,
+                    &idempotency_key,
+                    &request,
+                )
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+fn parse_if_match(headers: &HeaderMap) -> Result<i64, sdkwork_deploy_contract::DeployServiceError> {
+    let value = required_header(headers, "if-match")?;
+    if value == "*" || value.starts_with("W/") {
+        return Err(sdkwork_deploy_contract::DeployServiceError::validation(
+            "If-Match must contain one strong decimal site version",
+        ));
+    }
+    let value = value
+        .strip_prefix('"')
+        .and_then(|value| value.strip_suffix('"'))
+        .unwrap_or(&value);
+    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+        return Err(sdkwork_deploy_contract::DeployServiceError::validation(
+            "If-Match must contain one strong decimal site version",
+        ));
+    }
+    value.parse::<i64>().map_err(|_| {
+        sdkwork_deploy_contract::DeployServiceError::validation(
+            "If-Match site version is outside the supported range",
+        )
+    })
+}
+
+fn required_header(
+    headers: &HeaderMap,
+    name: &'static str,
+) -> Result<String, sdkwork_deploy_contract::DeployServiceError> {
+    let value = headers
+        .get(name)
+        .and_then(|value| value.to_str().ok())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| {
+            sdkwork_deploy_contract::DeployServiceError::validation(format!(
+                "{name} header is required"
+            ))
+        })?;
+    if value.len() > 128 || value.bytes().any(|byte| byte.is_ascii_control()) {
+        return Err(sdkwork_deploy_contract::DeployServiceError::validation(
+            format!("{name} header is invalid"),
+        ));
+    }
+    Ok(value.to_owned())
 }
 
 async fn delete_site(
@@ -825,4 +902,25 @@ async fn cancel_upload_session(
         }
         .await,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn if_match_accepts_decimal_strong_entity_tag() {
+        let mut headers = HeaderMap::new();
+        headers.insert("if-match", "\"42\"".parse().unwrap());
+        assert_eq!(parse_if_match(&headers).unwrap(), 42);
+    }
+
+    #[test]
+    fn if_match_rejects_wildcard_and_weak_entity_tags() {
+        for value in ["*", "W/\"42\"", "not-a-version"] {
+            let mut headers = HeaderMap::new();
+            headers.insert("if-match", value.parse().unwrap());
+            assert!(parse_if_match(&headers).is_err());
+        }
+    }
 }

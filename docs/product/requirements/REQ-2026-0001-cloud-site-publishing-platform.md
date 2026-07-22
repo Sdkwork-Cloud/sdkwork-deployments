@@ -42,6 +42,13 @@ OBSERVABILITY_SPEC.md, TEST_SPEC.md, RELEASE_SPEC.md, MIGRATION_SPEC.md
 
 ## Functional Requirements
 
+Implementation note (2026-07-22): requirements 4 and 10 now have an executable producer baseline.
+The compiler contract contains configuration identities only, its output passes the Web Server's
+real schema/hash compilers, and durable runtime assignments publish through the generated Web
+Internal SDK. This is foundation evidence, not acceptance of the full requirement set; composition
+APIs, provider validation, mutation orchestration, observations/quorum, TLS, UI, and production
+evidence remain open.
+
 1. `sdkwork-deployments` shall be the only writable authority for Sites, host/path Bindings,
    Variants, routing rules, Mounts, certificate metadata, configuration revisions, and rollout
    observations.

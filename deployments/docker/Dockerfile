@@ -1,16 +1,26 @@
 FROM rust:1-bookworm AS builder
-WORKDIR /src
-COPY . .
-RUN cargo build --release -p sdkwork-deployments-standalone-gateway
+COPY . /src
+WORKDIR /src/sdkwork-deployments
+RUN cargo build --release \
+    -p sdkwork-api-deployments-standalone-gateway \
+    -p sdkwork-deploy-runtime-assignment-worker
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && groupadd --gid 10001 sdkwork \
+    && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin sdkwork \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY --from=builder /src/target/release/sdkwork-deployments-standalone-gateway /usr/local/bin/sdkwork-deployments-standalone-gateway
-COPY --from=builder /src/database /app/database
+COPY --from=builder --chown=10001:10001 /src/sdkwork-deployments/target/release/sdkwork-api-deployments-standalone-gateway /usr/local/bin/sdkwork-api-deployments-standalone-gateway
+COPY --from=builder --chown=10001:10001 /src/sdkwork-deployments/target/release/sdkwork-deploy-runtime-assignment-worker /usr/local/bin/sdkwork-deploy-runtime-assignment-worker
+COPY --from=builder --chown=10001:10001 /src/sdkwork-deployments/database /app/database
 ENV SDKWORK_DEPLOY_APP_ROOT=/app
 ENV SDKWORK_DEPLOY_ENVIRONMENT=production
-ENV SDKWORK_DEPLOY_CONFIG_PROFILE=production
+ENV SDKWORK_ENVIRONMENT=production
+ENV SDKWORK_DEPLOY_DEPLOYMENT_PROFILE=cloud
+ENV SDKWORK_DEPLOY_PROFILE_ID=cloud.production
 ENV SDKWORK_DEPLOY_APPLICATION_PUBLIC_INGRESS_BIND=0.0.0.0:8080
+USER 10001:10001
 EXPOSE 8080
-CMD ["sdkwork-deployments-standalone-gateway"]
+CMD ["sdkwork-api-deployments-standalone-gateway"]

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-routes-deploy-common",
+    "displayName": "SDKWork Deploy Common Routes",
+    "version": "0.1.0",
+    "type": "rust-crate",
+    "root": "crates/sdkwork-routes-deploy-common",
+    "domain": "deploy",
+    "capability": "route-framework",
+    "surface": "backend-service",
+    "languages": ["rust"],
+    "generated": false,
+    "manifests": ["Cargo.toml", "specs/component.spec.json"]
+  },
+  "canonicalSpecs": [
+    {"file": "API_SPEC.md", "path": "../../../sdkwork-specs/API_SPEC.md", "purpose": "Response envelope and Problem Details rules."},
+    {"file": "WEB_FRAMEWORK_SPEC.md", "path": "../../../sdkwork-specs/WEB_FRAMEWORK_SPEC.md", "purpose": "Request-context and middleware integration."},
+    {"file": "IAM_LOGIN_INTEGRATION_SPEC.md", "path": "../../../sdkwork-specs/IAM_LOGIN_INTEGRATION_SPEC.md", "purpose": "IAM request-context resolution."},
+    {"file": "SECURITY_SPEC.md", "path": "../../../sdkwork-specs/SECURITY_SPEC.md", "purpose": "Production fail-closed authentication."},
+    {"file": "CODE_STYLE_SPEC.md", "path": "../../../sdkwork-specs/CODE_STYLE_SPEC.md", "purpose": "Shared route adapter organization."},
+    {"file": "NAMING_SPEC.md", "path": "../../../sdkwork-specs/NAMING_SPEC.md", "purpose": "Route adapter and response naming."},
+    {"file": "RUST_CODE_SPEC.md", "path": "../../../sdkwork-specs/RUST_CODE_SPEC.md", "purpose": "Rust route support crate rules."},
+    {"file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md", "purpose": "Auth and response verification."}
+  ],
+  "contracts": {
+    "layerRole": "backend-route",
+    "publicExports": ["."],
+    "providedPorts": [
+      {"name": "deployApiResponse", "export": "."},
+      {"name": "deployWebAuth", "export": "."}
+    ],
+    "requiredPorts": [
+      {"name": "iamWebRequestContextResolver", "export": ".", "provider": "sdkwork-iam-web-adapter"}
+    ],
+    "runtimeEntrypoints": ["deploy_web_auth_mode_from_env"],
+    "routeManifest": null,
+    "sdkClients": [],
+    "sdkDependencies": [],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "events": [],
+    "configKeys": [
+      "SDKWORK_DEPLOY_ENVIRONMENT",
+      "SDKWORK_DEPLOY_DEV_AUTH_BYPASS",
+      "SDKWORK_IAM_DATABASE_URL",
+      "SDKWORK_IAM_DATABASE_ENGINE"
+    ]
+  },
+  "verification": {
+    "commands": ["cargo test -p sdkwork-routes-deploy-common"]
+  }
+}

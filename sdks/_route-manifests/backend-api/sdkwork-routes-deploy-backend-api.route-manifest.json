@@ -1,24 +1,24 @@
 {
   "schemaVersion": 1,
   "kind": "sdkwork.route.manifest",
-  "packageName": "sdkwork-routes-deploy-backend-api",
+  "packageName": "@sdkwork/deploy-backend-sdk",
   "surface": "backend-api",
   "owner": "sdkwork-deploy",
   "domain": "platform",
   "capability": "deploy",
-  "apiAuthority": "sdkwork-deploy.backend",
+  "apiAuthority": "sdkwork-deploy-backend-api",
   "sdkFamily": "sdkwork-deploy-backend-sdk",
   "prefix": "/backend/v3/api",
   "source": {
     "crateRoot": "crates/sdkwork-routes-deploy-backend-api",
-    "crateImport": "sdkwork_routes_deploy_backend_api",
+    "crateImport": "@sdkwork/deploy_backend_sdk",
     "openApiAuthority": "sdks/sdkwork-deploy-backend-sdk/openapi/deploy-backend-api.openapi.json"
   },
   "routes": [
     {
       "method": "GET",
       "path": "/backend/v3/api/nginx/configs",
-      "operationId": "nginx.configs.list",
+      "operationId": "configs.list",
       "tags": [
         "nginx"
       ],
@@ -32,17 +32,17 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.backend"
+        "apiAuthority": "sdkwork-deploy-backend-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "backend-api",
-      "permission": "deploy.nginx.write",
+      "permission": "deploy.configs.read",
       "idempotent": false
     },
     {
       "method": "POST",
       "path": "/backend/v3/api/nginx/configs",
-      "operationId": "nginx.configs.create",
+      "operationId": "configs.create",
       "tags": [
         "nginx"
       ],
@@ -56,17 +56,17 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.backend"
+        "apiAuthority": "sdkwork-deploy-backend-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "backend-api",
-      "permission": "deploy.nginx.write",
+      "permission": "deploy.configs.write",
       "idempotent": true
     },
     {
       "method": "GET",
       "path": "/backend/v3/api/nginx/configs/{configId}",
-      "operationId": "nginx.configs.retrieve",
+      "operationId": "configs.retrieve",
       "tags": [
         "nginx"
       ],
@@ -80,17 +80,17 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.backend"
+        "apiAuthority": "sdkwork-deploy-backend-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "backend-api",
-      "permission": "deploy.nginx.write",
+      "permission": "deploy.configs.read",
       "idempotent": false
     },
     {
       "method": "PUT",
       "path": "/backend/v3/api/nginx/configs/{configId}",
-      "operationId": "nginx.configs.update",
+      "operationId": "configs.update",
       "tags": [
         "nginx"
       ],
@@ -104,17 +104,17 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.backend"
+        "apiAuthority": "sdkwork-deploy-backend-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "backend-api",
-      "permission": "deploy.nginx.write",
+      "permission": "deploy.configs.write",
       "idempotent": false
     },
     {
       "method": "POST",
       "path": "/backend/v3/api/nginx/configs/{configId}/validate",
-      "operationId": "nginx.configs.validate",
+      "operationId": "configs.validate",
       "tags": [
         "nginx"
       ],
@@ -128,17 +128,17 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.backend"
+        "apiAuthority": "sdkwork-deploy-backend-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "backend-api",
-      "permission": "deploy.nginx.write",
+      "permission": "deploy.configs.write",
       "idempotent": false
     },
     {
       "method": "POST",
       "path": "/backend/v3/api/nginx/configs/{configId}/deploy",
-      "operationId": "nginx.configs.deploy",
+      "operationId": "configs.deploy",
       "tags": [
         "nginx"
       ],
@@ -152,17 +152,17 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.backend"
+        "apiAuthority": "sdkwork-deploy-backend-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "backend-api",
-      "permission": "deploy.nginx.write",
+      "permission": "deploy.configs.write",
       "idempotent": true
     },
     {
       "method": "POST",
       "path": "/backend/v3/api/nginx/reload",
-      "operationId": "nginx.reload",
+      "operationId": "runtime.reload",
       "tags": [
         "nginx"
       ],
@@ -176,17 +176,17 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.backend"
+        "apiAuthority": "sdkwork-deploy-backend-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "backend-api",
-      "permission": "deploy.nginx.write",
+      "permission": "deploy.runtime.write",
       "idempotent": true
     },
     {
       "method": "GET",
       "path": "/backend/v3/api/nginx/status",
-      "operationId": "nginx.status.retrieve",
+      "operationId": "runtime.retrieve",
       "tags": [
         "nginx"
       ],
@@ -200,11 +200,11 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.backend"
+        "apiAuthority": "sdkwork-deploy-backend-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "backend-api",
-      "permission": "deploy.nginx.write",
+      "permission": "deploy.runtime.read",
       "idempotent": false
     },
     {
@@ -224,7 +224,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.backend"
+        "apiAuthority": "sdkwork-deploy-backend-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "backend-api",
@@ -248,7 +248,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.backend"
+        "apiAuthority": "sdkwork-deploy-backend-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "backend-api",
@@ -272,7 +272,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.backend"
+        "apiAuthority": "sdkwork-deploy-backend-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "backend-api",

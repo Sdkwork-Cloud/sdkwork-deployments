@@ -26,7 +26,7 @@ This repository follows `../sdkwork-specs/SDKWORK_WORKSPACE_SPEC.md`. Applicatio
 | `database/` | active | Database contract, baseline DDL, migrations, seeds, drift policy |
 | `sdks/` | active | Generated deploy SDK families (`sdkwork-deploy-app-sdk`, `sdkwork-deploy-backend-sdk`); materialized by `pnpm api:materialize` |
 | `specs/` | active | Component and topology contracts |
-| `configs/` | active | Topology profile env templates (includes Drive facade env for production) |
+| `etc/` | active | Source-controlled topology profiles, gateway templates, and secret-file references |
 | `deployments/` | active | `deploy.yaml`, Docker, and Kubernetes handoff descriptors |
 | `scripts/` | active | Dev orchestration and verification entrypoints |
 | `docs/` | active | PRD, architecture, standards alignment |

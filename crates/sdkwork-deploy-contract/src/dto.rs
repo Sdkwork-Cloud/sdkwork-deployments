@@ -17,6 +17,7 @@ pub struct SiteResponse {
     pub created_at: String,
     #[serde(rename = "updatedAt")]
     pub updated_at: String,
+    pub version: String,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -24,7 +25,7 @@ pub struct SitePage {
     pub items: Vec<SiteResponse>,
     pub total: i64,
     pub page: i32,
-        pub page_size: i32,
+    pub page_size: i32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -122,7 +123,7 @@ pub struct DeploymentPage {
     pub items: Vec<DeploymentResponse>,
     pub total: i64,
     pub page: i32,
-        pub page_size: i32,
+    pub page_size: i32,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -287,7 +288,7 @@ pub struct ReleasePage {
     pub items: Vec<ReleaseResponse>,
     pub total: i64,
     pub page: i32,
-        pub page_size: i32,
+    pub page_size: i32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -355,7 +356,7 @@ pub struct NginxConfigPage {
     pub items: Vec<NginxConfigResponse>,
     pub total: i64,
     pub page: i32,
-        pub page_size: i32,
+    pub page_size: i32,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -455,7 +456,7 @@ pub struct AuditLogPage {
     pub items: Vec<AuditLogResponse>,
     pub total: i64,
     pub page: i32,
-        pub page_size: i32,
+    pub page_size: i32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

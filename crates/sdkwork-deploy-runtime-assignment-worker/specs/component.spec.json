@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-deploy-runtime-assignment-worker",
+    "displayName": "SDKWork Deploy Runtime Assignment Worker",
+    "version": "0.1.0",
+    "type": "rust-crate",
+    "root": "crates/sdkwork-deploy-runtime-assignment-worker",
+    "domain": "deploy",
+    "capability": "runtime-assignment-publication",
+    "surface": "runtime-service-host",
+    "languages": ["rust"],
+    "generated": false,
+    "manifests": ["Cargo.toml", "specs/component.spec.json"]
+  },
+  "canonicalSpecs": [
+    {"file": "CODE_STYLE_SPEC.md", "path": "../../../sdkwork-specs/CODE_STYLE_SPEC.md", "purpose": "Authored worker boundaries and test placement."},
+    {"file": "NAMING_SPEC.md", "path": "../../../sdkwork-specs/NAMING_SPEC.md", "purpose": "Worker and configuration naming."},
+    {"file": "RUST_CODE_SPEC.md", "path": "../../../sdkwork-specs/RUST_CODE_SPEC.md", "purpose": "Background worker, retry, and shutdown rules."},
+    {"file": "CONFIG_SPEC.md", "path": "../../../sdkwork-specs/CONFIG_SPEC.md", "purpose": "Typed bounded runtime configuration."},
+    {"file": "DATABASE_SPEC.md", "path": "../../../sdkwork-specs/DATABASE_SPEC.md", "purpose": "Outbox lease, retry, and idempotency semantics."},
+    {"file": "OBSERVABILITY_SPEC.md", "path": "../../../sdkwork-specs/OBSERVABILITY_SPEC.md", "purpose": "Structured bounded job logging."},
+    {"file": "SECURITY_SPEC.md", "path": "../../../sdkwork-specs/SECURITY_SPEC.md", "purpose": "Secret-safe provider publication."},
+    {"file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md", "purpose": "Worker configuration, claim, retry, and shutdown verification."}
+  ],
+  "contracts": {
+    "layerRole": "runtime-service-host",
+    "publicExports": ["."],
+    "providedPorts": [{"name": "runtimeAssignmentWorker", "export": "."}],
+    "requiredPorts": [
+      {"name": "runtimePublicationHost", "export": ".", "provider": "sdkwork-deploy-service-host"}
+    ],
+    "runtimeEntrypoints": ["sdkwork-deploy-runtime-assignment-worker"],
+    "routeManifest": null,
+    "sdkClients": [],
+    "sdkDependencies": [],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "events": [],
+    "configKeys": [
+      "SDKWORK_NODE_INSTANCE_ID",
+      "SDKWORK_DEPLOY_RUNTIME_ASSIGNMENT_WORKER_ID",
+      "SDKWORK_DEPLOY_RUNTIME_ASSIGNMENT_BATCH_SIZE",
+      "SDKWORK_DEPLOY_RUNTIME_ASSIGNMENT_POLL_INTERVAL_MILLIS",
+      "SDKWORK_DEPLOY_RUNTIME_ASSIGNMENT_LEASE_SECONDS"
+    ]
+  },
+  "verification": {
+    "commands": ["cargo test -p sdkwork-deploy-runtime-assignment-worker"]
+  }
+}

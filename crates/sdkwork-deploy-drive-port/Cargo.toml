@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 async-trait.workspace = true
 sdkwork-deploy-contract.workspace = true
+sdkwork-deploy-core.workspace = true
 sdkwork-utils-rust.workspace = true
 sdkwork-database-id.workspace = true
-sdkwork_drive_app_sdk_generated_rust = { package = "sdkwork-drive-app-sdk-generated-rust", path = "../../../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-rust/generated/server-openapi" }
+sdkwork_drive_app_sdk_generated_rust.workspace = true

@@ -1,4 +1,4 @@
-use sdkwork_database_id::SnowflakeIdGenerator;
+use sdkwork_database_id::{NodeLease, SnowflakeIdGenerator};
 use sqlx::AnyPool;
 
 mod artifacts;
@@ -13,23 +13,39 @@ mod nginx_orchestrator;
 mod nginx_security;
 mod port;
 mod releases;
-mod runtime;
+mod runtime_assignments;
 mod servers;
+mod site_composition;
 mod sites;
 mod support;
 mod upload_sessions;
-
-pub use runtime::{bootstrap_deploy_runtime_from_env, DeployRuntime};
 
 #[derive(Clone)]
 pub struct DeployRepository {
     pool: AnyPool,
     id_generator: SnowflakeIdGenerator,
+    _node_lease: Option<NodeLease>,
 }
 
 impl DeployRepository {
     pub fn new(pool: AnyPool, id_generator: SnowflakeIdGenerator) -> Self {
-        Self { pool, id_generator }
+        Self {
+            pool,
+            id_generator,
+            _node_lease: None,
+        }
+    }
+
+    pub fn new_with_node_lease(
+        pool: AnyPool,
+        id_generator: SnowflakeIdGenerator,
+        node_lease: NodeLease,
+    ) -> Self {
+        Self {
+            pool,
+            id_generator,
+            _node_lease: Some(node_lease),
+        }
     }
 
     pub fn pool(&self) -> &AnyPool {

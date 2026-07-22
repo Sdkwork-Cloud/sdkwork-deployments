@@ -1,4 +1,4 @@
-﻿{
+{
     "name":  "sdkwork-deploy-workspace",
     "private":  true,
     "license": "AGPL-3.0-or-later",
@@ -20,7 +20,7 @@
                     "clean":  "pnpm exec sdkwork-app clean",
                     "api:materialize":  "node tools/materialize_deploy_phase1_contracts.mjs",
                     "api:check":  "node ../sdkwork-specs/tools/check-api-response-envelope.mjs --workspace .",
-                    "db:materialize:contract":  "node ../sdkwork-specs/tools/materialize-database-contract-from-baseline.mjs --root . --baseline database/ddl/baseline/postgres/0001_deploy_baseline.sql --module-id deploy --owner deploy-platform --prefixes deploy_ --engines postgres",
+                    "db:materialize:contract":  "node ../sdkwork-specs/tools/materialize-database-contract-from-baseline.mjs --root . --baseline database/ddl/baseline/postgres/0001_deploy_baseline.sql --module-id deploy --owner deploy-platform --prefixes deploy_ --engines postgres,sqlite",
                     "db:validate":  "node ../sdkwork-specs/tools/check-database-framework-standard.mjs --root .",
                     "db:plan":  "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . plan",
                     "db:init":  "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . init",
@@ -41,9 +41,9 @@
                     "api:assembly:materialize":  "node ../sdkwork-specs/tools/materialize-api-assembly.mjs --root .",
                     "api:assembly:validate":  "node ../sdkwork-specs/tools/validate-api-assembly.mjs --root .",
                     "_sdkwork:build":  "cargo build --workspace --release",
-                    "_sdkwork:test":  "cargo test --workspace \u0026\u0026 node --test tests/contract/database-framework.contract.test.mjs tests/contract/deploy-standard.contract.test.mjs tests/contract/deploy-orchestrator.contract.test.mjs",
+                    "_sdkwork:test":  "cargo test --workspace \u0026\u0026 node --test tests/contract/database-framework.contract.test.mjs tests/contract/deploy-standard.contract.test.mjs tests/contract/deploy-orchestrator.contract.test.mjs tests/contract/openapi-materialization.contract.test.mjs",
                     "_sdkwork:check":  "pnpm run check:app-composition \u0026\u0026 pnpm check:pnpm-script-standard \u0026\u0026 pnpm check:agent-workflow-standard \u0026\u0026 pnpm topology:validate \u0026\u0026 pnpm db:validate \u0026\u0026 pnpm api:check \u0026\u0026 pnpm deploy:validate",
-                    "_sdkwork:verify":  "cargo fmt -- --check \u0026\u0026 cargo test --workspace \u0026\u0026 node --test tests/contract/database-framework.contract.test.mjs tests/contract/deploy-standard.contract.test.mjs tests/contract/deploy-orchestrator.contract.test.mjs \u0026\u0026 pnpm check \u0026\u0026 pnpm run check:app-composition",
+                    "_sdkwork:verify":  "cargo fmt -- --check \u0026\u0026 cargo test --workspace \u0026\u0026 node --test tests/contract/database-framework.contract.test.mjs tests/contract/deploy-standard.contract.test.mjs tests/contract/deploy-orchestrator.contract.test.mjs tests/contract/openapi-materialization.contract.test.mjs \u0026\u0026 pnpm check \u0026\u0026 pnpm run check:app-composition",
                     "_sdkwork:clean":  "cargo clean",
                     "dev:standalone":  "pnpm exec sdkwork-app dev --deployment-profile standalone",
                     "dev:cloud":  "pnpm exec sdkwork-app dev --deployment-profile cloud",

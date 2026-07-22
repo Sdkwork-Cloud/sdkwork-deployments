@@ -2,6 +2,7 @@ pub const PREFIX: &str = "/app/v3/api";
 
 pub const SITES: &str = "/app/v3/api/sites";
 pub const SITE: &str = "/app/v3/api/sites/{siteId}";
+pub const SITE_COMPOSITION: &str = "/app/v3/api/sites/{siteId}/composition";
 pub const SITE_ACTIVATE: &str = "/app/v3/api/sites/{siteId}/activate";
 pub const SITE_PAUSE: &str = "/app/v3/api/sites/{siteId}/pause";
 pub const SITE_DOMAINS: &str = "/app/v3/api/sites/{siteId}/domains";

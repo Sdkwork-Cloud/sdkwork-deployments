@@ -803,14 +803,14 @@ CREATE INDEX idx_deploy_audit_log_tenant_action
 
 | Method | Path | operationId | 说明 |
 | --- | --- | --- | --- |
-| GET | `/backend/v3/api/nginx/configs` | `nginx.configs.list` | Nginx 配置列表 |
-| POST | `/backend/v3/api/nginx/configs` | `nginx.configs.create` | 创建 Nginx 配置 |
-| GET | `/backend/v3/api/nginx/configs/{configId}` | `nginx.configs.retrieve` | 配置详情 |
-| PUT | `/backend/v3/api/nginx/configs/{configId}` | `nginx.configs.update` | 更新配置 |
-| POST | `/backend/v3/api/nginx/configs/{configId}/validate` | `nginx.configs.validate` | 校验配置 |
-| POST | `/backend/v3/api/nginx/configs/{configId}/deploy` | `nginx.configs.deploy` | 部署配置 |
-| POST | `/backend/v3/api/nginx/reload` | `nginx.reload` | 热加载 Nginx |
-| GET | `/backend/v3/api/nginx/status` | `nginx.status.retrieve` | Nginx 状态 |
+| GET | `/backend/v3/api/nginx/configs` | `configs.list` | Nginx 配置列表 |
+| POST | `/backend/v3/api/nginx/configs` | `configs.create` | 创建 Nginx 配置 |
+| GET | `/backend/v3/api/nginx/configs/{configId}` | `configs.retrieve` | 配置详情 |
+| PUT | `/backend/v3/api/nginx/configs/{configId}` | `configs.update` | 更新配置 |
+| POST | `/backend/v3/api/nginx/configs/{configId}/validate` | `configs.validate` | 校验配置 |
+| POST | `/backend/v3/api/nginx/configs/{configId}/deploy` | `configs.deploy` | 部署配置 |
+| POST | `/backend/v3/api/nginx/reload` | `runtime.reload` | 热加载 Nginx |
+| GET | `/backend/v3/api/nginx/status` | `runtime.retrieve` | Nginx 状态 |
 | GET | `/backend/v3/api/nginx/sites` | `nginx.sites.list` | Nginx 站点列表 |
 
 #### 4.3.2 服务器管理 (Server)
@@ -1593,7 +1593,7 @@ pub fn parse_server_block(input: &str) -> IResult<&str, ServerBlock> {
 | `deployment.log` | 部署日志实时流 |
 | `health.status` | 健康状态变更 |
 | `alert.new` | 新告警通知 |
-| `nginx.reload` | Nginx 热加载结果 |
+| `runtime.reload` | Nginx 热加载结果 |
 
 ```
 WS /app/v3/api/ws?token={access_token}
@@ -1862,4 +1862,3 @@ See [DESIGN_REPORT.md](../../DESIGN_REPORT.md) appendix B for the current `sdkwo
 ---
 
 *本报告遵循 SDKWORK 规范体系设计，后续实现需严格按照各规范文件执行。*
-

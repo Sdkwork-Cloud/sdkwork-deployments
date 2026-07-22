@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-deploy-web-port",
+    "displayName": "SDKWork Deploy Web Runtime Publisher",
+    "version": "0.1.0",
+    "type": "rust-crate",
+    "root": "crates/sdkwork-deploy-web-port",
+    "domain": "deploy",
+    "capability": "web-runtime-publication",
+    "surface": "backend-provider",
+    "languages": ["rust"],
+    "generated": false,
+    "manifests": ["Cargo.toml", "specs/component.spec.json"]
+  },
+  "canonicalSpecs": [
+    {"file": "CODE_STYLE_SPEC.md", "path": "../../../sdkwork-specs/CODE_STYLE_SPEC.md", "purpose": "Provider adapter boundaries."},
+    {"file": "RUST_CODE_SPEC.md", "path": "../../../sdkwork-specs/RUST_CODE_SPEC.md", "purpose": "Rust provider implementation."},
+    {"file": "SDK_SPEC.md", "path": "../../../sdkwork-specs/SDK_SPEC.md", "purpose": "Generated SDK consumption."},
+    {"file": "SECURITY_SPEC.md", "path": "../../../sdkwork-specs/SECURITY_SPEC.md", "purpose": "Secret-file and error redaction rules."},
+    {"file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md", "purpose": "Provider adapter verification."}
+  ],
+  "contracts": {
+    "layerRole": "backend-provider",
+    "publicExports": ["."],
+    "providedPorts": [{"name": "webRuntimeAssignmentPublisher", "export": "."}],
+    "requiredPorts": [
+      {
+        "name": "webInternalSdk",
+        "export": ".",
+        "provider": "sdkwork-web-internal-sdk"
+      }
+    ],
+    "runtimeEntrypoints": [],
+    "routeManifest": null,
+    "sdkClients": ["SdkworkCustomClient"],
+    "sdkDependencies": [
+      {
+        "workspace": "sdkwork-web-internal-sdk",
+        "surface": "internal-api",
+        "credentialMode": "ingress-token",
+        "apiAuthority": "sdkwork-web-internal-api",
+        "packageByLanguage": {"rust": "sdkwork-web-internal-sdk"}
+      }
+    ],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "events": [],
+    "configKeys": [
+      "SDKWORK_DEPLOY_WEB_INTERNAL_API_URL",
+      "SDKWORK_DEPLOY_WEB_INTERNAL_API_INGRESS_TOKEN_FILE"
+    ]
+  },
+  "verification": {
+    "commands": [
+      "cargo test -p sdkwork-deploy-web-port",
+      "node ../sdkwork-specs/tools/check-component-port-bindings.mjs --root ."
+    ]
+  }
+}

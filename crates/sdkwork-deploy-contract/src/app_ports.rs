@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::dto::*;
 use crate::problem::DeployServiceResult;
+use crate::site_composition::{SiteCompositionResponse, UpdateSiteCompositionRequest};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeployAppRequestContext {
@@ -60,6 +61,15 @@ pub trait DeployAppApi: Send + Sync {
         site_id: &str,
         request: &UpdateSiteRequest,
     ) -> DeployServiceResult<SiteResponse>;
+
+    async fn update_site_composition(
+        &self,
+        context: &DeployAppRequestContext,
+        site_id: &str,
+        expected_site_version: i64,
+        idempotency_key: &str,
+        request: &UpdateSiteCompositionRequest,
+    ) -> DeployServiceResult<SiteCompositionResponse>;
 
     async fn delete_site(
         &self,

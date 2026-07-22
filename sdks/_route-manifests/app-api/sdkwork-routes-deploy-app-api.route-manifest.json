@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
   "kind": "sdkwork.route.manifest",
-  "packageName": "sdkwork-routes-deploy-app-api",
+  "packageName": "@sdkwork/deploy-app-sdk",
   "surface": "app-api",
   "owner": "sdkwork-deploy",
   "domain": "platform",
   "capability": "deploy",
-  "apiAuthority": "sdkwork-deploy.app",
+  "apiAuthority": "sdkwork-deploy-app-api",
   "sdkFamily": "sdkwork-deploy-app-sdk",
   "prefix": "/app/v3/api",
   "source": {
     "crateRoot": "crates/sdkwork-routes-deploy-app-api",
-    "crateImport": "sdkwork_routes_deploy_app_api",
+    "crateImport": "@sdkwork/deploy_app_sdk",
     "openApiAuthority": "sdks/sdkwork-deploy-app-sdk/openapi/deploy-app-api.openapi.json"
   },
   "routes": [
@@ -32,7 +32,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -56,7 +56,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -80,7 +80,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -104,7 +104,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -128,7 +128,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -152,12 +152,36 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
       "permission": "deploy.sites.write",
       "idempotent": false
+    },
+    {
+      "method": "PUT",
+      "path": "/app/v3/api/sites/{siteId}/composition",
+      "operationId": "sites.composition.update",
+      "tags": [
+        "site"
+      ],
+      "auth": {
+        "mode": "dual-token",
+        "required": true
+      },
+      "handler": {
+        "module": "crate::routes",
+        "name": null
+      },
+      "ownership": {
+        "owner": "sdkwork-deploy",
+        "apiAuthority": "sdkwork-deploy-app-api"
+      },
+      "requestContext": "WebRequestContext",
+      "apiSurface": "app-api",
+      "permission": "deploy.sites.write",
+      "idempotent": true
     },
     {
       "method": "POST",
@@ -176,7 +200,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -200,7 +224,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -224,7 +248,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -248,7 +272,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -272,7 +296,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -296,7 +320,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -320,7 +344,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -344,7 +368,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -368,7 +392,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -392,7 +416,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -416,7 +440,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -440,7 +464,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -464,7 +488,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -488,7 +512,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -512,7 +536,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -536,7 +560,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -560,7 +584,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -584,7 +608,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -608,7 +632,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -632,7 +656,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -656,7 +680,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -680,7 +704,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -704,7 +728,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -728,7 +752,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -752,7 +776,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -776,7 +800,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -800,7 +824,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -824,7 +848,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -848,7 +872,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
@@ -872,7 +896,7 @@
       },
       "ownership": {
         "owner": "sdkwork-deploy",
-        "apiAuthority": "sdkwork-deploy.app"
+        "apiAuthority": "sdkwork-deploy-app-api"
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",

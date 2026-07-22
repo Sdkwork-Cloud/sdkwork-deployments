@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-deploy-content-provider-port",
+    "displayName": "SDKWork Deploy Content Provider Port",
+    "version": "0.1.0",
+    "type": "rust-crate",
+    "root": "crates/sdkwork-deploy-content-provider-port",
+    "domain": "deploy",
+    "capability": "content-provider-integration",
+    "surface": "backend-adapter",
+    "languages": ["rust"],
+    "generated": false,
+    "manifests": ["Cargo.toml", "specs/component.spec.json"]
+  },
+  "canonicalSpecs": [
+    {"file": "APP_SDK_INTEGRATION_SPEC.md", "path": "../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md", "purpose": "Generated dependency SDK integration."},
+    {"file": "SDK_SPEC.md", "path": "../../../sdkwork-specs/SDK_SPEC.md", "purpose": "Owner-only generated SDK boundary."},
+    {"file": "SECURITY_SPEC.md", "path": "../../../sdkwork-specs/SECURITY_SPEC.md", "purpose": "Credential and provider error safety."},
+    {"file": "RUST_CODE_SPEC.md", "path": "../../../sdkwork-specs/RUST_CODE_SPEC.md", "purpose": "Rust port and adapter structure."},
+    {"file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md", "purpose": "Provider boundary verification."}
+  ],
+  "contracts": {
+    "layerRole": "provider-adapter",
+    "publicExports": ["."],
+    "providedPorts": [{"name": "contentProvider", "export": "."}],
+    "requiredPorts": [],
+    "runtimeEntrypoints": [],
+    "routeManifest": null,
+    "sdkClients": [
+      {"family": "sdkwork-drive-app-sdk", "language": "rust", "surface": "app-api"},
+      {"family": "sdkwork-drive-internal-sdk", "language": "rust", "surface": "internal-api"},
+      {"family": "sdkwork-knowledgebase-internal-sdk", "language": "rust", "surface": "internal-api"}
+    ],
+    "sdkDependencies": [
+      {"workspace": "sdkwork-drive-app-sdk", "surface": "app-api", "credentialMode": "dual-token", "apiAuthority": "sdkwork-drive-app-api", "packageByLanguage": {"rust": "sdkwork-drive-app-sdk-generated-rust"}},
+      {"workspace": "sdkwork-drive-internal-sdk", "surface": "internal-api", "credentialMode": "ingress-token", "apiAuthority": "sdkwork-drive-internal-api", "packageByLanguage": {"rust": "sdkwork-drive-internal-sdk-generated-rust"}},
+      {"workspace": "sdkwork-knowledgebase-internal-sdk", "surface": "internal-api", "credentialMode": "ingress-token", "apiAuthority": "sdkwork-knowledgebase-internal-api", "packageByLanguage": {"rust": "sdkwork-knowledgebase-internal-sdk-generated-rust"}}
+    ],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "events": [],
+    "configKeys": [
+      "SDKWORK_DRIVE_FACADE_URL",
+      "SDKWORK_DEPLOY_DRIVE_INTERNAL_API_URL",
+      "SDKWORK_DEPLOY_DRIVE_INTERNAL_API_INGRESS_TOKEN_FILE",
+      "SDKWORK_DEPLOY_KNOWLEDGEBASE_INTERNAL_API_URL",
+      "SDKWORK_DEPLOY_KNOWLEDGEBASE_INTERNAL_API_INGRESS_TOKEN_FILE",
+      "SDKWORK_DEPLOY_USE_MEMORY_CONTENT_PROVIDER"
+    ]
+  },
+  "verification": {"commands": ["cargo test -p sdkwork-deploy-content-provider-port"]}
+}

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-deploy-core",
+    "displayName": "SDKWork Deploy Core",
+    "version": "0.1.0",
+    "type": "rust-crate",
+    "root": "crates/sdkwork-deploy-core",
+    "domain": "deploy",
+    "capability": "shared-core",
+    "surface": "backend-service",
+    "languages": ["rust"],
+    "generated": false,
+    "manifests": ["Cargo.toml", "specs/component.spec.json"]
+  },
+  "canonicalSpecs": [
+    {"file": "PAGINATION_SPEC.md", "path": "../../../sdkwork-specs/PAGINATION_SPEC.md", "purpose": "Pagination normalization contract."},
+    {"file": "CONFIG_SPEC.md", "path": "../../../sdkwork-specs/CONFIG_SPEC.md", "purpose": "Runtime environment selection."},
+    {"file": "CODE_STYLE_SPEC.md", "path": "../../../sdkwork-specs/CODE_STYLE_SPEC.md", "purpose": "Dependency-light shared helpers."},
+    {"file": "NAMING_SPEC.md", "path": "../../../sdkwork-specs/NAMING_SPEC.md", "purpose": "Runtime helper naming."},
+    {"file": "RUST_CODE_SPEC.md", "path": "../../../sdkwork-specs/RUST_CODE_SPEC.md", "purpose": "Rust core crate rules."},
+    {"file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md", "purpose": "Core helper verification."}
+  ],
+  "contracts": {
+    "layerRole": "backend-domain",
+    "publicExports": ["."],
+    "providedPorts": [
+      {"name": "deployRuntimeEnvironment", "export": "."},
+      {"name": "deployPagination", "export": "."}
+    ],
+    "requiredPorts": [],
+    "runtimeEntrypoints": [],
+    "routeManifest": null,
+    "sdkClients": [],
+    "sdkDependencies": [],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "events": [],
+    "configKeys": ["SDKWORK_DEPLOY_ENVIRONMENT", "SDKWORK_DEPLOY_DEV_AUTH_BYPASS"]
+  },
+  "verification": {
+    "commands": ["cargo test -p sdkwork-deploy-core"]
+  }
+}

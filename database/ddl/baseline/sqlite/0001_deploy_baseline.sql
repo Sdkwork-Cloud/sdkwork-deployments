@@ -20,6 +20,9 @@ CREATE TABLE deploy_site (
     status          INTEGER      NOT NULL DEFAULT 0,
     runtime_config  TEXT         NOT NULL DEFAULT '{}',
     metadata        TEXT         NOT NULL DEFAULT '{}',
+    default_variant_id INTEGER,
+    current_revision_id INTEGER,
+    desired_revision_id INTEGER,
     created_at      TEXT         NOT NULL,
     updated_at      TEXT         NOT NULL,
     version         INTEGER      NOT NULL DEFAULT 0,
@@ -399,3 +402,245 @@ ALTER TABLE deploy_deployment ADD COLUMN release_id INTEGER NULL;
 CREATE INDEX IF NOT EXISTS idx_deploy_deployment_release
     ON deploy_deployment (release_id)
     WHERE release_id IS NOT NULL;
+
+CREATE TABLE deploy_site_resource (
+    id INTEGER PRIMARY KEY NOT NULL,
+    uuid TEXT NOT NULL UNIQUE,
+    tenant_id INTEGER NOT NULL,
+    organization_id INTEGER NOT NULL DEFAULT 0,
+    site_id INTEGER NOT NULL,
+    resource_key TEXT NOT NULL,
+    provider_type TEXT NOT NULL CHECK (provider_type IN ('DRIVE', 'KNOWLEDGEBASE')),
+    provider_resource_uuid TEXT NOT NULL,
+    provider_contract_version TEXT NOT NULL,
+    capabilities_json TEXT NOT NULL DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'VALID', 'INVALID', 'UNAVAILABLE', 'REVOKED')),
+    last_validated_at TEXT NULL,
+    last_error_code TEXT NULL,
+    metadata TEXT NOT NULL DEFAULT '{}',
+    created_by INTEGER NULL,
+    updated_by INTEGER NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    deleted_at TEXT NULL,
+    UNIQUE (site_id, resource_key),
+    FOREIGN KEY (site_id) REFERENCES deploy_site(id)
+);
+
+CREATE INDEX idx_deploy_site_resource_site_status
+    ON deploy_site_resource (tenant_id, site_id, status) WHERE deleted_at IS NULL;
+CREATE INDEX idx_deploy_site_resource_provider
+    ON deploy_site_resource (tenant_id, provider_type, provider_resource_uuid) WHERE deleted_at IS NULL;
+
+CREATE TABLE deploy_site_variant (
+    id INTEGER PRIMARY KEY NOT NULL,
+    uuid TEXT NOT NULL UNIQUE,
+    tenant_id INTEGER NOT NULL,
+    site_id INTEGER NOT NULL,
+    variant_key TEXT NOT NULL,
+    label TEXT NOT NULL,
+    client_class TEXT NOT NULL DEFAULT 'OTHER' CHECK (client_class IN ('DESKTOP', 'MOBILE', 'TABLET', 'BOT', 'OTHER')),
+    is_default INTEGER NOT NULL DEFAULT 0,
+    priority INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'DISABLED')),
+    metadata TEXT NOT NULL DEFAULT '{}',
+    created_by INTEGER NULL,
+    updated_by INTEGER NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    deleted_at TEXT NULL,
+    UNIQUE (site_id, variant_key),
+    FOREIGN KEY (site_id) REFERENCES deploy_site(id)
+);
+
+CREATE UNIQUE INDEX uk_deploy_site_variant_default
+    ON deploy_site_variant (site_id) WHERE is_default = 1 AND status = 'ACTIVE' AND deleted_at IS NULL;
+CREATE INDEX idx_deploy_site_variant_site_priority
+    ON deploy_site_variant (tenant_id, site_id, status, priority, uuid) WHERE deleted_at IS NULL;
+
+CREATE TABLE deploy_site_variant_rule (
+    id INTEGER PRIMARY KEY NOT NULL,
+    uuid TEXT NOT NULL UNIQUE,
+    tenant_id INTEGER NOT NULL,
+    site_id INTEGER NOT NULL,
+    rule_key TEXT NOT NULL,
+    target_variant_id INTEGER NOT NULL,
+    rule_type TEXT NOT NULL CHECK (rule_type IN ('PATH_PREFIX', 'CLIENT_CLASS')),
+    match_value TEXT NOT NULL,
+    priority INTEGER NOT NULL DEFAULT 0 CHECK (priority BETWEEN 0 AND 65535),
+    status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'DISABLED')),
+    created_by INTEGER NULL,
+    updated_by INTEGER NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    deleted_at TEXT NULL,
+    FOREIGN KEY (site_id) REFERENCES deploy_site(id),
+    FOREIGN KEY (target_variant_id) REFERENCES deploy_site_variant(id),
+    UNIQUE (site_id, rule_key)
+);
+
+CREATE INDEX idx_deploy_site_variant_rule_order
+    ON deploy_site_variant_rule (tenant_id, site_id, status, priority, uuid) WHERE deleted_at IS NULL;
+
+CREATE TABLE deploy_site_mount (
+    id INTEGER PRIMARY KEY NOT NULL,
+    uuid TEXT NOT NULL UNIQUE,
+    tenant_id INTEGER NOT NULL,
+    site_id INTEGER NOT NULL,
+    mount_key TEXT NOT NULL,
+    variant_id INTEGER NOT NULL,
+    resource_id INTEGER NOT NULL,
+    path_prefix TEXT NOT NULL,
+    resource_subpath TEXT NOT NULL DEFAULT '/',
+    mount_mode TEXT NOT NULL DEFAULT 'ROOT' CHECK (mount_mode IN ('ROOT', 'ALIAS')),
+    handler_type TEXT NOT NULL CHECK (handler_type IN ('STATIC', 'SPA', 'WIKI')),
+    index_files_json TEXT NOT NULL DEFAULT '[]',
+    spa_fallback_path TEXT NULL,
+    priority INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'DISABLED', 'INVALID')),
+    created_by INTEGER NULL,
+    updated_by INTEGER NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    deleted_at TEXT NULL,
+    UNIQUE (variant_id, path_prefix),
+    UNIQUE (site_id, mount_key),
+    FOREIGN KEY (site_id) REFERENCES deploy_site(id),
+    FOREIGN KEY (variant_id) REFERENCES deploy_site_variant(id),
+    FOREIGN KEY (resource_id) REFERENCES deploy_site_resource(id)
+);
+
+CREATE INDEX idx_deploy_site_mount_route
+    ON deploy_site_mount (tenant_id, site_id, variant_id, status, path_prefix) WHERE deleted_at IS NULL;
+
+CREATE TABLE deploy_site_binding (
+    id INTEGER PRIMARY KEY NOT NULL,
+    uuid TEXT NOT NULL UNIQUE,
+    tenant_id INTEGER NOT NULL,
+    organization_id INTEGER NOT NULL DEFAULT 0,
+    site_id INTEGER NOT NULL,
+    binding_key TEXT NOT NULL,
+    domain_id INTEGER NOT NULL,
+    hostname_ascii TEXT NOT NULL,
+    environment TEXT NOT NULL CHECK (environment IN ('development', 'test', 'staging', 'production')),
+    path_prefix TEXT NOT NULL DEFAULT '/',
+    action_type TEXT NOT NULL DEFAULT 'SERVE' CHECK (action_type IN ('SERVE', 'REDIRECT')),
+    default_variant_id INTEGER NULL,
+    forced_variant_id INTEGER NULL,
+    redirect_scheme TEXT NULL,
+    redirect_hostname TEXT NULL,
+    redirect_path_prefix TEXT NULL,
+    redirect_status_code INTEGER NULL CHECK (redirect_status_code IS NULL OR redirect_status_code IN (301, 302, 307, 308)),
+    preserve_path INTEGER NOT NULL DEFAULT 1,
+    preserve_query INTEGER NOT NULL DEFAULT 1,
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'VERIFIED', 'ACTIVE', 'PAUSED', 'FAILED', 'ARCHIVED')),
+    verified_at TEXT NULL,
+    activated_at TEXT NULL,
+    created_by INTEGER NULL,
+    updated_by INTEGER NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    deleted_at TEXT NULL,
+    UNIQUE (hostname_ascii, path_prefix, environment),
+    UNIQUE (site_id, binding_key),
+    FOREIGN KEY (site_id) REFERENCES deploy_site(id),
+    FOREIGN KEY (domain_id) REFERENCES deploy_domain(id),
+    FOREIGN KEY (default_variant_id) REFERENCES deploy_site_variant(id),
+    FOREIGN KEY (forced_variant_id) REFERENCES deploy_site_variant(id)
+);
+
+CREATE INDEX idx_deploy_site_binding_site_status
+    ON deploy_site_binding (tenant_id, site_id, environment, status) WHERE deleted_at IS NULL;
+
+CREATE TABLE deploy_site_revision (
+    id INTEGER PRIMARY KEY NOT NULL,
+    uuid TEXT NOT NULL UNIQUE,
+    tenant_id INTEGER NOT NULL,
+    organization_id INTEGER NOT NULL DEFAULT 0,
+    site_id INTEGER NOT NULL,
+    revision_no INTEGER NOT NULL,
+    environment TEXT NOT NULL CHECK (environment IN ('development', 'test', 'staging', 'production')),
+    descriptor_schema_version TEXT NOT NULL,
+    descriptor_json TEXT NOT NULL,
+    descriptor_sha256 TEXT NOT NULL,
+    compiler_version TEXT NOT NULL,
+    source_config_version INTEGER NOT NULL,
+    idempotency_key TEXT NOT NULL,
+    request_sha256 TEXT NOT NULL,
+    result_json TEXT NOT NULL DEFAULT '{}',
+    validation_status TEXT NOT NULL DEFAULT 'VALID' CHECK (validation_status IN ('VALID', 'INVALID')),
+    validation_report_json TEXT NOT NULL DEFAULT '{}',
+    supersedes_revision_id INTEGER NULL,
+    created_by INTEGER NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (site_id, revision_no),
+    UNIQUE (site_id, descriptor_sha256),
+    UNIQUE (tenant_id, site_id, idempotency_key),
+    FOREIGN KEY (site_id) REFERENCES deploy_site(id),
+    FOREIGN KEY (supersedes_revision_id) REFERENCES deploy_site_revision(id)
+);
+
+CREATE INDEX idx_deploy_site_revision_site_created
+    ON deploy_site_revision (tenant_id, site_id, revision_no DESC);
+
+CREATE TABLE deploy_web_node_target (
+    id INTEGER PRIMARY KEY NOT NULL,
+    uuid TEXT NOT NULL UNIQUE,
+    tenant_id INTEGER NOT NULL,
+    node_uuid TEXT NOT NULL,
+    environment TEXT NOT NULL CHECK (environment IN ('development', 'test', 'staging', 'production')),
+    tenant_scope_hash TEXT NOT NULL,
+    region TEXT NULL,
+    status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'DRAINING', 'DISABLED')),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    deleted_at TEXT NULL,
+    UNIQUE (node_uuid, environment)
+);
+
+CREATE INDEX idx_deploy_web_node_target_tenant
+    ON deploy_web_node_target (tenant_id, environment, status, node_uuid) WHERE deleted_at IS NULL;
+
+CREATE TABLE deploy_runtime_assignment (
+    id INTEGER PRIMARY KEY NOT NULL,
+    uuid TEXT NOT NULL UNIQUE,
+    tenant_id INTEGER NOT NULL,
+    node_target_id INTEGER NOT NULL,
+    trigger_site_revision_id INTEGER NULL,
+    generation INTEGER NOT NULL CHECK (generation BETWEEN 1 AND 9007199254740991),
+    snapshot_uuid TEXT NOT NULL UNIQUE,
+    snapshot_sha256 TEXT NOT NULL,
+    desired_state_sha256 TEXT NOT NULL,
+    runtime_set_json TEXT NOT NULL,
+    runtime_set_bytes INTEGER NOT NULL CHECK (runtime_set_bytes > 0 AND runtime_set_bytes <= 67108864),
+    publish_status TEXT NOT NULL DEFAULT 'PENDING' CHECK (publish_status IN ('PENDING', 'PUBLISHING', 'PUBLISHED', 'FAILED', 'SUPERSEDED')),
+    remote_assignment_uuid TEXT NULL,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    next_attempt_at TEXT NULL,
+    lease_owner TEXT NULL,
+    lease_expires_at TEXT NULL,
+    last_error_code TEXT NULL,
+    published_at TEXT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    UNIQUE (node_target_id, generation),
+    FOREIGN KEY (node_target_id) REFERENCES deploy_web_node_target(id),
+    FOREIGN KEY (trigger_site_revision_id) REFERENCES deploy_site_revision(id),
+    CHECK (
+        (publish_status = 'PUBLISHING' AND lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL)
+        OR (publish_status <> 'PUBLISHING' AND lease_owner IS NULL AND lease_expires_at IS NULL)
+    )
+);
+
+CREATE INDEX idx_deploy_runtime_assignment_delivery
+    ON deploy_runtime_assignment (publish_status, next_attempt_at, lease_expires_at, created_at)
+    WHERE publish_status IN ('PENDING', 'PUBLISHING', 'FAILED');
+CREATE INDEX idx_deploy_runtime_assignment_target_latest
+    ON deploy_runtime_assignment (tenant_id, node_target_id, generation DESC);

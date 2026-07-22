@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-intelligence-deploy-repository-sqlx",
+    "displayName": "SDKWork Deploy SQLx Repository",
+    "version": "0.1.0",
+    "type": "rust-crate",
+    "root": "crates/sdkwork-intelligence-deploy-repository-sqlx",
+    "domain": "deploy",
+    "capability": "control-plane-persistence",
+    "surface": "backend-repository",
+    "languages": ["rust"],
+    "generated": false,
+    "manifests": ["Cargo.toml", "specs/component.spec.json"]
+  },
+  "canonicalSpecs": [
+    {"file": "CODE_STYLE_SPEC.md", "path": "../../../sdkwork-specs/CODE_STYLE_SPEC.md", "purpose": "Authored repository module and test boundaries."},
+    {"file": "NAMING_SPEC.md", "path": "../../../sdkwork-specs/NAMING_SPEC.md", "purpose": "Repository and persistence identifier naming."},
+    {"file": "RUST_CODE_SPEC.md", "path": "../../../sdkwork-specs/RUST_CODE_SPEC.md", "purpose": "SQLx repository and transaction implementation rules."},
+    {"file": "DATABASE_SPEC.md", "path": "../../../sdkwork-specs/DATABASE_SPEC.md", "purpose": "Tenant isolation, outbox, idempotency, and concurrency semantics."},
+    {"file": "DATABASE_FRAMEWORK_SPEC.md", "path": "../../../sdkwork-specs/DATABASE_FRAMEWORK_SPEC.md", "purpose": "Database asset and lifecycle ownership boundary."},
+    {"file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md", "purpose": "Repository transaction and concurrency verification."}
+  ],
+  "contracts": {
+    "layerRole": "backend-repository",
+    "publicExports": ["."],
+    "providedPorts": [
+      {"name": "deployRepository", "export": "."},
+      {"name": "deployRuntimeAssignmentRepository", "export": "."},
+      {"name": "siteCompositionRepository", "export": "."}
+    ],
+    "requiredPorts": [
+      {"name": "databasePool", "export": ".", "provider": "sdkwork-database-sqlx"},
+      {"name": "snowflakeIdGenerator", "export": ".", "provider": "sdkwork-database-id"}
+    ],
+    "runtimeEntrypoints": [],
+    "routeManifest": null,
+    "sdkClients": [],
+    "sdkDependencies": [],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "events": [],
+    "configKeys": ["SDKWORK_DEPLOY_TEST_POSTGRES_URL"]
+  },
+  "verification": {
+    "commands": [
+      "cargo test -p sdkwork-intelligence-deploy-repository-sqlx",
+      "cargo test -p sdkwork-intelligence-deploy-repository-sqlx --test site_composition composition_is_atomic_idempotent_and_does_not_create_releases -- --exact",
+      "cargo test -p sdkwork-intelligence-deploy-repository-sqlx --test site_composition postgres_composition_matches_sqlite_transaction_semantics -- --ignored --exact",
+      "cargo test -p sdkwork-intelligence-deploy-repository-sqlx postgres_serializes_mutations_and_fences_assignment_leases -- --ignored --exact"
+    ]
+  }
+}

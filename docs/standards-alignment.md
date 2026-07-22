@@ -9,7 +9,7 @@ SDKWork Deploy standards alignment for `sdkwork-deployments`.
 | `sdkwork-web-framework` | Integrated | Auth layers, route manifests, `WebRequestContext`, `finish_api_json` / `problem_response` response mapping |
 | `sdkwork-database` | Integrated | `database/` assets, `sdkwork-deploy-database-host`, `pnpm db:*` |
 | `sdkwork-utils-rust` | Integrated | `SdkWorkApiResponse`, `PageInfo`, `parse_bool`, `slugify`, `sha256_hash`, shared pagination |
-| `sdkwork-discovery` | Deferred | HTTP-only unified-process V1; add when split-services RPC is required |
+| `sdkwork-discovery` | Deferred | HTTP-only application gateway; add when RPC services are introduced |
 | `sdkwork-drive-app-sdk` | Integrated | `sdkwork-deploy-drive-port` delegates package uploads to Drive via generated Rust SDK; memory adapter for local dev |
 
 ## HTTP API Envelope

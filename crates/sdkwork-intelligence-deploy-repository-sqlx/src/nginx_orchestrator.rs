@@ -214,15 +214,12 @@ mod tests {
         let runtime = json!({
             "sdkworkDeploy": {
                 "appRoot": "/usr/share/sdkwork-space/sdkwork-im",
-                "profileId": "cloud.split-services.production"
+                "profileId": "cloud.production"
             }
         });
         let binding = parse_sdkwork_deploy_binding(&runtime, Some("im.sdkwork.com")).unwrap();
         assert_eq!(binding.domain, "im.sdkwork.com");
-        assert_eq!(
-            binding.profile_id.as_deref(),
-            Some("cloud.split-services.production")
-        );
+        assert_eq!(binding.profile_id.as_deref(), Some("cloud.production"));
     }
 
     #[test]
