@@ -1,4 +1,6 @@
 packages:
+  - "sdks/sdkwork-deploy-app-sdk/sdkwork-deploy-app-sdk-typescript"
+  - "sdks/sdkwork-deploy-backend-sdk/sdkwork-deploy-backend-sdk-typescript"
   - "../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-contracts"
   - "../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-runtime"
   - "../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-sdk-ports"

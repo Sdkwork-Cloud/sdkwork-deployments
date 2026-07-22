@@ -122,4 +122,15 @@ for (const surface of surfaces) {
   );
 }
 
+const appRouteManifest = readJson(
+  'sdks/_route-manifests/app-api/sdkwork-routes-deploy-app-api.route-manifest.json',
+);
+const compositionRoute = appRouteManifest.routes.find(
+  (route) => route.operationId === 'sites.composition.update',
+);
+assert.ok(compositionRoute, 'sites.composition.update must be materialized into the app route manifest');
+assert.equal(compositionRoute.idempotent, true);
+assert.equal(compositionRoute.permission, 'deploy.sites.write');
+assert.deepEqual(compositionRoute.auth, { mode: 'dual-token', required: true });
+
 process.stdout.write('openapi-materialization.contract.test.mjs passed\n');

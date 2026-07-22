@@ -43,6 +43,7 @@
     "layerRole": "runtime-composition",
     "publicExports": [
       "crates/sdkwork-api-deployments-standalone-gateway",
+      "crates/sdkwork-deploy-content-provider-port",
       "crates/sdkwork-deploy-runtime-assignment-worker",
       "crates/sdkwork-deploy-service-host",
       "crates/sdkwork-deploy-web-port",

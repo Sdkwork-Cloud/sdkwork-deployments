@@ -172,7 +172,8 @@ impl ContentProviderPort for SdkContentProviderPort {
                 })
             }
             ContentProviderResourceSource::KnowledgebaseWiki { publication_uuid } => {
-                if !valid_opaque_id(publication_uuid) {
+                let publication_uuid = publication_uuid.clone();
+                if !valid_opaque_id(&publication_uuid) {
                     return Err(DeployServiceError::validation(
                         "Knowledgebase publicationUuid is invalid",
                     ));
@@ -180,29 +181,37 @@ impl ContentProviderPort for SdkContentProviderPort {
                 let publication = self
                     .knowledgebase_internal_client()?
                     .knowledgebase_internal_wiki()
-                    .wiki_publications_retrieve(publication_uuid)
+                    .wiki_publications_retrieve(&publication_uuid)
                     .await
                     .map_err(|error| map_provider_error("Knowledgebase", &error.to_string()))?;
-                if publication.publication_uuid != *publication_uuid {
-                    return Err(provider_unavailable("Knowledgebase Internal API"));
-                }
-                Ok(ValidatedContentProviderResource {
-                    key,
-                    source,
-                    provider_type: RuntimeProviderType::Knowledgebase,
-                    provider_resource_uuid: publication.publication_uuid,
-                    provider_contract_version: "sdkwork.knowledgebase.wiki-publication.v1"
-                        .to_owned(),
-                    capabilities: RuntimeResourceCapabilities {
-                        static_content: false,
-                        wiki_routes: true,
-                        wiki_search: publication.search_enabled,
-                        range_requests: false,
-                    },
-                })
+                validated_knowledgebase_resource(key, source, &publication_uuid, publication)
             }
         }
     }
+}
+
+fn validated_knowledgebase_resource(
+    key: String,
+    source: ContentProviderResourceSource,
+    expected_publication_uuid: &str,
+    publication: sdkwork_knowledgebase_internal_sdk_generated_rust::WikiPublication,
+) -> DeployServiceResult<ValidatedContentProviderResource> {
+    if publication.publication_uuid != expected_publication_uuid {
+        return Err(provider_unavailable("Knowledgebase Internal API"));
+    }
+    Ok(ValidatedContentProviderResource {
+        key,
+        source,
+        provider_type: RuntimeProviderType::Knowledgebase,
+        provider_resource_uuid: publication.publication_uuid,
+        provider_contract_version: "sdkwork.knowledgebase.wiki-publication.v1".to_owned(),
+        capabilities: RuntimeResourceCapabilities {
+            static_content: false,
+            wiki_routes: true,
+            wiki_search: publication.search_enabled,
+            range_requests: false,
+        },
+    })
 }
 
 fn required_env(key: &str) -> Result<String, String> {
@@ -346,6 +355,7 @@ fn provider_unavailable(provider: &str) -> DeployServiceError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sdkwork_deploy_contract::DriveWebsiteRootSelector;
 
     #[test]
     fn provider_errors_are_redacted() {
@@ -362,5 +372,59 @@ mod tests {
         let right = stable_root_key(7, "site", "desktop");
         assert_eq!(left, right);
         assert!(left.len() <= 64);
+    }
+
+    #[test]
+    fn drive_folder_selector_requires_a_valid_folder_node_id() {
+        let error = drive_selector(&DriveWebsiteRootSelector::Folder {
+            folder_node_id: String::new(),
+        })
+        .expect_err("blank folder id must be rejected");
+        assert!(error.to_string().contains("folderNodeId"));
+    }
+
+    #[test]
+    fn created_drive_root_must_match_the_exact_folder_selector() {
+        let root = sdkwork_drive_app_sdk_generated_rust::WebsiteRoot {
+            uuid: "root-1".to_owned(),
+            space_id: "space-1".to_owned(),
+            source_root_mode: "FOLDER".to_owned(),
+            selected_folder_node_id: "folder-other".to_owned(),
+            content_mode: "LIVE_TREE".to_owned(),
+            root_status: "ACTIVE".to_owned(),
+            ..Default::default()
+        };
+        assert!(validate_created_drive_root(
+            &root,
+            "space-1",
+            &DriveWebsiteRootSelector::Folder {
+                folder_node_id: "folder-1".to_owned(),
+            },
+            "LIVE_TREE",
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn knowledgebase_search_capability_matches_the_owner_publication() {
+        for search_enabled in [false, true] {
+            let publication = sdkwork_knowledgebase_internal_sdk_generated_rust::WikiPublication {
+                publication_uuid: "publication-1".to_owned(),
+                search_enabled,
+                ..Default::default()
+            };
+            let resource = validated_knowledgebase_resource(
+                "wiki".to_owned(),
+                ContentProviderResourceSource::KnowledgebaseWiki {
+                    publication_uuid: "publication-1".to_owned(),
+                },
+                "publication-1",
+                publication,
+            )
+            .expect("valid owner publication");
+            assert_eq!(resource.capabilities.wiki_search, search_enabled);
+            assert!(resource.capabilities.wiki_routes);
+            assert!(!resource.capabilities.static_content);
+        }
     }
 }

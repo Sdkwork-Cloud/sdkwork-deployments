@@ -923,4 +923,17 @@ mod tests {
             assert!(parse_if_match(&headers).is_err());
         }
     }
+
+    #[test]
+    fn composition_precondition_headers_are_required() {
+        let headers = HeaderMap::new();
+        assert!(parse_if_match(&headers)
+            .expect_err("If-Match must be required")
+            .to_string()
+            .contains("if-match header is required"));
+        assert!(required_header(&headers, "idempotency-key")
+            .expect_err("Idempotency-Key must be required")
+            .to_string()
+            .contains("idempotency-key header is required"));
+    }
 }

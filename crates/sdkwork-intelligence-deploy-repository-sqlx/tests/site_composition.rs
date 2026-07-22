@@ -264,6 +264,101 @@ async fn composition_is_atomic_idempotent_and_does_not_create_releases() {
 }
 
 #[tokio::test]
+async fn composition_rejects_a_domain_owned_by_another_tenant() {
+    let (repository, pool, _file) = test_repository().await;
+    sqlx::query(
+        "INSERT INTO deploy_domain (
+            id,uuid,tenant_id,organization_id,site_id,hostname,is_verified,status,metadata,
+            created_at,updated_at,version
+         ) VALUES (21,'domain-foreign',8,9,10,'foreign.example.com',TRUE,1,'{}',
+                   '2026-07-22T00:00:00Z','2026-07-22T00:00:00Z',0)",
+    )
+    .execute(&pool)
+    .await
+    .expect("insert foreign tenant domain");
+
+    let mut command = command(
+        0,
+        "composition-foreign-domain",
+        &"6".repeat(64),
+        SiteMountHandler::Static,
+    );
+    command.request.bindings[0].domain_id = "domain-foreign".to_owned();
+    let error = repository
+        .replace_site_composition(command)
+        .await
+        .expect_err("cross-tenant domain must not bind");
+    assert!(error.to_string().contains("domain not found for site"));
+    assert_composition_was_not_committed(&pool).await;
+}
+
+#[tokio::test]
+async fn composition_requires_an_active_web_target() {
+    let (repository, pool, _file) = test_repository().await;
+    sqlx::query("DELETE FROM deploy_web_node_target WHERE tenant_id = 7")
+        .execute(&pool)
+        .await
+        .expect("remove Web target");
+
+    let error = repository
+        .replace_site_composition(command(
+            0,
+            "composition-no-target",
+            &"7".repeat(64),
+            SiteMountHandler::Static,
+        ))
+        .await
+        .expect_err("composition without target must fail");
+    assert!(error.to_string().contains("no active Web Node target"));
+    assert_composition_was_not_committed(&pool).await;
+}
+
+#[tokio::test]
+async fn composition_rejects_inconsistent_target_tenant_scope() {
+    let (repository, pool, _file) = test_repository().await;
+    sqlx::query(
+        "INSERT INTO deploy_web_node_target (
+            id,uuid,tenant_id,node_uuid,environment,tenant_scope_hash,status,
+            created_at,updated_at,version
+         ) VALUES (31,'target-2',7,'node-2','production',$1,'ACTIVE',
+                   '2026-07-22T00:00:00Z','2026-07-22T00:00:00Z',1)",
+    )
+    .bind("b".repeat(64))
+    .execute(&pool)
+    .await
+    .expect("insert inconsistent Web target");
+
+    let error = repository
+        .replace_site_composition(command(
+            0,
+            "composition-scope-conflict",
+            &"8".repeat(64),
+            SiteMountHandler::Static,
+        ))
+        .await
+        .expect_err("inconsistent target scope must fail");
+    assert!(error
+        .to_string()
+        .contains("Web Node targets have inconsistent tenant scope"));
+    assert_composition_was_not_committed(&pool).await;
+}
+
+async fn assert_composition_was_not_committed(pool: &AnyPool) {
+    let row = sqlx::query(
+        "SELECT version,
+                (SELECT COUNT(*) FROM deploy_site_revision) AS revisions,
+                (SELECT COUNT(*) FROM deploy_runtime_assignment) AS assignments
+         FROM deploy_site WHERE id = 10",
+    )
+    .fetch_one(pool)
+    .await
+    .expect("load rolled-back composition state");
+    assert_eq!(row.try_get::<i64, _>("version").unwrap(), 0);
+    assert_eq!(row.try_get::<i64, _>("revisions").unwrap(), 0);
+    assert_eq!(row.try_get::<i64, _>("assignments").unwrap(), 0);
+}
+
+#[tokio::test]
 #[ignore = "requires an empty PostgreSQL database in SDKWORK_DEPLOY_TEST_POSTGRES_URL"]
 async fn postgres_composition_matches_sqlite_transaction_semantics() {
     sqlx::any::install_default_drivers();

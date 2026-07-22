@@ -2211,6 +2211,7 @@ dependencies = [
  "sdkwork-deploy-runtime-compiler",
  "sdkwork-deploy-web-port",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]

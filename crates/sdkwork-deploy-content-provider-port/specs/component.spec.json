@@ -22,7 +22,7 @@
     {"file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md", "purpose": "Provider boundary verification."}
   ],
   "contracts": {
-    "layerRole": "provider-adapter",
+    "layerRole": "backend-provider",
     "publicExports": ["."],
     "providedPorts": [{"name": "contentProvider", "export": "."}],
     "requiredPorts": [],
