@@ -3,13 +3,15 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use chrono::{Duration, SecondsFormat, Utc};
+use chrono::{DateTime, Duration, SecondsFormat, Utc};
 use sdkwork_deploy_contract::{DeployServiceError, DeployServiceErrorKind, DeployServiceResult};
 use sdkwork_deploy_runtime_compiler::{
     canonical_sha256_excluding_field, compile_runtime_set, normalize_runtime_descriptors,
     CompiledRuntimeSet, RuntimeEnvironment, RuntimeSetCompilationInput,
 };
-use sdkwork_deploy_web_port::{DeployWebRuntimePort, RuntimeAssignmentReceipt};
+use sdkwork_deploy_web_port::{
+    DeployWebRuntimePort, RuntimeAssignmentReceipt, RuntimeObservationReceipt,
+};
 use serde_json::Value;
 
 const DEFAULT_MAXIMUM_SITES: usize = 10_000;
@@ -32,12 +34,16 @@ pub struct RuntimeAssignmentState {
     pub assignment_uuid: String,
     pub target_uuid: String,
     pub tenant_id: i64,
+    pub node_uuid: String,
+    pub environment: RuntimeEnvironment,
+    pub trigger_site_revision_id: Option<i64>,
     pub generation: u64,
     pub snapshot_uuid: String,
     pub snapshot_sha256: String,
     pub desired_state_sha256: String,
     pub runtime_set: Value,
     pub publish_status: RuntimeAssignmentPublishStatus,
+    pub remote_assignment_uuid: Option<String>,
     pub attempt_count: i32,
     pub lease_owner: Option<String>,
 }
@@ -56,6 +62,82 @@ pub struct RuntimePublicationBatchResult {
     pub claimed: usize,
     pub published: usize,
     pub failed: usize,
+    pub observations_checked: usize,
+    pub observations_ingested: usize,
+    pub observations_pending: usize,
+    pub observations_failed: usize,
+    pub revisions_activated: usize,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RuntimeObservationState {
+    Received,
+    Validated,
+    Staged,
+    Active,
+    Rejected,
+}
+
+impl RuntimeObservationState {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Received => "RECEIVED",
+            Self::Validated => "VALIDATED",
+            Self::Staged => "STAGED",
+            Self::Active => "ACTIVE",
+            Self::Rejected => "REJECTED",
+        }
+    }
+
+    pub fn is_terminal(self) -> bool {
+        matches!(self, Self::Active | Self::Rejected)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RuntimeObservationEvidence {
+    pub observation_uuid: String,
+    pub assignment_uuid: String,
+    pub tenant_id: i64,
+    pub node_uuid: String,
+    pub environment: RuntimeEnvironment,
+    pub generation: u64,
+    pub snapshot_uuid: String,
+    pub snapshot_sha256: String,
+    pub state: RuntimeObservationState,
+    pub node_version: Option<String>,
+    pub reason_code: Option<String>,
+    pub detail: Option<String>,
+    pub observed_at: String,
+}
+
+impl RuntimeObservationEvidence {
+    pub fn validate_for(&self, assignment: &RuntimeAssignmentState) -> DeployServiceResult<()> {
+        let remote_assignment_uuid = assignment
+            .remote_assignment_uuid
+            .as_deref()
+            .ok_or_else(|| DeployServiceError::conflict("runtime assignment is not published"))?;
+        if assignment.publish_status != RuntimeAssignmentPublishStatus::Published
+            || self.assignment_uuid != remote_assignment_uuid
+            || self.tenant_id != assignment.tenant_id
+            || self.node_uuid != assignment.node_uuid
+            || self.environment != assignment.environment
+            || self.generation != assignment.generation
+            || self.snapshot_uuid != assignment.snapshot_uuid
+            || self.snapshot_sha256 != assignment.snapshot_sha256
+        {
+            return Err(DeployServiceError::conflict(
+                "Web runtime observation identity does not match the durable assignment",
+            ));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct RuntimeObservationPersistenceResult {
+    pub inserted: bool,
+    pub revision_activated: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -121,6 +203,18 @@ pub trait DeployRuntimeAssignmentRepositoryPort: Send + Sync {
         next_attempt_at: Option<&str>,
         updated_at: &str,
     ) -> DeployServiceResult<()>;
+
+    async fn list_runtime_assignments_requiring_observation(
+        &self,
+        maximum_items: i64,
+    ) -> DeployServiceResult<Vec<RuntimeAssignmentState>>;
+
+    async fn persist_runtime_observation(
+        &self,
+        assignment_uuid: &str,
+        observation: &RuntimeObservationEvidence,
+        ingested_at: &str,
+    ) -> DeployServiceResult<RuntimeObservationPersistenceResult>;
 }
 
 pub struct RuntimePublicationService {
@@ -310,8 +404,131 @@ impl RuntimePublicationService {
                 result.failed += 1;
             }
         }
+        let observation_result = self.reconcile_observations(maximum_items).await?;
+        result.observations_checked = observation_result.observations_checked;
+        result.observations_ingested = observation_result.observations_ingested;
+        result.observations_pending = observation_result.observations_pending;
+        result.observations_failed = observation_result.observations_failed;
+        result.revisions_activated = observation_result.revisions_activated;
         Ok(result)
     }
+
+    pub async fn reconcile_observations(
+        &self,
+        maximum_items: i64,
+    ) -> DeployServiceResult<RuntimePublicationBatchResult> {
+        if !(1..=MAXIMUM_PUBLICATION_BATCH).contains(&maximum_items) {
+            return Err(DeployServiceError::validation(
+                "runtime observation batch must be between 1 and 100",
+            ));
+        }
+        let assignments = self
+            .repository
+            .list_runtime_assignments_requiring_observation(maximum_items)
+            .await?;
+        let mut result = RuntimePublicationBatchResult {
+            observations_checked: assignments.len(),
+            ..RuntimePublicationBatchResult::default()
+        };
+        for assignment in assignments {
+            match self
+                .web_runtime
+                .retrieve_latest_runtime_observation(&assignment.snapshot_uuid)
+                .await
+            {
+                Ok(receipt) => match validate_observation_receipt(&assignment, receipt) {
+                    Ok(observation) => {
+                        let persistence = self
+                            .repository
+                            .persist_runtime_observation(
+                                &assignment.assignment_uuid,
+                                &observation,
+                                &now_seconds(),
+                            )
+                            .await;
+                        match persistence {
+                            Ok(persistence) => {
+                                result.observations_ingested += usize::from(persistence.inserted);
+                                result.revisions_activated +=
+                                    usize::from(persistence.revision_activated);
+                            }
+                            Err(error) => {
+                                tracing::warn!(
+                                    assignment_uuid = %assignment.assignment_uuid,
+                                    error_kind = ?error.kind(),
+                                    "runtime observation persistence failed"
+                                );
+                                result.observations_failed += 1;
+                            }
+                        }
+                    }
+                    Err(error) => {
+                        tracing::warn!(
+                            assignment_uuid = %assignment.assignment_uuid,
+                            error_kind = ?error.kind(),
+                            "runtime observation identity validation failed"
+                        );
+                        result.observations_failed += 1;
+                    }
+                },
+                Err(error) if error.kind() == DeployServiceErrorKind::NotFound => {
+                    result.observations_pending += 1;
+                }
+                Err(error) => {
+                    tracing::warn!(
+                        assignment_uuid = %assignment.assignment_uuid,
+                        error_kind = ?error.kind(),
+                        "runtime observation retrieval failed"
+                    );
+                    result.observations_failed += 1;
+                }
+            }
+        }
+        Ok(result)
+    }
+}
+
+fn validate_observation_receipt(
+    assignment: &RuntimeAssignmentState,
+    receipt: RuntimeObservationReceipt,
+) -> DeployServiceResult<RuntimeObservationEvidence> {
+    validate_opaque_id(&receipt.observation_uuid, 128, "observationUuid")?;
+    validate_opaque_id(&receipt.assignment_uuid, 128, "assignmentUuid")?;
+    validate_opaque_id(&receipt.node_uuid, 128, "nodeUuid")?;
+    validate_opaque_id(&receipt.snapshot_uuid, 128, "snapshotUuid")?;
+    validate_sha256(&receipt.snapshot_sha256, "snapshotSha256")?;
+    validate_optional_text(receipt.node_version.as_deref(), 64, "nodeVersion")?;
+    validate_optional_text(receipt.reason_code.as_deref(), 64, "reasonCode")?;
+    validate_optional_text(receipt.detail.as_deref(), 512, "detail")?;
+    DateTime::parse_from_rfc3339(&receipt.observed_at).map_err(|_| {
+        DeployServiceError::validation("Web runtime observation observedAt is invalid")
+    })?;
+    let tenant_id = parse_positive_i64(&receipt.tenant_id, "tenantId")?;
+    let generation = parse_generation(&receipt.generation)?;
+    let environment = parse_runtime_environment(&receipt.environment)?;
+    let state = parse_observation_state(&receipt.state)?;
+    validate_observation_reason(
+        state,
+        receipt.reason_code.as_deref(),
+        receipt.detail.as_deref(),
+    )?;
+    let observation = RuntimeObservationEvidence {
+        observation_uuid: receipt.observation_uuid,
+        assignment_uuid: receipt.assignment_uuid,
+        tenant_id,
+        node_uuid: receipt.node_uuid,
+        environment,
+        generation,
+        snapshot_uuid: receipt.snapshot_uuid,
+        snapshot_sha256: receipt.snapshot_sha256,
+        state,
+        node_version: receipt.node_version,
+        reason_code: receipt.reason_code,
+        detail: receipt.detail,
+        observed_at: receipt.observed_at,
+    };
+    observation.validate_for(assignment)?;
+    Ok(observation)
 }
 
 fn validate_worker_id(worker_id: &str) -> DeployServiceResult<()> {
@@ -326,6 +543,143 @@ fn validate_worker_id(worker_id: &str) -> DeployServiceResult<()> {
         ));
     }
     Ok(())
+}
+
+fn parse_positive_i64(value: &str, field: &str) -> DeployServiceResult<i64> {
+    if value.is_empty()
+        || value.len() > 19
+        || value.starts_with('0')
+        || !value.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return Err(DeployServiceError::validation(format!(
+            "Web runtime observation {field} is invalid"
+        )));
+    }
+    value.parse::<i64>().map_err(|_| {
+        DeployServiceError::validation(format!(
+            "Web runtime observation {field} is outside the supported range"
+        ))
+    })
+}
+
+fn parse_generation(value: &str) -> DeployServiceResult<u64> {
+    if value.is_empty()
+        || value.len() > 16
+        || value.starts_with('0')
+        || !value.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return Err(DeployServiceError::validation(
+            "Web runtime observation generation is invalid",
+        ));
+    }
+    let generation = value.parse::<u64>().map_err(|_| {
+        DeployServiceError::validation(
+            "Web runtime observation generation is outside the supported range",
+        )
+    })?;
+    if generation == 0 || generation > 9_007_199_254_740_991 {
+        return Err(DeployServiceError::validation(
+            "Web runtime observation generation is outside the supported range",
+        ));
+    }
+    Ok(generation)
+}
+
+fn parse_runtime_environment(value: &str) -> DeployServiceResult<RuntimeEnvironment> {
+    match value {
+        "development" => Ok(RuntimeEnvironment::Development),
+        "test" => Ok(RuntimeEnvironment::Test),
+        "staging" => Ok(RuntimeEnvironment::Staging),
+        "production" => Ok(RuntimeEnvironment::Production),
+        _ => Err(DeployServiceError::validation(
+            "Web runtime observation environment is invalid",
+        )),
+    }
+}
+
+fn parse_observation_state(value: &str) -> DeployServiceResult<RuntimeObservationState> {
+    match value {
+        "RECEIVED" => Ok(RuntimeObservationState::Received),
+        "VALIDATED" => Ok(RuntimeObservationState::Validated),
+        "STAGED" => Ok(RuntimeObservationState::Staged),
+        "ACTIVE" => Ok(RuntimeObservationState::Active),
+        "REJECTED" => Ok(RuntimeObservationState::Rejected),
+        _ => Err(DeployServiceError::validation(
+            "Web runtime observation state is invalid",
+        )),
+    }
+}
+
+fn validate_sha256(value: &str, field: &str) -> DeployServiceResult<()> {
+    if value.len() != 64
+        || !value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(DeployServiceError::validation(format!(
+            "Web runtime observation {field} is invalid"
+        )));
+    }
+    Ok(())
+}
+
+fn validate_opaque_id(value: &str, maximum: usize, field: &str) -> DeployServiceResult<()> {
+    if value.is_empty()
+        || value.len() > maximum
+        || !value.bytes().enumerate().all(|(index, byte)| {
+            byte.is_ascii_alphanumeric() || (index > 0 && matches!(byte, b'.' | b'_' | b':' | b'-'))
+        })
+    {
+        return Err(DeployServiceError::validation(format!(
+            "Web runtime observation {field} is invalid"
+        )));
+    }
+    Ok(())
+}
+
+fn validate_optional_text(
+    value: Option<&str>,
+    maximum: usize,
+    field: &str,
+) -> DeployServiceResult<()> {
+    if value.is_some_and(|value| {
+        value.is_empty()
+            || value.len() > maximum
+            || value.bytes().any(|byte| byte.is_ascii_control())
+    }) {
+        return Err(DeployServiceError::validation(format!(
+            "Web runtime observation {field} is invalid"
+        )));
+    }
+    Ok(())
+}
+
+fn validate_observation_reason(
+    state: RuntimeObservationState,
+    reason_code: Option<&str>,
+    detail: Option<&str>,
+) -> DeployServiceResult<()> {
+    if reason_code.is_some_and(|value| {
+        !value.bytes().enumerate().all(|(index, byte)| {
+            (index == 0 && byte.is_ascii_uppercase())
+                || (index > 0
+                    && (byte.is_ascii_uppercase() || byte.is_ascii_digit() || byte == b'_'))
+        })
+    }) {
+        return Err(DeployServiceError::validation(
+            "Web runtime observation reasonCode is invalid",
+        ));
+    }
+    match state {
+        RuntimeObservationState::Rejected if reason_code.is_none() => Err(
+            DeployServiceError::validation("REJECTED runtime observations require reasonCode"),
+        ),
+        RuntimeObservationState::Rejected => Ok(()),
+        _ if reason_code.is_some() || detail.is_some() => Err(DeployServiceError::validation(
+            "Only REJECTED runtime observations may include reason details",
+        )),
+        _ => Ok(()),
+    }
 }
 
 fn validate_target_scope(target: &RuntimeTarget, descriptors: &[Value]) -> DeployServiceResult<()> {
@@ -368,7 +722,11 @@ fn validate_receipt(
     assignment: &RuntimeAssignmentState,
     receipt: &RuntimeAssignmentReceipt,
 ) -> DeployServiceResult<()> {
-    if receipt.snapshot_uuid != assignment.snapshot_uuid
+    if receipt.assignment_uuid.is_empty()
+        || receipt.assignment_uuid.len() > 128
+        || receipt.node_uuid != assignment.node_uuid
+        || receipt.environment != assignment.environment.as_str()
+        || receipt.snapshot_uuid != assignment.snapshot_uuid
         || receipt.snapshot_sha256 != assignment.snapshot_sha256
         || receipt.generation != assignment.generation.to_string()
     {

@@ -2,7 +2,7 @@
 
 Status: active
 Owner: SDKWork maintainers
-Updated: 2026-07-21
+Updated: 2026-07-22
 Specs: ARCHITECTURE_DECISION_SPEC.md, DOCUMENTATION_SPEC.md, DOMAIN_SPEC.md, DATABASE_SPEC.md,
 DEPLOYMENT_SPEC.md, SECURITY_SPEC.md
 
@@ -10,14 +10,19 @@ DEPLOYMENT_SPEC.md, SECURITY_SPEC.md
 
 - [TECH-design-report.md](TECH-design-report.md)
 - [TECH-standards-alignment.md](TECH-standards-alignment.md)
-- [TECH-cloud-site-publishing-control-plane.md](TECH-cloud-site-publishing-control-plane.md) - target
-  cloud publishing ownership, database contract, runtime descriptor, request flow, TLS lifecycle,
-  commercial controls, and verification matrix.
+- [TECH-cloud-site-publishing-control-plane.md](TECH-cloud-site-publishing-control-plane.md) - active
+  cloud publishing ownership, implemented composition/SDK/runtime-assignment foundation, target TLS
+  lifecycle, remaining production gates, and verification matrix.
 
 ## 1. Architecture Overview
 
-Architecture detail lives in the linked TECH shards above. The cloud publishing architecture is
-proposed and requires the linked cross-repository ADR and migration review before implementation.
+Architecture detail lives in the linked TECH shards above. The cloud publishing architecture is the
+  active implementation boundary. Its App composition/provider/descriptor/desired-assignment path,
+  cloud single-writer process isolation, Drive/Wiki delivery, provider-event processing,
+  authenticated runtime observations, immutable convergence evidence, strict all-target quorum, and
+  current-revision advancement are implemented. External public probes, cloud TLS automation, UI,
+  metering, and production evidence remain gated by the linked ADR, prelaunch convergence record,
+  and readiness review.
 
 
 ## 2. Technology Choices

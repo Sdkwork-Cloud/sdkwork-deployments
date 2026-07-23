@@ -602,7 +602,7 @@ CREATE TABLE deploy_site_variant (
     CONSTRAINT uk_deploy_site_variant_uuid UNIQUE (uuid),
     CONSTRAINT uk_deploy_site_variant_key UNIQUE (site_id, variant_key),
     CONSTRAINT fk_deploy_site_variant_site FOREIGN KEY (site_id) REFERENCES deploy_site(id),
-    CONSTRAINT chk_deploy_site_variant_client CHECK (client_class IN ('DESKTOP', 'MOBILE', 'TABLET', 'BOT', 'OTHER')),
+    CONSTRAINT chk_deploy_site_variant_client CHECK (client_class IN ('DESKTOP', 'MOBILE', 'TABLET', 'TV', 'BOT', 'OTHER')),
     CONSTRAINT chk_deploy_site_variant_status CHECK (status IN ('ACTIVE', 'DISABLED'))
 );
 
@@ -829,3 +829,52 @@ CREATE INDEX idx_deploy_runtime_assignment_delivery
 
 CREATE INDEX idx_deploy_runtime_assignment_target_latest
     ON deploy_runtime_assignment (tenant_id, node_target_id, generation DESC);
+
+-- Authenticated, append-only evidence read from the Web-owned runtime observation API.
+CREATE TABLE deploy_site_target_observation (
+    id                       BIGINT PRIMARY KEY NOT NULL,
+    uuid                     VARCHAR(36) NOT NULL,
+    tenant_id                BIGINT NOT NULL,
+    site_id                  BIGINT NULL,
+    site_revision_id         BIGINT NULL,
+    node_target_id           BIGINT NOT NULL,
+    runtime_assignment_id    BIGINT NOT NULL,
+    remote_observation_uuid  VARCHAR(128) NOT NULL,
+    remote_assignment_uuid   VARCHAR(128) NOT NULL,
+    generation               BIGINT NOT NULL,
+    snapshot_uuid            VARCHAR(128) NOT NULL,
+    snapshot_sha256          VARCHAR(64) NOT NULL,
+    environment              VARCHAR(16) NOT NULL,
+    state                    VARCHAR(16) NOT NULL,
+    node_version             VARCHAR(64) NULL,
+    reason_code              VARCHAR(64) NULL,
+    detail                   VARCHAR(512) NULL,
+    observed_at              TIMESTAMPTZ NOT NULL,
+    ingested_at              TIMESTAMPTZ NOT NULL,
+    created_at               TIMESTAMPTZ NOT NULL,
+    CONSTRAINT uk_deploy_site_target_observation_uuid UNIQUE (uuid),
+    CONSTRAINT uk_deploy_site_target_observation_remote UNIQUE (remote_observation_uuid),
+    CONSTRAINT uk_deploy_site_target_observation_state UNIQUE (runtime_assignment_id, state),
+    CONSTRAINT fk_deploy_site_target_observation_site FOREIGN KEY (site_id) REFERENCES deploy_site(id),
+    CONSTRAINT fk_deploy_site_target_observation_revision FOREIGN KEY (site_revision_id) REFERENCES deploy_site_revision(id),
+    CONSTRAINT fk_deploy_site_target_observation_target FOREIGN KEY (node_target_id) REFERENCES deploy_web_node_target(id),
+    CONSTRAINT fk_deploy_site_target_observation_assignment FOREIGN KEY (runtime_assignment_id) REFERENCES deploy_runtime_assignment(id),
+    CONSTRAINT chk_deploy_site_target_observation_site_pair CHECK (
+        (site_id IS NULL AND site_revision_id IS NULL)
+        OR (site_id IS NOT NULL AND site_revision_id IS NOT NULL)
+    ),
+    CONSTRAINT chk_deploy_site_target_observation_generation CHECK (generation BETWEEN 1 AND 9007199254740991),
+    CONSTRAINT chk_deploy_site_target_observation_snapshot_sha256 CHECK (snapshot_sha256 ~ '^[0-9a-f]{64}$'),
+    CONSTRAINT chk_deploy_site_target_observation_environment CHECK (environment IN ('development', 'test', 'staging', 'production')),
+    CONSTRAINT chk_deploy_site_target_observation_state CHECK (state IN ('RECEIVED', 'VALIDATED', 'STAGED', 'ACTIVE', 'REJECTED')),
+    CONSTRAINT chk_deploy_site_target_observation_reason CHECK (
+        (state = 'REJECTED' AND reason_code IS NOT NULL)
+        OR (state <> 'REJECTED' AND reason_code IS NULL AND detail IS NULL)
+    )
+);
+
+CREATE INDEX idx_deploy_site_target_observation_rollout
+    ON deploy_site_target_observation (tenant_id, site_revision_id, state, node_target_id);
+
+CREATE INDEX idx_deploy_site_target_observation_assignment
+    ON deploy_site_target_observation (runtime_assignment_id, id DESC);

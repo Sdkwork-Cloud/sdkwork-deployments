@@ -24,7 +24,10 @@
   "contracts": {
     "layerRole": "backend-provider",
     "publicExports": ["."],
-    "providedPorts": [{"name": "webRuntimeAssignmentPublisher", "export": "."}],
+    "providedPorts": [
+      {"name": "webRuntimeAssignmentPublisher", "export": "."},
+      {"name": "webRuntimeObservationReader", "export": "."}
+    ],
     "requiredPorts": [
       {
         "name": "webInternalSdk",

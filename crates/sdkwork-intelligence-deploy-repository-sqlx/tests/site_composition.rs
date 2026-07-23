@@ -8,7 +8,7 @@ use sdkwork_deploy_contract::{
     SiteBindingAction, SiteBindingDefinition, SiteClientClass, SiteDeliveryPolicy, SiteEnvironment,
     SiteMountDefinition, SiteMountHandler, SiteMountMode, SiteObservabilityPolicy,
     SiteResourceDefinition, SiteRuntimeLimits, SiteSecurityPolicy, SiteVariantDefinition,
-    UpdateSiteCompositionRequest,
+    SiteVariantRuleDefinition, SiteVariantRuleMatcher, UpdateSiteCompositionRequest,
 };
 use sdkwork_deploy_runtime_compiler::{RuntimeProviderType, RuntimeResourceCapabilities};
 use sdkwork_intelligence_deploy_repository_sqlx::DeployRepository;
@@ -174,6 +174,32 @@ fn command(
     }
 }
 
+fn tv_command(
+    expected_version: i64,
+    idempotency_key: &str,
+    request_sha256: &str,
+) -> ReplaceSiteCompositionCommand {
+    let mut command = command(
+        expected_version,
+        idempotency_key,
+        request_sha256,
+        SiteMountHandler::Static,
+    );
+    command.request.variants[0].client_class = SiteClientClass::Tv;
+    command
+        .request
+        .variant_rules
+        .push(SiteVariantRuleDefinition {
+            key: "tv-client".to_owned(),
+            target_variant_key: "default".to_owned(),
+            priority: 100,
+            matcher: SiteVariantRuleMatcher::ClientClass {
+                client_class: SiteClientClass::Tv,
+            },
+        });
+    command
+}
+
 #[tokio::test]
 async fn composition_is_atomic_idempotent_and_does_not_create_releases() {
     let (repository, pool, _file) = test_repository().await;
@@ -261,6 +287,34 @@ async fn composition_is_atomic_idempotent_and_does_not_create_releases() {
     assert_eq!(counts.try_get::<i64, _>("assignments").unwrap(), 1);
     assert_eq!(counts.try_get::<i64, _>("releases").unwrap(), 0);
     assert_eq!(counts.try_get::<i64, _>("deployments").unwrap(), 0);
+}
+
+#[tokio::test]
+async fn composition_persists_tv_client_class_and_compiles_the_runtime_rule() {
+    let (repository, pool, _file) = test_repository().await;
+    repository
+        .replace_site_composition(tv_command(0, "composition-tv", &"9".repeat(64)))
+        .await
+        .expect("publish TV composition");
+
+    let stored = sqlx::query(
+        "SELECT v.client_class, r.match_value,
+                CAST(revision.descriptor_json AS TEXT) AS descriptor_json
+         FROM deploy_site_variant v
+         INNER JOIN deploy_site_variant_rule r ON r.site_id = v.site_id
+         INNER JOIN deploy_site site ON site.id = v.site_id
+         INNER JOIN deploy_site_revision revision ON revision.id = site.desired_revision_id
+         WHERE v.site_id = 10",
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("load TV composition");
+    assert_eq!(stored.try_get::<String, _>("client_class").unwrap(), "TV");
+    assert_eq!(stored.try_get::<String, _>("match_value").unwrap(), "TV");
+    let descriptor: serde_json::Value =
+        serde_json::from_str(&stored.try_get::<String, _>("descriptor_json").unwrap())
+            .expect("parse stored runtime descriptor");
+    assert_eq!(descriptor["variantRules"][0]["match"]["clientClass"], "TV");
 }
 
 #[tokio::test]
@@ -380,33 +434,25 @@ async fn postgres_composition_matches_sqlite_transaction_semantics() {
     );
 
     let first = repository
-        .replace_site_composition(command(
-            0,
-            "composition-postgres-1",
-            &"5".repeat(64),
-            SiteMountHandler::Static,
-        ))
+        .replace_site_composition(tv_command(0, "composition-postgres-1", &"5".repeat(64)))
         .await
         .expect("publish PostgreSQL composition");
     assert_eq!(first.site_version, "1");
     assert_eq!(first.runtime_assignments[0].generation, "1");
     let replay = repository
-        .replace_site_composition(command(
-            0,
-            "composition-postgres-1",
-            &"5".repeat(64),
-            SiteMountHandler::Static,
-        ))
+        .replace_site_composition(tv_command(0, "composition-postgres-1", &"5".repeat(64)))
         .await
         .expect("replay PostgreSQL composition");
     assert_eq!(replay.revision.id, first.revision.id);
 
     let row = sqlx::query(
         "SELECT s.version, r.request_sha256, CAST(r.result_json AS TEXT) AS result_json,
-                a.generation, a.publish_status
+                a.generation, a.publish_status, v.client_class, vr.match_value
          FROM deploy_site s
          INNER JOIN deploy_site_revision r ON r.id = s.desired_revision_id
          INNER JOIN deploy_runtime_assignment a ON a.trigger_site_revision_id = r.id
+         INNER JOIN deploy_site_variant v ON v.site_id = s.id
+         INNER JOIN deploy_site_variant_rule vr ON vr.site_id = s.id
          WHERE s.id = 10",
     )
     .fetch_one(&pool)
@@ -418,6 +464,8 @@ async fn postgres_composition_matches_sqlite_transaction_semantics() {
         row.try_get::<String, _>("publish_status").unwrap(),
         "PENDING"
     );
+    assert_eq!(row.try_get::<String, _>("client_class").unwrap(), "TV");
+    assert_eq!(row.try_get::<String, _>("match_value").unwrap(), "TV");
     assert!(row
         .try_get::<String, _>("result_json")
         .unwrap()

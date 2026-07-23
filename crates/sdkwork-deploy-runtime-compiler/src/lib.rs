@@ -148,6 +148,7 @@ pub enum RuntimeClientClass {
     Desktop,
     Mobile,
     Tablet,
+    Tv,
     Bot,
     Other,
 }
@@ -877,6 +878,27 @@ mod tests {
         let web = compile_website_runtime_descriptor(&bytes).expect("Web consumer accepts output");
         assert_eq!(web.descriptor().site_uuid, "site-a");
         assert_eq!(web.descriptor_sha256(), compiled.descriptor_sha256);
+    }
+
+    #[test]
+    fn tv_client_class_is_serialized_for_the_web_server_consumer() {
+        let mut input = site_input("site-tv");
+        input.variant_rules.push(RuntimeVariantRule {
+            rule_uuid: "rule-tv-client".to_owned(),
+            variant_uuid: "variant-default".to_owned(),
+            priority: 100,
+            matcher: RuntimeVariantRuleMatcher::ClientClass {
+                client_class: RuntimeClientClass::Tv,
+            },
+        });
+
+        let compiled = compile_site_revision(input).expect("compile TV descriptor");
+        assert_eq!(
+            compiled.descriptor["variantRules"][0]["match"]["clientClass"],
+            "TV"
+        );
+        let bytes = serde_json::to_vec(&compiled.descriptor).expect("encode TV descriptor");
+        compile_website_runtime_descriptor(&bytes).expect("Web consumer accepts TV client class");
     }
 
     #[test]

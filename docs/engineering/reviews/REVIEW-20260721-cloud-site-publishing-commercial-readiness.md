@@ -1,8 +1,8 @@
 # REVIEW-20260721 Cloud Site Publishing Commercial Readiness
 
-Status: conditional-design-approval
+Status: implementation-active-commercial-evidence-blocked
 Owner: SDKWork Deploy maintainers
-Date: 2026-07-21
+Date: 2026-07-22
 Requirement: REQ-2026-0001
 Decision: ADR-20260721-unified-cloud-site-publishing-control-plane
 Specs: CODE_REVIEW_SPEC.md, QUALITY_GATE_SPEC.md, REQUIREMENTS_SPEC.md,
@@ -21,18 +21,22 @@ platform based on:
 - multi-domain, path, client Variant, certificate, user-console, admin-console, entitlement,
   metering, security, reliability, and operational requirements.
 
-It reviews design readiness. It does not approve migrations, API breakage, production TLS policy,
-commercial prices/SLO contracts, or claim that the implementation already exists.
+It reviews the current implementation and production evidence boundary. It does not approve the
+production TLS policy, commercial prices/SLO contracts, or a commercial launch claim.
 
 ## 2. Verdict
 
-**Conditionally approved as the target architecture; not ready for production implementation or
-commercial launch until the human review and evidence gates below are closed.**
+**The target architecture is active; provider-to-desired-runtime, cloud single-writer isolation,
+Drive/Wiki public delivery, provider-event processing, device routing, authenticated Node
+observations, immutable convergence evidence, strict all-target quorum, and current-revision
+advancement are implemented. Commercial launch remains blocked until external public probes, cloud
+TLS, UI, commercial operations, and production evidence gates below are closed.**
 
-The design now has a coherent ownership model, live-content semantics, deterministic routing,
-certificate lifecycle, database target, runtime descriptor, browser request flow, complete user and
-admin view inventory, commercial dimensions, and production acceptance plan. The largest historical
-design defects are explicitly identified and have migration paths.
+Portable composition storage, Drive/Knowledgebase owner SDK validation, App composition mutation,
+immutable descriptor/runtime-set compilation, desired assignments, generated Deploy SDKs,
+Knowledgebase public provider, and Web Wiki delivery foundations now have executable evidence. The
+review must not continue to describe those capabilities as absent. The remaining blockers are named
+below and must not be hidden behind a general production-readiness claim.
 
 ## 3. Design Strengths
 
@@ -55,58 +59,72 @@ design defects are explicitly identified and have migration paths.
 9. SLO, security, abuse, privacy, capacity, backup, migration, and release evidence are defined as
    gates rather than assumed from local tests.
 
-## 4. P0 Blocking Findings
+## 4. P0 Status And Blocking Findings
 
-### P0-1 Dual Cloud Control-Plane Authority
+### P0-1 Cloud Control-Plane Authority Boundary - Closed
 
-Web Server currently has overlapping writable `web_site`, `web_domain`, `web_deployment`, and
-`web_certificate` state while Deploy owns equivalent `deploy_*` capability. Commercial launch with
-two writers would allow route/certificate divergence and unsafe recovery.
+Deploy is the sole cloud Site/domain/TLS metadata writer. `cloud.production` packages and starts
+only the Website Edge Runtime with management composition disabled; the standalone gateway and its
+local `web_site`, `web_domain`, `web_deployment`, and `web_certificate` authority are not present in
+the cloud process graph. Standalone data is not imported or dual-written into cloud assignments.
 
-Required closure: approve and execute `MIG-2026-0001-cloud-site-control-plane-convergence`, prove a
-single writer, shadow-compare active routes/TLS, and disable/retire the old write paths.
+Retained gate: keep artifact/topology tests proving this profile boundary and reject any future
+cross-profile data import, shared authority database, or management entrypoint in the cloud image.
 
-### P0-2 Live Wiki Replacement And Realtime Update Path Are Absent
+### P0-2 Wiki Rendition And Deployed Freshness Evidence Is Incomplete
 
-The removed prelaunch `kb_site`/`kb_site_release`/`kb_site_host_binding` model is no longer the
-current working authority, but the replacement is still absent. Knowledgebase OpenAPI/database has
-no WikiPublication/provider implementation; the current `sources/raw` storage adapter rejects an
-existing logical path as immutable; and its implemented outbox emits only ingestion success rather
-than public Wiki provider events.
+Knowledgebase now owns one canonical WikiPublication, lifecycle/projection tables, Drive input
+processing, typed Internal API, generated Rust/TypeScript SDKs, public route/content/navigation/search
+reads, optimistic page publication controls, and output events. Web Server has the generated-SDK Wiki
+adapter, browser mapping, durable event checkpoints, duplicate/order/gap fencing, reconciliation,
+and route-scoped invalidation. The remaining public product gate is complete safe rendition/full-text
+processing and deployed Site-to-Wiki freshness/private-revocation evidence.
 
-Required closure: approve REQ-2026-0721/ADR/MIG, keep the old release builder absent, implement
-stable-node/new-immutable-version updates, canonical WikiPublication/projections, Drive input
-events, Knowledgebase output events and internal provider SDK, and prove no dual router remains.
+Required closure: implement the production rendition/sanitizer/full-text chain and execute deployed
+end-to-end freshness, provider-outage, and private-revocation tests. Before a content cache is added,
+certify its provider-qualified positive/negative entries and priority eviction behavior.
 
-### P0-3 Drive Website Space Contract Does Not Yet Exist
+### P0-3 Drive Atomic Publication Production Evidence Is Incomplete
 
-Drive lacks `website` in the type enum and currently has an owner/type uniqueness rule incompatible
-with multiple Website projects for one owner.
+Drive Website Space, stable WebsiteRoot root/folder selectors, generated App/Internal SDK contracts,
+and Deploy create-plus-revalidate integration exist. Web Server generated-SDK delivery, exact
+generation/version revalidation, range/condition handling, path confinement, visibility failure,
+event checkpoint/reconciliation, and browser mapping are implemented. The remaining gate is a
+production-shaped owner-to-edge `ATOMIC_SYNC` drill, mixed-generation prevention under failure,
+retention/orphan cleanup, and end-to-end React bundle evidence.
 
-Required closure: human-review the singleton catalog and dual-engine migration; add Website Space,
-WebsiteRoot/generation/sync, SDK/UI/provider/events, and atomic-tree evidence.
+Required closure: certify atomic-tree switch/rollback under failure and multi-Site root reuse without
+tenant/path escape in a deployed topology, including retention and orphan cleanup.
 
-### P0-4 Provider And Descriptor Contracts Are Not Implemented
+### P0-4 Internal Runtime Convergence Is Closed; Public Activation Proof Is Incomplete
 
-No accepted owner OpenAPI/service contracts currently guarantee Drive directory validate/resolve/
-open/events, Knowledgebase Wiki page/asset/navigation/search/events, or Web Server descriptor
-ingestion.
+Deploy now validates owner resources before database locking, atomically replaces normalized
+composition, creates immutable SiteRevisions, advances `desired_revision_id`, and enqueues complete
+runtime-set assignments. Web Server descriptor/runtime-set schema, hash, collision, generation, and
+atomic activation foundations have golden compatibility evidence. Web exposes latest authenticated
+observations through its owner Internal API; Deploy consumes that method through the generated SDK,
+revalidates the full frozen assignment identity, and stores immutable evidence. Web reports
+`ACTIVE` only after a bounded node-local `HEAD` probe succeeds in an isolated candidate registry.
+Deploy advances `current_revision_id` transactionally only after every frozen target is `ACTIVE` and
+the revision remains desired. SQLite integration evidence proves partial quorum does not advance the
+pointer and complete quorum does.
 
-Required closure: accept versioned machine contracts, implement owner SDK/service ports, add golden
-descriptor fixtures, and certify cross-repository compatibility and last-known-good rollback.
-The split-topology source authorities are the generated Drive and Knowledgebase `internal-sdk`
-families; raw HTTP/manual auth or descriptor-carried provider endpoints are not substitutes.
+Required closure: add external public-domain multi-vantage probes, production-shaped multi-node
+retry/rollback/drift exercises, and an end-to-end proof from App composition mutation to a served
+public response. A published assignment alone remains insufficient; internal `ACTIVE` is strong
+node-local activation evidence, not proof of DNS/TLS/global reachability.
 
 ### P0-5 Production Certificate Custody And Orchestration Are Incomplete
 
-Web Server has useful bounded ACME/activation primitives, but commercial cloud requires durable ACME
-accounts, KMS/Secret Manager custody, DNS-01/wildcard providers, immutable versions, fleet
+Web Server standalone has an executable bounded ACME renewal worker and activation primitives, but
+commercial cloud requires Deploy-driven durable ACME accounts, KMS/Secret Manager custody,
+DNS-01/wildcard providers, immutable versions, fleet
 distribution, served SNI fingerprint convergence, revocation, and renewal drills.
 
 Required closure: approve TLS schema/policy, select CA/provider/KMS, implement Deploy orchestration
 with Web execution, and attach real staging plus expiry/failure/rotation evidence.
-The current `certificates.renew` operation only writes `renewal_status=planned`, and its OpenAPI
-explicitly states that the ACME worker is not online.
+Deploy `certificates.renew` currently records scheduling state only; it is not connected to the
+standalone Web worker and therefore is not cloud issuance/distribution evidence.
 
 ### P0-6 Production Security/Abuse/Isolation Evidence Is Missing
 
@@ -130,7 +148,7 @@ at scale, and obtain Finance/Commerce sign-off.
 | --- | --- |
 | User/admin UI is specified but not built | generated-SDK-backed packages, full async/error/permission E2E, accessibility review |
 | Domain verification/takeover lifecycle is not certified | DNS/HTTP proof, global conflict transaction, hold/reclaim, wildcard and IDNA tests |
-| Cache/event consistency is not proven | public-to-private priority invalidation, event gap/replay, negative TTL, stale policy, stampede tests |
+| Future cache consistency is not proven | event gap/replay and route scoping are tested; add public-to-private priority eviction, negative TTL, stale policy, and stampede tests before enabling content cache |
 | Multi-device routing may fragment cache/SEO | domain strategy guidance, Vary/cookie policy, route simulator, bot/canonical behavior tests |
 | Search/navigation rebuild needs scale evidence | large Wiki projection/index benchmarks, rebuild/checkpoint, degraded-search behavior |
 | Atomic sync cleanup/retention needs evidence | quota reservation, crash/fence/idempotency, rollback, orphan cleanup, legal-hold tests |
@@ -143,26 +161,27 @@ at scale, and obtain Finance/Commerce sign-off.
 
 | Capability | Design | Implementation | Production evidence | Commercial status |
 | --- | --- | --- | --- | --- |
-| Ownership/bounded contexts | complete, proposed | partial/legacy conflicts | missing | blocked |
-| Database target | complete, proposed | not migrated | missing | blocked |
-| Drive Website Space/root/sync | complete, proposed | absent | missing | blocked |
-| Live Wiki state/provider | complete, proposed | conflicting release model | missing | blocked |
-| Runtime descriptor/routing | complete, proposed | partial Web foundations | missing | blocked |
-| Domain/path/Variant | complete, proposed | partial management primitives | missing | blocked |
+| Ownership/bounded contexts | active | Deploy cloud authority and cloud/standalone process isolation implemented | artifact/topology regression gate passes; production audit pending | implementation closed/evidence gated |
+| Database target | active | 21-table PostgreSQL/SQLite contract materialized | backup/restore/RLS production evidence missing | blocked |
+| Drive Website Space/root/sync | active | WebsiteRoot, generated SDK delivery, event processor, range/path/version checks implemented | deployed atomic-sync E2E missing | blocked |
+| Live Wiki state/provider | active | canonical publication, provider API/SDK, events, Web adapter, and durable event consumer implemented | rendition/full-text/deployed E2E missing | blocked |
+| Runtime descriptor/routing | active | descriptor/runtime set, desired assignment, authenticated observation evidence, node-local activation probe, strict quorum, and current-revision advancement implemented | external multi-vantage probe and production multi-node rollout/rollback evidence missing | blocked |
+| Domain/path/Variant | active | normalized composition, conflict checks, exact/wildcard/path routing, and desktop/mobile/tablet/TV/bot selection implemented | takeover and production routing evidence missing | blocked |
 | TLS/certificate lifecycle | complete target; useful runtime primitives | partial | real fleet evidence missing | blocked |
 | User/admin UX | complete view/workflow inventory | not implemented | E2E missing | blocked |
 | Security/privacy/abuse | complete requirements | partial foundations | external/drill evidence missing | blocked |
 | Observability/SLO | complete signals/targets | partial | dashboards/load/error budget missing | blocked |
 | Entitlement/metering | complete ownership/dimensions | absent/partial | reconciliation missing | blocked |
-| Release/migration/rollback | complete plans | not executed | staged evidence missing | blocked |
+| Release/profile isolation/rollback | complete plans | prelaunch baseline and cloud/standalone isolation implemented | staged artifact/rollout evidence missing | blocked |
 
-## 7. Definition Of Ready For Implementation
+## 7. Remaining Definition Of Ready For Pilot
 
-- Product owners accept REQ-2026-0001, Drive REQ-2026-0004, Knowledgebase REQ-2026-0721, and Web
-  Server REQ-2026-0060.
-- Architecture owners accept the four linked ADRs and resolve old ADR supersession.
-- Database owners approve exact table/column/enum/index/RLS/migration contracts.
-- API/SDK owners approve operation ownership, compatibility windows, and generation plan.
+- Product and architecture owners reconfirm REQ-2026-0001 and linked Drive, Knowledgebase, and Web
+  requirements against the implemented machine contracts.
+- Database owners approve the current prelaunch baseline, tenant/RLS posture, and strict
+  cloud/standalone authority isolation without compatibility tables or dual writes.
+- API/SDK owners approve the active App composition operation and any future privileged Backend
+  composition credential-delegation contract.
 - Security/Privacy approve threat model, active asset policy, certificate custody, abuse, retention,
   and support access.
 - Commerce/Finance approve entitlement/meter ownership and reconciliation contract.
@@ -196,7 +215,7 @@ regional failover, and certified enterprise SLO. These are not implied by standa
 
 ## 9. Required Final Evidence Bundle
 
-- accepted requirements/ADRs and exact migration approvals;
+- accepted requirements/ADRs and prelaunch convergence/profile-boundary approvals;
 - database/API/SDK/descriptor/provider contracts and compatibility matrix;
 - unit/contract/integration/E2E/security/fuzz/load/soak/fault-injection reports;
 - tenant isolation, domain takeover, certificate, provider outage, cache revocation, and abuse drills;
@@ -207,10 +226,12 @@ regional failover, and certified enterprise SLO. These are not implied by standa
 
 ## 10. Review Outcome
 
-The target system is now architecturally coherent and commercially scoped. The design can proceed to
-human contract approval and phased implementation. It must not be represented as production-ready,
-commercially available, or migration-approved until the P0 findings and release gates are closed
-with evidence.
+The target system is architecturally coherent, commercially scoped, and materially implemented. Its
+provider validation, composition transaction, generated SDKs, immutable descriptor, desired runtime
+assignment, authenticated observation convergence, node-local activation probes, strict quorum,
+Drive/Wiki delivery, provider-event processing, and device routing may proceed to integrated
+production-like testing. It must not be represented as production-ready or commercially available
+until the remaining P0 findings and release gates are closed with evidence.
 
 Knowledgebase-specific implementation evidence and realtime claim gates are maintained in
 `../sdkwork-knowledgebase/docs/engineering/reviews/REVIEW-20260721-live-wiki-deployment-integration-readiness.md`.

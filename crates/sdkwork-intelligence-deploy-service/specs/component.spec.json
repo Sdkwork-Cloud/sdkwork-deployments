@@ -29,7 +29,9 @@
       {"name": "deployService", "export": "."},
       {"name": "deployRepositoryPort", "export": "."},
       {"name": "runtimePublicationService", "export": "."},
+      {"name": "runtimeObservationReconciliationService", "export": "."},
       {"name": "runtimeAssignmentRepositoryPort", "export": "."},
+      {"name": "runtimeObservationEvidenceRepositoryPort", "export": "."},
       {"name": "runtimeAssignmentMutationPort", "export": "."},
       {"name": "siteCompositionRepositoryPort", "export": "."}
     ],

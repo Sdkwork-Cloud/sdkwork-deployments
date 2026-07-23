@@ -3,7 +3,7 @@
 Status: active
 Owner: SDKWork maintainers
 Application: sdkwork-deploy
-Updated: 2026-07-21
+Updated: 2026-07-22
 Specs: REQUIREMENTS_SPEC.md, DOCUMENTATION_SPEC.md
 
 ## Document Map
@@ -19,7 +19,8 @@ Specs: REQUIREMENTS_SPEC.md, DOCUMENTATION_SPEC.md
 
 Product detail lives in the linked PRD shards above. The cloud publishing shard is the product
 authority for live directory/Wiki Sites; the original Deploy Web Server shard remains the broader
-deployment product baseline.
+frozen artifact/release deployment baseline. Live WebsiteRoot and WikiPublication content changes
+do not enter that artifact/release pipeline.
 
 
 ## 9. Open Questions

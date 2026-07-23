@@ -2,7 +2,7 @@
 
 ## Audience Routing
 
-| I am… | Read first | Then read |
+| Audience | Read first | Then read |
 | --- | --- | --- |
 | Product or business | [product/prd/PRD.md](product/prd/PRD.md) | [product/requirements/](product/requirements/) |
 | Architect | [architecture/tech/TECH_ARCHITECTURE.md](architecture/tech/TECH_ARCHITECTURE.md) | [architecture/decisions/](architecture/decisions/) |
@@ -19,7 +19,7 @@
 | Technical architecture | [architecture/tech/TECH_ARCHITECTURE.md](architecture/tech/TECH_ARCHITECTURE.md) |
 | Cloud publishing PRD | [product/prd/PRD-cloud-site-publishing-platform.md](product/prd/PRD-cloud-site-publishing-platform.md) |
 | Cloud publishing architecture | [architecture/tech/TECH-cloud-site-publishing-control-plane.md](architecture/tech/TECH-cloud-site-publishing-control-plane.md) |
-| Control-plane convergence migration | [migrations/MIG-2026-0001-cloud-site-control-plane-convergence.md](migrations/MIG-2026-0001-cloud-site-control-plane-convergence.md) |
+| Prelaunch control-plane convergence | [migrations/MIG-2026-0001-cloud-site-control-plane-convergence.md](migrations/MIG-2026-0001-cloud-site-control-plane-convergence.md) |
 | Commercial readiness review | [engineering/reviews/REVIEW-20260721-cloud-site-publishing-commercial-readiness.md](engineering/reviews/REVIEW-20260721-cloud-site-publishing-commercial-readiness.md) |
 
 ## Related Specs

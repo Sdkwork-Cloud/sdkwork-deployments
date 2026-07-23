@@ -1669,7 +1669,7 @@ components:
           maxLength: 64
         clientClass:
           type: string
-          enum: [DESKTOP, MOBILE, TABLET, BOT, OTHER]
+          enum: [DESKTOP, MOBILE, TABLET, TV, BOT, OTHER]
           default: OTHER
         priority:
           type: integer
@@ -1715,7 +1715,7 @@ components:
           const: CLIENT_CLASS
         clientClass:
           type: string
-          enum: [DESKTOP, MOBILE, TABLET, BOT, OTHER]
+          enum: [DESKTOP, MOBILE, TABLET, TV, BOT, OTHER]
     SiteMountDefinition:
       type: object
       additionalProperties: false

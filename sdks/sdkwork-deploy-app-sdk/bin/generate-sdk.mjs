@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { rmSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -16,21 +15,15 @@ const output = path.join(
   'generated',
   'server-openapi',
 );
-const languageRoot = path.resolve(output, '..', '..');
-if (!path.resolve(output).startsWith(`${languageRoot}${path.sep}`)) {
-  throw new Error(`refusing to replace generated output outside ${languageRoot}`);
-}
-
 const materialize = spawnSync(process.execPath, [
   path.join(applicationRoot, 'tools', 'materialize_deploy_phase1_contracts.mjs'),
 ], { cwd: applicationRoot, stdio: 'inherit' });
 if (materialize.status !== 0) process.exit(materialize.status ?? 1);
 
-rmSync(output, { recursive: true, force: true });
 const generated = spawnSync(process.execPath, [
   generator,
   'generate',
-  '-i', path.join(familyRoot, 'openapi', 'deploy-app-api.openapi.json'),
+  '-i', path.join(familyRoot, 'openapi', 'deploy-app-api.sdkgen.json'),
   '-o', output,
   '-n', 'sdkwork-deploy-app-sdk',
   '-t', 'app',

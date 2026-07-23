@@ -10,8 +10,13 @@ const surfaces = [
     source: 'apis/app-api/deploy/openapi.yaml',
     authority: 'apis/app-api/deploy/deploy-app-api.openapi.json',
     sdk: 'sdks/sdkwork-deploy-app-sdk/openapi/deploy-app-api.openapi.json',
+    sdkGenerationInput: 'sdks/sdkwork-deploy-app-sdk/openapi/deploy-app-api.sdkgen.json',
     sdkManifest: 'sdks/sdkwork-deploy-app-sdk/sdk-manifest.json',
     componentSpec: 'sdks/sdkwork-deploy-app-sdk/specs/component.spec.json',
+    routeManifest: 'sdks/_route-manifests/app-api/sdkwork-routes-deploy-app-api.route-manifest.json',
+    routePackageName: 'sdkwork-routes-deploy-app-api',
+    sdkFamily: 'sdkwork-deploy-app-sdk',
+    consumerPackageName: '@sdkwork/deploy-app-sdk',
     apiAuthority: 'sdkwork-deploy-app-api',
     apiSurface: 'app-api',
     apiPrefix: '/app/v3/api',
@@ -20,8 +25,13 @@ const surfaces = [
     source: 'apis/backend-api/deploy/openapi.yaml',
     authority: 'apis/backend-api/deploy/deploy-backend-api.openapi.json',
     sdk: 'sdks/sdkwork-deploy-backend-sdk/openapi/deploy-backend-api.openapi.json',
+    sdkGenerationInput: 'sdks/sdkwork-deploy-backend-sdk/openapi/deploy-backend-api.sdkgen.json',
     sdkManifest: 'sdks/sdkwork-deploy-backend-sdk/sdk-manifest.json',
     componentSpec: 'sdks/sdkwork-deploy-backend-sdk/specs/component.spec.json',
+    routeManifest: 'sdks/_route-manifests/backend-api/sdkwork-routes-deploy-backend-api.route-manifest.json',
+    routePackageName: 'sdkwork-routes-deploy-backend-api',
+    sdkFamily: 'sdkwork-deploy-backend-sdk',
+    consumerPackageName: '@sdkwork/deploy-backend-sdk',
     apiAuthority: 'sdkwork-deploy-backend-api',
     apiSurface: 'backend-api',
     apiPrefix: '/backend/v3/api',
@@ -86,6 +96,7 @@ function assertMaterializedDocumentationMatchesSource(source, authority, sourceP
 }
 
 function assertOwnerOnlyOperations(authority, surface) {
+  let operationCount = 0;
   for (const [operationPath, pathItem] of Object.entries(authority.paths ?? {})) {
     assert.ok(
       operationPath.startsWith(surface.apiPrefix),
@@ -95,9 +106,32 @@ function assertOwnerOnlyOperations(authority, surface) {
       if (!['get', 'post', 'put', 'patch', 'delete'].includes(method)) {
         continue;
       }
+      operationCount += 1;
       assert.equal(operation['x-sdkwork-owner'], 'sdkwork-deploy');
       assert.equal(operation['x-sdkwork-api-authority'], surface.apiAuthority);
       assert.equal(operation['x-sdkwork-api-surface'], surface.apiSurface);
+    }
+  }
+  return operationCount;
+}
+
+function assertLocalResponseReferencesResolve(authority, sourcePath) {
+  const responses = authority.components?.responses ?? {};
+  for (const [operationPath, pathItem] of Object.entries(authority.paths ?? {})) {
+    for (const [method, operation] of Object.entries(pathItem)) {
+      if (!['get', 'post', 'put', 'patch', 'delete'].includes(method)) {
+        continue;
+      }
+      for (const response of Object.values(operation.responses ?? {})) {
+        if (!response?.$ref?.startsWith('#/components/responses/')) {
+          continue;
+        }
+        const responseName = response.$ref.slice('#/components/responses/'.length);
+        assert.ok(
+          responses[responseName],
+          `${sourcePath} ${method.toUpperCase()} ${operationPath} has unresolved response ${response.$ref}`,
+        );
+      }
     }
   }
 }
@@ -106,15 +140,41 @@ for (const surface of surfaces) {
   const source = parseYaml(fs.readFileSync(path.join(repoRoot, surface.source), 'utf8'));
   const authority = readJson(surface.authority);
   const sdk = readJson(surface.sdk);
+  const sdkGenerationInput = readJson(surface.sdkGenerationInput);
   const sdkManifest = readJson(surface.sdkManifest);
   const componentSpec = readJson(surface.componentSpec);
+  const routeManifest = readJson(surface.routeManifest);
 
   assertWellFormedUnicode(source, surface.source);
   assertMaterializedDocumentationMatchesSource(source, authority, surface.source);
-  assertOwnerOnlyOperations(authority, surface);
+  const ownerOnlyOperationCount = assertOwnerOnlyOperations(authority, surface);
+  assertLocalResponseReferencesResolve(authority, surface.authority);
   assert.deepEqual(sdk, authority, `${surface.sdk} must match ${surface.authority}`);
+  assert.deepEqual(
+    sdkGenerationInput,
+    authority,
+    `${surface.sdkGenerationInput} must be deterministically derived from ${surface.authority}`,
+  );
+  assert.equal(routeManifest.packageName, surface.routePackageName);
+  assert.equal(routeManifest.source.crateImport, surface.routePackageName.replaceAll('-', '_'));
   assert.equal(sdkManifest.sdkOwner, 'sdkwork-deploy');
   assert.equal(sdkManifest.apiAuthority, surface.apiAuthority);
+  assert.equal(sdkManifest.sdkFamily, surface.sdkFamily);
+  assert.equal(sdkManifest.packageName, surface.consumerPackageName);
+  assert.equal(sdkManifest.ownerOnlyOperationCount, ownerOnlyOperationCount);
+  assert.equal(sdkManifest.generationInputSpec, path.posix.relative(
+    path.posix.dirname(surface.sdkManifest),
+    surface.sdkGenerationInput,
+  ));
+  assert.deepEqual(sdkManifest.derivedSpecs, { default: sdkManifest.generationInputSpec });
+  assert.equal(
+    sdkManifest.typescript.composedRoot,
+    `${surface.sdkFamily}-typescript`,
+  );
+  assert.equal(
+    sdkManifest.typescript.transportRoot,
+    `${surface.sdkFamily}-typescript/generated/server-openapi`,
+  );
   assert.deepEqual(
     sdkManifest.sdkDependencies,
     componentSpec.contracts.sdkDependencies,

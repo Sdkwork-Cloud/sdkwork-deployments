@@ -42,25 +42,32 @@ OBSERVABILITY_SPEC.md, TEST_SPEC.md, RELEASE_SPEC.md, MIGRATION_SPEC.md
 
 ## Functional Requirements
 
-Implementation note (2026-07-22): requirements 4 and 10 now have an executable producer baseline.
-The compiler contract contains configuration identities only, its output passes the Web Server's
-real schema/hash compilers, and durable runtime assignments publish through the generated Web
-Internal SDK. This is foundation evidence, not acceptance of the full requirement set; composition
-APIs, provider validation, mutation orchestration, observations/quorum, TLS, UI, and production
-evidence remain open.
+Implementation note (2026-07-22): the App API composition update path is executable end to end.
+Drive and Knowledgebase resources are resolved through generated owner SDKs before persistence; the
+normalized replacement, immutable SiteRevision, desired revision pointer, complete runtime-set
+assignments, idempotency result, and audit record commit in one PostgreSQL/SQLite transaction.
+Runtime assignment publication uses the generated Web Internal SDK. Web provider-event processing
+and Drive/Wiki browser delivery are implemented, and `cloud.production` starts only the immutable
+Website Edge Runtime rather than the standalone management assembly. Web observation/quorum,
+certificate material distribution and cloud ACME automation, tenant/admin UI, metering, and
+production operational evidence remain open. Backend composition mutation remains intentionally
+absent until a trusted operator credential-delegation or resolved-resource administration contract
+is approved.
 
 1. `sdkwork-deployments` shall be the only writable authority for Sites, host/path Bindings,
    Variants, routing rules, Mounts, certificate metadata, configuration revisions, and rollout
    observations.
 2. Drive shall expose only a stable WebsiteRoot in an active `website` Space as `DRIVE_DIRECTORY`.
-   The root selector is `SPACE_ROOT` or `FOLDER(folderNodeUuid)`; both exclude reserved/internal
+   The root selector is `SPACE_ROOT` or `FOLDER(folderNodeId)`; both exclude reserved/internal
    namespaces and remain independent from `LIVE_TREE`/`ATOMIC_GENERATION` content mode.
-3. Every Knowledgebase shall have one canonical DRAFT/PRIVATE WikiPublication. Deploy may connect it
-   for configuration/preview, but only an ACTIVE publication rooted at `sources/raw` is publicly
-   eligible as `KNOWLEDGEBASE_WIKI`, with per-file publication and visibility enforcement.
-4. Ordinary source file changes shall not create `deploy_release`, `deploy_deployment`, or
-   `deploy_site_revision` records. Provider change events and read-through resolution shall make
-   changes visible within the freshness target.
+3. Every Knowledgebase shall be Wiki-capable through exactly one canonical WikiPublication,
+   provisioned DRAFT/PRIVATE. Only the owner Internal API's ACTIVE publication rooted at
+   `sources/raw` is eligible as `KNOWLEDGEBASE_WIKI`, with per-file publication and visibility
+   enforcement. Deploy attaches the opaque `publicationUuid`; it does not infer eligibility from a
+   Knowledgebase id or Drive directory.
+4. Ordinary source file changes shall not call the composition API and shall not create
+   `deploy_release`, `deploy_deployment`, or `deploy_site_revision` records. Provider change events
+   and read-through resolution shall make changes visible within the freshness target.
 5. `ATOMIC_SYNC` shall switch a complete Drive directory tree without exposing partial bundles and
    without creating a Deploy Release.
 6. A Site shall support one or more verified domains and disjoint path Bindings. Active host/path
@@ -78,20 +85,29 @@ evidence remain open.
     PRD, with permission checks and audit records for every mutation.
 12. Deploy shall enforce versioned entitlement projections, produce deduplicated usage facts, and
     expose reconcilable aggregates without becoming the Commerce invoice authority.
-13. Resource creation shall use a discriminated Drive-root or Knowledgebase selector, resolve it
-    through the owner SDK/service, and persist only stable provider resource identity plus bounded
-    observations. The same provider resource may back multiple authorized Site Resources/Mounts.
+13. Resource creation shall use either `{ type: DRIVE_DIRECTORY, websiteSpaceId, root,
+    contentMode }` or `{ type: KNOWLEDGEBASE_WIKI, publicationUuid }`, resolve it through the owner
+    SDK/service before database locking, and persist only stable provider resource identity plus
+    bounded observations. The same provider resource may back multiple authorized Site
+    Resources/Mounts.
 14. Changing a Drive Space/folder selector shall select another WebsiteRoot and create a
     SiteRevision; ordinary files or atomic generation changes behind the same WebsiteRoot shall not.
 15. Deploy shall declare generated Drive and Knowledgebase internal SDK dependencies for provider
     resolution, while Web Server consumes owner AsyncAPI provider events directly. Deploy shall not
     become the relay or acknowledgement authority for ordinary content changes.
-16. The control-plane convergence shall retire overlapping Web Server Site/Domain/Deployment/
-    Certificate write routes and `web_*` business authority after shadow comparison and
-    reconciliation. A rollback shall not permit both writers to become active.
+16. The cloud profile shall exclude Web Server standalone Site/Domain/Deployment/Certificate write
+    routes and `web_*` business authority. Standalone local-management data shall remain isolated
+    from cloud databases, assignments, artifacts, and rollback; no compatibility import, dual write,
+    or shadow authority shall be introduced.
 17. Managed certificate renewal success shall require a completed ACME order/challenge, immutable
     certificate version, secure distribution, Web Node activation, and served-SNI verification.
     Setting `renewal_status=planned` is scheduling evidence only.
+18. `PUT /app/v3/api/sites/{siteId}/composition` shall require both `If-Match` and
+    `Idempotency-Key`. `If-Match` and response Site versions are decimal strings. Replaying one key
+    with the same request returns the committed result; reusing it with different content fails.
+19. A composition commit shall advance `desired_revision_id`. `current_revision_id` shall advance
+    only after authenticated Web observations satisfy the configured activation quorum; a database
+    commit alone is not proof that public traffic uses the desired revision.
 
 ## Non-Functional Requirements
 
@@ -121,8 +137,9 @@ evidence remain open.
 - Drive/Knowledgebase input/output AsyncAPI compatibility, generated internal SDK dependency,
   provider generation, route page public version, event replay/gap, and route-scoped cache tests
   pass without a Deploy content event relay.
-- A single-writer test proves Deploy is the only Site/domain/TLS configuration authority and Web
-  write routes/tables cannot be reactivated by normal rollback.
+- Cloud artifact and topology tests prove Deploy is the only Site/domain/TLS configuration authority,
+  the cloud runtime contains no standalone management entrypoint, and rollback cannot activate Web
+  local-management write paths.
 - Host/path conflict, IDNA, wildcard, redirect, and multi-Variant routing tests pass.
 - ACME issuance/renewal/failure/hot-switch and custom certificate validation/distribution tests pass.
 - Descriptor schema, deterministic compilation, hash, rollout quorum, last-known-good recovery, and
@@ -140,7 +157,7 @@ evidence remain open.
 - Product: `docs/product/prd/PRD-cloud-site-publishing-platform.md`
 - Decision: `docs/architecture/decisions/ADR-20260721-unified-cloud-site-publishing-control-plane.md`
 - Architecture: `docs/architecture/tech/TECH-cloud-site-publishing-control-plane.md`
-- Migration: `docs/migrations/MIG-2026-0001-cloud-site-control-plane-convergence.md`
+- Prelaunch convergence: `docs/migrations/MIG-2026-0001-cloud-site-control-plane-convergence.md`
 - Module requirements: Drive `REQ-2026-0004`, Knowledgebase `REQ-2026-0721`, Web Server
   `REQ-2026-0060`
 

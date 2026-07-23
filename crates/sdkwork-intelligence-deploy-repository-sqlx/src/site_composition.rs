@@ -1282,6 +1282,7 @@ fn client_class_name(client_class: SiteClientClass) -> &'static str {
         SiteClientClass::Desktop => "DESKTOP",
         SiteClientClass::Mobile => "MOBILE",
         SiteClientClass::Tablet => "TABLET",
+        SiteClientClass::Tv => "TV",
         SiteClientClass::Bot => "BOT",
         SiteClientClass::Other => "OTHER",
     }
@@ -1292,6 +1293,7 @@ fn runtime_client_class(client_class: SiteClientClass) -> RuntimeClientClass {
         SiteClientClass::Desktop => RuntimeClientClass::Desktop,
         SiteClientClass::Mobile => RuntimeClientClass::Mobile,
         SiteClientClass::Tablet => RuntimeClientClass::Tablet,
+        SiteClientClass::Tv => RuntimeClientClass::Tv,
         SiteClientClass::Bot => RuntimeClientClass::Bot,
         SiteClientClass::Other => RuntimeClientClass::Other,
     }

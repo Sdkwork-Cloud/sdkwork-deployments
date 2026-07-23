@@ -14,8 +14,17 @@
       "default": "./src/index.ts"
     }
   },
+  "scripts": {
+    "build": "pnpm run build:transport && pnpm run typecheck",
+    "build:transport": "pnpm --dir generated/server-openapi build",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
   "dependencies": {
     "@sdkwork/sdk-common": "workspace:*"
+  },
+  "devDependencies": {
+    "rollup": "^4.0.0",
+    "typescript": "catalog:"
   },
   "publishConfig": {
     "access": "public",

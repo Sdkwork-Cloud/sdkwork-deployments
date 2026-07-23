@@ -1,6 +1,6 @@
 # ADR-20260721 Unified Cloud Site Publishing Control Plane
 
-Status: proposed
+Status: accepted
 Requirement: REQ-2026-0001
 Owner: SDKWork Deploy maintainers
 Date: 2026-07-21
@@ -12,8 +12,9 @@ OBSERVABILITY_SPEC.md, MIGRATION_SPEC.md
 
 Drive, Knowledgebase, Deploy, and Web Server each own necessary capabilities, but existing models can
 create two harmful coupling patterns: publishing a full release for every content change, or letting
-source products create their own site/domain/certificate control planes. Web Server also contains
-legacy writable `web_*` management tables overlapping Deploy `deploy_*` tables.
+source products create their own site/domain/certificate control planes. Web Server also provides a
+standalone-only local management profile with `web_*` tables; that profile must never become a
+second authority inside the cloud deployment topology.
 
 The product needs directory-faithful publication, live Wiki projection, multi-domain and
 device-specific application routing, automated certificate renewal, and commercial operations
@@ -49,8 +50,10 @@ without weakening source ownership or creating two writable authorities.
     KMS/Secret Manager or approved encrypted standalone storage.
 11. `deploy_release` continues to own frozen artifact workflows. It is not renamed or overloaded for
     live source updates.
-12. Existing `web_*` site/domain/deployment/certificate records become a one-way runtime projection
-    or are retired. They cannot remain a second writable source.
+12. Web Server `web_*` site/domain/deployment/certificate records remain scoped to its explicit
+    standalone local-management profile. The cloud image starts only the Website Edge Runtime,
+    excludes the standalone management assembly, and accepts Deploy-owned immutable assignments;
+    standalone records are never imported, shadow-written, or treated as cloud authority.
 13. All cross-repository calls use owner-generated SDKs or approved typed service ports with shared
     SDKWork authentication/runtime context. Raw HTTP and manual auth headers are not accepted.
 14. Deploy resource creation accepts a discriminated source selector, resolves a stable provider
@@ -101,7 +104,8 @@ flowchart LR
 
 ## Consequences
 
-- Deploy requires additive normalized tables and a migration from overlapping `web_*` authority.
+- Deploy owns a direct prelaunch normalized baseline; there is no production `web_*` population,
+  compatibility window, dual write, or backfill to preserve.
 - Drive requires an approved `website` Space enum addition and atomic tree-switch contract.
 - Knowledgebase must replace the release-builder publication design with live Wiki source
   projection and per-file state.
@@ -111,7 +115,7 @@ flowchart LR
   concepts and require separate evidence.
 - Provider availability becomes part of origin delivery; bounded caches, stale policy, circuit
   breaking, and event/read-through reconciliation are required.
-- Cross-repository APIs, database migrations, generated SDKs, and permission changes require human
+- Cross-repository APIs, database baseline changes, generated SDKs, and permission changes require human
   review before implementation.
 
 ## Verification
@@ -122,7 +126,8 @@ flowchart LR
   behavior.
 - Host/path/Variant routing tests and browser-to-resource end-to-end tests pass.
 - ACME, certificate distribution, hot switch, and last-known-good tests pass.
-- Migration comparison proves equivalent active bindings before Web Server write paths are disabled.
+- Cloud artifact/topology tests prove the standalone management assembly and `web_*` write paths are
+  absent from the cloud runtime while standalone packaging remains independently explicit.
 - Security, privacy, load, tenant isolation, backup/restore, and incident drills satisfy the linked
   requirement.
 

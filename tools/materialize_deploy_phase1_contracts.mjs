@@ -10,16 +10,18 @@ const surfaces = [
     yamlPath: "apis/app-api/deploy/openapi.yaml",
     jsonAuthorityPath: "apis/app-api/deploy/deploy-app-api.openapi.json",
     sdkJsonPath: "sdks/sdkwork-deploy-app-sdk/openapi/deploy-app-api.openapi.json",
+    sdkGenerationInputPath: "sdks/sdkwork-deploy-app-sdk/openapi/deploy-app-api.sdkgen.json",
     routeManifestPath:
       "sdks/_route-manifests/app-api/sdkwork-routes-deploy-app-api.route-manifest.json",
     crateDir: "crates/sdkwork-routes-deploy-app-api",
     manifestFn: "app_route_manifest",
-    packageName: "sdkwork-routes-deploy-app-api",
+    routePackageName: "sdkwork-routes-deploy-app-api",
     surface: "app-api",
     apiAuthority: "sdkwork-deploy-app-api",
     sdkFamily: "sdkwork-deploy-app-sdk",
-    packageName: "@sdkwork/deploy-app-sdk",
+    consumerPackageName: "@sdkwork/deploy-app-sdk",
     transportPackageName: "sdkwork-deploy-app-sdk-generated-typescript",
+    sdkTarget: "app",
     prefix: "/app/v3/api",
     domainTag: "deploy",
   },
@@ -27,16 +29,18 @@ const surfaces = [
     yamlPath: "apis/backend-api/deploy/openapi.yaml",
     jsonAuthorityPath: "apis/backend-api/deploy/deploy-backend-api.openapi.json",
     sdkJsonPath: "sdks/sdkwork-deploy-backend-sdk/openapi/deploy-backend-api.openapi.json",
+    sdkGenerationInputPath: "sdks/sdkwork-deploy-backend-sdk/openapi/deploy-backend-api.sdkgen.json",
     routeManifestPath:
       "sdks/_route-manifests/backend-api/sdkwork-routes-deploy-backend-api.route-manifest.json",
     crateDir: "crates/sdkwork-routes-deploy-backend-api",
     manifestFn: "backend_route_manifest",
-    packageName: "sdkwork-routes-deploy-backend-api",
+    routePackageName: "sdkwork-routes-deploy-backend-api",
     surface: "backend-api",
     apiAuthority: "sdkwork-deploy-backend-api",
     sdkFamily: "sdkwork-deploy-backend-sdk",
-    packageName: "@sdkwork/deploy-backend-sdk",
+    consumerPackageName: "@sdkwork/deploy-backend-sdk",
     transportPackageName: "sdkwork-deploy-backend-sdk-generated-typescript",
+    sdkTarget: "backend",
     prefix: "/backend/v3/api",
     domainTag: "deploy",
   },
@@ -74,24 +78,71 @@ function assertWellFormedUnicode(value, sourcePath, pathSegments = []) {
   }
 }
 
-function sdkManifest(profile) {
+function sdkManifest(profile, openapi) {
   const familyRoot = `sdks/${profile.sdkFamily}/`;
-  if (!profile.sdkJsonPath.startsWith(familyRoot)) {
-    throw new Error(`${profile.sdkJsonPath} is outside ${familyRoot}`);
+  for (const ownedPath of [profile.sdkJsonPath, profile.sdkGenerationInputPath]) {
+    if (!ownedPath.startsWith(familyRoot)) {
+      throw new Error(`${ownedPath} is outside ${familyRoot}`);
+    }
   }
   const familyOpenApiPath = profile.sdkJsonPath.slice(familyRoot.length);
+  const generationInputSpec = profile.sdkGenerationInputPath.slice(familyRoot.length);
+  const typescriptRoot = `${profile.sdkFamily}-typescript`;
+  const transportRoot = `${typescriptRoot}/generated/server-openapi`;
   return {
     schemaVersion: 1,
-    apiAuthority: profile.apiAuthority,
-    sdkOwner: "sdkwork-deploy",
-    sdkDependencies: [],
     sdkFamily: profile.sdkFamily,
     sdkName: profile.sdkFamily,
-    packageName: profile.packageName,
+    packageName: profile.consumerPackageName,
     transportPackageName: profile.transportPackageName,
+    typescript: {
+      composedRoot: typescriptRoot,
+      composedEntry: `${typescriptRoot}/src/index.ts`,
+      transportRoot,
+      transportEntry: `${transportRoot}/src/index.ts`,
+    },
+    workspace: profile.sdkFamily,
+    title: openapi.info?.title ?? profile.sdkFamily,
+    apiVersion: openapi.info?.version ?? "0.1.0",
+    openapiVersion: openapi.openapi,
+    authoritySpec: familyOpenApiPath,
+    generationInputSpec,
+    derivedSpecs: { default: generationInputSpec },
+    sdkOwner: "sdkwork-deploy",
+    apiAuthority: profile.apiAuthority,
+    ownerOnlyOperationCount: extractRoutes(openapi, profile).length,
+    standardProfile: "sdkwork-v3",
+    discoverySurface: {
+      sdkTarget: profile.sdkTarget,
+      apiPrefix: profile.prefix,
+      schemaUrl: `${profile.prefix}/openapi.json`,
+      generatedProtocols: ["http-openapi"],
+      manualTransports: [],
+    },
+    sdkDependencies: [],
+    dependencyApiExports: [],
+    languages: [
+      {
+        language: "typescript",
+        workspace: typescriptRoot,
+        generationState: "materialized",
+        releaseState: "not_published",
+        packagePath: transportRoot,
+        manifestPath: `${transportRoot}/package.json`,
+        version: "0.1.0",
+        description: `Generator-owned TypeScript transport SDK for ${openapi.info?.title ?? profile.apiAuthority}.`,
+        generatedPath: transportRoot,
+        consumerPackageName: profile.consumerPackageName,
+        transportPackageName: profile.transportPackageName,
+      },
+    ],
+    metadata: {
+      managedBy: "tools/materialize_deploy_phase1_contracts.mjs",
+      standardProfile: "sdkwork-v3",
+      supportedLanguageSubset: ["typescript"],
+    },
     openApiPath: familyOpenApiPath,
     surface: profile.surface,
-    authoritySpec: familyOpenApiPath,
   };
 }
 
@@ -173,7 +224,7 @@ function httpMethodRust(method) {
 
 function writeHttpRouteManifestRust(crateDir, fnName, routes) {
   const lines = [
-    "// @generated by tools/materialize_deploy_phase1_contracts.mjs — do not edit",
+    "// @generated by tools/materialize_deploy_phase1_contracts.mjs - do not edit",
     "",
     "use sdkwork_web_core::{HttpMethod, HttpRoute, HttpRouteManifest};",
     "",
@@ -196,17 +247,21 @@ function writeHttpRouteManifestRust(crateDir, fnName, routes) {
   writeText(`${crateDir}/src/http_route_manifest.rs`, lines.join("\n"));
 }
 
+const materializedOpenApis = new Map();
+
 for (const profile of surfaces) {
   const yaml = parseYaml(fs.readFileSync(path.join(root, profile.yamlPath), "utf8"));
   assertWellFormedUnicode(yaml, profile.yamlPath);
   const openapi = migrateOpenApiDocument(enrichOpenApi(yaml, profile));
   writeJson(profile.jsonAuthorityPath, openapi);
   writeJson(profile.sdkJsonPath, openapi);
+  writeJson(profile.sdkGenerationInputPath, openapi);
+  materializedOpenApis.set(profile.apiAuthority, openapi);
   const routes = extractRoutes(openapi, profile);
   writeJson(profile.routeManifestPath, {
     schemaVersion: 1,
     kind: "sdkwork.route.manifest",
-    packageName: profile.packageName,
+    packageName: profile.routePackageName,
     surface: profile.surface,
     owner: "sdkwork-deploy",
     domain: "platform",
@@ -216,7 +271,7 @@ for (const profile of surfaces) {
     prefix: profile.prefix,
     source: {
       crateRoot: profile.crateDir,
-      crateImport: profile.packageName.replaceAll("-", "_"),
+      crateImport: profile.routePackageName.replaceAll("-", "_"),
       openApiAuthority: profile.sdkJsonPath,
     },
     routes,
@@ -234,7 +289,11 @@ writeJson("apis/authority-manifest.json", {
 });
 
 for (const profile of surfaces) {
-  writeJson(`sdks/${profile.sdkFamily}/sdk-manifest.json`, sdkManifest(profile));
+  const openapi = materializedOpenApis.get(profile.apiAuthority);
+  if (!openapi) {
+    throw new Error(`missing materialized OpenAPI for ${profile.apiAuthority}`);
+  }
+  writeJson(`sdks/${profile.sdkFamily}/sdk-manifest.json`, sdkManifest(profile, openapi));
 }
 
 console.log("deploy phase-1 contracts materialized");

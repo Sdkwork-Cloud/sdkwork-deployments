@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "sdkwork.route.manifest",
-  "packageName": "@sdkwork/deploy-backend-sdk",
+  "packageName": "sdkwork-routes-deploy-backend-api",
   "surface": "backend-api",
   "owner": "sdkwork-deploy",
   "domain": "platform",
@@ -11,7 +11,7 @@
   "prefix": "/backend/v3/api",
   "source": {
     "crateRoot": "crates/sdkwork-routes-deploy-backend-api",
-    "crateImport": "@sdkwork/deploy_backend_sdk",
+    "crateImport": "sdkwork_routes_deploy_backend_api",
     "openApiAuthority": "sdks/sdkwork-deploy-backend-sdk/openapi/deploy-backend-api.openapi.json"
   },
   "routes": [

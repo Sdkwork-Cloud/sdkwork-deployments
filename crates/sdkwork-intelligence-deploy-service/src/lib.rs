@@ -9,6 +9,7 @@ pub mod site_composition;
 pub use repository::DeployRepositoryPort;
 pub use runtime_publication::{
     DeployRuntimeAssignmentMutationPort, DeployRuntimeAssignmentRepositoryPort,
+    RuntimeObservationEvidence, RuntimeObservationPersistenceResult, RuntimeObservationState,
     RuntimePublicationBatchResult, RuntimePublicationService,
 };
 pub use site_composition::{ReplaceSiteCompositionCommand, SiteCompositionRepositoryPort};

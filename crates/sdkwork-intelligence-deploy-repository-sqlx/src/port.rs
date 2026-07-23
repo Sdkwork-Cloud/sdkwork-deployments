@@ -18,7 +18,7 @@ use sdkwork_deploy_web_port::RuntimeAssignmentReceipt;
 use sdkwork_intelligence_deploy_service::repository::InsertAuditLogCommand;
 use sdkwork_intelligence_deploy_service::runtime_publication::{
     DeployRuntimeAssignmentMutationPort, DeployRuntimeAssignmentRepositoryPort,
-    RuntimeAssignmentState,
+    RuntimeAssignmentState, RuntimeObservationEvidence, RuntimeObservationPersistenceResult,
 };
 use sdkwork_intelligence_deploy_service::DeployRepositoryPort;
 
@@ -559,5 +559,23 @@ impl DeployRuntimeAssignmentRepositoryPort for DeployRepository {
             updated_at,
         )
         .await
+    }
+
+    async fn list_runtime_assignments_requiring_observation(
+        &self,
+        maximum_items: i64,
+    ) -> sdkwork_deploy_contract::DeployServiceResult<Vec<RuntimeAssignmentState>> {
+        self.list_runtime_assignments_requiring_observation_repo(maximum_items)
+            .await
+    }
+
+    async fn persist_runtime_observation(
+        &self,
+        assignment_uuid: &str,
+        observation: &RuntimeObservationEvidence,
+        ingested_at: &str,
+    ) -> sdkwork_deploy_contract::DeployServiceResult<RuntimeObservationPersistenceResult> {
+        self.persist_runtime_observation_repo(assignment_uuid, observation, ingested_at)
+            .await
     }
 }

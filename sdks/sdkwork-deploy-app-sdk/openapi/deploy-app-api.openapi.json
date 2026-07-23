@@ -3047,6 +3047,7 @@
               "DESKTOP",
               "MOBILE",
               "TABLET",
+              "TV",
               "BOT",
               "OTHER"
             ],
@@ -3131,6 +3132,7 @@
               "DESKTOP",
               "MOBILE",
               "TABLET",
+              "TV",
               "BOT",
               "OTHER"
             ]

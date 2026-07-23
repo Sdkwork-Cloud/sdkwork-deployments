@@ -28,6 +28,7 @@
     "providedPorts": [
       {"name": "deployRepository", "export": "."},
       {"name": "deployRuntimeAssignmentRepository", "export": "."},
+      {"name": "deployRuntimeObservationEvidenceRepository", "export": "."},
       {"name": "siteCompositionRepository", "export": "."}
     ],
     "requiredPorts": [

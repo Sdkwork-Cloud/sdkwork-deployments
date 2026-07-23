@@ -125,6 +125,7 @@ pub enum SiteClientClass {
     Desktop,
     Mobile,
     Tablet,
+    Tv,
     Bot,
     #[default]
     Other,

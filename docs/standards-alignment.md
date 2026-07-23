@@ -1,58 +1,85 @@
 # Standards Alignment
 
-SDKWork Deploy standards alignment for `sdkwork-deployments`.
+SDKWork Deploy standards alignment for `sdkwork-deployments`, updated 2026-07-22.
 
 ## Integrated Frameworks
 
-| Framework | Status | Evidence |
+| Framework or contract | Status | Evidence |
 | --- | --- | --- |
-| `sdkwork-web-framework` | Integrated | Auth layers, route manifests, `WebRequestContext`, `finish_api_json` / `problem_response` response mapping |
-| `sdkwork-database` | Integrated | `database/` assets, `sdkwork-deploy-database-host`, `pnpm db:*` |
-| `sdkwork-utils-rust` | Integrated | `SdkWorkApiResponse`, `PageInfo`, `parse_bool`, `slugify`, `sha256_hash`, shared pagination |
-| `sdkwork-discovery` | Deferred | HTTP-only application gateway; add when RPC services are introduced |
-| `sdkwork-drive-app-sdk` | Integrated | `sdkwork-deploy-drive-port` delegates package uploads to Drive via generated Rust SDK; memory adapter for local dev |
+| `sdkwork-web-framework` | Integrated | Auth layers, route manifests, `WebRequestContext`, success/problem response mapping |
+| `sdkwork-database` | Integrated | One PostgreSQL/SQLite database contract, lifecycle host, materialization and drift validation |
+| `sdkwork-utils-rust` | Integrated | API envelopes, pagination, parsing, hashing, and shared utilities |
+| Deploy App/Backend SDK families | Generated and buildable | Owner-only sdkgen inputs, family manifests, composed TypeScript facades, generated transports |
+| Drive App/Internal SDKs | Integrated | WebsiteRoot create/reuse plus exact Internal revalidation; Drive-backed artifact uploads |
+| Knowledgebase Internal SDK | Integrated | Exact ACTIVE canonical WikiPublication validation and bounded capability projection |
+| Web Internal SDK | Integrated | Immutable runtime-set publication with per-attempt ingress-token-file loading |
+| `sdkwork-discovery` | Deferred by topology | HTTP-only application gateway; required when RPC services are introduced |
 
-## HTTP API Envelope
+## Live Composition Contract
 
-All app-api and backend-api handlers return:
+The active mutation is `sites.composition.update` on
+`PUT /app/v3/api/sites/{siteId}/composition`. It requires dual-token authentication,
+`deploy.sites.write`, `If-Match`, and `Idempotency-Key`.
 
-- **Success:** `{ "code": 0, "data": { "item" \| "items" + "pageInfo" }, "traceId" }` via `sdkwork-utils-rust` + `sdkwork-web-framework`
-- **Error:** HTTP 4xx/5xx `application/problem+json` with numeric `code` and `traceId`
+Provider calls complete before database locking. PostgreSQL and SQLite then use the same atomic
+sequence: idempotency replay check, tenant Site lock/version check, target validation, normalized
+composition replacement, descriptor compilation, immutable SiteRevision insert,
+`desired_revision_id` update, complete runtime assignment insert, replay result, and audit commit.
+The Site version is a decimal string. `current_revision_id` is reserved for verified Web
+observation/quorum and is not advanced by the composition transaction.
 
-OpenAPI authorities under `apis/` and materialized SDK contracts under `sdks/` are kept in sync by `pnpm api:materialize` (includes v3 envelope migration).
+Ordinary Drive and Knowledgebase content changes never call this mutation and do not create
+`deploy_release`, `deploy_deployment`, or `deploy_site_revision` records.
 
-## Upload Sessions (Drive)
+## API And SDK Contract
 
-App-api upload session routes (`POST/GET /app/v3/api/upload_sessions`, complete, cancel) orchestrate Drive-backed package uploads. Deploy stores metadata in `deploy_upload_session_ref` (registered in `database/contract/`); binary storage stays in Drive. Create is idempotent on `idempotencyKey`.
+All App and Backend handlers use SDKWork v3:
 
-| Env | Purpose |
-| --- | --- |
-| `SDKWORK_DEPLOY_USE_MEMORY_DRIVE` | Default memory adapter when unset or true; set `false` for production Drive |
-| `SDKWORK_DRIVE_FACADE_URL` | Drive app-api base URL when memory drive is disabled |
+- success: `{ "code": 0, "data": { "item" | "items" + "pageInfo" }, "traceId": "..." }`;
+- error: HTTP 4xx/5xx `application/problem+json` with numeric `code` and `traceId`;
+- owner OpenAPI under `apis/`, materialized authority and deterministic `*.sdkgen.json` under the
+  owning family, generated transport under `generated/server-openapi`;
+- consumers import only `@sdkwork/deploy-app-sdk` or explicit backend-admin
+  `@sdkwork/deploy-backend-sdk`.
+
+Backend composition mutation is intentionally absent until an approved trusted operator
+credential-delegation or resolved-resource contract exists.
+
+## Runtime And Secret Configuration
+
+Production uses `SDKWORK_DEPLOY_USE_MEMORY_CONTENT_PROVIDER=false` and explicit Drive,
+Knowledgebase, and Web Internal API URLs. Ingress credentials are read from projected files under
+`/run/secrets/sdkwork/`; values are not stored in environment variables or runtime descriptors.
+Drive/Knowledgebase files are read per provider request and the Web file per publication attempt,
+which supports atomic rotation without restart.
+
+## Artifact Pipeline Boundary
+
+Drive upload sessions, `deploy_artifact`, `deploy_release`, and `deploy_deployment` remain valid for
+Git, package, image, and frozen-bundle workflows. They are not the publication mechanism for a live
+WebsiteRoot or WikiPublication. Certificate upload sessions are metadata registration inputs and do
+not move private-key custody into ordinary Deploy columns.
 
 ## Verification
 
 ```powershell
-pnpm install
-pnpm verify
-node ../sdkwork-specs/tools/check-api-response-envelope.mjs --workspace .
+pnpm db:validate
 pnpm api:materialize
+pnpm api:check
+pnpm sdk:generate
+node ../sdkwork-specs/tools/check-sdk-standard.mjs --workspace .
+node ../sdkwork-specs/tools/check-component-port-bindings.mjs --root . --strict
+cargo test --workspace --offline
 ```
 
-## V1 Delivery Status (control plane)
+## Remaining Product Gates
 
-| Capability | Status | Notes |
-| --- | --- | --- |
-| Site / domain / deployment / env / health APIs | Shipped | app-api v3 envelope |
-| Nginx config backend-api | Shipped | validate / deploy / reload |
-| Drive package upload sessions | Shipped | `uploadSessions.*`, auto `deploy_artifact` on complete |
-| Artifact / release pipeline | Shipped | `artifacts.*`, `sites.releases.*`, deployment `releaseId` |
-| Certificate metadata API | Shipped | list/create/retrieve/delete/renew + `certificates.upload` via Drive sessions |
-| Git import / build job | Planned | PRD Phase 2+ (async build worker) |
-| ACME automation | Planned | PRD Phase 2+ |
-| Public open-api `/deploy/v3/api` | Planned | when scoped |
+These are explicit launch scope, not hidden compatibility debt:
 
-## Remaining Product Scope (not standards debt)
-
-- Publish generated SDK client packages from `sdks/sdkwork-deploy-*-sdk`
-- Public open-api surface `/deploy/v3/api` when scoped
+- authenticated Web observation/quorum, drift evidence, and current-revision advancement;
+- Web data-plane Drive/Wiki live reads, direct provider-event invalidation, and cache revalidation;
+- certificate secret custody, ACME issue/renew/distribute/hot-activate/SNI verification;
+- tenant console, platform admin console, metering, entitlement, abuse, and incident workflows;
+- single-writer cutover from any overlapping Web control-plane route/table;
+- production PostgreSQL backup/restore, multi-node rollout, load, security, and recovery evidence;
+- governed publication of the already generated App/Backend SDK packages.

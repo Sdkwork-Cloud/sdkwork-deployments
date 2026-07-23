@@ -440,7 +440,7 @@ CREATE TABLE deploy_site_variant (
     site_id INTEGER NOT NULL,
     variant_key TEXT NOT NULL,
     label TEXT NOT NULL,
-    client_class TEXT NOT NULL DEFAULT 'OTHER' CHECK (client_class IN ('DESKTOP', 'MOBILE', 'TABLET', 'BOT', 'OTHER')),
+    client_class TEXT NOT NULL DEFAULT 'OTHER' CHECK (client_class IN ('DESKTOP', 'MOBILE', 'TABLET', 'TV', 'BOT', 'OTHER')),
     is_default INTEGER NOT NULL DEFAULT 0,
     priority INTEGER NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'DISABLED')),
@@ -644,3 +644,48 @@ CREATE INDEX idx_deploy_runtime_assignment_delivery
     WHERE publish_status IN ('PENDING', 'PUBLISHING', 'FAILED');
 CREATE INDEX idx_deploy_runtime_assignment_target_latest
     ON deploy_runtime_assignment (tenant_id, node_target_id, generation DESC);
+
+-- Authenticated, append-only evidence read from the Web-owned runtime observation API.
+CREATE TABLE deploy_site_target_observation (
+    id INTEGER PRIMARY KEY NOT NULL,
+    uuid TEXT NOT NULL UNIQUE,
+    tenant_id INTEGER NOT NULL,
+    site_id INTEGER NULL,
+    site_revision_id INTEGER NULL,
+    node_target_id INTEGER NOT NULL,
+    runtime_assignment_id INTEGER NOT NULL,
+    remote_observation_uuid TEXT NOT NULL UNIQUE,
+    remote_assignment_uuid TEXT NOT NULL,
+    generation INTEGER NOT NULL CHECK (generation BETWEEN 1 AND 9007199254740991),
+    snapshot_uuid TEXT NOT NULL,
+    snapshot_sha256 TEXT NOT NULL CHECK (
+        length(snapshot_sha256) = 64 AND snapshot_sha256 NOT GLOB '*[^0-9a-f]*'
+    ),
+    environment TEXT NOT NULL CHECK (environment IN ('development', 'test', 'staging', 'production')),
+    state TEXT NOT NULL CHECK (state IN ('RECEIVED', 'VALIDATED', 'STAGED', 'ACTIVE', 'REJECTED')),
+    node_version TEXT NULL CHECK (node_version IS NULL OR length(node_version) BETWEEN 1 AND 64),
+    reason_code TEXT NULL CHECK (reason_code IS NULL OR length(reason_code) BETWEEN 1 AND 64),
+    detail TEXT NULL CHECK (detail IS NULL OR length(detail) BETWEEN 1 AND 512),
+    observed_at TEXT NOT NULL,
+    ingested_at TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (runtime_assignment_id, state),
+    FOREIGN KEY (site_id) REFERENCES deploy_site(id),
+    FOREIGN KEY (site_revision_id) REFERENCES deploy_site_revision(id),
+    FOREIGN KEY (node_target_id) REFERENCES deploy_web_node_target(id),
+    FOREIGN KEY (runtime_assignment_id) REFERENCES deploy_runtime_assignment(id),
+    CHECK (
+        (site_id IS NULL AND site_revision_id IS NULL)
+        OR (site_id IS NOT NULL AND site_revision_id IS NOT NULL)
+    ),
+    CHECK (
+        (state = 'REJECTED' AND reason_code IS NOT NULL)
+        OR (state <> 'REJECTED' AND reason_code IS NULL AND detail IS NULL)
+    )
+);
+
+CREATE INDEX idx_deploy_site_target_observation_rollout
+    ON deploy_site_target_observation (tenant_id, site_revision_id, state, node_target_id);
+
+CREATE INDEX idx_deploy_site_target_observation_assignment
+    ON deploy_site_target_observation (runtime_assignment_id, id DESC);

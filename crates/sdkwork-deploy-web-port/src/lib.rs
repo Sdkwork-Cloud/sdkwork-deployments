@@ -7,8 +7,8 @@ use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
 use sdkwork_deploy_runtime_compiler::CompiledRuntimeSet;
 use sdkwork_utils_rust::string::trim;
 use sdkwork_web_internal_sdk::{
-    PublishRuntimeAssignmentRequest, RuntimeAssignment, SdkworkCustomClient, SdkworkError,
-    WebsiteRuntimeSetSnapshot,
+    PublishRuntimeAssignmentRequest, RuntimeAssignment, RuntimeObservation, SdkworkCustomClient,
+    SdkworkError, WebsiteRuntimeSetSnapshot,
 };
 
 pub const WEB_INTERNAL_API_URL_ENV: &str = "SDKWORK_DEPLOY_WEB_INTERNAL_API_URL";
@@ -26,12 +26,34 @@ pub struct RuntimeAssignmentReceipt {
     pub assigned_at: String,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RuntimeObservationReceipt {
+    pub observation_uuid: String,
+    pub assignment_uuid: String,
+    pub tenant_id: String,
+    pub node_uuid: String,
+    pub environment: String,
+    pub generation: String,
+    pub snapshot_uuid: String,
+    pub snapshot_sha256: String,
+    pub state: String,
+    pub node_version: Option<String>,
+    pub reason_code: Option<String>,
+    pub detail: Option<String>,
+    pub observed_at: String,
+}
+
 #[async_trait]
 pub trait DeployWebRuntimePort: Send + Sync {
     async fn publish_runtime_assignment(
         &self,
         runtime_set: &CompiledRuntimeSet,
     ) -> DeployServiceResult<RuntimeAssignmentReceipt>;
+
+    async fn retrieve_latest_runtime_observation(
+        &self,
+        snapshot_uuid: &str,
+    ) -> DeployServiceResult<RuntimeObservationReceipt>;
 }
 
 #[derive(Clone, Debug, Default)]
@@ -45,6 +67,15 @@ impl DeployWebRuntimePort for UnconfiguredWebRuntimePort {
     ) -> DeployServiceResult<RuntimeAssignmentReceipt> {
         Err(DeployServiceError::Internal(
             "Web runtime publication is not configured".to_owned(),
+        ))
+    }
+
+    async fn retrieve_latest_runtime_observation(
+        &self,
+        _snapshot_uuid: &str,
+    ) -> DeployServiceResult<RuntimeObservationReceipt> {
+        Err(DeployServiceError::Internal(
+            "Web runtime observation retrieval is not configured".to_owned(),
         ))
     }
 }
@@ -123,6 +154,19 @@ impl DeployWebRuntimePort for SdkWebRuntimeFacade {
             .map_err(map_web_sdk_error)?;
         Ok(response.into())
     }
+
+    async fn retrieve_latest_runtime_observation(
+        &self,
+        snapshot_uuid: &str,
+    ) -> DeployServiceResult<RuntimeObservationReceipt> {
+        let response = self
+            .client()?
+            .runtime()
+            .assignments_observations_latest_retrieve(snapshot_uuid)
+            .await
+            .map_err(map_web_observation_sdk_error)?;
+        Ok(response.into())
+    }
 }
 
 impl From<RuntimeAssignment> for RuntimeAssignmentReceipt {
@@ -135,6 +179,26 @@ impl From<RuntimeAssignment> for RuntimeAssignmentReceipt {
             snapshot_uuid: value.snapshot_uuid,
             snapshot_sha256: value.snapshot_sha256,
             assigned_at: value.assigned_at,
+        }
+    }
+}
+
+impl From<RuntimeObservation> for RuntimeObservationReceipt {
+    fn from(value: RuntimeObservation) -> Self {
+        Self {
+            observation_uuid: value.observation_uuid,
+            assignment_uuid: value.assignment_uuid,
+            tenant_id: value.tenant_id,
+            node_uuid: value.node_uuid,
+            environment: value.environment,
+            generation: value.generation,
+            snapshot_uuid: value.snapshot_uuid,
+            snapshot_sha256: value.snapshot_sha256,
+            state: value.state,
+            node_version: value.node_version,
+            reason_code: value.reason_code,
+            detail: value.detail,
+            observed_at: value.observed_at,
         }
     }
 }
@@ -155,17 +219,35 @@ fn read_secret_file(path: &Path) -> DeployServiceResult<String> {
 }
 
 fn map_web_sdk_error(error: SdkworkError) -> DeployServiceError {
-    let message = error.to_string();
-    if message.contains("404") || message.contains("not found") {
-        DeployServiceError::not_found("Web runtime assignment target was not found")
-    } else if message.contains("409") || message.contains("conflict") {
-        DeployServiceError::conflict("Web runtime assignment generation conflicts")
-    } else if message.contains("400") || message.contains("validation") {
-        DeployServiceError::validation("Web rejected the compiled runtime assignment")
-    } else if message.contains("401") || message.contains("403") {
-        DeployServiceError::Forbidden
-    } else {
-        DeployServiceError::Internal("Web runtime assignment publication failed".to_owned())
+    match error {
+        SdkworkError::HttpStatus { status: 404, .. } => {
+            DeployServiceError::not_found("Web runtime assignment target was not found")
+        }
+        SdkworkError::HttpStatus { status: 409, .. } => {
+            DeployServiceError::conflict("Web runtime assignment generation conflicts")
+        }
+        SdkworkError::HttpStatus { status: 400, .. } => {
+            DeployServiceError::validation("Web rejected the compiled runtime assignment")
+        }
+        SdkworkError::HttpStatus {
+            status: 401 | 403, ..
+        } => DeployServiceError::Forbidden,
+        _ => DeployServiceError::Internal("Web runtime assignment publication failed".to_owned()),
+    }
+}
+
+fn map_web_observation_sdk_error(error: SdkworkError) -> DeployServiceError {
+    match error {
+        SdkworkError::HttpStatus { status: 404, .. } => {
+            DeployServiceError::not_found("Web runtime observation was not found")
+        }
+        SdkworkError::HttpStatus { status: 400, .. } => {
+            DeployServiceError::validation("Web rejected the runtime observation lookup")
+        }
+        SdkworkError::HttpStatus {
+            status: 401 | 403, ..
+        } => DeployServiceError::Forbidden,
+        _ => DeployServiceError::Internal("Web runtime observation retrieval failed".to_owned()),
     }
 }
 
@@ -190,12 +272,52 @@ mod tests {
     fn sdk_errors_are_redacted_at_the_provider_boundary() {
         let error = SdkworkError::HttpStatus {
             status: 500,
-            body: "upstream token=do-not-leak".to_owned(),
+            body: "upstream token=do-not-leak; nested text mentions 404".to_owned(),
         };
         let mapped = map_web_sdk_error(error);
         assert_eq!(
             mapped.to_string(),
             "internal error: Web runtime assignment publication failed"
         );
+    }
+
+    #[test]
+    fn sdk_errors_are_classified_by_structured_http_status() {
+        let not_found = map_web_sdk_error(SdkworkError::HttpStatus {
+            status: 404,
+            body: "opaque upstream response".to_owned(),
+        });
+        assert_eq!(
+            not_found.to_string(),
+            "not found: Web runtime assignment target was not found"
+        );
+
+        let forbidden = map_web_observation_sdk_error(SdkworkError::HttpStatus {
+            status: 403,
+            body: "opaque upstream response".to_owned(),
+        });
+        assert!(matches!(forbidden, DeployServiceError::Forbidden));
+    }
+
+    #[test]
+    fn generated_observation_is_normalized_without_losing_identity() {
+        let receipt = RuntimeObservationReceipt::from(RuntimeObservation {
+            observation_uuid: "observation-1".to_owned(),
+            assignment_uuid: "assignment-1".to_owned(),
+            tenant_id: "42".to_owned(),
+            node_uuid: "node-1".to_owned(),
+            environment: "production".to_owned(),
+            generation: "7".to_owned(),
+            snapshot_uuid: "snapshot-7".to_owned(),
+            snapshot_sha256: "a".repeat(64),
+            state: "ACTIVE".to_owned(),
+            node_version: Some("1.0.0".to_owned()),
+            reason_code: None,
+            detail: None,
+            observed_at: "2026-07-22T00:00:00Z".to_owned(),
+        });
+        assert_eq!(receipt.tenant_id, "42");
+        assert_eq!(receipt.environment, "production");
+        assert_eq!(receipt.state, "ACTIVE");
     }
 }

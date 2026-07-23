@@ -11,16 +11,24 @@ RELEASE_SPEC.md
 
 ## Current Implementation Boundary
 
-The configuration-to-runtime foundation is implemented for the prelaunch baseline: normalized Site
-composition/revision/target/assignment tables, a deterministic descriptor and runtime-set compiler,
-generated Web Internal SDK publication, and a durable idempotent assignment outbox. Ordinary Drive
-and Knowledgebase content changes are deliberately absent from the compiler input and therefore do
-not create Releases or Site revisions.
+The prelaunch App API composition path is implemented: generated Drive App/Internal and
+Knowledgebase Internal SDKs validate provider resources before database locking; one portable
+transaction replaces normalized composition, appends an immutable SiteRevision, advances the
+   desired revision, creates complete runtime-set assignments, records the idempotency result, and
+   writes audit evidence. The assignment worker publishes and reconciles authenticated Node
+   observations through the generated Web Internal SDK; Deploy persists immutable evidence and
+   advances the current revision only after strict all-frozen-target `ACTIVE` convergence.
+Ordinary Drive and Knowledgebase content changes are absent from compiler input and therefore do not
+create Releases, Deployments, or SiteRevisions.
 
-The product is not yet commercially releasable. The tenant/admin composition APIs and UI, owner SDK
-validation during resource attachment, automatic mutation-to-revision orchestration, Web
-observation/quorum feedback, complete certificate material and ACME rotation path, provider-aware
-cache controls, metering, and production operational evidence remain launch blockers.
+Commercial launch still requires external public-domain multi-vantage activation probes, complete
+certificate material custody and ACME rotation, provider-aware public cache integration,
+tenant/admin UI, metering, real multi-node load/recovery/rollback evidence, and security review.
+Node-local isolated route/content probes, authenticated observation feedback, Deploy-owned evidence,
+strict quorum, and current-revision advancement are implemented foundations; they are not a claim of
+public reachability. Backend composition mutation is intentionally not exposed until trusted
+operator credential delegation or a resolved-resource admin contract is approved; platform
+administrators may inspect health and runtime evidence without bypassing provider ownership checks.
 
 ## 1. Product Summary
 
@@ -147,16 +155,31 @@ The resource provider types are:
 
 The resource creation UI/API uses a discriminated source selector:
 
-```text
-DRIVE_DIRECTORY    { websiteSpaceUuid, root: SPACE_ROOT | FOLDER(folderNodeUuid) }
-KNOWLEDGEBASE_WIKI { knowledgebaseUuid }
+```json
+{
+  "type": "DRIVE_DIRECTORY",
+  "websiteSpaceId": "space-id",
+  "root": { "mode": "SPACE_ROOT" },
+  "contentMode": "LIVE_TREE"
+}
 ```
 
-For Drive, Deploy asks Drive to create or reuse the stable WebsiteRoot and persists only its
-`providerResourceUuid`. For Knowledgebase, Deploy resolves the one canonical WikiPublication. A
-draft/paused Wiki may be connected for authenticated configuration/preview, but public activation
-requires `ACTIVE`. Source selectors, node UUIDs, and publication UUIDs are never accepted from a
-different tenant, and Deploy does not duplicate their business state.
+For a selected directory, `root` is `{ "mode": "FOLDER", "folderNodeId": "node-id" }`.
+
+```json
+{
+  "type": "KNOWLEDGEBASE_WIKI",
+  "publicationUuid": "publication-uuid"
+}
+```
+
+For Drive, Deploy uses the generated Drive App SDK to create or reuse a stable WebsiteRoot, then
+re-reads it through the Drive Internal SDK and requires exact Space, root selector, and content-mode
+agreement. For Knowledgebase, Deploy asks the generated Internal SDK for the exact
+`publicationUuid`; that owner endpoint returns metadata only for an ACTIVE, tenant/organization
+authorized canonical publication. Source selectors, node IDs, and publication UUIDs are never
+accepted from a different tenant. Deploy persists the opaque `providerResourceUuid`, provider
+contract version, and bounded capability flags, not copied provider lifecycle state.
 
 The same provider resource may be attached to multiple Sites and mounted by multiple Variants or URL
 prefixes. A Site-local Resource remains the configuration identity, while
@@ -185,7 +208,8 @@ reconciliation, provider-wide health policy, or a Site configuration change.
 For Wiki sources, realtime is policy-aware: review-required changes update author state and private
 preview but wait for a version-fenced publish/republish command; auto-public changes may become
 public after all gates. Provider generation, route page public version, navigation/search
-generation, and SiteRevision policy generation remain independent.
+generation, and Deploy SiteRevision generation remain independent. None of these provider content
+versions advances a Deploy revision behind an unchanged `publicationUuid`.
 
 For hashed application bundles, the Drive console and SDK shall offer `ATOMIC_SYNC`: upload into an
 isolated tree, validate completeness and quotas, then atomically switch the active root pointer.
@@ -268,21 +292,29 @@ Preview uses a short-lived, tenant-authorized preview hostname or token and the 
 validation path as production. Preview must not make a private provider resource publicly
 enumerable.
 
-Every accepted configuration change creates an immutable `SiteRevision`. Activation rolls a
-compiled descriptor to selected Web Nodes, verifies observations and probes, and atomically changes
-the active revision. Rollback selects a prior valid configuration revision. File rollback remains a
+Every accepted configuration change creates an immutable `SiteRevision`. Activation rolls complete
+runtime-set snapshots to selected Web Nodes. Each Node validates the candidate and executes bounded
+`HEAD` route/content probes in an isolated registry before replacing its live registry and reporting
+`ACTIVE`. Deploy authenticates and persists those observations, then changes `current_revision_id`
+only when every assignment frozen for the still-desired revision is `ACTIVE`; partial, rejected,
+stale, or superseded rollouts cannot advance it. External public-domain probes remain an additional
+production gate. Rollback selects a prior valid configuration revision. File rollback remains a
 Drive node/version or `ATOMIC_SYNC` root operation; Wiki content rollback remains a Knowledgebase
 document/version operation.
 
 ### 6.9 API And SDK Automation
 
-All authenticated user workflows use generated Deploy app SDK clients. Internal administrative
-workflows use the generated Deploy backend SDK with explicit backend-admin credentials. Drive,
-Knowledgebase, and Web Server integrations use their owning generated SDK family or approved
-in-process service port. Business modules shall not add raw HTTP wrappers or manual auth headers.
+All authenticated user workflows use `@sdkwork/deploy-app-sdk`; explicit backend-admin consumers use
+`@sdkwork/deploy-backend-sdk`. Both facades are generated from owner-only SDKWork v3 OpenAPI and
+keep their generated transport under `generated/server-openapi`. Drive, Knowledgebase, and Web
+Server integrations use their owning generated SDK family or approved service port. Business
+modules shall not add raw HTTP wrappers or manual auth headers.
 
-Mutations use idempotency keys where replay is possible and optimistic versions where concurrent
-operator changes could conflict. List and search operations are store-paginated and bounded.
+The active composition mutation is `sites.composition.update` on the App API. It requires
+`If-Match: <decimal-site-version>` and `Idempotency-Key`, validates every provider resource before
+opening the database transaction, and returns the new Site version as a decimal string. Backend
+composition mutation is absent by design until an approved privileged credential-delegation or
+resolved-resource contract exists. List and search operations are store-paginated and bounded.
 
 ## 7. User Console Information Architecture
 
@@ -462,12 +494,17 @@ platform does not promise application-authored frontend performance.
 
 ### Phase 0 - Contract Approval
 
-Approve cross-repository ownership, database migration, descriptor schema, permissions, and naming.
+Approve cross-repository ownership, prelaunch database baseline, descriptor schema, permissions, and naming.
 No public production claim is permitted.
 The old Release-only runtime assumption has been removed from the descriptor/assignment foundation.
-Remaining Phase 0 blockers are the incomplete normalized API/service orchestration, provider
-attachment validation, duplicate writable Web control-plane cutover, Deploy-visible Node
-observations, and planned-only certificate renewal.
+Completed Phase 0 foundations include normalized composition orchestration, generated owner SDK
+validation, immutable revision compilation, transactional desired-state assignments, App SDK
+generation, Drive/Wiki delivery and event processing, TV routing, and cloud artifact isolation from
+   the standalone Web management assembly, authenticated Node observation reconciliation,
+   Deploy-owned immutable evidence, strict all-target quorum, node-local isolated activation probes,
+   and current-revision advancement. Remaining blockers are external public-domain probes,
+   tenant/admin UI, real multi-node operational evidence, and planned-only cloud certificate
+   renewal.
 
 ### Phase 1 - Static Website Pilot
 
@@ -513,9 +550,9 @@ origins, advanced traffic policy, and certified 99.99% data-plane tier.
 - Configuration rollback, source rollback, and certificate rollback are separate and tested.
 - The control plane remains the only writable site/domain/TLS authority; Web Server runtime state is
   a one-way projection.
-- Current overlapping Web Server app-api control-plane routes/tables are removed or made
-  non-authoritative through an approved single-writer migration with shadow-compare and rollback
-  evidence.
+- Cloud artifacts start only the Website Edge Runtime and cannot activate Web Server standalone
+  app-api control-plane routes/tables; standalone local-management state is never imported or
+  dual-written into cloud assignments.
 - Drive and Knowledgebase provider input/output AsyncAPI plus generated internal SDK dependencies
   are accepted, declared in component/app manifests, and verified in standalone/cloud integration.
 - Native auto-public, explicit publish, and priority revocation meet their measured p95/p99 targets;

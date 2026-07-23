@@ -62,14 +62,17 @@ continuously and reconcile failed or stale assignments.
 Exit evidence: PostgreSQL and SQLite parity, concurrent generation conflict tests, crash recovery,
 same-state replay, rollback, empty-set removal, and multi-Node assignment evidence.
 
-### Stage 4 - Observation And Single Writer
+### Stage 4 - Observation And Profile Isolation
 
 Add an owner-generated Web observation event/read contract so Deploy can evaluate staged load,
-probe, quorum, drift, and rollback without reading `web_*` tables. Remove writable Web Site/domain/
-certificate business APIs and authority tables before any public launch.
+probe, quorum, drift, and rollback without reading `web_*` tables. Cloud packaging already starts
+only the Website Edge Runtime and excludes the standalone management assembly. Retain Web `web_*`
+tables only for the explicit standalone local-management profile; never migrate, import, dual-write,
+or project them into the cloud control plane.
 
-Exit evidence: Web rejects obsolete writes, one-way projection tests pass, desired/observed drift is
-visible, and no compatibility or dual-write code remains.
+Exit evidence: cloud artifact/topology tests continue to prove management-route exclusion,
+desired/observed drift is visible through the typed observation contract, and no compatibility,
+cross-profile import, or dual-write code exists.
 
 ### Stage 5 - TLS And Production Gates
 
@@ -90,7 +93,7 @@ separate TLS snapshot. Database baseline contraction is not a runtime rollback m
 
 - public API and generated SDK contract changes;
 - tenant isolation, global hostname/path claim, and RLS decisions;
-- disabling and deleting obsolete Web writable authority;
+- preserving the cloud/standalone authority boundary without cross-profile data movement;
 - certificate secret custody and ACME provider policy;
 - destructive data/filesystem operations and production rollout.
 

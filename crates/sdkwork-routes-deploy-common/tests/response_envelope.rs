@@ -25,6 +25,7 @@ fn test_context() -> WebRequestContext {
         client_kind: None,
         operation: None,
         trace_id: Some("trace-deploy-test".to_owned()),
+        idempotency_key: None,
     }
 }
 

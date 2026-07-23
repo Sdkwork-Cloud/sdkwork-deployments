@@ -8,7 +8,7 @@
     "type": "rust-crate",
     "root": "crates/sdkwork-deploy-runtime-assignment-worker",
     "domain": "deploy",
-    "capability": "runtime-assignment-publication",
+    "capability": "runtime-assignment-convergence",
     "surface": "runtime-service-host",
     "languages": ["rust"],
     "generated": false,
@@ -27,7 +27,10 @@
   "contracts": {
     "layerRole": "runtime-service-host",
     "publicExports": ["."],
-    "providedPorts": [{"name": "runtimeAssignmentWorker", "export": "."}],
+    "providedPorts": [
+      {"name": "runtimeAssignmentWorker", "export": "."},
+      {"name": "runtimeObservationReconciliationWorker", "export": "."}
+    ],
     "requiredPorts": [
       {"name": "runtimePublicationHost", "export": ".", "provider": "sdkwork-deploy-service-host"}
     ],

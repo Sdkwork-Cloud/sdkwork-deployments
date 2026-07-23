@@ -1,58 +1,115 @@
 # Integrator Guide
 
-## API Surfaces
+## API And SDK Surfaces
 
-| Surface | Prefix | OpenAPI |
-| --- | --- | --- |
-| App API | `/app/v3/api` | `apis/app-api/deploy/openapi.yaml` |
-| Backend API | `/backend/v3/api` | `apis/backend-api/deploy/openapi.yaml` |
+| Surface | Prefix | Composed package | OpenAPI authority |
+| --- | --- | --- | --- |
+| App API | `/app/v3/api` | `@sdkwork/deploy-app-sdk` | `apis/app-api/deploy/openapi.yaml` |
+| Backend API | `/backend/v3/api` | `@sdkwork/deploy-backend-sdk` | `apis/backend-api/deploy/openapi.yaml` |
 
-Materialized JSON and generated SDK inputs: `sdks/sdkwork-deploy-*-sdk/openapi/`.
+Materialized authority JSON, deterministic `*.sdkgen.json` input, family manifests, composed
+facades, and generated transport live under `sdks/sdkwork-deploy-*-sdk/`. Generated SDKWork v3
+clients unwrap `data` by default. Success uses `{ code: 0, data, traceId }`; HTTP errors use
+`application/problem+json` with numeric `code` and `traceId`.
 
-## Response Envelope (v3)
+## Live Website Composition
 
-- **Success:** `{ "code": 0, "data": { "item" | "items" + "pageInfo" }, "traceId" }`
-- **Error:** HTTP 4xx/5xx `application/problem+json` with numeric `code` and `traceId`
+Use `@sdkwork/deploy-app-sdk`; do not call Deploy, Drive, Knowledgebase, or Web Server with raw HTTP
+or manually assembled credential headers. The active mutation is generated from
+`PUT /app/v3/api/sites/{siteId}/composition` with operation id `sites.composition.update`.
 
-Generated SDKs (`--standard-profile sdkwork-v3`) unwrap `data` by default.
+The request requires both `If-Match` and `Idempotency-Key`. The Site version is a decimal string.
+Resources use one of these exact discriminated sources:
 
-## Package Upload (Drive)
+```json
+{
+  "type": "DRIVE_DIRECTORY",
+  "websiteSpaceId": "space-id",
+  "root": { "mode": "SPACE_ROOT" },
+  "contentMode": "LIVE_TREE"
+}
+```
 
-Use app-api upload session operations (`uploadSessions.create`, `retrieve`, `complete`, `cancel`). Binary storage is delegated to SDKWork Drive; Deploy stores session metadata only. Completing a package upload (`packageType` 1–5) automatically creates an immutable artifact record.
+Use `{ "mode": "FOLDER", "folderNodeId": "node-id" }` for a selected Drive directory.
 
-Production requires `SDKWORK_DRIVE_FACADE_URL` and `SDKWORK_DEPLOY_USE_MEMORY_DRIVE=false` in the active topology profile.
+```json
+{
+  "type": "KNOWLEDGEBASE_WIKI",
+  "publicationUuid": "publication-uuid"
+}
+```
+
+Deploy validates every provider resource before database locking. A commit atomically replaces the
+normalized composition, appends one immutable SiteRevision, advances `desired_revision_id`, and
+enqueues complete runtime sets. `current_revision_id` advances only after Web observation/quorum.
+Replaying the same idempotency key and request returns the committed result; changing the request
+under the same key is a conflict.
+
+Ordinary file upload, edit, move, rename, visibility change, publish, and delete operations do not
+call this endpoint. Drive WebsiteRoot and Knowledgebase WikiPublication remain live provider
+resources, so these changes do not create a Deploy Release, Deployment, or SiteRevision.
+
+Backend composition mutation is intentionally absent. Operator automation must not submit tenant
+provider identifiers until a trusted credential-delegation or resolved-resource admin contract is
+approved.
+
+## Package Upload Through Drive
+
+Use `uploadSessions.create`, `retrieve`, `complete`, and `cancel`. Binary storage is delegated to
+SDKWork Drive; Deploy stores session metadata only. Completing an artifact package upload with
+`packageType` 1 through 5 creates an immutable artifact. This is the frozen artifact pipeline, not
+the live WebsiteRoot/WikiPublication path.
+
+Production artifact upload requires `SDKWORK_DRIVE_FACADE_URL` and
+`SDKWORK_DEPLOY_USE_MEMORY_DRIVE=0`. Live provider attachment additionally requires
+`SDKWORK_DEPLOY_USE_MEMORY_CONTENT_PROVIDER=false` and the Drive/Knowledgebase Internal API URL and
+ingress-token-file settings.
 
 ## Artifact And Release Pipeline
 
-1. Upload package via upload sessions; `uploadSessions.complete` creates `deploy_artifact`.
-2. `sites.releases.create` with `artifactId` and `idempotencyKey` — immutable release per site.
-3. `sites.deployments.create` with `releaseId` — deployment references artifact Drive path and checksum.
+1. Complete a package upload to create `deploy_artifact`.
+2. Call `sites.releases.create` with `artifactId` and `idempotencyKey` to create an immutable release.
+3. Call `sites.deployments.create` with `releaseId` to deploy the frozen artifact path and checksum.
 
 | Operation | Notes |
 | --- | --- |
 | `artifacts.list` / `retrieve` | Tenant-scoped immutable upload outputs |
-| `artifacts.retain` | Marks artifact retained (status=2); does not delete Drive nodes |
+| `artifacts.retain` | Marks the artifact retained; does not delete Drive nodes |
 | `sites.releases.list` / `retrieve` / `create` | Site-scoped immutable releases |
+
+Use this pipeline for Git, package, image, and frozen-bundle delivery. Do not use it for ordinary
+Drive WebsiteRoot or Knowledgebase Wiki content changes.
 
 ## Custom TLS Certificate Import
 
-1. `uploadSessions.create` with `packageType` `6` (certificate PEM) and `7` (private key PEM); upload bytes to Drive; `uploadSessions.complete` each session.
-2. `certificates.upload` with completed session ids and `idempotencyKey`. Response metadata only — private keys are never returned.
+1. Create and complete Drive upload sessions with `packageType` `6` for certificate PEM and `7` for
+   private key PEM.
+2. Call `certificates.upload` with both completed session ids and an `idempotencyKey`.
+
+The response contains metadata only; private keys are never returned.
 
 ## Certificate Lifecycle
 
-| Operation | Notes |
+| Operation | Current behavior |
 | --- | --- |
-| `certificates.list` / `retrieve` | Metadata only (`certType`, `notAfter`, `autoRenew`, etc.) |
-| `certificates.create` | Registers managed (Let's Encrypt) certificate request (`status=0` pending) |
-| `certificates.renew` | Schedules renewal for `certType=1`; ACME worker automation is Phase 2+ |
-| `certificates.delete` | Revokes certificate record (`status=3`); Drive nodes follow Drive retention |
-| `certificates.upload` | Custom cert import via completed upload sessions |
+| `certificates.list` / `retrieve` | Returns metadata only |
+| `certificates.create` | Registers a pending managed certificate request |
+| `certificates.renew` | Schedules renewal for a managed certificate |
+| `certificates.delete` | Revokes the certificate record; Drive retention remains Drive-owned |
+| `certificates.upload` | Registers custom certificate metadata from completed upload sessions |
 
-## Regenerate Contracts
+Scheduling renewal is not issuance evidence. Commercial activation requires the ACME worker,
+immutable certificate version, secure distribution, Web Node activation, and served-SNI
+verification described by the technical architecture.
+
+## Regenerate And Verify
 
 ```powershell
 pnpm api:materialize
+pnpm sdk:generate
+node ../sdkwork-specs/tools/check-sdk-standard.mjs --workspace .
+pnpm --filter @sdkwork/deploy-app-sdk build
+pnpm --filter @sdkwork/deploy-backend-sdk build
 ```
 
 See `DOCUMENTATION_SPEC.md` section 2 and [standards-alignment.md](../../standards-alignment.md).

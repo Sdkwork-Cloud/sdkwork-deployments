@@ -7,11 +7,12 @@ use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
 use sdkwork_deploy_web_port::RuntimeAssignmentReceipt;
 use sdkwork_intelligence_deploy_service::runtime_publication::{
     DeployRuntimeAssignmentMutationPort, PersistRuntimeAssignmentCommand,
-    RuntimeAssignmentPublishStatus, RuntimeAssignmentState,
+    RuntimeAssignmentPublishStatus, RuntimeAssignmentState, RuntimeObservationEvidence,
+    RuntimeObservationPersistenceResult, RuntimeObservationState,
 };
 use sqlx::{any::AnyRow, Any, AnyPool, Row, Transaction};
 
-use crate::support::{next_id, store_error};
+use crate::support::{new_uuid, next_id, store_error};
 use crate::DeployRepository;
 
 const MAXIMUM_RUNTIME_GENERATION: u64 = 9_007_199_254_740_991;
@@ -60,10 +61,11 @@ impl DeployRepository {
     ) -> DeployServiceResult<Option<RuntimeAssignmentState>> {
         let row = sqlx::query(
             "SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
+                    t.node_uuid, t.environment, a.trigger_site_revision_id,
                     a.generation, a.snapshot_uuid, a.snapshot_sha256,
                     a.desired_state_sha256,
                     CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
-                    a.attempt_count, a.lease_owner
+                    a.remote_assignment_uuid, a.attempt_count, a.lease_owner
              FROM deploy_runtime_assignment a
              INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
              WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -159,10 +161,11 @@ impl DeployRepository {
                     RETURNING a.*
                  )
                  SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
-                        a.generation, a.snapshot_uuid, a.snapshot_sha256,
-                        a.desired_state_sha256,
-                        CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
-                        a.attempt_count, a.lease_owner
+                         t.node_uuid, t.environment, a.trigger_site_revision_id,
+                         a.generation, a.snapshot_uuid, a.snapshot_sha256,
+                         a.desired_state_sha256,
+                         CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
+                         a.remote_assignment_uuid, a.attempt_count, a.lease_owner
                  FROM claimed a
                  INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
                  ORDER BY a.created_at, a.id",
@@ -346,6 +349,205 @@ impl DeployRepository {
         }
         Ok(())
     }
+
+    pub(super) async fn list_runtime_assignments_requiring_observation_repo(
+        &self,
+        maximum_items: i64,
+    ) -> DeployServiceResult<Vec<RuntimeAssignmentState>> {
+        let rows = sqlx::query(
+            "SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
+                    t.node_uuid, t.environment, a.trigger_site_revision_id,
+                    a.generation, a.snapshot_uuid, a.snapshot_sha256,
+                    a.desired_state_sha256,
+                    CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
+                    a.remote_assignment_uuid, a.attempt_count, a.lease_owner
+             FROM deploy_runtime_assignment a
+             INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
+             WHERE a.publish_status = 'PUBLISHED' AND a.remote_assignment_uuid IS NOT NULL
+               AND t.deleted_at IS NULL
+               AND NOT EXISTS (
+                   SELECT 1 FROM deploy_site_target_observation o
+                   WHERE o.runtime_assignment_id = a.id
+                     AND o.state IN ('ACTIVE', 'REJECTED')
+               )
+             ORDER BY a.published_at, a.id
+             LIMIT $1",
+        )
+        .bind(maximum_items)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|error| store_error("list runtime assignments requiring observation", error))?;
+        rows.iter().map(map_assignment_row).collect()
+    }
+
+    pub(super) async fn persist_runtime_observation_repo(
+        &self,
+        assignment_uuid: &str,
+        observation: &RuntimeObservationEvidence,
+        ingested_at: &str,
+    ) -> DeployServiceResult<RuntimeObservationPersistenceResult> {
+        let observed_at =
+            normalize_timestamp(&observation.observed_at, "runtime observation source time")?;
+        let ingested_at = normalize_timestamp(ingested_at, "runtime observation ingestion time")?;
+        let (database, mut transaction) = begin_runtime_assignment_transaction(&self.pool).await?;
+        let assignment_query = if database == RuntimeAssignmentDatabase::PostgreSql {
+            "SELECT a.id AS runtime_assignment_id, a.node_target_id,
+                    r.site_id, a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
+                    t.node_uuid, t.environment, a.trigger_site_revision_id,
+                    a.generation, a.snapshot_uuid, a.snapshot_sha256,
+                    a.desired_state_sha256,
+                    CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
+                    a.remote_assignment_uuid, a.attempt_count, a.lease_owner
+             FROM deploy_runtime_assignment a
+             INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
+             LEFT JOIN deploy_site_revision r ON r.id = a.trigger_site_revision_id
+             WHERE a.uuid = $1
+             FOR UPDATE OF a"
+        } else {
+            "SELECT a.id AS runtime_assignment_id, a.node_target_id,
+                    r.site_id, a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
+                    t.node_uuid, t.environment, a.trigger_site_revision_id,
+                    a.generation, a.snapshot_uuid, a.snapshot_sha256,
+                    a.desired_state_sha256,
+                    CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
+                    a.remote_assignment_uuid, a.attempt_count, a.lease_owner
+             FROM deploy_runtime_assignment a
+             INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
+             LEFT JOIN deploy_site_revision r ON r.id = a.trigger_site_revision_id
+             WHERE a.uuid = $1"
+        };
+        let row = sqlx::query(assignment_query)
+            .bind(assignment_uuid)
+            .fetch_optional(&mut *transaction)
+            .await
+            .map_err(|error| store_error("lock runtime assignment observation", error))?
+            .ok_or_else(|| DeployServiceError::not_found("runtime assignment not found"))?;
+        let assignment = map_assignment_row(&row)?;
+        observation.validate_for(&assignment)?;
+        let runtime_assignment_id: i64 = row
+            .try_get("runtime_assignment_id")
+            .map_err(|error| DeployServiceError::Internal(error.to_string()))?;
+        let node_target_id: i64 = row
+            .try_get("node_target_id")
+            .map_err(|error| DeployServiceError::Internal(error.to_string()))?;
+        let site_id: Option<i64> = row
+            .try_get("site_id")
+            .map_err(|error| DeployServiceError::Internal(error.to_string()))?;
+
+        if let Some(existing) = sqlx::query(
+            "SELECT runtime_assignment_id, state
+             FROM deploy_site_target_observation
+             WHERE remote_observation_uuid = $1",
+        )
+        .bind(&observation.observation_uuid)
+        .fetch_optional(&mut *transaction)
+        .await
+        .map_err(|error| store_error("load idempotent runtime observation", error))?
+        {
+            let existing_assignment_id: i64 = existing
+                .try_get("runtime_assignment_id")
+                .map_err(|error| DeployServiceError::Internal(error.to_string()))?;
+            let existing_state: String = existing
+                .try_get("state")
+                .map_err(|error| DeployServiceError::Internal(error.to_string()))?;
+            if existing_assignment_id != runtime_assignment_id
+                || existing_state != observation.state.as_str()
+            {
+                return Err(DeployServiceError::conflict(
+                    "Web runtime observation UUID was already ingested with another identity",
+                ));
+            }
+            transaction
+                .commit()
+                .await
+                .map_err(|error| store_error("commit idempotent runtime observation", error))?;
+            return Ok(RuntimeObservationPersistenceResult::default());
+        }
+
+        if sqlx::query(
+            "SELECT id FROM deploy_site_target_observation
+             WHERE runtime_assignment_id = $1 AND state = $2",
+        )
+        .bind(runtime_assignment_id)
+        .bind(observation.state.as_str())
+        .fetch_optional(&mut *transaction)
+        .await
+        .map_err(|error| store_error("load runtime observation state", error))?
+        .is_some()
+        {
+            return Err(DeployServiceError::conflict(
+                "runtime observation state was already ingested with another UUID",
+            ));
+        }
+
+        let id = next_id(&self.id_generator)?;
+        let uuid = new_uuid();
+        let insert_query = if database == RuntimeAssignmentDatabase::PostgreSql {
+            "INSERT INTO deploy_site_target_observation (
+                id, uuid, tenant_id, site_id, site_revision_id, node_target_id,
+                runtime_assignment_id, remote_observation_uuid, remote_assignment_uuid,
+                generation, snapshot_uuid, snapshot_sha256, environment, state,
+                node_version, reason_code, detail, observed_at, ingested_at, created_at
+             ) VALUES (
+                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,
+                CAST($18 AS TIMESTAMPTZ),CAST($19 AS TIMESTAMPTZ),CAST($19 AS TIMESTAMPTZ)
+             )"
+        } else {
+            "INSERT INTO deploy_site_target_observation (
+                id, uuid, tenant_id, site_id, site_revision_id, node_target_id,
+                runtime_assignment_id, remote_observation_uuid, remote_assignment_uuid,
+                generation, snapshot_uuid, snapshot_sha256, environment, state,
+                node_version, reason_code, detail, observed_at, ingested_at, created_at
+             ) VALUES (
+                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19
+             )"
+        };
+        sqlx::query(insert_query)
+            .bind(id)
+            .bind(uuid)
+            .bind(observation.tenant_id)
+            .bind(site_id)
+            .bind(assignment.trigger_site_revision_id)
+            .bind(node_target_id)
+            .bind(runtime_assignment_id)
+            .bind(&observation.observation_uuid)
+            .bind(&observation.assignment_uuid)
+            .bind(observation.generation as i64)
+            .bind(&observation.snapshot_uuid)
+            .bind(&observation.snapshot_sha256)
+            .bind(observation.environment.as_str())
+            .bind(observation.state.as_str())
+            .bind(&observation.node_version)
+            .bind(&observation.reason_code)
+            .bind(&observation.detail)
+            .bind(&observed_at)
+            .bind(&ingested_at)
+            .execute(&mut *transaction)
+            .await
+            .map_err(|error| store_error("insert runtime observation evidence", error))?;
+
+        let revision_activated = if observation.state == RuntimeObservationState::Active {
+            activate_site_revision_if_converged(
+                &mut transaction,
+                database,
+                observation.tenant_id,
+                site_id,
+                assignment.trigger_site_revision_id,
+                &ingested_at,
+            )
+            .await?
+        } else {
+            false
+        };
+        transaction
+            .commit()
+            .await
+            .map_err(|error| store_error("commit runtime observation evidence", error))?;
+        Ok(RuntimeObservationPersistenceResult {
+            inserted: true,
+            revision_activated,
+        })
+    }
 }
 
 #[async_trait]
@@ -495,10 +697,11 @@ async fn latest_runtime_assignment_for_target(
 ) -> DeployServiceResult<Option<RuntimeAssignmentState>> {
     let row = sqlx::query(
         "SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
+                t.node_uuid, t.environment, a.trigger_site_revision_id,
                 a.generation, a.snapshot_uuid, a.snapshot_sha256,
                 a.desired_state_sha256,
                 CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
-                a.attempt_count, a.lease_owner
+                a.remote_assignment_uuid, a.attempt_count, a.lease_owner
          FROM deploy_runtime_assignment a
          INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
          WHERE a.node_target_id = $1
@@ -518,10 +721,11 @@ async fn runtime_assignment_by_uuid(
 ) -> DeployServiceResult<Option<RuntimeAssignmentState>> {
     let row = sqlx::query(
         "SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
+                t.node_uuid, t.environment, a.trigger_site_revision_id,
                 a.generation, a.snapshot_uuid, a.snapshot_sha256,
                 a.desired_state_sha256,
                 CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
-                a.attempt_count, a.lease_owner
+                a.remote_assignment_uuid, a.attempt_count, a.lease_owner
          FROM deploy_runtime_assignment a
          INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
          WHERE a.uuid = $1",
@@ -539,10 +743,11 @@ async fn runtime_assignment_by_id(
 ) -> DeployServiceResult<Option<RuntimeAssignmentState>> {
     let row = sqlx::query(
         "SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
+                t.node_uuid, t.environment, a.trigger_site_revision_id,
                 a.generation, a.snapshot_uuid, a.snapshot_sha256,
                 a.desired_state_sha256,
                 CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
-                a.attempt_count, a.lease_owner
+                a.remote_assignment_uuid, a.attempt_count, a.lease_owner
          FROM deploy_runtime_assignment a
          INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
          WHERE a.id = $1",
@@ -552,6 +757,64 @@ async fn runtime_assignment_by_id(
     .await
     .map_err(|error| store_error("reload claimed deploy runtime assignment", error))?;
     row.as_ref().map(map_assignment_row).transpose()
+}
+
+async fn activate_site_revision_if_converged(
+    transaction: &mut Transaction<'static, Any>,
+    database: RuntimeAssignmentDatabase,
+    tenant_id: i64,
+    site_id: Option<i64>,
+    site_revision_id: Option<i64>,
+    activated_at: &str,
+) -> DeployServiceResult<bool> {
+    let (Some(site_id), Some(site_revision_id)) = (site_id, site_revision_id) else {
+        return Ok(false);
+    };
+    let counts = sqlx::query(
+        "SELECT COUNT(*) AS assignment_count,
+                SUM(CASE WHEN a.publish_status = 'PUBLISHED' AND EXISTS (
+                    SELECT 1 FROM deploy_site_target_observation o
+                    WHERE o.runtime_assignment_id = a.id AND o.state = 'ACTIVE'
+                ) THEN 1 ELSE 0 END) AS active_count
+         FROM deploy_runtime_assignment a
+         WHERE a.tenant_id = $1 AND a.trigger_site_revision_id = $2",
+    )
+    .bind(tenant_id)
+    .bind(site_revision_id)
+    .fetch_one(&mut **transaction)
+    .await
+    .map_err(|error| store_error("evaluate runtime observation quorum", error))?;
+    let assignment_count: i64 = counts
+        .try_get("assignment_count")
+        .map_err(|error| DeployServiceError::Internal(error.to_string()))?;
+    let active_count: i64 = counts
+        .try_get::<Option<i64>, _>("active_count")
+        .map_err(|error| DeployServiceError::Internal(error.to_string()))?
+        .unwrap_or(0);
+    if assignment_count == 0 || active_count != assignment_count {
+        return Ok(false);
+    }
+
+    let update_query = if database == RuntimeAssignmentDatabase::PostgreSql {
+        "UPDATE deploy_site
+         SET current_revision_id = $3, updated_at = CAST($4 AS TIMESTAMPTZ), version = version + 1
+         WHERE id = $1 AND tenant_id = $2 AND desired_revision_id = $3
+           AND (current_revision_id IS NULL OR current_revision_id <> $3)"
+    } else {
+        "UPDATE deploy_site
+         SET current_revision_id = $3, updated_at = $4, version = version + 1
+         WHERE id = $1 AND tenant_id = $2 AND desired_revision_id = $3
+           AND (current_revision_id IS NULL OR current_revision_id <> $3)"
+    };
+    let updated = sqlx::query(update_query)
+        .bind(site_id)
+        .bind(tenant_id)
+        .bind(site_revision_id)
+        .bind(activated_at)
+        .execute(&mut **transaction)
+        .await
+        .map_err(|error| store_error("activate converged site revision", error))?;
+    Ok(updated.rows_affected() == 1)
 }
 
 fn map_assignment_row(row: &AnyRow) -> DeployServiceResult<RuntimeAssignmentState> {
@@ -574,6 +837,16 @@ fn map_assignment_row(row: &AnyRow) -> DeployServiceResult<RuntimeAssignmentStat
         tenant_id: row
             .try_get("tenant_id")
             .map_err(|error| DeployServiceError::Internal(error.to_string()))?,
+        node_uuid: row
+            .try_get("node_uuid")
+            .map_err(|error| DeployServiceError::Internal(error.to_string()))?,
+        environment: parse_runtime_environment(
+            &row.try_get::<String, _>("environment")
+                .map_err(|error| DeployServiceError::Internal(error.to_string()))?,
+        )?,
+        trigger_site_revision_id: row
+            .try_get("trigger_site_revision_id")
+            .map_err(|error| DeployServiceError::Internal(error.to_string()))?,
         generation: generation.try_into().map_err(|_| {
             DeployServiceError::Internal("stored runtime generation is negative".to_owned())
         })?,
@@ -589,6 +862,9 @@ fn map_assignment_row(row: &AnyRow) -> DeployServiceResult<RuntimeAssignmentStat
         runtime_set: serde_json::from_str(&runtime_set_json)
             .map_err(|error| DeployServiceError::Internal(error.to_string()))?,
         publish_status: parse_publish_status(&publish_status)?,
+        remote_assignment_uuid: row
+            .try_get("remote_assignment_uuid")
+            .map_err(|error| DeployServiceError::Internal(error.to_string()))?,
         attempt_count: row
             .try_get("attempt_count")
             .map_err(|error| DeployServiceError::Internal(error.to_string()))?,
@@ -607,6 +883,22 @@ fn parse_publish_status(value: &str) -> DeployServiceResult<RuntimeAssignmentPub
         "SUPERSEDED" => Ok(RuntimeAssignmentPublishStatus::Superseded),
         _ => Err(DeployServiceError::Internal(format!(
             "unknown runtime assignment publish status {value}"
+        ))),
+    }
+}
+
+fn parse_runtime_environment(
+    value: &str,
+) -> DeployServiceResult<sdkwork_deploy_runtime_compiler::RuntimeEnvironment> {
+    use sdkwork_deploy_runtime_compiler::RuntimeEnvironment;
+
+    match value {
+        "development" => Ok(RuntimeEnvironment::Development),
+        "test" => Ok(RuntimeEnvironment::Test),
+        "staging" => Ok(RuntimeEnvironment::Staging),
+        "production" => Ok(RuntimeEnvironment::Production),
+        _ => Err(DeployServiceError::Internal(format!(
+            "unknown runtime assignment environment {value}"
         ))),
     }
 }
