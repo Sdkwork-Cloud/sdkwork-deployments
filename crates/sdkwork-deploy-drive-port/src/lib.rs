@@ -6,9 +6,8 @@ mod selection;
 
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
-    CancelDeployUploadSessionRequest, CompleteDeployUploadSessionRequest,
-    CreateDeployUploadSessionRequest, DeployServiceError, DeployServiceResult,
-    DeployUploadSessionResponse,
+    CompleteDeployUploadSessionRequest, CreateDeployUploadSessionRequest, DeployServiceError,
+    DeployServiceResult, DeployUploadSessionResponse,
 };
 
 pub use facade::SdkDriveAppFacade;
@@ -24,8 +23,6 @@ pub struct DriveRequestCredentials {
 #[derive(Clone, Debug)]
 pub struct PrepareDeployUploadCommand {
     pub tenant_id: i64,
-    pub organization_id: Option<i64>,
-    pub operator_id: Option<i64>,
     pub request: CreateDeployUploadSessionRequest,
 }
 
@@ -54,7 +51,6 @@ pub trait DeployDrivePort: Send + Sync {
         &self,
         credentials: &DriveRequestCredentials,
         drive_session_id: &str,
-        request: &CancelDeployUploadSessionRequest,
     ) -> DeployServiceResult<DeployUploadSessionResponse>;
 }
 
@@ -129,15 +125,14 @@ impl DeployDrivePort for DeployDrivePortAdapter {
         &self,
         credentials: &DriveRequestCredentials,
         drive_session_id: &str,
-        request: &CancelDeployUploadSessionRequest,
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         match self {
             Self::Memory(port) => {
-                port.cancel_upload_session(credentials, drive_session_id, request)
+                port.cancel_upload_session(credentials, drive_session_id)
                     .await
             }
             Self::Facade(port) => {
-                port.cancel_upload_session(credentials, drive_session_id, request)
+                port.cancel_upload_session(credentials, drive_session_id)
                     .await
             }
             Self::Unconfigured => Err(DeployServiceError::Internal(

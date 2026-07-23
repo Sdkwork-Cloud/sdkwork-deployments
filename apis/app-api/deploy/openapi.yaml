@@ -465,6 +465,7 @@ paths:
     post:
       operationId: sites.domains.verify
       summary: "验证域名所有权"
+      description: "查询 _sdkwork-verification.<hostname> DNS TXT 记录。仅当记录值与响应 token 完全一致时才激活域名；未观察到证明时返回 verified=false，调用方配置 TXT 后可幂等重试。"
       tags:
         - domain
       security:
@@ -1167,12 +1168,6 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CancelDeployUploadSessionRequest'
       responses:
         '200':
           description: "已取消"
@@ -1986,13 +1981,19 @@ components:
           format: int64
     DomainVerifyResponse:
       type: object
+      required:
+        - verified
+        - method
       properties:
         verified:
           type: boolean
         method:
           type: string
+          enum:
+            - DNS_TXT
         token:
           type: string
+          description: "待验证时必须写入 _sdkwork-verification.<hostname> 的精确 TXT 值；验证完成后省略。"
     CreateDeploymentRequest:
       type: object
       required:
@@ -2404,11 +2405,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CompletedUploadPartInput'
-    CancelDeployUploadSessionRequest:
-      type: object
-      properties:
-        operatorId:
-          type: string
     SdkWorkApiResponse:
       type: object
       additionalProperties: false

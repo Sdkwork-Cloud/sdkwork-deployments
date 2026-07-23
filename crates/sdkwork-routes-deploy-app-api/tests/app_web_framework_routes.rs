@@ -424,7 +424,6 @@ impl DeployAppApi for StubAppApi {
         &self,
         _context: &DeployAppRequestContext,
         _upload_session_id: &str,
-        _request: &sdkwork_deploy_contract::CancelDeployUploadSessionRequest,
     ) -> DeployServiceResult<sdkwork_deploy_contract::DeployUploadSessionResponse> {
         Err(sdkwork_deploy_contract::DeployServiceError::Internal(
             "not implemented".into(),

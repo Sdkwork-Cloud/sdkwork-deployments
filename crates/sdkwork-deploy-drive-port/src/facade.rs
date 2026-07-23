@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
-    CancelDeployUploadSessionRequest, CompleteDeployUploadSessionRequest, DeployServiceError,
-    DeployServiceResult, DeployUploadSessionResponse, UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE,
+    CompleteDeployUploadSessionRequest, DeployServiceError, DeployServiceResult,
+    DeployUploadSessionResponse, UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE,
     UPLOAD_PACKAGE_TYPE_TLS_PRIVATE_KEY,
 };
 use sdkwork_drive_app_sdk_generated_rust::{
@@ -170,8 +170,6 @@ impl DeployDrivePort for SdkDriveAppFacade {
         let body = PrepareUploaderUploadRequest {
             id: upload_item_id.clone(),
             task_id: upload_item_id.clone(),
-            organization_id: command.organization_id.map(|value| value.to_string()),
-            anonymous_id: None,
             app_resource_type: app_resource_type_for_package_type(request.package_type).to_string(),
             app_resource_id: resource_id,
             upload_profile_code: Some(
@@ -290,12 +288,9 @@ impl DeployDrivePort for SdkDriveAppFacade {
         &self,
         credentials: &DriveRequestCredentials,
         drive_session_id: &str,
-        request: &CancelDeployUploadSessionRequest,
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         let client = self.client(credentials)?;
-        let body = NodeCommandRequest {
-            operator_id: request.operator_id.clone(),
-        };
+        let body = NodeCommandRequest::default();
         let session = client
             .drive()
             .upload_sessions_abort(drive_session_id, &body)

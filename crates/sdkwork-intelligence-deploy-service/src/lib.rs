@@ -2,10 +2,15 @@
 
 pub mod app;
 pub mod backend;
+pub mod domain_verification;
 pub mod repository;
 pub mod runtime_publication;
 pub mod site_composition;
 
+pub use domain_verification::{
+    dns_txt_record_name, DomainOwnershipVerifierPort, DomainVerificationChallenge,
+    UnconfiguredDomainOwnershipVerifier,
+};
 pub use repository::DeployRepositoryPort;
 pub use runtime_publication::{
     DeployRuntimeAssignmentMutationPort, DeployRuntimeAssignmentRepositoryPort,
@@ -25,6 +30,7 @@ pub struct DeployService {
     pub(crate) repository: Arc<dyn DeployRepositoryPort>,
     pub(crate) drive: Arc<dyn DeployDrivePort>,
     pub(crate) content_provider: Arc<dyn ContentProviderPort>,
+    pub(crate) domain_ownership_verifier: Arc<dyn DomainOwnershipVerifierPort>,
     runtime_publication: Option<Arc<RuntimePublicationService>>,
 }
 
@@ -34,6 +40,7 @@ impl DeployService {
             repository,
             drive,
             content_provider: Arc::new(MemoryContentProviderPort),
+            domain_ownership_verifier: Arc::new(UnconfiguredDomainOwnershipVerifier),
             runtime_publication: None,
         }
     }
@@ -42,12 +49,14 @@ impl DeployService {
         repository: Arc<dyn DeployRepositoryPort>,
         drive: Arc<dyn DeployDrivePort>,
         content_provider: Arc<dyn ContentProviderPort>,
+        domain_ownership_verifier: Arc<dyn DomainOwnershipVerifierPort>,
         runtime_publication: Arc<RuntimePublicationService>,
     ) -> Self {
         Self {
             repository,
             drive,
             content_provider,
+            domain_ownership_verifier,
             runtime_publication: Some(runtime_publication),
         }
     }

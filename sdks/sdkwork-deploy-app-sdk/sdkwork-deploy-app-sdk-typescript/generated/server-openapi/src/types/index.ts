@@ -53,7 +53,6 @@ export type { CreateDeployUploadSessionRequest } from './create-deploy-upload-se
 export type { DeployUploadSessionResponse } from './deploy-upload-session-response';
 export type { CompletedUploadPartInput } from './completed-upload-part-input';
 export type { CompleteDeployUploadSessionRequest } from './complete-deploy-upload-session-request';
-export type { CancelDeployUploadSessionRequest } from './cancel-deploy-upload-session-request';
 export type { SdkWorkApiResponse } from './sdk-work-api-response';
 export type { SdkWorkResourceData } from './sdk-work-resource-data';
 export type { SdkWorkPageData } from './sdk-work-page-data';

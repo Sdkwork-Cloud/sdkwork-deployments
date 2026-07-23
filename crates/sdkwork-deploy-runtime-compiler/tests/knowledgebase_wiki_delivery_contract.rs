@@ -25,9 +25,9 @@ use sdkwork_webserver_core::website_runtime::{
     WebsiteProviderType, WebsiteRuntimeEnvironment, WebsiteRuntimeRegistry,
 };
 use sdkwork_webserver_delivery_runtime::{
-    WebsiteDeliveryContent, WebsiteDeliveryExecutor, WebsiteDeliveryMethod, WebsiteDeliveryOutcome,
-    WebsiteDeliveryRequest, WebsiteDeliveryRoutingContext, WebsiteDeliveryScheme,
-    WebsiteProviderRegistry,
+    parse_website_provider_event, WebsiteDeliveryContent, WebsiteDeliveryExecutor,
+    WebsiteDeliveryMethod, WebsiteDeliveryOutcome, WebsiteDeliveryRequest,
+    WebsiteDeliveryRoutingContext, WebsiteDeliveryScheme, WebsiteProviderRegistry,
 };
 use sdkwork_webserver_knowledgebase_provider::{
     FixedKnowledgebaseWikiSdkClientResolver, KnowledgebaseWikiSdkClient,
@@ -264,6 +264,17 @@ async fn deploy_compiler_output_delivers_live_device_specific_wiki_content() {
     }
 
     sdk.replace_content(DESKTOP_PUBLICATION_UUID, b"# Desktop Wiki v2 live");
+    let cache_before_event = executor.provider_resolution_cache_snapshot().await;
+    let event = parse_website_provider_event(&knowledgebase_route_changed_event())
+        .expect("Knowledgebase route change conforms to the Web provider event contract");
+    executor
+        .provider_event_invalidator()
+        .invalidate(&event.invalidations)
+        .await
+        .expect("Knowledgebase route change invalidates cached Wiki resolution metadata");
+    let cache_after_event = executor.provider_resolution_cache_snapshot().await;
+    assert!(cache_after_event.invalidations > cache_before_event.invalidations);
+
     let updated = expect_content(
         executor
             .execute(delivery_request(None, "/portal/guide/"))
@@ -281,6 +292,31 @@ async fn deploy_compiler_output_delivers_live_device_specific_wiki_content() {
             .snapshot_sha256(),
         runtime_set.snapshot_sha256
     );
+}
+
+fn knowledgebase_route_changed_event() -> Vec<u8> {
+    serde_json::to_vec(&serde_json::json!({
+        "id": "11111111-1111-4111-8111-111111111503",
+        "type": "knowledgebase.wiki.route.changed.v1",
+        "source": "sdkwork-knowledgebase",
+        "specversion": "1.0",
+        "time": "2026-07-23T00:00:01Z",
+        "tenantId": "100001",
+        "organizationId": "0",
+        "subject": format!("wiki-publication:{DESKTOP_PUBLICATION_UUID}"),
+        "sequenceNo": "2",
+        "data": {
+            "providerResourceUuid": DESKTOP_PUBLICATION_UUID,
+            "providerGeneration": "2",
+            "navigationGeneration": "2",
+            "searchGeneration": "2",
+            "route": "/guide/",
+            "pagePublicVersion": "2",
+            "previousPagePublicVersion": "1",
+            "operation": "UPSERT"
+        }
+    }))
+    .expect("serialize Knowledgebase route change event")
 }
 
 fn site_input() -> SiteRuntimeCompilationInput {

@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { HttpClient } from '../http/client';
 
-import type { CancelDeployUploadSessionRequest, CompleteDeployUploadSessionRequest, CreateDeployUploadSessionRequest, DeployUploadSessionResponse } from '../types';
+import type { CompleteDeployUploadSessionRequest, CreateDeployUploadSessionRequest, DeployUploadSessionResponse } from '../types';
 
 
 export class UploadSessionApi {
@@ -28,8 +28,8 @@ export class UploadSessionApi {
   }
 
 /** 取消上传会话 */
-  async cancel(uploadSessionId: string, body?: CancelDeployUploadSessionRequest): Promise<DeployUploadSessionResponse> {
-    return this.client.post<DeployUploadSessionResponse>(appApiPath(`/upload_sessions/${serializePathParameter(uploadSessionId, { name: 'uploadSessionId', style: 'simple', explode: false })}/cancel`), body, undefined, undefined, 'application/json');
+  async cancel(uploadSessionId: string): Promise<DeployUploadSessionResponse> {
+    return this.client.post<DeployUploadSessionResponse>(appApiPath(`/upload_sessions/${serializePathParameter(uploadSessionId, { name: 'uploadSessionId', style: 'simple', explode: false })}/cancel`));
   }
 }
 

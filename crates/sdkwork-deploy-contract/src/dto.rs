@@ -100,8 +100,9 @@ pub(crate) fn default_page_size() -> i32 {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DomainVerifyResponse {
     pub verified: bool,
-    #[serde(rename = "verifyToken", skip_serializing_if = "Option::is_none")]
-    pub verify_token: Option<String>,
+    pub method: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub token: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -524,10 +525,4 @@ pub struct CompleteDeployUploadSessionRequest {
     pub content_type: Option<String>,
     #[serde(default)]
     pub parts: Vec<CompletedUploadPartInput>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct CancelDeployUploadSessionRequest {
-    #[serde(rename = "operatorId", default)]
-    pub operator_id: Option<String>,
 }

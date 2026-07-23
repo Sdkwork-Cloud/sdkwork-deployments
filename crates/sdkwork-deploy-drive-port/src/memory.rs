@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use sdkwork_database_id::uuid_v4;
 use sdkwork_deploy_contract::{
-    CancelDeployUploadSessionRequest, CompleteDeployUploadSessionRequest,
-    CreateDeployUploadSessionRequest, DeployServiceResult, DeployUploadSessionResponse,
+    CompleteDeployUploadSessionRequest, CreateDeployUploadSessionRequest, DeployServiceResult,
+    DeployUploadSessionResponse,
 };
 use sdkwork_utils_rust::{format_datetime, now};
 
@@ -106,7 +106,6 @@ impl DeployDrivePort for MemoryDeployDrivePort {
         &self,
         _credentials: &DriveRequestCredentials,
         drive_session_id: &str,
-        _request: &CancelDeployUploadSessionRequest,
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         Ok(DeployUploadSessionResponse {
             id: uuid_v4(),

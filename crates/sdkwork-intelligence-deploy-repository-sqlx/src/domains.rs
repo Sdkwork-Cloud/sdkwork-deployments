@@ -1,7 +1,7 @@
 use sdkwork_deploy_contract::{
     CreateDomainRequest, DeployServiceError, DeployServiceResult, DomainPage, DomainResponse,
-    DomainVerifyResponse,
 };
+use sdkwork_intelligence_deploy_service::DomainVerificationChallenge;
 use sqlx::{any::AnyRow, Row};
 
 use crate::support::{
@@ -156,15 +156,15 @@ impl DeployRepository {
         Ok(())
     }
 
-    pub(super) async fn verify_domain_repo(
+    pub(super) async fn domain_verification_challenge_repo(
         &self,
         tenant_id: i64,
         site_id: &str,
         domain_id: &str,
-    ) -> DeployServiceResult<DomainVerifyResponse> {
+    ) -> DeployServiceResult<DomainVerificationChallenge> {
         let site_internal_id = resolve_site_internal_id(&self.pool, tenant_id, site_id).await?;
         let row = sqlx::query(
-            "SELECT is_verified, verify_token FROM deploy_domain
+            "SELECT hostname, is_verified, verify_token FROM deploy_domain
              WHERE tenant_id = $1 AND site_id = $2 AND uuid = $3 AND deleted_at IS NULL",
         )
         .bind(tenant_id)
@@ -178,31 +178,41 @@ impl DeployRepository {
         let is_verified = bool_from_row(&row, "is_verified").unwrap_or(false);
         let verify_token: Option<String> = row.try_get("verify_token").ok();
 
-        if is_verified {
-            return Ok(DomainVerifyResponse {
-                verified: true,
-                verify_token: None,
-            });
-        }
+        Ok(DomainVerificationChallenge {
+            hostname: row.try_get("hostname").map_err(|error| {
+                DeployServiceError::Internal(format!("map deploy_domain hostname: {error}"))
+            })?,
+            verified: is_verified,
+            token: if is_verified { None } else { verify_token },
+        })
+    }
 
+    pub(super) async fn confirm_domain_verification_repo(
+        &self,
+        tenant_id: i64,
+        site_id: &str,
+        domain_id: &str,
+        token: &str,
+    ) -> DeployServiceResult<bool> {
+        let site_internal_id = resolve_site_internal_id(&self.pool, tenant_id, site_id).await?;
         let now = now_rfc3339();
-        sqlx::query(
+        let result = sqlx::query(
             "UPDATE deploy_domain
-             SET is_verified = 1, status = 1, updated_at = $4, version = version + 1
-             WHERE tenant_id = $1 AND site_id = $2 AND uuid = $3 AND deleted_at IS NULL",
+             SET is_verified = 1, verify_token = NULL, status = 1,
+                 updated_at = $5, version = version + 1
+             WHERE tenant_id = $1 AND site_id = $2 AND uuid = $3
+               AND verify_token = $4 AND is_verified = 0 AND deleted_at IS NULL",
         )
         .bind(tenant_id)
         .bind(site_internal_id)
         .bind(domain_id)
+        .bind(token)
         .bind(&now)
         .execute(&self.pool)
         .await
-        .map_err(|error| store_error("verify deploy_domain", error))?;
+        .map_err(|error| store_error("confirm deploy_domain verification", error))?;
 
-        Ok(DomainVerifyResponse {
-            verified: true,
-            verify_token,
-        })
+        Ok(result.rows_affected() == 1)
     }
 }
 

@@ -8,12 +8,14 @@ use sdkwork_deploy_contract::{
     CreateDomainRequest, CreateEnvVariableRequest, CreateHealthCheckRequest,
     CreateNginxConfigRequest, CreateReleaseRequest, CreateServerRequest, CreateSiteRequest,
     DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
-    DomainPage, DomainResponse, DomainVerifyResponse, EnvVariablePage, EnvVariableResponse,
-    HealthCheckPage, HealthCheckResponse, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
+    DomainPage, DomainResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage,
+    HealthCheckResponse, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
     NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
     ReleasePage, ReleaseResponse, ServerPage, ServerResponse, SitePage, SiteResponse,
     UpdateNginxConfigRequest, UpdateSiteRequest, UploadCustomCertificateRequest,
 };
+
+use crate::DomainVerificationChallenge;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InsertAuditLogCommand {
@@ -100,12 +102,20 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         domain_id: &str,
     ) -> DeployServiceResult<()>;
 
-    async fn verify_domain(
+    async fn domain_verification_challenge(
         &self,
         tenant_id: i64,
         site_id: &str,
         domain_id: &str,
-    ) -> DeployServiceResult<DomainVerifyResponse>;
+    ) -> DeployServiceResult<DomainVerificationChallenge>;
+
+    async fn confirm_domain_verification(
+        &self,
+        tenant_id: i64,
+        site_id: &str,
+        domain_id: &str,
+        token: &str,
+    ) -> DeployServiceResult<bool>;
 
     async fn list_deployments(
         &self,

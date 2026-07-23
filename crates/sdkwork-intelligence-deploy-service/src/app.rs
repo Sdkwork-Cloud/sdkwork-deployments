@@ -2,14 +2,13 @@
 
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
-    is_deploy_package_artifact_type, CancelDeployUploadSessionRequest,
-    CompleteDeployUploadSessionRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
-    CreateDeploymentRequest, CreateDomainRequest, CreateEnvVariableRequest,
-    CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest, DeployAppApi,
-    DeployAppRequestContext, DeployServiceResult, DeployUploadSessionResponse, ListSitesQuery,
-    UpdateSiteRequest, UploadCustomCertificateRequest, UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE,
-    UPLOAD_PACKAGE_TYPE_TLS_PRIVATE_KEY, UPLOAD_SESSION_STATUS_CANCELLED,
-    UPLOAD_SESSION_STATUS_COMPLETED,
+    is_deploy_package_artifact_type, CompleteDeployUploadSessionRequest, CreateCertificateRequest,
+    CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainRequest,
+    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest,
+    DeployAppApi, DeployAppRequestContext, DeployServiceResult, DeployUploadSessionResponse,
+    ListSitesQuery, UpdateSiteRequest, UploadCustomCertificateRequest,
+    UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE, UPLOAD_PACKAGE_TYPE_TLS_PRIVATE_KEY,
+    UPLOAD_SESSION_STATUS_CANCELLED, UPLOAD_SESSION_STATUS_COMPLETED,
 };
 use sdkwork_deploy_drive_port::{DriveRequestCredentials, PrepareDeployUploadCommand};
 
@@ -306,8 +305,11 @@ impl DeployAppApi for DeployService {
         request: &CreateDomainRequest,
     ) -> DeployServiceResult<sdkwork_deploy_contract::DomainResponse> {
         let tenant_id = Self::require_tenant(context)?;
+        let mut request = request.clone();
+        request.hostname =
+            crate::domain_verification::normalize_domain_hostname(&request.hostname)?;
         self.repository
-            .create_domain(tenant_id, site_id, request)
+            .create_domain(tenant_id, site_id, &request)
             .await
     }
 
@@ -342,9 +344,50 @@ impl DeployAppApi for DeployService {
         domain_id: &str,
     ) -> DeployServiceResult<sdkwork_deploy_contract::DomainVerifyResponse> {
         let tenant_id = Self::require_tenant(context)?;
-        self.repository
-            .verify_domain(tenant_id, site_id, domain_id)
-            .await
+        let challenge = self
+            .repository
+            .domain_verification_challenge(tenant_id, site_id, domain_id)
+            .await?;
+        if challenge.verified {
+            return Ok(challenge.response());
+        }
+
+        let token = challenge.token.as_deref().ok_or_else(|| {
+            sdkwork_deploy_contract::DeployServiceError::Internal(
+                "pending domain has no verification token".to_owned(),
+            )
+        })?;
+        if !self
+            .domain_ownership_verifier
+            .verify_dns_txt(&challenge.hostname, token)
+            .await?
+        {
+            return Ok(challenge.response());
+        }
+
+        if self
+            .repository
+            .confirm_domain_verification(tenant_id, site_id, domain_id, token)
+            .await?
+        {
+            return Ok(sdkwork_deploy_contract::DomainVerifyResponse {
+                verified: true,
+                method: crate::domain_verification::DOMAIN_VERIFICATION_METHOD_DNS_TXT.to_owned(),
+                token: None,
+            });
+        }
+
+        let current = self
+            .repository
+            .domain_verification_challenge(tenant_id, site_id, domain_id)
+            .await?;
+        if current.verified {
+            Ok(current.response())
+        } else {
+            Err(sdkwork_deploy_contract::DeployServiceError::conflict(
+                "domain verification challenge changed; retry with the current token",
+            ))
+        }
     }
 
     async fn list_deployments(
@@ -676,8 +719,6 @@ impl DeployAppApi for DeployService {
                 &Self::drive_credentials(context),
                 PrepareDeployUploadCommand {
                     tenant_id,
-                    organization_id: context.organization_id,
-                    operator_id: context.actor_id,
                     request: request.clone(),
                 },
             )
@@ -783,7 +824,6 @@ impl DeployAppApi for DeployService {
         &self,
         context: &DeployAppRequestContext,
         upload_session_id: &str,
-        request: &CancelDeployUploadSessionRequest,
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         let tenant_id = Self::require_tenant(context)?;
         let stored = self
@@ -791,16 +831,11 @@ impl DeployAppApi for DeployService {
             .retrieve_upload_session_ref(tenant_id, upload_session_id)
             .await?;
         Self::ensure_upload_session_mutable(&stored)?;
-        let mut cancel_request = request.clone();
-        if cancel_request.operator_id.is_none() {
-            cancel_request.operator_id = context.actor_id.map(|value| value.to_string());
-        }
         let drive_response = self
             .drive
             .cancel_upload_session(
                 &Self::drive_credentials(context),
                 &stored.drive_upload_session_id,
-                &cancel_request,
             )
             .await?;
         self.repository

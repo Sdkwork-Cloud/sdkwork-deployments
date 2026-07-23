@@ -86,8 +86,10 @@ is complete safe rendition/full-text processing and deployed Site-to-Wiki
 freshness/private-revocation evidence.
 
 Required closure: implement the production rendition/sanitizer/full-text chain and execute deployed
-end-to-end freshness, provider-outage, and private-revocation tests. Before a content cache is added,
-certify its provider-qualified positive/negative entries and priority eviction behavior.
+end-to-end freshness, provider-outage, and private-revocation tests. Certify the implemented bounded
+Web resolution metadata cache under capacity, event-storm, positive/negative lookup, priority
+revocation, uncertainty, and stale revalidation scenarios; shared/edge body caching remains a
+separate future capability.
 
 ### P0-3 Drive Atomic Publication Production Evidence Is Incomplete
 
@@ -130,7 +132,9 @@ Web Server standalone has an executable bounded ACME renewal worker. Its native 
 consume a node-scoped immutable TLS snapshot, validate certificate/key/SAN/validity/fingerprint,
 perform exact/wildcard SNI selection, atomically replace Rustls state, and restore the last known
 good snapshot. These are local execution primitives, not a cloud certificate control plane.
-Commercial cloud still requires Deploy-driven domain proof, durable ACME accounts,
+Deploy App API now performs bounded IDNA normalization and exact DNS TXT token proof before a
+domain can become active; a resolver error or missing/mismatched token fails closed. Commercial
+cloud still requires durable proof expiry/revalidation and takeover holds, durable ACME accounts,
 KMS/Secret Manager custody, DNS-01/wildcard providers, immutable versions, fleet distribution,
 authenticated loaded/served observations, public SNI fingerprint convergence, revocation, and
 renewal drills.
@@ -162,7 +166,7 @@ at scale, and obtain Finance/Commerce sign-off.
 | Finding | Required closure |
 | --- | --- |
 | User/admin UI is specified but not built | generated-SDK-backed packages, full async/error/permission E2E, accessibility review |
-| Domain verification/takeover lifecycle is not certified | DNS/HTTP proof, global conflict transaction, hold/reclaim, wildcard and IDNA tests |
+| Domain verification/takeover lifecycle is not certified | DNS TXT proof and IDNA normalization are implemented; add proof expiry/revalidation, global wildcard conflict transaction, hold/reclaim, external DNS and takeover drills |
 | Future cache consistency is not proven | event gap/replay and route scoping are tested; add public-to-private priority eviction, negative TTL, stale policy, and stampede tests before enabling content cache |
 | Multi-device routing may fragment cache/SEO | domain strategy guidance, Vary/cookie policy, route simulator, bot/canonical behavior tests |
 | Search/navigation rebuild needs scale evidence | large Wiki projection/index benchmarks, rebuild/checkpoint, degraded-search behavior |

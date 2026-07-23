@@ -47,9 +47,12 @@ approved.
 
 Web Server's native file-backed TLS consumer already validates bounded immutable material and
 node-scoped snapshots, performs exact/wildcard SNI selection, atomically replaces Rustls state, and
-recovers the last known good snapshot. That is data-plane evidence only. The proposed
-ADR-20260723 defines the still-missing Deploy domain proof, durable ACME, secret custody,
-distribution authorization, generated Web Internal operations, and served-fingerprint convergence.
+recovers the last known good snapshot. That is data-plane evidence only. Deploy now normalizes
+custom hostnames to bounded lowercase IDNA ASCII and verifies ownership through an exact
+`_sdkwork-verification.<hostname>` DNS TXT token before atomically activating a domain. The
+proposed ADR-20260723 still defines the missing durable verification-expiry/revalidation/takeover
+hold model, ACME control plane, secret custody, distribution authorization, generated Web Internal
+operations, and served-fingerprint convergence.
 
 ## 1. Authority And Bounded Contexts
 

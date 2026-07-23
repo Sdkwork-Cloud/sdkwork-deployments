@@ -7,8 +7,8 @@ use sdkwork_deploy_contract::{
     CreateDomainRequest, CreateEnvVariableRequest, CreateHealthCheckRequest,
     CreateNginxConfigRequest, CreateReleaseRequest, CreateServerRequest, CreateSiteRequest,
     DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
-    DomainPage, DomainResponse, DomainVerifyResponse, EnvVariablePage, EnvVariableResponse,
-    HealthCheckPage, HealthCheckResponse, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
+    DomainPage, DomainResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage,
+    HealthCheckResponse, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
     NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
     ReleasePage, ReleaseResponse, ServerPage, ServerResponse, SitePage, SiteResponse,
     UpdateNginxConfigRequest, UpdateSiteRequest, UploadCustomCertificateRequest,
@@ -20,7 +20,7 @@ use sdkwork_intelligence_deploy_service::runtime_publication::{
     DeployRuntimeAssignmentMutationPort, DeployRuntimeAssignmentRepositoryPort,
     RuntimeAssignmentState, RuntimeObservationEvidence, RuntimeObservationPersistenceResult,
 };
-use sdkwork_intelligence_deploy_service::DeployRepositoryPort;
+use sdkwork_intelligence_deploy_service::{DeployRepositoryPort, DomainVerificationChallenge};
 
 use crate::DeployRepository;
 
@@ -127,13 +127,25 @@ impl DeployRepositoryPort for DeployRepository {
         self.delete_domain_repo(tenant_id, site_id, domain_id).await
     }
 
-    async fn verify_domain(
+    async fn domain_verification_challenge(
         &self,
         tenant_id: i64,
         site_id: &str,
         domain_id: &str,
-    ) -> DeployServiceResult<DomainVerifyResponse> {
-        self.verify_domain_repo(tenant_id, site_id, domain_id).await
+    ) -> DeployServiceResult<DomainVerificationChallenge> {
+        self.domain_verification_challenge_repo(tenant_id, site_id, domain_id)
+            .await
+    }
+
+    async fn confirm_domain_verification(
+        &self,
+        tenant_id: i64,
+        site_id: &str,
+        domain_id: &str,
+        token: &str,
+    ) -> DeployServiceResult<bool> {
+        self.confirm_domain_verification_repo(tenant_id, site_id, domain_id, token)
+            .await
     }
 
     async fn list_deployments(

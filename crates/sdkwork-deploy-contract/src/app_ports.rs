@@ -283,7 +283,6 @@ pub trait DeployAppApi: Send + Sync {
         &self,
         context: &DeployAppRequestContext,
         upload_session_id: &str,
-        request: &CancelDeployUploadSessionRequest,
     ) -> DeployServiceResult<DeployUploadSessionResponse>;
 }
 

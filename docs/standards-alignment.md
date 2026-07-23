@@ -34,6 +34,13 @@ The runtime worker registers and renews referenced Drive WebsiteRoot channels th
 Drive Internal SDK before Web publication. Drive then delivers ordinary events directly to the
 Node-qualified Web callback; Deploy is not the event relay or acknowledgement authority.
 
+Custom domain creation normalizes bounded IDNA hostnames before the global claim is persisted.
+`sites.domains.verify` exposes an exact DNS TXT challenge at
+`_sdkwork-verification.<hostname>`; only an observed current token can atomically activate the
+domain. Missing records, mismatches, resolver failures, and stale tokens fail closed. Durable proof
+expiry/revalidation, wildcard-overlap claim serialization, takeover holds, and production DNS
+incident evidence remain launch gates.
+
 ## API And SDK Contract
 
 All App and Backend handlers use SDKWork v3:
@@ -89,7 +96,8 @@ processing are implemented. The compiler-to-Wiki execution contract is also veri
 production-shaped evidence remains required:
 
 - external public-domain probes, drift dashboards, and multi-node rollout/rollback drills;
-- provider-aware cache implementation plus invalidation, private revocation, and freshness evidence;
+- production capacity/event-storm evidence for the implemented bounded provider metadata cache,
+  including private revocation, negative TTL, stale policy, and multi-node freshness drills;
 - certificate secret custody, ACME issue/renew/distribute/hot-activate/SNI verification;
 - tenant console, platform admin console, metering, entitlement, abuse, and incident workflows;
 - continuous topology evidence that cloud Web workloads cannot activate standalone management authority;

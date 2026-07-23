@@ -6,11 +6,11 @@ use axum::{
     Extension, Json, Router,
 };
 use sdkwork_deploy_contract::{
-    CancelDeployUploadSessionRequest, CompleteDeployUploadSessionRequest, CreateCertificateRequest,
-    CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainRequest,
-    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest,
-    DeployAppApi, DeployAppRequestContext, ListSitesQuery, UpdateSiteCompositionRequest,
-    UpdateSiteRequest, UploadCustomCertificateRequest,
+    CompleteDeployUploadSessionRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
+    CreateDeploymentRequest, CreateDomainRequest, CreateEnvVariableRequest,
+    CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest, DeployAppApi,
+    DeployAppRequestContext, ListSitesQuery, UpdateSiteCompositionRequest, UpdateSiteRequest,
+    UploadCustomCertificateRequest,
 };
 use sdkwork_routes_deploy_common::{
     envelope, finish_api_json, finish_created_api_json, finish_no_content, ok_json, service_result,
@@ -888,7 +888,6 @@ async fn cancel_upload_session(
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
     Path(upload_session_id): Path<String>,
-    Json(request): Json<CancelDeployUploadSessionRequest>,
 ) -> Response {
     finish_api_json(
         &ctx,
@@ -896,7 +895,7 @@ async fn cancel_upload_session(
             let context = require_app_context(context)?;
             let item = state
                 .api
-                .cancel_upload_session(&context, &upload_session_id, &request)
+                .cancel_upload_session(&context, &upload_session_id)
                 .await?;
             ok_json(envelope::resource(item))
         }

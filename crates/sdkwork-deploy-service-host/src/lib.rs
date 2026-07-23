@@ -20,6 +20,10 @@ use sdkwork_intelligence_deploy_service::{
 };
 use sqlx::AnyPool;
 
+mod domain_verification;
+
+use domain_verification::DnsTxtDomainOwnershipVerifier;
+
 pub struct DeployServiceHost {
     pub service: Arc<DeployService>,
 }
@@ -111,6 +115,7 @@ pub async fn bootstrap_deploy_service_host_from_env() -> Result<DeployServiceHos
             service_repository,
             deploy_drive_port_from_env()?,
             content_provider_port_from_env()?,
+            Arc::new(DnsTxtDomainOwnershipVerifier::from_system_config()?),
             runtime_publication,
         )),
     })
