@@ -1,13 +1,17 @@
 //! Durable runtime assignment publication orchestration.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use chrono::{DateTime, Duration, SecondsFormat, Utc};
+use sdkwork_deploy_content_provider_port::{
+    NoopWebsiteProviderEventDeliveryPort, WebsiteProviderEventDeliveryPort,
+    WebsiteProviderEventDeliveryResult,
+};
 use sdkwork_deploy_contract::{DeployServiceError, DeployServiceErrorKind, DeployServiceResult};
 use sdkwork_deploy_runtime_compiler::{
     canonical_sha256_excluding_field, compile_runtime_set, normalize_runtime_descriptors,
-    CompiledRuntimeSet, RuntimeEnvironment, RuntimeSetCompilationInput,
+    runtime_set_size_bytes, CompiledRuntimeSet, RuntimeEnvironment, RuntimeSetCompilationInput,
 };
 use sdkwork_deploy_web_port::{
     DeployWebRuntimePort, RuntimeAssignmentReceipt, RuntimeObservationReceipt,
@@ -67,6 +71,10 @@ pub struct RuntimePublicationBatchResult {
     pub observations_pending: usize,
     pub observations_failed: usize,
     pub revisions_activated: usize,
+    pub provider_event_assignments_checked: usize,
+    pub provider_event_assignments_failed: usize,
+    pub provider_event_deliveries_ensured: usize,
+    pub provider_event_deliveries_skipped: usize,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -209,6 +217,12 @@ pub trait DeployRuntimeAssignmentRepositoryPort: Send + Sync {
         maximum_items: i64,
     ) -> DeployServiceResult<Vec<RuntimeAssignmentState>>;
 
+    async fn list_active_runtime_assignments_after(
+        &self,
+        after_target_uuid: Option<&str>,
+        maximum_items: i64,
+    ) -> DeployServiceResult<Vec<RuntimeAssignmentState>>;
+
     async fn persist_runtime_observation(
         &self,
         assignment_uuid: &str,
@@ -220,6 +234,8 @@ pub trait DeployRuntimeAssignmentRepositoryPort: Send + Sync {
 pub struct RuntimePublicationService {
     repository: Arc<dyn DeployRuntimeAssignmentRepositoryPort>,
     web_runtime: Arc<dyn DeployWebRuntimePort>,
+    provider_event_delivery: Arc<dyn WebsiteProviderEventDeliveryPort>,
+    provider_event_renewal_cursor: Mutex<Option<String>>,
     maximum_sites: usize,
 }
 
@@ -231,6 +247,22 @@ impl RuntimePublicationService {
         Self {
             repository,
             web_runtime,
+            provider_event_delivery: Arc::new(NoopWebsiteProviderEventDeliveryPort),
+            provider_event_renewal_cursor: Mutex::new(None),
+            maximum_sites: DEFAULT_MAXIMUM_SITES,
+        }
+    }
+
+    pub fn new_with_provider_event_delivery(
+        repository: Arc<dyn DeployRuntimeAssignmentRepositoryPort>,
+        web_runtime: Arc<dyn DeployWebRuntimePort>,
+        provider_event_delivery: Arc<dyn WebsiteProviderEventDeliveryPort>,
+    ) -> Self {
+        Self {
+            repository,
+            web_runtime,
+            provider_event_delivery,
+            provider_event_renewal_cursor: Mutex::new(None),
             maximum_sites: DEFAULT_MAXIMUM_SITES,
         }
     }
@@ -286,9 +318,8 @@ impl RuntimePublicationService {
             descriptors,
         })
         .map_err(|error| DeployServiceError::validation(error.to_string()))?;
-        let runtime_set_bytes = serde_json::to_vec(&compiled.snapshot)
-            .map_err(|error| DeployServiceError::Internal(error.to_string()))?
-            .len();
+        let runtime_set_bytes = runtime_set_size_bytes(&compiled.snapshot)
+            .map_err(|error| DeployServiceError::validation(error.to_string()))?;
         mutation
             .persist_runtime_assignment(PersistRuntimeAssignmentCommand {
                 assignment_uuid: sdkwork_database_id::uuid_v4(),
@@ -306,6 +337,15 @@ impl RuntimePublicationService {
         &self,
         assignment: &RuntimeAssignmentState,
     ) -> DeployServiceResult<()> {
+        self.publish_assignment_with_provider_events(assignment)
+            .await
+            .map(|_| ())
+    }
+
+    async fn publish_assignment_with_provider_events(
+        &self,
+        assignment: &RuntimeAssignmentState,
+    ) -> DeployServiceResult<WebsiteProviderEventDeliveryResult> {
         if assignment.publish_status != RuntimeAssignmentPublishStatus::Publishing {
             return Err(DeployServiceError::conflict(
                 "runtime assignment must hold a publication lease",
@@ -317,6 +357,27 @@ impl RuntimePublicationService {
         let compiled = CompiledRuntimeSet {
             snapshot: assignment.runtime_set.clone(),
             snapshot_sha256: assignment.snapshot_sha256.clone(),
+        };
+        let provider_events = match self
+            .provider_event_delivery
+            .ensure_runtime_set(&assignment.node_uuid, &compiled.snapshot)
+            .await
+        {
+            Ok(result) => result,
+            Err(error) => {
+                let next_attempt = next_attempt_at(assignment.attempt_count);
+                let now = now_seconds();
+                self.repository
+                    .mark_runtime_assignment_failed(
+                        &assignment.assignment_uuid,
+                        lease_owner,
+                        "PROVIDER_EVENT_DELIVERY_UNAVAILABLE",
+                        next_attempt.as_deref(),
+                        &now,
+                    )
+                    .await?;
+                return Err(error);
+            }
         };
         match self.web_runtime.publish_runtime_assignment(&compiled).await {
             Ok(receipt) => {
@@ -342,7 +403,8 @@ impl RuntimePublicationService {
                         &receipt,
                         &now,
                     )
-                    .await
+                    .await?;
+                Ok(provider_events)
             }
             Err(error) => {
                 let next_attempt = next_attempt_at(assignment.attempt_count);
@@ -398,10 +460,16 @@ impl RuntimePublicationService {
             ..RuntimePublicationBatchResult::default()
         };
         for assignment in assignments {
-            if self.publish_assignment(&assignment).await.is_ok() {
-                result.published += 1;
-            } else {
-                result.failed += 1;
+            match self
+                .publish_assignment_with_provider_events(&assignment)
+                .await
+            {
+                Ok(provider_events) => {
+                    result.published += 1;
+                    result.provider_event_deliveries_ensured += provider_events.ensured;
+                    result.provider_event_deliveries_skipped += provider_events.skipped;
+                }
+                Err(_) => result.failed += 1,
             }
         }
         let observation_result = self.reconcile_observations(maximum_items).await?;
@@ -410,6 +478,77 @@ impl RuntimePublicationService {
         result.observations_pending = observation_result.observations_pending;
         result.observations_failed = observation_result.observations_failed;
         result.revisions_activated = observation_result.revisions_activated;
+        let provider_event_result = self
+            .renew_active_provider_event_deliveries(maximum_items)
+            .await?;
+        result.provider_event_assignments_checked =
+            provider_event_result.provider_event_assignments_checked;
+        result.provider_event_assignments_failed =
+            provider_event_result.provider_event_assignments_failed;
+        result.provider_event_deliveries_ensured +=
+            provider_event_result.provider_event_deliveries_ensured;
+        result.provider_event_deliveries_skipped +=
+            provider_event_result.provider_event_deliveries_skipped;
+        Ok(result)
+    }
+
+    pub async fn renew_active_provider_event_deliveries(
+        &self,
+        maximum_items: i64,
+    ) -> DeployServiceResult<RuntimePublicationBatchResult> {
+        if !(1..=MAXIMUM_PUBLICATION_BATCH).contains(&maximum_items) {
+            return Err(DeployServiceError::validation(
+                "provider event renewal batch must be between 1 and 100",
+            ));
+        }
+        let cursor = self
+            .provider_event_renewal_cursor
+            .lock()
+            .map_err(|_| {
+                DeployServiceError::Internal(
+                    "provider event renewal cursor is unavailable".to_owned(),
+                )
+            })?
+            .clone();
+        let assignments = self
+            .repository
+            .list_active_runtime_assignments_after(cursor.as_deref(), maximum_items)
+            .await?;
+        let mut result = RuntimePublicationBatchResult {
+            provider_event_assignments_checked: assignments.len(),
+            ..RuntimePublicationBatchResult::default()
+        };
+        for assignment in &assignments {
+            match self
+                .provider_event_delivery
+                .ensure_runtime_set(&assignment.node_uuid, &assignment.runtime_set)
+                .await
+            {
+                Ok(deliveries) => {
+                    result.provider_event_deliveries_ensured += deliveries.ensured;
+                    result.provider_event_deliveries_skipped += deliveries.skipped;
+                }
+                Err(error) => {
+                    tracing::warn!(
+                        target_uuid = %assignment.target_uuid,
+                        node_uuid = %assignment.node_uuid,
+                        error_kind = ?error.kind(),
+                        "website provider event delivery renewal failed"
+                    );
+                    result.provider_event_assignments_failed += 1;
+                }
+            }
+        }
+        let next_cursor = if assignments.len() == maximum_items as usize {
+            assignments
+                .last()
+                .map(|assignment| assignment.target_uuid.clone())
+        } else {
+            None
+        };
+        *self.provider_event_renewal_cursor.lock().map_err(|_| {
+            DeployServiceError::Internal("provider event renewal cursor is unavailable".to_owned())
+        })? = next_cursor;
         Ok(result)
     }
 

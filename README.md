@@ -52,9 +52,10 @@ pnpm db:plan
 
 ## Documentation
 
-- PRD: `docs/superpowers/specs/2026-06-14-deploy-web-server-prd.md`
+- Product Canon: [docs/product/prd/PRD.md](docs/product/prd/PRD.md)
+- Technical architecture Canon: [docs/architecture/tech/TECH_ARCHITECTURE.md](docs/architecture/tech/TECH_ARCHITECTURE.md)
+- Cloud publishing architecture: [docs/architecture/tech/TECH-cloud-site-publishing-control-plane.md](docs/architecture/tech/TECH-cloud-site-publishing-control-plane.md)
 - Standards alignment: [docs/standards-alignment.md](docs/standards-alignment.md)
-- Design report: [docs/DESIGN_REPORT.md](docs/DESIGN_REPORT.md)
 - Standards entry: `../sdkwork-specs/README.md`
 
 ## Documentation Canon

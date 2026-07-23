@@ -156,7 +156,9 @@ impl RuntimeAssignmentWorker {
                 _ = ticker.tick() => {
                     match self.run_once().await {
                         Ok(result)
-                            if result.claimed > 0 || result.observations_checked > 0 => {
+                            if result.claimed > 0
+                                || result.observations_checked > 0
+                                || result.provider_event_assignments_checked > 0 => {
                             tracing::info!(
                                 worker_id = %self.config.worker_id,
                                 claimed = result.claimed,
@@ -167,6 +169,10 @@ impl RuntimeAssignmentWorker {
                                 observations_pending = result.observations_pending,
                                 observations_failed = result.observations_failed,
                                 revisions_activated = result.revisions_activated,
+                                provider_event_assignments_checked = result.provider_event_assignments_checked,
+                                provider_event_assignments_failed = result.provider_event_assignments_failed,
+                                provider_event_deliveries_ensured = result.provider_event_deliveries_ensured,
+                                provider_event_deliveries_skipped = result.provider_event_deliveries_skipped,
                                 "runtime assignment publication and observation batch completed"
                             );
                         }

@@ -2,9 +2,10 @@
 
 Status: implementation-active-commercial-evidence-blocked
 Owner: SDKWork Deploy maintainers
-Date: 2026-07-22
+Date: 2026-07-23
 Requirement: REQ-2026-0001
-Decision: ADR-20260721-unified-cloud-site-publishing-control-plane
+Decisions: ADR-20260721-unified-cloud-site-publishing-control-plane,
+ADR-20260723-managed-domain-tls-control-plane (proposed)
 Specs: CODE_REVIEW_SPEC.md, QUALITY_GATE_SPEC.md, REQUIREMENTS_SPEC.md,
 ARCHITECTURE_DECISION_SPEC.md, DATABASE_SPEC.md, SECURITY_SPEC.md, PRIVACY_SPEC.md,
 PERFORMANCE_SPEC.md, OBSERVABILITY_SPEC.md, TEST_SPEC.md, RELEASE_SPEC.md, MIGRATION_SPEC.md
@@ -48,8 +49,9 @@ below and must not be hidden behind a general production-readiness claim.
    without exposing an entire Space automatically.
 4. Multi-domain and multi-application device routing are deterministic and explainable, with
    authorization isolated from client classification.
-5. The certificate model covers account/order/challenge/version/distribution/observation and keeps
-   private keys outside the database and website descriptor.
+5. The proposed certificate model covers account/order/challenge/version/distribution/observation
+   and keeps private keys outside the database and website descriptor. It is not implemented or
+   approved production evidence.
 6. The `WebsiteRuntimeDescriptor` removes database joins/control-plane dependency from the request
    hot path and supports atomic activation and last-known-good service.
 7. User, author, tenant-admin, and platform-admin views cover creation, operation, diagnostics,
@@ -77,8 +79,11 @@ Knowledgebase now owns one canonical WikiPublication, lifecycle/projection table
 processing, typed Internal API, generated Rust/TypeScript SDKs, public route/content/navigation/search
 reads, optimistic page publication controls, and output events. Web Server has the generated-SDK Wiki
 adapter, browser mapping, durable event checkpoints, duplicate/order/gap fencing, reconciliation,
-and route-scoped invalidation. The remaining public product gate is complete safe rendition/full-text
-processing and deployed Site-to-Wiki freshness/private-revocation evidence.
+and route-scoped invalidation. A focused test now feeds real Deploy compiler output into Web
+activation and the Knowledgebase adapter, covering host/path/device routing, private/unpublished
+failure closure, and live content refresh without a new revision. The remaining public product gate
+is complete safe rendition/full-text processing and deployed Site-to-Wiki
+freshness/private-revocation evidence.
 
 Required closure: implement the production rendition/sanitizer/full-text chain and execute deployed
 end-to-end freshness, provider-outage, and private-revocation tests. Before a content cache is added,
@@ -87,11 +92,13 @@ certify its provider-qualified positive/negative entries and priority eviction b
 ### P0-3 Drive Atomic Publication Production Evidence Is Incomplete
 
 Drive Website Space, stable WebsiteRoot root/folder selectors, generated App/Internal SDK contracts,
-and Deploy create-plus-revalidate integration exist. Web Server generated-SDK delivery, exact
+Deploy create-plus-revalidate integration, and Node/root channel registration plus bounded renewal
+exist. Publication is fenced when Drive channel assurance fails, secret rotation forces channel
+replacement, and the callback is routed to an exact Node rather than a fleet Service. Web Server generated-SDK delivery, exact
 generation/version revalidation, range/condition handling, path confinement, visibility failure,
 event checkpoint/reconciliation, and browser mapping are implemented. The remaining gate is a
 production-shaped owner-to-edge `ATOMIC_SYNC` drill, mixed-generation prevention under failure,
-retention/orphan cleanup, and end-to-end React bundle evidence.
+retention/orphan cleanup, callback-ingress mTLS/source-policy evidence, and end-to-end React bundle evidence.
 
 Required closure: certify atomic-tree switch/rollback under failure and multi-Site root reuse without
 tenant/path escape in a deployed topology, including retention and orphan cleanup.
@@ -107,22 +114,30 @@ revalidates the full frozen assignment identity, and stores immutable evidence. 
 `ACTIVE` only after a bounded node-local `HEAD` probe succeeds in an isolated candidate registry.
 Deploy advances `current_revision_id` transactionally only after every frozen target is `ACTIVE` and
 the revision remains desired. SQLite integration evidence proves partial quorum does not advance the
-pointer and complete quorum does.
+pointer and complete quorum does. The compiler-to-Wiki contract test additionally activates the
+exact Deploy-produced runtime bytes in Web, executes desktop/mobile Knowledgebase routes, and keeps
+the revision, generation, and snapshot hash stable across a live content update.
 
 Required closure: add external public-domain multi-vantage probes, production-shaped multi-node
-retry/rollback/drift exercises, and an end-to-end proof from App composition mutation to a served
-public response. A published assignment alone remains insufficient; internal `ACTIVE` is strong
-node-local activation evidence, not proof of DNS/TLS/global reachability.
+retry/rollback/drift exercises, and a deployed end-to-end proof from App composition mutation to a
+served public response. A published assignment or the focused in-process contract alone remains
+insufficient; internal `ACTIVE` is strong node-local activation evidence, not proof of
+DNS/TLS/global reachability.
 
 ### P0-5 Production Certificate Custody And Orchestration Are Incomplete
 
-Web Server standalone has an executable bounded ACME renewal worker and activation primitives, but
-commercial cloud requires Deploy-driven durable ACME accounts, KMS/Secret Manager custody,
-DNS-01/wildcard providers, immutable versions, fleet
-distribution, served SNI fingerprint convergence, revocation, and renewal drills.
+Web Server standalone has an executable bounded ACME renewal worker. Its native data plane can also
+consume a node-scoped immutable TLS snapshot, validate certificate/key/SAN/validity/fingerprint,
+perform exact/wildcard SNI selection, atomically replace Rustls state, and restore the last known
+good snapshot. These are local execution primitives, not a cloud certificate control plane.
+Commercial cloud still requires Deploy-driven domain proof, durable ACME accounts,
+KMS/Secret Manager custody, DNS-01/wildcard providers, immutable versions, fleet distribution,
+authenticated loaded/served observations, public SNI fingerprint convergence, revocation, and
+renewal drills.
 
-Required closure: approve TLS schema/policy, select CA/provider/KMS, implement Deploy orchestration
-with Web execution, and attach real staging plus expiry/failure/rotation evidence.
+Required closure: approve ADR-20260723, select CA/DNS/KMS/material-delivery/probe providers,
+implement PLAN-2026-0002 through generated owner SDKs, and attach real staging plus
+expiry/failure/rotation evidence.
 Deploy `certificates.renew` currently records scheduling state only; it is not connected to the
 standalone Web worker and therefore is not cloud issuance/distribution evidence.
 
@@ -164,8 +179,8 @@ at scale, and obtain Finance/Commerce sign-off.
 | Ownership/bounded contexts | active | Deploy cloud authority and cloud/standalone process isolation implemented | artifact/topology regression gate passes; production audit pending | implementation closed/evidence gated |
 | Database target | active | 21-table PostgreSQL/SQLite contract materialized | backup/restore/RLS production evidence missing | blocked |
 | Drive Website Space/root/sync | active | WebsiteRoot, generated SDK delivery, event processor, range/path/version checks implemented | deployed atomic-sync E2E missing | blocked |
-| Live Wiki state/provider | active | canonical publication, provider API/SDK, events, Web adapter, and durable event consumer implemented | rendition/full-text/deployed E2E missing | blocked |
-| Runtime descriptor/routing | active | descriptor/runtime set, desired assignment, authenticated observation evidence, node-local activation probe, strict quorum, and current-revision advancement implemented | external multi-vantage probe and production multi-node rollout/rollback evidence missing | blocked |
+| Live Wiki state/provider | active | canonical publication, provider API/SDK, events, Web adapter, durable event consumer, and real Deploy-compiler-to-Web execution contract implemented | rendition/full-text/deployed E2E missing | blocked |
+| Runtime descriptor/routing | active | descriptor/runtime set, desired assignment, authenticated observation evidence, node-local activation probe, strict quorum, current-revision advancement, and focused compiler-to-Wiki device routing implemented | external multi-vantage probe and production multi-node rollout/rollback evidence missing | blocked |
 | Domain/path/Variant | active | normalized composition, conflict checks, exact/wildcard/path routing, and desktop/mobile/tablet/TV/bot selection implemented | takeover and production routing evidence missing | blocked |
 | TLS/certificate lifecycle | complete target; useful runtime primitives | partial | real fleet evidence missing | blocked |
 | User/admin UX | complete view/workflow inventory | not implemented | E2E missing | blocked |

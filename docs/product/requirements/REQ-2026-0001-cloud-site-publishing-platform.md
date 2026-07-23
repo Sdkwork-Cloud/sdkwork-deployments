@@ -49,10 +49,14 @@ assignments, idempotency result, and audit record commit in one PostgreSQL/SQLit
 Runtime assignment publication uses the generated Web Internal SDK. Web provider-event processing
 and Drive/Wiki browser delivery are implemented, and `cloud.production` starts only the immutable
 Website Edge Runtime rather than the standalone management assembly. Web observation/quorum,
-certificate material distribution and cloud ACME automation, tenant/admin UI, metering, and
-production operational evidence remain open. Backend composition mutation remains intentionally
-absent until a trusted operator credential-delegation or resolved-resource administration contract
-is approved.
+Drive WebsiteRoot channel registration/renewal, and strict 64 MiB runtime-set validation are
+implemented. A focused cross-repository test now compiles a real Deploy Site/runtime set, activates
+it in Web, routes desktop/mobile Wiki requests through the Knowledgebase generated-SDK adapter
+boundary, fails private/unpublished routes closed, and proves a live content update preserves the
+SiteRevision, generation, and snapshot hash. Certificate material distribution and cloud ACME
+automation, tenant/admin UI, metering, and production operational evidence remain open. Backend
+composition mutation remains intentionally absent until a trusted operator credential-delegation
+or resolved-resource administration contract is approved.
 
 1. `sdkwork-deployments` shall be the only writable authority for Sites, host/path Bindings,
    Variants, routing rules, Mounts, certificate metadata, configuration revisions, and rollout
@@ -108,6 +112,12 @@ is approved.
 19. A composition commit shall advance `desired_revision_id`. `current_revision_id` shall advance
     only after authenticated Web observations satisfy the configured activation quorum; a database
     commit alone is not proof that public traffic uses the desired revision.
+20. Before publishing an assignment, Deploy shall register every referenced Drive WebsiteRoot for
+    the exact target Node through the generated Drive Internal SDK. The callback shall be
+    `/nodes/{nodeUuid}/provider-events/drive-website-events`; channel/token derivation shall use a
+    protected per-Node secret, registration failure shall fence publication, and bounded renewal
+    shall replace channels after expiration-window or secret rotation. Drive shall deliver events
+    directly to Web Server; Deploy shall not relay or acknowledge event payloads.
 
 ## Non-Functional Requirements
 
@@ -155,7 +165,9 @@ is approved.
 ## Trace
 
 - Product: `docs/product/prd/PRD-cloud-site-publishing-platform.md`
-- Decision: `docs/architecture/decisions/ADR-20260721-unified-cloud-site-publishing-control-plane.md`
+- Decisions: `docs/architecture/decisions/ADR-20260721-unified-cloud-site-publishing-control-plane.md`
+  and the proposed, review-gated
+  `docs/architecture/decisions/ADR-20260723-managed-domain-tls-control-plane.md`
 - Architecture: `docs/architecture/tech/TECH-cloud-site-publishing-control-plane.md`
 - Prelaunch convergence: `docs/migrations/MIG-2026-0001-cloud-site-control-plane-convergence.md`
 - Module requirements: Drive `REQ-2026-0004`, Knowledgebase `REQ-2026-0721`, Web Server

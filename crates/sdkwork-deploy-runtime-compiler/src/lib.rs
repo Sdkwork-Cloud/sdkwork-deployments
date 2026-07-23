@@ -9,6 +9,7 @@ use thiserror::Error;
 pub const WEBSITE_RUNTIME_SCHEMA_VERSION: &str = "sdkwork.website-runtime.v1";
 pub const WEBSITE_RUNTIME_DESCRIPTOR_KIND: &str = "sdkwork.website-runtime.descriptor";
 pub const WEBSITE_RUNTIME_SET_SCHEMA_VERSION: &str = "sdkwork.website-runtime-set.v1";
+pub const MAXIMUM_RUNTIME_SET_BYTES: usize = 64 * 1024 * 1024;
 pub const WEBSITE_RUNTIME_SET_KIND: &str = "sdkwork.website-runtime-set.snapshot";
 pub const DESCRIPTOR_COMPILER_VERSION: &str = "sdkwork-deploy-runtime-compiler/1";
 pub const RUNTIME_SET_COMPILER_VERSION: &str = "sdkwork-deploy-runtime-set-compiler/1";
@@ -435,10 +436,30 @@ pub fn compile_runtime_set(
     });
     let snapshot_sha256 = canonical_sha256_excluding_field(&snapshot, "snapshotSha256")?;
     snapshot["snapshotSha256"] = Value::String(snapshot_sha256.clone());
+    runtime_set_size_bytes(&snapshot)?;
     Ok(CompiledRuntimeSet {
         snapshot,
         snapshot_sha256,
     })
+}
+
+pub fn runtime_set_size_bytes(snapshot: &Value) -> Result<usize, RuntimeCompilationError> {
+    runtime_set_size_bytes_with_limit(snapshot, MAXIMUM_RUNTIME_SET_BYTES)
+}
+
+fn runtime_set_size_bytes_with_limit(
+    snapshot: &Value,
+    maximum_bytes: usize,
+) -> Result<usize, RuntimeCompilationError> {
+    let bytes = serde_json::to_vec(snapshot)
+        .map_err(|error| RuntimeCompilationError::Serialization(error.to_string()))?
+        .len();
+    if bytes == 0 || bytes > maximum_bytes {
+        return Err(RuntimeCompilationError::Validation(format!(
+            "serialized runtime set exceeds the {maximum_bytes}-byte limit"
+        )));
+    }
+    Ok(bytes)
 }
 
 /// Orders runtime descriptors exactly as they are represented in a compiled runtime set.
@@ -924,10 +945,34 @@ mod tests {
     }
 
     #[test]
+    fn runtime_set_size_is_bounded_before_persistence() {
+        let snapshot = serde_json::json!({"payload": "0123456789"});
+        let exact_size = serde_json::to_vec(&snapshot).unwrap().len();
+        assert_eq!(
+            runtime_set_size_bytes_with_limit(&snapshot, exact_size).unwrap(),
+            exact_size
+        );
+        assert!(matches!(
+            runtime_set_size_bytes_with_limit(&snapshot, exact_size - 1),
+            Err(RuntimeCompilationError::Validation(_))
+        ));
+    }
+
+    #[test]
     fn content_changes_do_not_enter_the_compiler_contract() {
         let value = serde_json::to_value(site_input("site-a")).unwrap();
         let encoded = serde_json::to_string(&value).unwrap();
-        for forbidden in ["objectKey", "presigned", "contentVersion", "releaseId"] {
+        for forbidden in [
+            "objectKey",
+            "presigned",
+            "contentVersion",
+            "releaseId",
+            "releaseUuid",
+            "deploymentId",
+            "deploymentUuid",
+            "siteRevisionId",
+            "siteRevisionUuid",
+        ] {
             assert!(!encoded.contains(forbidden));
         }
     }

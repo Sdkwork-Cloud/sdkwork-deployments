@@ -3,6 +3,7 @@
 mod memory;
 mod sdk;
 mod selection;
+mod website_event_delivery;
 
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
@@ -12,7 +13,14 @@ use sdkwork_deploy_runtime_compiler::{RuntimeProviderType, RuntimeResourceCapabi
 
 pub use memory::MemoryContentProviderPort;
 pub use sdk::SdkContentProviderPort;
-pub use selection::content_provider_port_from_env;
+pub use selection::{
+    content_provider_port_from_env, website_provider_event_delivery_port_from_env,
+};
+pub use website_event_delivery::{
+    NoopWebsiteProviderEventDeliveryPort, SdkWebsiteProviderEventDeliveryPort,
+    WebsiteProviderEventDeliveryConfig, WebsiteProviderEventDeliveryPort,
+    WebsiteProviderEventDeliveryResult,
+};
 
 #[derive(Clone, Debug, Default)]
 pub struct ProviderRequestCredentials {

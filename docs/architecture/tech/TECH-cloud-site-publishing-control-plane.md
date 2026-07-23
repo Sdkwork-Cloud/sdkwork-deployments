@@ -2,9 +2,10 @@
 
 Status: implementation in progress
 Owner: SDKWork Deploy maintainers
-Updated: 2026-07-22
+Updated: 2026-07-23
 Requirement: REQ-2026-0001
-Decision: ADR-20260721-unified-cloud-site-publishing-control-plane
+Decisions: ADR-20260721-unified-cloud-site-publishing-control-plane,
+ADR-20260723-managed-domain-tls-control-plane (proposed)
 Specs: ARCHITECTURE_DECISION_SPEC.md, DOMAIN_SPEC.md, DATABASE_SPEC.md, DRIVE_SPEC.md,
 API_SPEC.md, SDK_SPEC.md, APP_SDK_INTEGRATION_SPEC.md, CONFIG_SPEC.md, DEPLOYMENT_SPEC.md,
 NGINX_SPEC.md, SECURITY_SPEC.md, PRIVACY_SPEC.md, PERFORMANCE_SPEC.md,
@@ -39,10 +40,16 @@ This evidence does not yet close production readiness. The authenticated Web obs
 contract, Deploy-owned immutable evidence, strict all-target quorum, and transactional
 `current_revision_id` advancement are implemented. Web `ACTIVE` now follows a bounded node-local
 route/content probe against an isolated candidate registry, but external public-domain multi-vantage
-probes, certificate material custody, SNI hot activation, metering, tenant/admin UI, load, recovery,
+probes, Deploy-driven certificate custody/distribution/observations, metering, tenant/admin UI, load, recovery,
 and real multi-Node rollout evidence remain required. Backend composition mutation remains absent
 until a trusted operator credential-delegation or resolved-resource administration contract is
 approved.
+
+Web Server's native file-backed TLS consumer already validates bounded immutable material and
+node-scoped snapshots, performs exact/wildcard SNI selection, atomically replaces Rustls state, and
+recovers the last known good snapshot. That is data-plane evidence only. The proposed
+ADR-20260723 defines the still-missing Deploy domain proof, durable ACME, secret custody,
+distribution authorization, generated Web Internal operations, and served-fingerprint convergence.
 
 ## 1. Authority And Bounded Contexts
 
@@ -555,8 +562,18 @@ cannot hold a Site lock. The implemented mutation order is:
    generation-fenced assignment per active target.
 10. Persist the replay result and audit record, then commit all state atomically.
 
-After commit, assignment workers read the Web ingress token file for each publication attempt and
-publish through the generated Web Internal SDK. Web Nodes validate both schema/hash layers and all
+After commit, assignment workers first extract and deduplicate Drive WebsiteRoot UUIDs from the
+bounded runtime set. For every root they derive a Node/root channel and write-only verification
+token from the protected Node derivation secret, then register or replace the exact
+`/nodes/{nodeUuid}/provider-events/drive-website-events` HTTPS callback through the generated Drive
+Internal SDK. Exact receipt identity/status/expiration/version validation is mandatory; any failure
+marks the assignment failed and prevents Web publication. A bounded keyset scan of latest active
+assignments renews channels before expiration, isolates target failures, and forces replacement
+after Node-secret rotation. Only the runtime-assignment worker receives Node derivation secrets;
+gateway processes do not.
+
+After event-channel assurance, assignment workers read the Web ingress token file for each
+publication attempt and publish through the generated Web Internal SDK. Web Nodes validate both schema/hash layers and all
 provider resources, then execute bounded `HEAD` delivery probes against an isolated candidate
 registry. The probe covers every authored Binding and every reachable device Variant entrypoint;
 failure reports `REJECTED/ACTIVATION_PROBE_FAILED` without replacing the live registry or recovery
@@ -637,7 +654,9 @@ reconnect, or unknown generation, the node marks the resource for read-through r
 Deploy is not an ordinary content-event relay and does not create a Release, Deployment, or
 SiteRevision for those events. It revalidates provider eligibility during attachment, preview,
 activation, explicit reconciliation, and provider-wide failure recovery. Drive/Knowledgebase
-provider events flow directly to authorized Web Server consumers.
+provider events flow directly to authorized Web Server consumers. Deploy owns Drive WebsiteRoot
+channel registration and renewal as control-plane work, but it never receives or acknowledges the
+event payload.
 
 Knowledgebase uses a Drive source checkpoint internally, then emits provider-facing events with a
 provider-wide generation and route-scoped page public versions. Private ingest/preview work must

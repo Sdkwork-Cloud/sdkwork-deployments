@@ -80,27 +80,27 @@ ingress-token-file settings.
 Use this pipeline for Git, package, image, and frozen-bundle delivery. Do not use it for ordinary
 Drive WebsiteRoot or Knowledgebase Wiki content changes.
 
-## Custom TLS Certificate Import
+## Managed TLS Prelaunch Gate
 
-1. Create and complete Drive upload sessions with `packageType` `6` for certificate PEM and `7` for
-   private key PEM.
-2. Call `certificates.upload` with both completed session ids and an `idempotencyKey`.
+Managed and custom certificate integration is not available for commercial use. The current
+metadata-only certificate operations do not prove domain ownership, issue or renew a certificate,
+distribute certificate material, activate Web Nodes, or prove the certificate served for an SNI.
+Integrators must not use `certificates.upload`, certificate/private-key Drive upload sessions, or
+Drive node references as a private-key custody mechanism.
 
-The response contains metadata only; private keys are never returned.
+The proposed
+[managed domain and TLS decision](../../architecture/decisions/ADR-20260723-managed-domain-tls-control-plane.md)
+replaces that prelaunch contract with durable domain proof, ACME workflows, immutable certificate
+versions, KMS/Secret Manager custody, one-time custom secret ingest, target-scoped distribution, and
+loaded/served/public observations. Its
+[implementation plan](../../engineering/plans/PLAN-2026-0002-managed-domain-tls-control-plane.md)
+is blocked on human review. Do not integrate the replacement operations until the ADR is accepted,
+the authored OpenAPI is updated, and the generated SDK families are regenerated and released.
 
-## Certificate Lifecycle
-
-| Operation | Current behavior |
-| --- | --- |
-| `certificates.list` / `retrieve` | Returns metadata only |
-| `certificates.create` | Registers a pending managed certificate request |
-| `certificates.renew` | Schedules renewal for a managed certificate |
-| `certificates.delete` | Revokes the certificate record; Drive retention remains Drive-owned |
-| `certificates.upload` | Registers custom certificate metadata from completed upload sessions |
-
-Scheduling renewal is not issuance evidence. Commercial activation requires the ACME worker,
-immutable certificate version, secure distribution, Web Node activation, and served-SNI
-verification described by the technical architecture.
+Until that release gate passes, production deployments must use the externally terminated TLS
+profile declared by the deployment architecture. A pending row or planned renewal is control-plane
+metadata only and must never be presented as ownership, issuance, renewal, activation, or served
+certificate evidence.
 
 ## Regenerate And Verify
 

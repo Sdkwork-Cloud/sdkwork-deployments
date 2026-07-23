@@ -39,6 +39,7 @@
       {"name": "deployRepository", "export": "."},
       {"name": "deployDrive", "export": ".", "provider": "sdkwork-deploy-drive-port"},
       {"name": "contentProvider", "export": ".", "provider": "sdkwork-deploy-content-provider-port"},
+      {"name": "websiteProviderEventDelivery", "export": ".", "provider": "sdkwork-deploy-content-provider-port"},
       {"name": "deployWebRuntime", "export": ".", "provider": "sdkwork-deploy-web-port"}
     ],
     "runtimeEntrypoints": [],

@@ -11,4 +11,10 @@ sdkwork-utils-rust.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
+async-trait.workspace = true
+sdkwork-knowledgebase-internal-sdk-generated-rust.workspace = true
+sdkwork-webserver-contract.workspace = true
 sdkwork-webserver-core.workspace = true
+sdkwork-webserver-delivery-runtime.workspace = true
+sdkwork-webserver-knowledgebase-provider.workspace = true
+tokio.workspace = true

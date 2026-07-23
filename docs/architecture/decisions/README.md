@@ -8,4 +8,5 @@ See `ARCHITECTURE_DECISION_SPEC.md`.
 
 ## Active Decisions
 
-- [ADR-20260721 Unified Cloud Site Publishing Control Plane](ADR-20260721-unified-cloud-site-publishing-control-plane.md) - proposed cross-repository ownership and live resource model.
+- [ADR-20260721 Unified Cloud Site Publishing Control Plane](ADR-20260721-unified-cloud-site-publishing-control-plane.md) - accepted cross-repository ownership and live resource model.
+- [ADR-20260723 Managed Domain And TLS Control Plane](ADR-20260723-managed-domain-tls-control-plane.md) - proposed durable domain proof, certificate custody, ACME, distribution, and served-evidence model.

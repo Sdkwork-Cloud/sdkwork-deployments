@@ -5,10 +5,19 @@ edition.workspace = true
 
 [dependencies]
 async-trait.workspace = true
+serde_json.workspace = true
 sdkwork-deploy-contract.workspace = true
 sdkwork-deploy-core.workspace = true
 sdkwork-deploy-runtime-compiler.workspace = true
+sdkwork-drive-contract.workspace = true
 sdkwork-utils-rust.workspace = true
 sdkwork_drive_app_sdk_generated_rust.workspace = true
 sdkwork-drive-internal-sdk-generated-rust.workspace = true
 sdkwork-knowledgebase-internal-sdk-generated-rust.workspace = true
+tokio.workspace = true
+url.workspace = true
+uuid.workspace = true
+zeroize.workspace = true
+
+[dev-dependencies]
+axum.workspace = true

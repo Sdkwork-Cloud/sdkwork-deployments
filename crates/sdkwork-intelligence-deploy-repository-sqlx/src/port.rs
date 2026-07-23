@@ -569,6 +569,15 @@ impl DeployRuntimeAssignmentRepositoryPort for DeployRepository {
             .await
     }
 
+    async fn list_active_runtime_assignments_after(
+        &self,
+        after_target_uuid: Option<&str>,
+        maximum_items: i64,
+    ) -> sdkwork_deploy_contract::DeployServiceResult<Vec<RuntimeAssignmentState>> {
+        self.list_active_runtime_assignments_after_repo(after_target_uuid, maximum_items)
+            .await
+    }
+
     async fn persist_runtime_observation(
         &self,
         assignment_uuid: &str,

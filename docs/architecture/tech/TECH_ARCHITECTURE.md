@@ -2,13 +2,12 @@
 
 Status: active
 Owner: SDKWork maintainers
-Updated: 2026-07-22
+Updated: 2026-07-23
 Specs: ARCHITECTURE_DECISION_SPEC.md, DOCUMENTATION_SPEC.md, DOMAIN_SPEC.md, DATABASE_SPEC.md,
 DEPLOYMENT_SPEC.md, SECURITY_SPEC.md
 
 ## Document Map
 
-- [TECH-design-report.md](TECH-design-report.md)
 - [TECH-standards-alignment.md](TECH-standards-alignment.md)
 - [TECH-cloud-site-publishing-control-plane.md](TECH-cloud-site-publishing-control-plane.md) - active
   cloud publishing ownership, implemented composition/SDK/runtime-assignment foundation, target TLS
@@ -40,6 +39,7 @@ Architecture detail lives in the linked TECH shards above. The cloud publishing 
 ## 8. Architecture Decision Index
 
 - [ADR-20260721 Unified Cloud Site Publishing Control Plane](../decisions/ADR-20260721-unified-cloud-site-publishing-control-plane.md)
+- [ADR-20260723 Managed Domain And TLS Control Plane](../decisions/ADR-20260723-managed-domain-tls-control-plane.md) - proposed; implementation is review-gated.
 
 ## 9. Verification
 

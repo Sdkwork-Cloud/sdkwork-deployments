@@ -3,7 +3,7 @@
 Status: implementation in progress
 Owner: SDKWork Deploy maintainers
 Application: sdkwork-deploy
-Updated: 2026-07-22
+Updated: 2026-07-23
 Requirement: REQ-2026-0001
 Specs: REQUIREMENTS_SPEC.md, DOCUMENTATION_SPEC.md, DRIVE_SPEC.md, SECURITY_SPEC.md,
 PRIVACY_SPEC.md, PERFORMANCE_SPEC.md, OBSERVABILITY_SPEC.md, DEPLOYMENT_SPEC.md,
@@ -20,6 +20,14 @@ transaction replaces normalized composition, appends an immutable SiteRevision, 
    advances the current revision only after strict all-frozen-target `ACTIVE` convergence.
 Ordinary Drive and Knowledgebase content changes are absent from compiler input and therefore do not
 create Releases, Deployments, or SiteRevisions.
+Before a runtime assignment is published, the assignment worker registers every referenced Drive
+WebsiteRoot's Node-scoped event channel through the generated Drive Internal SDK. It derives no
+static per-root configuration: a protected per-Node secret deterministically yields each bounded
+channel/token pair, and a bounded active-assignment scan renews channels before expiration. The
+callback path is `/nodes/{nodeUuid}/provider-events/drive-website-events`; Drive then delivers
+events directly to the exact Web Node. Registration failure fences publication, while an isolated
+renewal failure is retried without blocking unrelated targets. Deploy never relays or acknowledges
+ordinary content events.
 
 Commercial launch still requires external public-domain multi-vantage activation probes, complete
 certificate material custody and ACME rotation, provider-aware public cache integration,
@@ -29,6 +37,12 @@ strict quorum, and current-revision advancement are implemented foundations; the
 public reachability. Backend composition mutation is intentionally not exposed until trusted
 operator credential delegation or a resolved-resource admin contract is approved; platform
 administrators may inspect health and runtime evidence without bypassing provider ownership checks.
+
+The Web Server has a bounded native TLS snapshot consumer with certificate/key/SAN/fingerprint
+validation, exact/wildcard SNI selection, atomic Rustls replacement, and last-known-good recovery.
+Deploy still lacks the approved domain-proof, ACME account/order/challenge, KMS/Secret Manager,
+distribution, node observation, and public served-fingerprint control plane. The proposed contract
+and gated implementation sequence are recorded in ADR-20260723 and PLAN-2026-0002.
 
 ## 1. Product Summary
 
@@ -566,6 +580,8 @@ origins, advanced traffic policy, and certified 99.99% data-plane tier.
 
 - [REQ-2026-0001 Cloud Site Publishing Platform](../../product/requirements/REQ-2026-0001-cloud-site-publishing-platform.md)
 - [Unified cloud publishing control-plane ADR](../../architecture/decisions/ADR-20260721-unified-cloud-site-publishing-control-plane.md)
+- [Managed domain and TLS control-plane ADR](../../architecture/decisions/ADR-20260723-managed-domain-tls-control-plane.md)
+- [Managed domain and TLS implementation plan](../../engineering/plans/PLAN-2026-0002-managed-domain-tls-control-plane.md)
 - [Cloud publishing control-plane architecture](../../architecture/tech/TECH-cloud-site-publishing-control-plane.md)
 - [Control-plane authority convergence migration](../../migrations/MIG-2026-0001-cloud-site-control-plane-convergence.md)
 

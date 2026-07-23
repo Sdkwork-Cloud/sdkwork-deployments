@@ -380,6 +380,44 @@ impl DeployRepository {
         rows.iter().map(map_assignment_row).collect()
     }
 
+    pub(super) async fn list_active_runtime_assignments_after_repo(
+        &self,
+        after_target_uuid: Option<&str>,
+        maximum_items: i64,
+    ) -> DeployServiceResult<Vec<RuntimeAssignmentState>> {
+        let rows = sqlx::query(
+            "SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
+                    t.node_uuid, t.environment, a.trigger_site_revision_id,
+                    a.generation, a.snapshot_uuid, a.snapshot_sha256,
+                    a.desired_state_sha256,
+                    CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
+                    a.remote_assignment_uuid, a.attempt_count, a.lease_owner
+             FROM deploy_web_node_target t
+             INNER JOIN deploy_runtime_assignment a ON a.node_target_id = t.id
+             WHERE t.uuid > $1
+               AND t.status = 'ACTIVE' AND t.deleted_at IS NULL
+               AND a.publish_status = 'PUBLISHED'
+               AND NOT EXISTS (
+                   SELECT 1 FROM deploy_runtime_assignment newer
+                   WHERE newer.node_target_id = a.node_target_id
+                     AND newer.generation > a.generation
+               )
+               AND EXISTS (
+                   SELECT 1 FROM deploy_site_target_observation observation
+                   WHERE observation.runtime_assignment_id = a.id
+                     AND observation.state = 'ACTIVE'
+               )
+             ORDER BY t.uuid
+             LIMIT $2",
+        )
+        .bind(after_target_uuid.unwrap_or_default())
+        .bind(maximum_items)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|error| store_error("list active runtime assignments for renewal", error))?;
+        rows.iter().map(map_assignment_row).collect()
+    }
+
     pub(super) async fn persist_runtime_observation_repo(
         &self,
         assignment_uuid: &str,

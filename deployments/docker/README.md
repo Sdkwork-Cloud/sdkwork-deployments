@@ -33,7 +33,15 @@ also set `SDKWORK_DEPLOY_USE_MEMORY_DRIVE=false`, `SDKWORK_DEPLOY_USE_MEMORY_CON
 the path declared by its corresponding `*_INGRESS_TOKEN_FILE` key. Production Snowflake ids use
 the shared database lease allocator; static node ids are rejected.
 
-The worker does not serve HTTP and does not need Drive, IAM, CORS, or listener configuration. It
-requires the Deploy database URL, Web Internal URL and ingress-token file, a unique
-`SDKWORK_NODE_INSTANCE_ID`, and the bounded runtime-assignment batch, polling, and lease settings
-from the selected topology profile. Kubernetes injects the Pod UID as the process identity.
+The worker does not serve HTTP and does not need the Drive App SDK or IAM/CORS/listener
+configuration. It requires the Deploy database URL, Web and Drive Internal URLs and ingress-token
+files, the HTTPS provider-event callback base, the protected per-Web-Node derivation-secret
+directory, a unique `SDKWORK_NODE_INSTANCE_ID`, and the bounded runtime-assignment batch, polling,
+lease, expiration, and renew-before settings from the selected topology profile. Kubernetes
+injects the Pod UID as the process identity.
+
+The callback base is an HTTPS origin or path prefix. The worker appends
+`/nodes/{nodeUuid}/provider-events/drive-website-events`, registers the result through the generated
+Drive Internal SDK, and renews it before expiry. The ingress must route the resulting path to the
+matching Web Node without a fleet-wide load balancer or path rewrite. Deploy is the channel
+registration/renewal controller; it does not receive or acknowledge ordinary Drive content events.

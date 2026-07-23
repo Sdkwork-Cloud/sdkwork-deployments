@@ -9,6 +9,7 @@ use sdkwork_deploy_contract::{
 };
 use sdkwork_deploy_runtime_compiler::{
     canonical_sha256_excluding_field, compile_runtime_set, compile_site_revision,
+    runtime_set_size_bytes,
     normalize_runtime_descriptors, RuntimeBinding, RuntimeBindingAction, RuntimeClientClass,
     RuntimeDeliveryPolicy, RuntimeEnvironment, RuntimeHandler, RuntimeLimits, RuntimeMount,
     RuntimeMountMode, RuntimeMountTranslation, RuntimeObservabilityPolicy,
@@ -1102,7 +1103,9 @@ async fn insert_runtime_assignments(
         .map_err(|error| DeployServiceError::validation(error.to_string()))?;
         let runtime_set_json = serde_json::to_string(&compiled.snapshot)
             .map_err(|_| DeployServiceError::Internal("serialize runtime set failed".to_owned()))?;
-        let runtime_set_bytes = runtime_set_json.len() as i64;
+        let runtime_set_bytes = runtime_set_size_bytes(&compiled.snapshot)
+            .map_err(|error| DeployServiceError::validation(error.to_string()))?
+            as i64;
         let assignment_id = next_id(repository.id_generator())?;
         let assignment_uuid = new_uuid();
         let query = if database == CompositionDatabase::PostgreSql {

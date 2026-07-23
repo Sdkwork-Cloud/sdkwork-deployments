@@ -5,7 +5,9 @@ use std::sync::Arc;
 use sdkwork_database_config::DatabaseConfig;
 use sdkwork_database_id::{NodeLease, SnowflakeIdGenerator, SnowflakeNodeAllocator};
 use sdkwork_database_sqlx::create_any_pool_from_config;
-use sdkwork_deploy_content_provider_port::content_provider_port_from_env;
+use sdkwork_deploy_content_provider_port::{
+    content_provider_port_from_env, website_provider_event_delivery_port_from_env,
+};
 use sdkwork_deploy_database_host::bootstrap_deploy_database_from_env;
 use sdkwork_deploy_drive_port::deploy_drive_port_from_env;
 use sdkwork_deploy_web_port::{
@@ -88,9 +90,10 @@ pub async fn bootstrap_runtime_publication_host_from_env() -> Result<RuntimePubl
     let repository = repository_from_env().await?;
     let runtime_repository = repository as Arc<dyn DeployRuntimeAssignmentRepositoryPort>;
     Ok(RuntimePublicationHost {
-        publication: Arc::new(RuntimePublicationService::new(
+        publication: Arc::new(RuntimePublicationService::new_with_provider_event_delivery(
             runtime_repository,
             web_runtime_from_env()?,
+            website_provider_event_delivery_port_from_env()?,
         )),
     })
 }

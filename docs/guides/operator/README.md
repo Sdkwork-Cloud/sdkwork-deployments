@@ -42,12 +42,19 @@ record committed together. It does not prove Web Nodes activated the revision.
 | `deploy_runtime_assignment.publish_status` | Pending, claimed, or published assignment delivery state |
 | `deploy_site.current_revision_id` | Revision confirmed active after Web observation/quorum |
 
-Until the observation/quorum implementation is enabled, do not equate a published assignment with
-public activation. Keep the last-known-good runtime set and investigate repeated claim expiry,
-generation mismatch, receipt mismatch, or provider validation failures before retrying.
+Observation ingestion and strict all-frozen-target quorum are enabled: `current_revision_id`
+advances only after every frozen target reports an authenticated matching `ACTIVE` observation.
+Do not equate a published assignment, or even this node-local activation evidence, with public
+DNS/TLS/CDN reachability. Keep the last-known-good runtime set and investigate repeated claim
+expiry, generation mismatch, receipt mismatch, provider-event registration failure, provider
+validation failure, or rejected observations before retrying. External public-domain probes remain
+a production gate.
 
 Ordinary Drive and Wiki file changes bypass this flow. They are served through provider reads and
 cache revalidation and must not create Releases, Deployments, or SiteRevisions.
+For Drive resources, the worker nevertheless owns the control-plane prerequisite: it registers and
+renews each WebsiteRoot's exact Node callback before assignment publication. Event payloads travel
+from Drive directly to Web Server.
 
 ## Database
 

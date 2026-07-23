@@ -1,9 +1,13 @@
 use std::collections::{HashMap, HashSet};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::{fs, path::PathBuf};
 
 use async_trait::async_trait;
 use sdkwork_database_id::SnowflakeIdGenerator;
+use sdkwork_deploy_content_provider_port::{
+    WebsiteProviderEventDeliveryPort, WebsiteProviderEventDeliveryResult,
+};
 use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
 use sdkwork_deploy_runtime_compiler::{
     canonical_sha256_excluding_field, CompiledRuntimeSet, RuntimeEnvironment,
@@ -60,6 +64,28 @@ struct SelectiveActiveWebRuntime {
     tenant_id: i64,
     published: Mutex<HashMap<String, RuntimeAssignmentReceipt>>,
     active_snapshots: Mutex<HashSet<String>>,
+}
+
+#[derive(Default)]
+struct CountingWebRuntime {
+    calls: AtomicUsize,
+}
+
+#[derive(Default)]
+struct FailingProviderEventDelivery;
+
+struct SelectiveProviderEventDelivery {
+    visited_nodes: Mutex<Vec<String>>,
+    failing_node: Option<String>,
+}
+
+impl SelectiveProviderEventDelivery {
+    fn new(failing_node: Option<&str>) -> Self {
+        Self {
+            visited_nodes: Mutex::new(Vec::new()),
+            failing_node: failing_node.map(str::to_owned),
+        }
+    }
 }
 
 impl SelectiveActiveWebRuntime {
@@ -125,6 +151,64 @@ impl DeployWebRuntimePort for AcceptingWebRuntime {
         Err(DeployServiceError::not_found(
             "runtime observation not available",
         ))
+    }
+}
+
+#[async_trait]
+impl DeployWebRuntimePort for CountingWebRuntime {
+    async fn publish_runtime_assignment(
+        &self,
+        _runtime_set: &CompiledRuntimeSet,
+    ) -> DeployServiceResult<RuntimeAssignmentReceipt> {
+        self.calls.fetch_add(1, Ordering::SeqCst);
+        Err(DeployServiceError::Internal(
+            "Web runtime must not be reached".to_owned(),
+        ))
+    }
+
+    async fn retrieve_latest_runtime_observation(
+        &self,
+        _snapshot_uuid: &str,
+    ) -> DeployServiceResult<RuntimeObservationReceipt> {
+        Err(DeployServiceError::not_found(
+            "runtime observation not available",
+        ))
+    }
+}
+
+#[async_trait]
+impl WebsiteProviderEventDeliveryPort for FailingProviderEventDelivery {
+    async fn ensure_runtime_set(
+        &self,
+        _node_uuid: &str,
+        _runtime_set: &serde_json::Value,
+    ) -> DeployServiceResult<WebsiteProviderEventDeliveryResult> {
+        Err(DeployServiceError::Internal(
+            "provider event delivery is unavailable".to_owned(),
+        ))
+    }
+}
+
+#[async_trait]
+impl WebsiteProviderEventDeliveryPort for SelectiveProviderEventDelivery {
+    async fn ensure_runtime_set(
+        &self,
+        node_uuid: &str,
+        _runtime_set: &serde_json::Value,
+    ) -> DeployServiceResult<WebsiteProviderEventDeliveryResult> {
+        self.visited_nodes
+            .lock()
+            .unwrap()
+            .push(node_uuid.to_owned());
+        if self.failing_node.as_deref() == Some(node_uuid) {
+            return Err(DeployServiceError::Internal(
+                "selected provider event delivery failure".to_owned(),
+            ));
+        }
+        Ok(WebsiteProviderEventDeliveryResult {
+            ensured: 1,
+            skipped: 0,
+        })
     }
 }
 
@@ -415,6 +499,237 @@ async fn sqlite_outbox_is_durable_idempotent_and_publishable() {
         RuntimeAssignmentPublishStatus::Published
     );
     assert_eq!(published.snapshot_sha256, pending.snapshot_sha256);
+}
+
+#[tokio::test]
+async fn provider_event_delivery_failure_prevents_web_publication() {
+    sqlx::any::install_default_drivers();
+    let pool = AnyPoolOptions::new()
+        .max_connections(1)
+        .connect("sqlite::memory:")
+        .await
+        .expect("connect SQLite");
+    sqlx::raw_sql(SQLITE_BASELINE)
+        .execute(&pool)
+        .await
+        .expect("apply SQLite baseline");
+    sqlx::query(
+        "INSERT INTO deploy_web_node_target (
+            id, uuid, tenant_id, node_uuid, environment, tenant_scope_hash,
+            status, created_at, updated_at, version
+         ) VALUES (1, 'target-1', 7, 'node-1', 'production', $1,
+                   'ACTIVE', '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z', 1)",
+    )
+    .bind("1".repeat(64))
+    .execute(&pool)
+    .await
+    .expect("insert Web Node target");
+    let repository = Arc::new(DeployRepository::new(
+        pool.clone(),
+        SnowflakeIdGenerator::new(1).expect("Snowflake generator"),
+    ));
+    let web_runtime = Arc::new(CountingWebRuntime::default());
+    let publisher = RuntimePublicationService::new_with_provider_event_delivery(
+        repository.clone(),
+        web_runtime.clone(),
+        Arc::new(FailingProviderEventDelivery),
+    );
+    publisher
+        .enqueue_target_state(
+            &RuntimeTarget {
+                target_uuid: "target-1".to_owned(),
+                tenant_id: 7,
+                node_uuid: "node-1".to_owned(),
+                environment: RuntimeEnvironment::Production,
+                tenant_scope_hash: "1".repeat(64),
+            },
+            "snapshot-1".to_owned(),
+            "2026-07-22T00:00:00Z".to_owned(),
+            vec![],
+        )
+        .await
+        .expect("persist pending assignment");
+
+    let batch = publisher
+        .publish_due("worker-1", 10, 30)
+        .await
+        .expect("record provider delivery failure");
+    assert_eq!(batch.claimed, 1);
+    assert_eq!(batch.published, 0);
+    assert_eq!(batch.failed, 1);
+    assert_eq!(web_runtime.calls.load(Ordering::SeqCst), 0);
+    let row = sqlx::query(
+        "SELECT publish_status, last_error_code FROM deploy_runtime_assignment WHERE uuid = $1",
+    )
+    .bind(
+        repository
+            .latest_runtime_assignment("target-1")
+            .await
+            .unwrap()
+            .unwrap()
+            .assignment_uuid,
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("load failed assignment");
+    assert_eq!(row.get::<String, _>("publish_status"), "FAILED");
+    assert_eq!(
+        row.get::<String, _>("last_error_code"),
+        "PROVIDER_EVENT_DELIVERY_UNAVAILABLE"
+    );
+}
+
+#[tokio::test]
+async fn active_assignment_renewal_is_cursor_bounded_and_failure_isolated() {
+    sqlx::any::install_default_drivers();
+    let pool = AnyPoolOptions::new()
+        .max_connections(1)
+        .connect("sqlite::memory:")
+        .await
+        .expect("connect SQLite");
+    sqlx::raw_sql(SQLITE_BASELINE)
+        .execute(&pool)
+        .await
+        .expect("apply SQLite baseline");
+    let tenant_scope_hash = "1".repeat(64);
+    for (id, target_uuid, node_uuid) in [
+        (1_i64, "target-a", "node-a"),
+        (2_i64, "target-b", "node-b"),
+        (3_i64, "target-c", "node-c"),
+        (4_i64, "target-d", "node-d"),
+    ] {
+        sqlx::query(
+            "INSERT INTO deploy_web_node_target (
+                id, uuid, tenant_id, node_uuid, environment, tenant_scope_hash,
+                status, created_at, updated_at, version
+             ) VALUES ($1, $2, 7, $3, 'production', $4,
+                       'ACTIVE', '2026-07-22T00:00:00Z', '2026-07-22T00:00:00Z', 1)",
+        )
+        .bind(id)
+        .bind(target_uuid)
+        .bind(node_uuid)
+        .bind(&tenant_scope_hash)
+        .execute(&pool)
+        .await
+        .expect("insert Web Node target");
+    }
+    let repository = Arc::new(DeployRepository::new(
+        pool,
+        SnowflakeIdGenerator::new(1).expect("Snowflake generator"),
+    ));
+    let web_runtime = Arc::new(SelectiveActiveWebRuntime::new(
+        7,
+        [
+            "snapshot-a".to_owned(),
+            "snapshot-b".to_owned(),
+            "snapshot-c".to_owned(),
+            "snapshot-d".to_owned(),
+        ],
+    ));
+    let publisher = RuntimePublicationService::new(repository.clone(), web_runtime.clone());
+    for (target_uuid, node_uuid, snapshot_uuid) in [
+        ("target-a", "node-a", "snapshot-a"),
+        ("target-b", "node-b", "snapshot-b"),
+        ("target-c", "node-c", "snapshot-c"),
+        ("target-d", "node-d", "snapshot-d"),
+    ] {
+        publisher
+            .enqueue_target_state(
+                &RuntimeTarget {
+                    target_uuid: target_uuid.to_owned(),
+                    tenant_id: 7,
+                    node_uuid: node_uuid.to_owned(),
+                    environment: RuntimeEnvironment::Production,
+                    tenant_scope_hash: tenant_scope_hash.clone(),
+                },
+                snapshot_uuid.to_owned(),
+                "2026-07-22T00:00:00Z".to_owned(),
+                vec![],
+            )
+            .await
+            .expect("persist runtime assignment");
+    }
+    let published = publisher
+        .publish_due("worker-active", 10, 30)
+        .await
+        .expect("publish and activate assignments");
+    assert_eq!(published.published, 4);
+    assert_eq!(published.revisions_activated, 0);
+
+    let first_page = repository
+        .list_active_runtime_assignments_after(None, 2)
+        .await
+        .expect("load first active assignment page");
+    assert_eq!(
+        first_page
+            .iter()
+            .map(|assignment| assignment.target_uuid.as_str())
+            .collect::<Vec<_>>(),
+        ["target-a", "target-b"]
+    );
+    let second_page = repository
+        .list_active_runtime_assignments_after(Some("target-b"), 2)
+        .await
+        .expect("load second active assignment page");
+    assert_eq!(
+        second_page
+            .iter()
+            .map(|assignment| assignment.target_uuid.as_str())
+            .collect::<Vec<_>>(),
+        ["target-c", "target-d"]
+    );
+
+    let provider_events = Arc::new(SelectiveProviderEventDelivery::new(Some("node-b")));
+    let renewal = RuntimePublicationService::new_with_provider_event_delivery(
+        repository.clone(),
+        web_runtime.clone(),
+        provider_events.clone(),
+    );
+    let first = renewal
+        .renew_active_provider_event_deliveries(2)
+        .await
+        .expect("renew first active page");
+    assert_eq!(first.provider_event_assignments_checked, 2);
+    assert_eq!(first.provider_event_assignments_failed, 1);
+    assert_eq!(first.provider_event_deliveries_ensured, 1);
+    let second = renewal
+        .renew_active_provider_event_deliveries(2)
+        .await
+        .expect("renew second active page");
+    assert_eq!(second.provider_event_assignments_checked, 2);
+    assert_eq!(second.provider_event_assignments_failed, 0);
+    assert_eq!(second.provider_event_deliveries_ensured, 2);
+    assert_eq!(
+        provider_events.visited_nodes.lock().unwrap().as_slice(),
+        ["node-a", "node-b", "node-c", "node-d"]
+    );
+
+    publisher
+        .enqueue_target_state(
+            &RuntimeTarget {
+                target_uuid: "target-b".to_owned(),
+                tenant_id: 7,
+                node_uuid: "node-b".to_owned(),
+                environment: RuntimeEnvironment::Production,
+                tenant_scope_hash: tenant_scope_hash.clone(),
+            },
+            "snapshot-b-next".to_owned(),
+            "2026-07-22T00:01:00Z".to_owned(),
+            vec![runtime_descriptor("site-b-next", &tenant_scope_hash)],
+        )
+        .await
+        .expect("persist newer pending assignment");
+    let latest_active = repository
+        .list_active_runtime_assignments_after(None, 10)
+        .await
+        .expect("exclude target whose latest assignment is not active");
+    assert_eq!(
+        latest_active
+            .iter()
+            .map(|assignment| assignment.target_uuid.as_str())
+            .collect::<Vec<_>>(),
+        ["target-a", "target-c", "target-d"]
+    );
 }
 
 #[tokio::test]
@@ -903,6 +1218,49 @@ async fn postgres_serializes_mutations_and_fences_assignment_leases() {
         .await
         .expect("scan exhausted PostgreSQL assignment");
     assert!(exhausted.is_empty());
+
+    sqlx::query(
+        "UPDATE deploy_runtime_assignment
+         SET publish_status = 'PUBLISHED', remote_assignment_uuid = 'web-assignment-postgres',
+             attempt_count = 3, next_attempt_at = NULL, last_error_code = NULL,
+             published_at = '2026-07-22T00:02:01Z', updated_at = '2026-07-22T00:02:01Z'
+         WHERE uuid = $1",
+    )
+    .bind(&takeover[0].assignment_uuid)
+    .execute(&pool)
+    .await
+    .expect("mark PostgreSQL assignment published for renewal scan");
+    sqlx::query(
+        "INSERT INTO deploy_site_target_observation (
+            id, uuid, tenant_id, site_id, site_revision_id, node_target_id,
+            runtime_assignment_id, remote_observation_uuid, remote_assignment_uuid,
+            generation, snapshot_uuid, snapshot_sha256, environment, state,
+            node_version, reason_code, detail, observed_at, ingested_at, created_at
+         ) SELECT
+            900, '01900000-0000-7000-8000-000000000900', 7, NULL, NULL, 1,
+            a.id, 'observation-postgres-active', 'web-assignment-postgres',
+            a.generation, a.snapshot_uuid, a.snapshot_sha256, t.environment, 'ACTIVE',
+            'test', NULL, NULL,
+            '2026-07-22T00:02:02Z', '2026-07-22T00:02:02Z', '2026-07-22T00:02:02Z'
+         FROM deploy_runtime_assignment a
+         INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
+         WHERE a.uuid = $1",
+    )
+    .bind(&takeover[0].assignment_uuid)
+    .execute(&pool)
+    .await
+    .expect("insert PostgreSQL ACTIVE observation");
+    let active = repository
+        .list_active_runtime_assignments_after(None, 1)
+        .await
+        .expect("scan PostgreSQL active assignment renewal page");
+    assert_eq!(active.len(), 1);
+    assert_eq!(active[0].target_uuid, "target-1");
+    assert!(repository
+        .list_active_runtime_assignments_after(Some("target-1"), 1)
+        .await
+        .expect("advance PostgreSQL active assignment cursor")
+        .is_empty());
 
     drop(publisher);
     drop(repository);

@@ -1,6 +1,6 @@
 # Standards Alignment
 
-SDKWork Deploy standards alignment for `sdkwork-deployments`, updated 2026-07-22.
+SDKWork Deploy standards alignment for `sdkwork-deployments`, updated 2026-07-23.
 
 ## Integrated Frameworks
 
@@ -10,7 +10,7 @@ SDKWork Deploy standards alignment for `sdkwork-deployments`, updated 2026-07-22
 | `sdkwork-database` | Integrated | One PostgreSQL/SQLite database contract, lifecycle host, materialization and drift validation |
 | `sdkwork-utils-rust` | Integrated | API envelopes, pagination, parsing, hashing, and shared utilities |
 | Deploy App/Backend SDK families | Generated and buildable | Owner-only sdkgen inputs, family manifests, composed TypeScript facades, generated transports |
-| Drive App/Internal SDKs | Integrated | WebsiteRoot create/reuse plus exact Internal revalidation; Drive-backed artifact uploads |
+| Drive App/Internal SDKs | Integrated | WebsiteRoot create/reuse, exact Internal revalidation, Node-scoped event-channel registration/renewal, and Drive-backed artifact uploads |
 | Knowledgebase Internal SDK | Integrated | Exact ACTIVE canonical WikiPublication validation and bounded capability projection |
 | Web Internal SDK | Integrated | Immutable runtime-set publication with per-attempt ingress-token-file loading |
 | `sdkwork-discovery` | Deferred by topology | HTTP-only application gateway; required when RPC services are introduced |
@@ -30,6 +30,9 @@ observation/quorum and is not advanced by the composition transaction.
 
 Ordinary Drive and Knowledgebase content changes never call this mutation and do not create
 `deploy_release`, `deploy_deployment`, or `deploy_site_revision` records.
+The runtime worker registers and renews referenced Drive WebsiteRoot channels through the generated
+Drive Internal SDK before Web publication. Drive then delivers ordinary events directly to the
+Node-qualified Web callback; Deploy is not the event relay or acknowledgement authority.
 
 ## API And SDK Contract
 
@@ -69,17 +72,26 @@ pnpm api:check
 pnpm sdk:generate
 node ../sdkwork-specs/tools/check-sdk-standard.mjs --workspace .
 node ../sdkwork-specs/tools/check-component-port-bindings.mjs --root . --strict
+cargo test -p sdkwork-deploy-runtime-compiler --test knowledgebase_wiki_delivery_contract
 cargo test --workspace --offline
 ```
 
+The focused cross-repository contract test compiles a real Deploy Site and runtime set, activates
+the exact bytes in Web Server, executes host/path/device routing through the Knowledgebase provider
+adapter and a fake generated-SDK boundary, fails private/unpublished routes closed, and observes a
+live content update without changing the SiteRevision, runtime-set generation, or snapshot hash.
+
 ## Remaining Product Gates
 
-These are explicit launch scope, not hidden compatibility debt:
+These are explicit launch scope, not hidden compatibility debt. Authenticated Web
+observation/quorum, current-revision advancement, Drive/Wiki live reads, and direct provider-event
+processing are implemented. The compiler-to-Wiki execution contract is also verified locally;
+production-shaped evidence remains required:
 
-- authenticated Web observation/quorum, drift evidence, and current-revision advancement;
-- Web data-plane Drive/Wiki live reads, direct provider-event invalidation, and cache revalidation;
+- external public-domain probes, drift dashboards, and multi-node rollout/rollback drills;
+- provider-aware cache implementation plus invalidation, private revocation, and freshness evidence;
 - certificate secret custody, ACME issue/renew/distribute/hot-activate/SNI verification;
 - tenant console, platform admin console, metering, entitlement, abuse, and incident workflows;
-- single-writer cutover from any overlapping Web control-plane route/table;
+- continuous topology evidence that cloud Web workloads cannot activate standalone management authority;
 - production PostgreSQL backup/restore, multi-node rollout, load, security, and recovery evidence;
 - governed publication of the already generated App/Backend SDK packages.

@@ -214,11 +214,11 @@ fn validated_knowledgebase_resource(
     })
 }
 
-fn required_env(key: &str) -> Result<String, String> {
+pub(crate) fn required_env(key: &str) -> Result<String, String> {
     std::env::var(key).map_err(|_| format!("{key} is required"))
 }
 
-fn required_value(value: &str, key: &str) -> Result<String, String> {
+pub(crate) fn required_value(value: &str, key: &str) -> Result<String, String> {
     let value = trim(value);
     if value.is_empty() {
         return Err(format!("{key} must not be blank"));
@@ -230,7 +230,7 @@ fn non_blank(value: Option<&str>) -> Option<String> {
     value.map(trim).filter(|value| !value.is_empty())
 }
 
-fn read_secret_file(path: &Path, provider: &str) -> DeployServiceResult<String> {
+pub(crate) fn read_secret_file(path: &Path, provider: &str) -> DeployServiceResult<String> {
     let value = std::fs::read_to_string(path)
         .map_err(|_| provider_unavailable(&format!("{provider} Internal API")))?;
     let value = trim(&value);
@@ -325,7 +325,7 @@ fn stable_root_key(tenant_id: i64, site_uuid: &str, resource_key: &str) -> Strin
     format!("deploy-{}", &digest[..32])
 }
 
-fn valid_opaque_id(value: &str) -> bool {
+pub(crate) fn valid_opaque_id(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= 128
         && value
@@ -333,7 +333,7 @@ fn valid_opaque_id(value: &str) -> bool {
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'-'))
 }
 
-fn map_provider_error(provider: &str, message: &str) -> DeployServiceError {
+pub(crate) fn map_provider_error(provider: &str, message: &str) -> DeployServiceError {
     let lowercase = message.to_ascii_lowercase();
     if message.contains("404") || lowercase.contains("not found") {
         DeployServiceError::not_found(format!("{provider} publication resource was not found"))
@@ -348,7 +348,7 @@ fn map_provider_error(provider: &str, message: &str) -> DeployServiceError {
     }
 }
 
-fn provider_unavailable(provider: &str) -> DeployServiceError {
+pub(crate) fn provider_unavailable(provider: &str) -> DeployServiceError {
     DeployServiceError::Internal(format!("{provider} is unavailable"))
 }
 
