@@ -12,6 +12,9 @@ catalogs:
     '@types/react-dom':
       specifier: ^19.2.3
       version: 19.2.3
+    '@vitejs/plugin-react':
+      specifier: ^6.0.1
+      version: 6.0.1
     lucide-react:
       specifier: ^1.7.0
       version: 1.7.0
@@ -27,9 +30,15 @@ catalogs:
     typescript:
       specifier: ~6.0.2
       version: 6.0.3
+    vite:
+      specifier: ^8.0.3
+      version: 8.1.5
     vite-plugin-dts:
       specifier: ^4.5.4
       version: 4.5.4
+    vitest:
+      specifier: ^4.1.8
+      version: 4.1.10
 
 importers:
 
@@ -133,6 +142,22 @@ importers:
       vitest:
         specifier: ^4.1.2
         version: 4.1.10(@types/node@25.9.5)(jsdom@29.1.1)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
+
+  ../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript:
+    dependencies:
+      '@sdkwork/iam-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
+      '@sdkwork/sdk-common':
+        specifier: ^1.0.3
+        version: 1.0.3
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../sdkwork-utils/packages/sdkwork-utils-typescript
+    devDependencies:
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
 
   ../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-application-bootstrap:
     dependencies:
@@ -528,6 +553,207 @@ importers:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
+
+  apps/sdkwork-deployments-pc:
+    dependencies:
+      '@sdkwork/auth-pc-react':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-pc-react
+      '@sdkwork/auth-runtime-pc-react':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-auth-runtime-pc-react
+      '@sdkwork/deploy-app-sdk':
+        specifier: workspace:*
+        version: link:../../sdks/sdkwork-deploy-app-sdk/sdkwork-deploy-app-sdk-typescript
+      '@sdkwork/deploy-backend-sdk':
+        specifier: workspace:*
+        version: link:../../sdks/sdkwork-deploy-backend-sdk/sdkwork-deploy-backend-sdk-typescript
+      '@sdkwork/deployments-pc-admin-audit':
+        specifier: workspace:*
+        version: link:packages/sdkwork-deployments-pc-admin-audit
+      '@sdkwork/deployments-pc-admin-core':
+        specifier: workspace:*
+        version: link:packages/sdkwork-deployments-pc-admin-core
+      '@sdkwork/deployments-pc-admin-infrastructure':
+        specifier: workspace:*
+        version: link:packages/sdkwork-deployments-pc-admin-infrastructure
+      '@sdkwork/deployments-pc-admin-shell':
+        specifier: workspace:*
+        version: link:packages/sdkwork-deployments-pc-admin-shell
+      '@sdkwork/deployments-pc-commons':
+        specifier: workspace:*
+        version: link:packages/sdkwork-deployments-pc-commons
+      '@sdkwork/deployments-pc-console-core':
+        specifier: workspace:*
+        version: link:packages/sdkwork-deployments-pc-console-core
+      '@sdkwork/deployments-pc-console-delivery':
+        specifier: workspace:*
+        version: link:packages/sdkwork-deployments-pc-console-delivery
+      '@sdkwork/deployments-pc-console-monitoring':
+        specifier: workspace:*
+        version: link:packages/sdkwork-deployments-pc-console-monitoring
+      '@sdkwork/deployments-pc-console-publishing':
+        specifier: workspace:*
+        version: link:packages/sdkwork-deployments-pc-console-publishing
+      '@sdkwork/deployments-pc-console-shell':
+        specifier: workspace:*
+        version: link:packages/sdkwork-deployments-pc-console-shell
+      '@sdkwork/deployments-pc-console-site-configuration':
+        specifier: workspace:*
+        version: link:packages/sdkwork-deployments-pc-console-site-configuration
+      '@sdkwork/deployments-pc-console-sites':
+        specifier: workspace:*
+        version: link:packages/sdkwork-deployments-pc-console-sites
+      '@sdkwork/deployments-pc-core':
+        specifier: workspace:*
+        version: link:packages/sdkwork-deployments-pc-core
+      '@sdkwork/drive-app-sdk':
+        specifier: workspace:*
+        version: link:../../../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript
+      '@sdkwork/iam-app-sdk':
+        specifier: workspace:*
+        version: link:../../../sdkwork-iam/sdks/sdkwork-iam-app-sdk/sdkwork-iam-app-sdk-typescript
+      '@sdkwork/sdk-common':
+        specifier: workspace:*
+        version: link:../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+      lucide-react:
+        specifier: 'catalog:'
+        version: 1.7.0(react@19.2.4)
+      react:
+        specifier: 'catalog:'
+        version: 19.2.4
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.2.4(react@19.2.4)
+      react-router-dom:
+        specifier: ^7.15.0
+        version: 7.18.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+    devDependencies:
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.3(@types/react@19.2.14)
+      '@vitejs/plugin-react':
+        specifier: 'catalog:'
+        version: 6.0.1(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.10(@types/node@25.9.5)(jsdom@29.1.1)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
+
+  apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-admin-audit:
+    dependencies:
+      '@sdkwork/deployments-pc-commons':
+        specifier: workspace:*
+        version: link:../sdkwork-deployments-pc-commons
+
+  apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-admin-core:
+    dependencies:
+      '@sdkwork/deploy-backend-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdks/sdkwork-deploy-backend-sdk/sdkwork-deploy-backend-sdk-typescript
+      '@sdkwork/deployments-pc-commons':
+        specifier: workspace:*
+        version: link:../sdkwork-deployments-pc-commons
+      '@sdkwork/sdk-common':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+      react:
+        specifier: 'catalog:'
+        version: 19.2.4
+
+  apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-admin-infrastructure:
+    dependencies:
+      '@sdkwork/deployments-pc-commons':
+        specifier: workspace:*
+        version: link:../sdkwork-deployments-pc-commons
+
+  apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-admin-shell:
+    dependencies:
+      '@sdkwork/deployments-pc-commons':
+        specifier: workspace:*
+        version: link:../sdkwork-deployments-pc-commons
+      react:
+        specifier: 'catalog:'
+        version: 19.2.4
+
+  apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-commons:
+    dependencies:
+      lucide-react:
+        specifier: 'catalog:'
+        version: 1.7.0(react@19.2.4)
+      react:
+        specifier: 'catalog:'
+        version: 19.2.4
+      react-router-dom:
+        specifier: ^7.15.0
+        version: 7.18.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+
+  apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-console-core:
+    dependencies:
+      '@sdkwork/deploy-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdks/sdkwork-deploy-app-sdk/sdkwork-deploy-app-sdk-typescript
+      '@sdkwork/deployments-pc-commons':
+        specifier: workspace:*
+        version: link:../sdkwork-deployments-pc-commons
+      '@sdkwork/drive-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript
+      '@sdkwork/sdk-common':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+      react:
+        specifier: 'catalog:'
+        version: 19.2.4
+
+  apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-console-delivery:
+    dependencies:
+      '@sdkwork/deployments-pc-commons':
+        specifier: workspace:*
+        version: link:../sdkwork-deployments-pc-commons
+
+  apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-console-monitoring:
+    dependencies:
+      '@sdkwork/deployments-pc-commons':
+        specifier: workspace:*
+        version: link:../sdkwork-deployments-pc-commons
+
+  apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-console-publishing:
+    dependencies:
+      '@sdkwork/deployments-pc-commons':
+        specifier: workspace:*
+        version: link:../sdkwork-deployments-pc-commons
+
+  apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-console-shell:
+    dependencies:
+      '@sdkwork/deployments-pc-commons':
+        specifier: workspace:*
+        version: link:../sdkwork-deployments-pc-commons
+      react:
+        specifier: 'catalog:'
+        version: 19.2.4
+
+  apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-console-site-configuration:
+    dependencies:
+      '@sdkwork/deployments-pc-commons':
+        specifier: workspace:*
+        version: link:../sdkwork-deployments-pc-commons
+
+  apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-console-sites:
+    dependencies:
+      '@sdkwork/deployments-pc-commons':
+        specifier: workspace:*
+        version: link:../sdkwork-deployments-pc-commons
+
+  apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-core: {}
 
   sdks/sdkwork-deploy-app-sdk/sdkwork-deploy-app-sdk-typescript:
     dependencies:

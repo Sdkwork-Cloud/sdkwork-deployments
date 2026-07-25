@@ -1,5 +1,5 @@
 import { appApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
 import type { CompleteDeployUploadSessionRequest, CreateDeployUploadSessionRequest, DeployUploadSessionResponse } from '../types';
 
@@ -13,23 +13,23 @@ export class UploadSessionApi {
 
 
 /** 创建 Drive-backed 包上传会话 */
-  async create(body: CreateDeployUploadSessionRequest): Promise<DeployUploadSessionResponse> {
-    return this.client.post<DeployUploadSessionResponse>(appApiPath(`/upload_sessions`), body, undefined, undefined, 'application/json');
+  async create(body: CreateDeployUploadSessionRequest, requestOptions?: ApiRequestOptions): Promise<DeployUploadSessionResponse> {
+    return this.client.request<DeployUploadSessionResponse>(appApiPath(`/upload_sessions`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json' });
   }
 
 /** 获取上传会话 */
-  async retrieve(uploadSessionId: string): Promise<DeployUploadSessionResponse> {
-    return this.client.get<DeployUploadSessionResponse>(appApiPath(`/upload_sessions/${serializePathParameter(uploadSessionId, { name: 'uploadSessionId', style: 'simple', explode: false })}`));
+  async retrieve(uploadSessionId: string, requestOptions?: ApiRequestOptions): Promise<DeployUploadSessionResponse> {
+    return this.client.request<DeployUploadSessionResponse>(appApiPath(`/upload_sessions/${serializePathParameter(uploadSessionId, { name: 'uploadSessionId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 完成上传会话 */
-  async complete(uploadSessionId: string, body: CompleteDeployUploadSessionRequest): Promise<DeployUploadSessionResponse> {
-    return this.client.post<DeployUploadSessionResponse>(appApiPath(`/upload_sessions/${serializePathParameter(uploadSessionId, { name: 'uploadSessionId', style: 'simple', explode: false })}/complete`), body, undefined, undefined, 'application/json');
+  async complete(uploadSessionId: string, body: CompleteDeployUploadSessionRequest, requestOptions?: ApiRequestOptions): Promise<DeployUploadSessionResponse> {
+    return this.client.request<DeployUploadSessionResponse>(appApiPath(`/upload_sessions/${serializePathParameter(uploadSessionId, { name: 'uploadSessionId', style: 'simple', explode: false })}/complete`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json' });
   }
 
 /** 取消上传会话 */
-  async cancel(uploadSessionId: string): Promise<DeployUploadSessionResponse> {
-    return this.client.post<DeployUploadSessionResponse>(appApiPath(`/upload_sessions/${serializePathParameter(uploadSessionId, { name: 'uploadSessionId', style: 'simple', explode: false })}/cancel`));
+  async cancel(uploadSessionId: string, requestOptions?: ApiRequestOptions): Promise<DeployUploadSessionResponse> {
+    return this.client.request<DeployUploadSessionResponse>(appApiPath(`/upload_sessions/${serializePathParameter(uploadSessionId, { name: 'uploadSessionId', style: 'simple', explode: false })}/cancel`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any });
   }
 }
 
@@ -37,7 +37,13 @@ export function createUploadSessionApi(client: HttpClient): UploadSessionApi {
   return new UploadSessionApi(client);
 }
 
-
+function appendQueryString(path: string, rawQueryString: string): string {
+  const query = rawQueryString.replace(/^\?+/, '');
+  if (!query) {
+    return path;
+  }
+  return path.includes('?') ? `${path}&${query}` : `${path}?${query}`;
+}
 
 interface PathParameterSpec {
   name: string;

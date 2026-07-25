@@ -1,5 +1,5 @@
 import { appApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
 import type { CreateEnvVariableRequest, EnvVariableResponse, PageInfo } from '../types';
 
@@ -17,36 +17,36 @@ export class EnvVariableSitesEnvVariablesApi {
 
 
 /** 获取环境变量列表 */
-  async list(siteId: string, params?: EnvVariableSitesEnvVariablesListParams): Promise<{ items: EnvVariableResponse[]; pageInfo: PageInfo; }> {
+  async list(siteId: string, params?: EnvVariableSitesEnvVariablesListParams, requestOptions?: ApiRequestOptions): Promise<{ items: EnvVariableResponse[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
       { name: 'environment', value: params?.environment, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<{ items: EnvVariableResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/env_variables`), query));
+    return this.client.request<{ items: EnvVariableResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/env_variables`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 创建环境变量 */
-  async create(siteId: string, body: CreateEnvVariableRequest): Promise<EnvVariableResponse> {
-    return this.client.post<EnvVariableResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/env_variables`), body, undefined, undefined, 'application/json');
+  async create(siteId: string, body: CreateEnvVariableRequest, requestOptions?: ApiRequestOptions): Promise<EnvVariableResponse> {
+    return this.client.request<EnvVariableResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/env_variables`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json' });
   }
 }
 
 export class EnvVariableSitesApi {
-
+  private client: HttpClient;
   public readonly envVariables: EnvVariableSitesEnvVariablesApi;
 
   constructor(client: HttpClient) {
-
+    this.client = client;
     this.envVariables = new EnvVariableSitesEnvVariablesApi(client);
   }
 
 }
 
 export class EnvVariableApi {
-
+  private client: HttpClient;
   public readonly sites: EnvVariableSitesApi;
 
   constructor(client: HttpClient) {
-
+    this.client = client;
     this.sites = new EnvVariableSitesApi(client);
   }
 

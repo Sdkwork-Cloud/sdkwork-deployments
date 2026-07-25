@@ -1188,6 +1188,47 @@ paths:
                           item:
                             $ref: '#/components/schemas/DeployUploadSessionResponse'
   /app/v3/api/artifacts:
+    post:
+      operationId: artifacts.create
+      summary: Register a Drive-backed deployment artifact
+      description: Registers immutable publishing metadata after the browser uploads bytes through the Drive App SDK. Deploy stores stable Drive references only and does not own presigned upload lifecycle.
+      tags:
+        - artifact
+      security:
+        - AuthToken: []
+          AccessToken: []
+      x-sdkwork-idempotent: true
+      x-sdkwork-permission: deploy.artifacts.write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateArtifactRequest'
+      responses:
+        '201':
+          description: Artifact registered
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required:
+                      - data
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - item
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/ArtifactResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     get:
       operationId: artifacts.list
       summary: "获取租户制品列表"
@@ -2259,6 +2300,57 @@ components:
         createdAt:
           type: string
           format: date-time
+    CreateArtifactRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - packageType
+        - fileName
+        - contentType
+        - contentLength
+        - driveUploadSessionId
+        - driveSpaceId
+        - driveNodeId
+        - idempotencyKey
+      properties:
+        siteId:
+          type: string
+          format: uuid
+        packageType:
+          type: integer
+          minimum: 1
+          maximum: 5
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        contentType:
+          type: string
+          minLength: 1
+          maxLength: 255
+        contentLength:
+          type: integer
+          format: int64
+          minimum: 1
+        checksumSha256:
+          type: string
+          pattern: '^[A-Fa-f0-9]{64}$'
+        driveUploadSessionId:
+          type: string
+          minLength: 1
+        driveUploadItemId:
+          type: string
+          minLength: 1
+        driveSpaceId:
+          type: string
+          minLength: 1
+        driveNodeId:
+          type: string
+          minLength: 1
+        idempotencyKey:
+          type: string
+          minLength: 8
+          maxLength: 128
     ArtifactPage:
       type: object
       properties:

@@ -11,10 +11,12 @@ NGINX_SPEC.md, OBSERVABILITY_SPEC.md, TEST_SPEC.md
 ## Context
 
 The accepted cloud publishing architecture assigns domain and certificate control-plane ownership to
-SDKWork Deploy and HTTP/TLS execution to SDKWork Web Server. The current Deploy implementation does
-not satisfy that boundary:
+SDKWork Deploy and HTTP/TLS execution to SDKWork Web Server. The current Deploy implementation only
+partially satisfies that boundary:
 
-- `domains.verify` marks a domain verified without observing a DNS or HTTP ownership proof;
+- `domains.verify` performs bounded exact DNS TXT token proof and fails closed on resolver errors or
+  stale/mismatched observations, but durable proof expiry, periodic revalidation, takeover holds,
+  and HTTP/CNAME verification workers are not implemented;
 - managed certificate creation persists only a pending metadata row;
 - renewal changes only `renewal_status` and performs no ACME operation;
 - custom certificate upload represents the private key as a Drive node reference;
@@ -214,8 +216,9 @@ partition/retention candidates in PostgreSQL and explicitly bounded in standalon
 
 ## API And UI Consequences
 
-The current `domains.verify` command cannot remain an unconditional success operation. It becomes a
-request to check the latest active verification attempt, while a separate creation operation returns
+The current `domains.verify` command already fails closed and succeeds only after exact DNS TXT token
+observation. The accepted API replaces this synchronous token-confirmation flow with a request to
+check the latest active durable verification attempt, while a separate creation operation returns
 the one-time proof. Existing certificate create/renew responses must report accepted workflow state,
 not issued/renewed success.
 
@@ -282,5 +285,6 @@ profiles; provider credentials and live infrastructure changes are outside this 
 
 This decision refines the certificate section of
 `ADR-20260721-unified-cloud-site-publishing-control-plane.md`. It does not supersede that ownership
-decision. When accepted and implemented, it supersedes the simplified metadata-only verification,
-Drive private-key reference, and planned-only renewal behavior.
+decision. The existing exact DNS TXT proof is an aligned implementation foundation, not approval of
+the remaining decision. When accepted and implemented, this decision supersedes the simplified
+certificate metadata, Drive private-key reference, and planned-only renewal behavior.

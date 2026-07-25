@@ -2,8 +2,8 @@ use async_trait::async_trait;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use sdkwork_deploy_contract::{
-    DeployAppApi, DeployAppRequestContext, DeployServiceResult, ListSitesQuery, SitePage,
-    SiteResponse,
+    ArtifactResponse, CreateArtifactRequest, DeployAppApi, DeployAppRequestContext,
+    DeployServiceResult, ListSitesQuery, SitePage, SiteResponse,
 };
 use sdkwork_routes_deploy_app_api::{
     build_router_with_shared_app_api, web_bootstrap::wrap_router_with_web_framework,
@@ -36,6 +36,16 @@ struct StubAppApi;
 
 #[async_trait]
 impl DeployAppApi for StubAppApi {
+    async fn create_artifact(
+        &self,
+        _context: &DeployAppRequestContext,
+        _request: &CreateArtifactRequest,
+    ) -> DeployServiceResult<ArtifactResponse> {
+        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
+            "not implemented".into(),
+        ))
+    }
+
     async fn list_sites(
         &self,
         _context: &DeployAppRequestContext,

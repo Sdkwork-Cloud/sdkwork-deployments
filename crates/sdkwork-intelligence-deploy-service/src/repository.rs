@@ -4,12 +4,12 @@ use async_trait::async_trait;
 use sdkwork_deploy_contract::DeployServiceResult;
 use sdkwork_deploy_contract::{
     ArtifactPage, ArtifactResponse, AuditLogPage, CertificatePage, CertificateResponse,
-    CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDeploymentRequest,
-    CreateDomainRequest, CreateEnvVariableRequest, CreateHealthCheckRequest,
-    CreateNginxConfigRequest, CreateReleaseRequest, CreateServerRequest, CreateSiteRequest,
-    DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
-    DomainPage, DomainResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage,
-    HealthCheckResponse, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
+    CreateArtifactRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
+    CreateDeploymentRequest, CreateDomainRequest, CreateEnvVariableRequest,
+    CreateHealthCheckRequest, CreateNginxConfigRequest, CreateReleaseRequest, CreateServerRequest,
+    CreateSiteRequest, DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage,
+    DeploymentResponse, DomainPage, DomainResponse, EnvVariablePage, EnvVariableResponse,
+    HealthCheckPage, HealthCheckResponse, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
     NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
     ReleasePage, ReleaseResponse, ServerPage, ServerResponse, SitePage, SiteResponse,
     UpdateNginxConfigRequest, UpdateSiteRequest, UploadCustomCertificateRequest,
@@ -155,6 +155,12 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         page: i32,
         page_size: i32,
     ) -> DeployServiceResult<ArtifactPage>;
+
+    async fn create_artifact_from_drive(
+        &self,
+        tenant_id: i64,
+        request: &CreateArtifactRequest,
+    ) -> DeployServiceResult<ArtifactResponse>;
 
     async fn retrieve_artifact(
         &self,

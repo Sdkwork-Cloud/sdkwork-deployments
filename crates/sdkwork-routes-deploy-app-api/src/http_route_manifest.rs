@@ -196,6 +196,12 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "uploadSessions.cancel",
     ).with_required_permission("deploy.uploadSessions.write"),
     HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/artifacts",
+        "artifact",
+        "artifacts.create",
+    ).with_required_permission("deploy.artifacts.write").with_idempotent(true),
+    HttpRoute::dual_token(
         HttpMethod::Get,
         "/app/v3/api/artifacts",
         "artifact",

@@ -178,7 +178,24 @@ function enrichOpenApi(openapi, profile) {
       }
     }
   }
+  inlineReusableErrorResponses(enriched);
   return enriched;
+}
+
+function inlineReusableErrorResponses(openapi) {
+  const reusableResponses = openapi.components?.responses ?? {};
+  for (const pathItem of Object.values(openapi.paths ?? {})) {
+    for (const [method, operation] of Object.entries(pathItem ?? {})) {
+      if (!["get", "post", "put", "patch", "delete"].includes(method)) continue;
+      for (const [statusCode, response] of Object.entries(operation.responses ?? {})) {
+        if (Number(statusCode) < 400 || typeof response?.$ref !== "string") continue;
+        const prefix = "#/components/responses/";
+        if (!response.$ref.startsWith(prefix)) continue;
+        const reusable = reusableResponses[response.$ref.slice(prefix.length)];
+        if (reusable) operation.responses[statusCode] = structuredClone(reusable);
+      }
+    }
+  }
 }
 
 function extractRoutes(openapi, profile) {

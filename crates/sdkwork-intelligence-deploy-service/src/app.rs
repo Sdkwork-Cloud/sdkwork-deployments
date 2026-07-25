@@ -2,11 +2,11 @@
 
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
-    is_deploy_package_artifact_type, CompleteDeployUploadSessionRequest, CreateCertificateRequest,
-    CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainRequest,
-    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest,
-    DeployAppApi, DeployAppRequestContext, DeployServiceResult, DeployUploadSessionResponse,
-    ListSitesQuery, UpdateSiteRequest, UploadCustomCertificateRequest,
+    is_deploy_package_artifact_type, CompleteDeployUploadSessionRequest, CreateArtifactRequest,
+    CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDeploymentRequest,
+    CreateDomainRequest, CreateEnvVariableRequest, CreateHealthCheckRequest, CreateReleaseRequest,
+    CreateSiteRequest, DeployAppApi, DeployAppRequestContext, DeployServiceResult,
+    DeployUploadSessionResponse, ListSitesQuery, UpdateSiteRequest, UploadCustomCertificateRequest,
     UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE, UPLOAD_PACKAGE_TYPE_TLS_PRIVATE_KEY,
     UPLOAD_SESSION_STATUS_CANCELLED, UPLOAD_SESSION_STATUS_COMPLETED,
 };
@@ -449,6 +449,34 @@ impl DeployAppApi for DeployService {
         let tenant_id = Self::require_tenant(context)?;
         self.repository
             .list_artifacts(tenant_id, page, page_size)
+            .await
+    }
+
+    async fn create_artifact(
+        &self,
+        context: &DeployAppRequestContext,
+        request: &CreateArtifactRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::ArtifactResponse> {
+        let tenant_id = Self::require_tenant(context)?;
+        if !is_deploy_package_artifact_type(request.package_type) {
+            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
+                "packageType must identify a deployable package",
+            ));
+        }
+        if request.file_name.trim().is_empty()
+            || request.content_type.trim().is_empty()
+            || request.content_length <= 0
+            || request.drive_upload_session_id.trim().is_empty()
+            || request.drive_space_id.trim().is_empty()
+            || request.drive_node_id.trim().is_empty()
+            || request.idempotency_key.trim().is_empty()
+        {
+            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
+                "file metadata, stable Drive references, and idempotencyKey are required",
+            ));
+        }
+        self.repository
+            .create_artifact_from_drive(tenant_id, request)
             .await
     }
 

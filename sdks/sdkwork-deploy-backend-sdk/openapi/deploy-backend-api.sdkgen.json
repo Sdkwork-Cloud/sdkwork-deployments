@@ -246,7 +246,14 @@
             }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "backend-api",
@@ -313,7 +320,14 @@
             }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "backend-api",
@@ -450,7 +464,14 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "请求参数错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "backend-api",

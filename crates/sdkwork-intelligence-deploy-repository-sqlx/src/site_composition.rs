@@ -9,10 +9,9 @@ use sdkwork_deploy_contract::{
 };
 use sdkwork_deploy_runtime_compiler::{
     canonical_sha256_excluding_field, compile_runtime_set, compile_site_revision,
-    runtime_set_size_bytes,
-    normalize_runtime_descriptors, RuntimeBinding, RuntimeBindingAction, RuntimeClientClass,
-    RuntimeDeliveryPolicy, RuntimeEnvironment, RuntimeHandler, RuntimeLimits, RuntimeMount,
-    RuntimeMountMode, RuntimeMountTranslation, RuntimeObservabilityPolicy,
+    normalize_runtime_descriptors, runtime_set_size_bytes, RuntimeBinding, RuntimeBindingAction,
+    RuntimeClientClass, RuntimeDeliveryPolicy, RuntimeEnvironment, RuntimeHandler, RuntimeLimits,
+    RuntimeMount, RuntimeMountMode, RuntimeMountTranslation, RuntimeObservabilityPolicy,
     RuntimeProviderReference, RuntimeProviderType, RuntimeRedirectScheme, RuntimeResource,
     RuntimeSecurityPolicy, RuntimeSetCompilationInput, RuntimeVariant, RuntimeVariantRule,
     RuntimeVariantRuleMatcher, SiteRuntimeCompilationInput, DESCRIPTOR_COMPILER_VERSION,

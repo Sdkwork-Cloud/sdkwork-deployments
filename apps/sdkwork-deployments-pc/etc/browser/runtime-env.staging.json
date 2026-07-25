@@ -1,0 +1,12 @@
+{
+  "environment": "staging",
+  "deploymentProfile": "cloud",
+  "defaultLocale": "zh-CN",
+  "fallbackLocale": "en-US",
+  "supportedLocales": ["zh-CN", "en-US"],
+  "activeLocales": ["zh-CN", "en-US"],
+  "appApiBaseUrl": "https://deploy.staging.sdkwork.com",
+  "backendApiBaseUrl": "https://deploy.staging.sdkwork.com",
+  "driveAppApiBaseUrl": "https://drive.staging.sdkwork.com",
+  "appbaseAppApiBaseUrl": "https://iam.staging.sdkwork.com"
+}

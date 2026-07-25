@@ -1,0 +1,54 @@
+{
+  "name": "@sdkwork/deployments-pc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "predev": "node scripts/materialize-runtime-env.mjs --environment development",
+    "dev": "vite --host 127.0.0.1",
+    "prebuild": "node scripts/materialize-runtime-env.mjs --environment production",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "check": "pnpm typecheck && pnpm test && pnpm build",
+    "verify": "pnpm check",
+    "preview": "vite preview --host 127.0.0.1",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "@sdkwork/auth-pc-react": "workspace:*",
+    "@sdkwork/auth-runtime-pc-react": "workspace:*",
+    "@sdkwork/deploy-app-sdk": "workspace:*",
+    "@sdkwork/deploy-backend-sdk": "workspace:*",
+    "@sdkwork/deployments-pc-admin-audit": "workspace:*",
+    "@sdkwork/deployments-pc-admin-core": "workspace:*",
+    "@sdkwork/deployments-pc-admin-infrastructure": "workspace:*",
+    "@sdkwork/deployments-pc-admin-shell": "workspace:*",
+    "@sdkwork/deployments-pc-commons": "workspace:*",
+    "@sdkwork/deployments-pc-console-core": "workspace:*",
+    "@sdkwork/deployments-pc-console-delivery": "workspace:*",
+    "@sdkwork/deployments-pc-console-monitoring": "workspace:*",
+    "@sdkwork/deployments-pc-console-publishing": "workspace:*",
+    "@sdkwork/deployments-pc-console-shell": "workspace:*",
+    "@sdkwork/deployments-pc-console-site-configuration": "workspace:*",
+    "@sdkwork/deployments-pc-console-sites": "workspace:*",
+    "@sdkwork/deployments-pc-core": "workspace:*",
+    "@sdkwork/drive-app-sdk": "workspace:*",
+    "@sdkwork/iam-app-sdk": "workspace:*",
+    "@sdkwork/sdk-common": "workspace:*",
+    "lucide-react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router-dom": "^7.15.0"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}
+

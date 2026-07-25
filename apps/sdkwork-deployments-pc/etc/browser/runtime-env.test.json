@@ -1,0 +1,12 @@
+{
+  "environment": "test",
+  "deploymentProfile": "cloud",
+  "defaultLocale": "zh-CN",
+  "fallbackLocale": "en-US",
+  "supportedLocales": ["zh-CN", "en-US"],
+  "activeLocales": ["zh-CN", "en-US"],
+  "appApiBaseUrl": "https://deploy.test.sdkwork.com",
+  "backendApiBaseUrl": "https://deploy.test.sdkwork.com",
+  "driveAppApiBaseUrl": "https://drive.test.sdkwork.com",
+  "appbaseAppApiBaseUrl": "https://iam.test.sdkwork.com"
+}

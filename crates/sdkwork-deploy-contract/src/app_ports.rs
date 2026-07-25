@@ -162,6 +162,12 @@ pub trait DeployAppApi: Send + Sync {
         page_size: i32,
     ) -> DeployServiceResult<ArtifactPage>;
 
+    async fn create_artifact(
+        &self,
+        context: &DeployAppRequestContext,
+        request: &CreateArtifactRequest,
+    ) -> DeployServiceResult<ArtifactResponse>;
+
     async fn retrieve_artifact(
         &self,
         context: &DeployAppRequestContext,

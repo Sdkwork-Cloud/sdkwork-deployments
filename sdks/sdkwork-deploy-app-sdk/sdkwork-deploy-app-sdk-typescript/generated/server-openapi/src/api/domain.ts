@@ -1,5 +1,5 @@
 import { appApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
 import type { CreateDomainRequest, DomainResponse, DomainVerifyResponse, PageInfo } from '../types';
 
@@ -18,52 +18,52 @@ export class DomainSitesDomainsApi {
 
 
 /** 获取站点域名列表 */
-  async list(siteId: string, params?: DomainSitesDomainsListParams): Promise<{ items: DomainResponse[]; pageInfo: PageInfo; }> {
+  async list(siteId: string, params?: DomainSitesDomainsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: DomainResponse[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<{ items: DomainResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains`), query));
+    return this.client.request<{ items: DomainResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 绑定域名 */
-  async create(siteId: string, body: CreateDomainRequest): Promise<DomainResponse> {
-    return this.client.post<DomainResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains`), body, undefined, undefined, 'application/json');
+  async create(siteId: string, body: CreateDomainRequest, requestOptions?: ApiRequestOptions): Promise<DomainResponse> {
+    return this.client.request<DomainResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json' });
   }
 
 /** 获取域名详情 */
-  async retrieve(siteId: string, domainId: string): Promise<DomainResponse> {
-    return this.client.get<DomainResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains/${serializePathParameter(domainId, { name: 'domainId', style: 'simple', explode: false })}`));
+  async retrieve(siteId: string, domainId: string, requestOptions?: ApiRequestOptions): Promise<DomainResponse> {
+    return this.client.request<DomainResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains/${serializePathParameter(domainId, { name: 'domainId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 解绑域名 */
-  async delete(siteId: string, domainId: string): Promise<void> {
-    return this.client.delete<void>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains/${serializePathParameter(domainId, { name: 'domainId', style: 'simple', explode: false })}`));
+  async delete(siteId: string, domainId: string, requestOptions?: ApiRequestOptions): Promise<void> {
+    return this.client.request<void>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains/${serializePathParameter(domainId, { name: 'domainId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'DELETE' as any });
   }
 
 /** 验证域名所有权 */
-  async verify(siteId: string, domainId: string): Promise<DomainVerifyResponse> {
-    return this.client.post<DomainVerifyResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains/${serializePathParameter(domainId, { name: 'domainId', style: 'simple', explode: false })}/verify`));
+  async verify(siteId: string, domainId: string, requestOptions?: ApiRequestOptions): Promise<DomainVerifyResponse> {
+    return this.client.request<DomainVerifyResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains/${serializePathParameter(domainId, { name: 'domainId', style: 'simple', explode: false })}/verify`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any });
   }
 }
 
 export class DomainSitesApi {
-
+  private client: HttpClient;
   public readonly domains: DomainSitesDomainsApi;
 
   constructor(client: HttpClient) {
-
+    this.client = client;
     this.domains = new DomainSitesDomainsApi(client);
   }
 
 }
 
 export class DomainApi {
-
+  private client: HttpClient;
   public readonly sites: DomainSitesApi;
 
   constructor(client: HttpClient) {
-
+    this.client = client;
     this.sites = new DomainSitesApi(client);
   }
 

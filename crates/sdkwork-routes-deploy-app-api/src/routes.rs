@@ -6,11 +6,11 @@ use axum::{
     Extension, Json, Router,
 };
 use sdkwork_deploy_contract::{
-    CompleteDeployUploadSessionRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
-    CreateDeploymentRequest, CreateDomainRequest, CreateEnvVariableRequest,
-    CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest, DeployAppApi,
-    DeployAppRequestContext, ListSitesQuery, UpdateSiteCompositionRequest, UpdateSiteRequest,
-    UploadCustomCertificateRequest,
+    CompleteDeployUploadSessionRequest, CreateArtifactRequest, CreateCertificateRequest,
+    CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainRequest,
+    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest,
+    DeployAppApi, DeployAppRequestContext, ListSitesQuery, UpdateSiteCompositionRequest,
+    UpdateSiteRequest, UploadCustomCertificateRequest,
 };
 use sdkwork_routes_deploy_common::{
     envelope, finish_api_json, finish_created_api_json, finish_no_content, ok_json, service_result,
@@ -81,7 +81,7 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
             post(complete_upload_session),
         )
         .route(paths::UPLOAD_SESSION_CANCEL, post(cancel_upload_session))
-        .route(paths::ARTIFACTS, get(list_artifacts))
+        .route(paths::ARTIFACTS, get(list_artifacts).post(create_artifact))
         .route(
             paths::ARTIFACT,
             get(retrieve_artifact).delete(retain_artifact),
@@ -585,6 +585,23 @@ async fn list_artifacts(
                 .list_artifacts(&context, query.page, query.page_size)
                 .await?;
             ok_json(envelope::artifact_page(page, query.page, query.page_size))
+        }
+        .await,
+    )
+}
+
+async fn create_artifact(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Json(request): Json<CreateArtifactRequest>,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state.api.create_artifact(&context, &request).await?;
+            ok_json(envelope::resource(item))
         }
         .await,
     )

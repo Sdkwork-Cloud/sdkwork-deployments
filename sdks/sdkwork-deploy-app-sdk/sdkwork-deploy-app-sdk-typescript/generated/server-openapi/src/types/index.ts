@@ -45,6 +45,7 @@ export type { CreateHealthCheckRequest } from './create-health-check-request';
 export type { HealthCheckResponse } from './health-check-response';
 export type { HealthCheckPage } from './health-check-page';
 export type { ArtifactResponse } from './artifact-response';
+export type { CreateArtifactRequest } from './create-artifact-request';
 export type { ArtifactPage } from './artifact-page';
 export type { CreateReleaseRequest } from './create-release-request';
 export type { ReleaseResponse } from './release-response';
@@ -92,6 +93,7 @@ export type { UploadSessionsCreateResponse201 } from './upload-sessions-create-r
 export type { UploadSessionsRetrieveResponse } from './upload-sessions-retrieve-response';
 export type { UploadSessionsCompleteResponse } from './upload-sessions-complete-response';
 export type { UploadSessionsCancelResponse } from './upload-sessions-cancel-response';
+export type { ArtifactsCreateResponse201 } from './artifacts-create-response201';
 export type { ArtifactsListResponse } from './artifacts-list-response';
 export type { ArtifactsRetrieveResponse } from './artifacts-retrieve-response';
 export type { SitesHealthChecksListResponse } from './sites-health-checks-list-response';

@@ -1,5 +1,5 @@
 import { appApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
 import type { CreateDeploymentRequest, DeploymentResponse, PageInfo } from '../types';
 
@@ -19,48 +19,48 @@ export class DeploymentSitesDeploymentsApi {
 
 
 /** 获取部署历史 */
-  async list(siteId: string, params?: DeploymentSitesDeploymentsListParams): Promise<{ items: DeploymentResponse[]; pageInfo: PageInfo; }> {
+  async list(siteId: string, params?: DeploymentSitesDeploymentsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: DeploymentResponse[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<{ items: DeploymentResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments`), query));
+    return this.client.request<{ items: DeploymentResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 发起部署 */
-  async create(siteId: string, body: CreateDeploymentRequest): Promise<DeploymentResponse> {
-    return this.client.post<DeploymentResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments`), body, undefined, undefined, 'application/json');
+  async create(siteId: string, body: CreateDeploymentRequest, requestOptions?: ApiRequestOptions): Promise<DeploymentResponse> {
+    return this.client.request<DeploymentResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json' });
   }
 
 /** 获取部署详情 */
-  async retrieve(siteId: string, deploymentId: string): Promise<DeploymentResponse> {
-    return this.client.get<DeploymentResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments/${serializePathParameter(deploymentId, { name: 'deploymentId', style: 'simple', explode: false })}`));
+  async retrieve(siteId: string, deploymentId: string, requestOptions?: ApiRequestOptions): Promise<DeploymentResponse> {
+    return this.client.request<DeploymentResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments/${serializePathParameter(deploymentId, { name: 'deploymentId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 回滚部署 */
-  async rollback(siteId: string, deploymentId: string): Promise<DeploymentResponse> {
-    return this.client.post<DeploymentResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments/${serializePathParameter(deploymentId, { name: 'deploymentId', style: 'simple', explode: false })}/rollback`));
+  async rollback(siteId: string, deploymentId: string, requestOptions?: ApiRequestOptions): Promise<DeploymentResponse> {
+    return this.client.request<DeploymentResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments/${serializePathParameter(deploymentId, { name: 'deploymentId', style: 'simple', explode: false })}/rollback`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any });
   }
 }
 
 export class DeploymentSitesApi {
-
+  private client: HttpClient;
   public readonly deployments: DeploymentSitesDeploymentsApi;
 
   constructor(client: HttpClient) {
-
+    this.client = client;
     this.deployments = new DeploymentSitesDeploymentsApi(client);
   }
 
 }
 
 export class DeploymentApi {
-
+  private client: HttpClient;
   public readonly sites: DeploymentSitesApi;
 
   constructor(client: HttpClient) {
-
+    this.client = client;
     this.sites = new DeploymentSitesApi(client);
   }
 

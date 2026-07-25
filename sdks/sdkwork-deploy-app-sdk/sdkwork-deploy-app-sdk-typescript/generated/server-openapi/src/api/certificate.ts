@@ -1,5 +1,5 @@
 import { appApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
 import type { CertificateResponse, CreateCertificateRequest, PageInfo, UploadCustomCertificateRequest } from '../types';
 
@@ -18,37 +18,37 @@ export class CertificateApi {
 
 
 /** 获取证书列表 */
-  async list(params?: CertificateListParams): Promise<{ items: CertificateResponse[]; pageInfo: PageInfo; }> {
+  async list(params?: CertificateListParams, requestOptions?: ApiRequestOptions): Promise<{ items: CertificateResponse[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<{ items: CertificateResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/certificates`), query));
+    return this.client.request<{ items: CertificateResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/certificates`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 申请证书 */
-  async create(body: CreateCertificateRequest): Promise<CertificateResponse> {
-    return this.client.post<CertificateResponse>(appApiPath(`/certificates`), body, undefined, undefined, 'application/json');
+  async create(body: CreateCertificateRequest, requestOptions?: ApiRequestOptions): Promise<CertificateResponse> {
+    return this.client.request<CertificateResponse>(appApiPath(`/certificates`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json' });
   }
 
 /** 获取证书详情 */
-  async retrieve(certificateId: string): Promise<CertificateResponse> {
-    return this.client.get<CertificateResponse>(appApiPath(`/certificates/${serializePathParameter(certificateId, { name: 'certificateId', style: 'simple', explode: false })}`));
+  async retrieve(certificateId: string, requestOptions?: ApiRequestOptions): Promise<CertificateResponse> {
+    return this.client.request<CertificateResponse>(appApiPath(`/certificates/${serializePathParameter(certificateId, { name: 'certificateId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 撤销证书 */
-  async delete(certificateId: string): Promise<void> {
-    return this.client.delete<void>(appApiPath(`/certificates/${serializePathParameter(certificateId, { name: 'certificateId', style: 'simple', explode: false })}`));
+  async delete(certificateId: string, requestOptions?: ApiRequestOptions): Promise<void> {
+    return this.client.request<void>(appApiPath(`/certificates/${serializePathParameter(certificateId, { name: 'certificateId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'DELETE' as any });
   }
 
 /** 计划托管证书续期 */
-  async renew(certificateId: string): Promise<CertificateResponse> {
-    return this.client.post<CertificateResponse>(appApiPath(`/certificates/${serializePathParameter(certificateId, { name: 'certificateId', style: 'simple', explode: false })}/renew`));
+  async renew(certificateId: string, requestOptions?: ApiRequestOptions): Promise<CertificateResponse> {
+    return this.client.request<CertificateResponse>(appApiPath(`/certificates/${serializePathParameter(certificateId, { name: 'certificateId', style: 'simple', explode: false })}/renew`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any });
   }
 
 /** 从已完成的 Drive 上传会话注册自定义 TLS 证书 */
-  async upload(body: UploadCustomCertificateRequest): Promise<CertificateResponse> {
-    return this.client.post<CertificateResponse>(appApiPath(`/certificates/upload`), body, undefined, undefined, 'application/json');
+  async upload(body: UploadCustomCertificateRequest, requestOptions?: ApiRequestOptions): Promise<CertificateResponse> {
+    return this.client.request<CertificateResponse>(appApiPath(`/certificates/upload`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json' });
   }
 }
 

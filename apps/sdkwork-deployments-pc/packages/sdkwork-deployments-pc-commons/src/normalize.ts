@@ -1,0 +1,7 @@
+import type { DeploymentsPage } from "./types.ts";
+export function normalizeDeploymentsPage(value: unknown): DeploymentsPage { const data = unwrap(value); if (Array.isArray(data)) return { items: data.map(record), pageInfo: { page: 1, pageSize: data.length, hasMore: false } }; if (!isRecord(data)) return { items: [], pageInfo: { page: 1, pageSize: 20, hasMore: false } }; const items = Array.isArray(data.items) ? data.items.map(record) : [data]; const info = isRecord(data.pageInfo) ? data.pageInfo : {}; const page = integer(info.page, 1); const pageSize = integer(info.pageSize, Math.max(items.length, 20)); const total = typeof info.total === "number" ? info.total : undefined; return { items, pageInfo: { page, pageSize, total, hasMore: typeof info.hasMore === "boolean" ? info.hasMore : total === undefined ? items.length >= pageSize : page * pageSize < total } }; }
+function unwrap(value: unknown): unknown { if (!isRecord(value)) return value; if (isRecord(value.data)) { if ("items" in value.data || "pageInfo" in value.data) return value.data; if ("resource" in value.data) return value.data.resource; } return value; }
+function integer(value: unknown, fallback: number): number { return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : fallback; }
+function record(value: unknown): Record<string, unknown> { return isRecord(value) ? value : { value }; }
+export function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
+

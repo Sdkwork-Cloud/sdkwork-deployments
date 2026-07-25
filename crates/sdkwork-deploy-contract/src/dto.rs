@@ -240,6 +240,32 @@ pub const ARTIFACT_STATUS_RETAINED: i32 = 2;
 
 pub const RELEASE_STATUS_ACTIVE: i32 = 1;
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CreateArtifactRequest {
+    #[serde(rename = "siteId", default)]
+    pub site_id: Option<String>,
+    #[serde(rename = "packageType")]
+    pub package_type: i32,
+    #[serde(rename = "fileName")]
+    pub file_name: String,
+    #[serde(rename = "contentType")]
+    pub content_type: String,
+    #[serde(rename = "contentLength")]
+    pub content_length: i64,
+    #[serde(rename = "checksumSha256", default)]
+    pub checksum_sha256: Option<String>,
+    #[serde(rename = "driveUploadSessionId")]
+    pub drive_upload_session_id: String,
+    #[serde(rename = "driveUploadItemId", default)]
+    pub drive_upload_item_id: Option<String>,
+    #[serde(rename = "driveSpaceId")]
+    pub drive_space_id: String,
+    #[serde(rename = "driveNodeId")]
+    pub drive_node_id: String,
+    #[serde(rename = "idempotencyKey")]
+    pub idempotency_key: String,
+}
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct ArtifactResponse {
     pub id: String,

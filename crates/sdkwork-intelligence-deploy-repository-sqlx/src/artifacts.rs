@@ -1,6 +1,6 @@
 use sdkwork_deploy_contract::{
-    is_deploy_package_artifact_type, ArtifactPage, ArtifactResponse, DeployServiceError,
-    DeployServiceResult, ARTIFACT_STATUS_ACTIVE, ARTIFACT_STATUS_RETAINED,
+    is_deploy_package_artifact_type, ArtifactPage, ArtifactResponse, CreateArtifactRequest,
+    DeployServiceError, DeployServiceResult, ARTIFACT_STATUS_ACTIVE, ARTIFACT_STATUS_RETAINED,
     UPLOAD_SESSION_STATUS_COMPLETED,
 };
 use sqlx::{any::AnyRow, Row};
@@ -87,6 +87,68 @@ impl DeployRepository {
         map_artifact_row(&self.pool, tenant_id, &row)
             .await
             .map_err(|error| DeployServiceError::Internal(error.to_string()))
+    }
+
+    pub(super) async fn create_artifact_from_drive_repo(
+        &self,
+        tenant_id: i64,
+        request: &CreateArtifactRequest,
+    ) -> DeployServiceResult<ArtifactResponse> {
+        if let Some(existing) = self
+            .find_upload_session_by_idempotency_key_repo(tenant_id, &request.idempotency_key)
+            .await?
+        {
+            return self
+                .create_artifact_from_upload_session_repo(
+                    tenant_id,
+                    &existing.id,
+                    request.checksum_sha256.as_deref().unwrap_or(""),
+                )
+                .await;
+        }
+
+        let site_internal_id = match request.site_id.as_deref() {
+            Some(site_id) => Some(
+                crate::support::resolve_site_internal_id(&self.pool, tenant_id, site_id).await?,
+            ),
+            None => None,
+        };
+        let reference_id = next_id(self.id_generator())?;
+        let reference_uuid = new_uuid();
+        let now = now_rfc3339();
+        sqlx::query(
+            "INSERT INTO deploy_upload_session_ref
+             (id, uuid, tenant_id, site_id, drive_upload_session_id, drive_upload_item_id,
+              drive_space_id, drive_node_id, package_type, file_name, content_type,
+              content_length, checksum, status, idempotency_key, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $16)",
+        )
+        .bind(reference_id)
+        .bind(&reference_uuid)
+        .bind(tenant_id)
+        .bind(site_internal_id)
+        .bind(request.drive_upload_session_id.trim())
+        .bind(request.drive_upload_item_id.as_deref())
+        .bind(request.drive_space_id.trim())
+        .bind(request.drive_node_id.trim())
+        .bind(request.package_type)
+        .bind(request.file_name.trim())
+        .bind(request.content_type.trim())
+        .bind(request.content_length)
+        .bind(request.checksum_sha256.as_deref())
+        .bind(UPLOAD_SESSION_STATUS_COMPLETED)
+        .bind(request.idempotency_key.trim())
+        .bind(&now)
+        .execute(&self.pool)
+        .await
+        .map_err(|error| store_error("register Drive artifact reference", error))?;
+
+        self.create_artifact_from_upload_session_repo(
+            tenant_id,
+            &reference_uuid,
+            request.checksum_sha256.as_deref().unwrap_or(""),
+        )
+        .await
     }
 
     pub(super) async fn retain_artifact_repo(

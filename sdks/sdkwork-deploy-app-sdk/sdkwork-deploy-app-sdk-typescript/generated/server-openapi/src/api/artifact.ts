@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { ArtifactResponse, PageInfo } from '../types';
+import type { ArtifactResponse, CreateArtifactRequest, PageInfo } from '../types';
 
 
 export interface ArtifactListParams {
@@ -17,23 +17,28 @@ export class ArtifactApi {
   }
 
 
+/** Register a Drive-backed deployment artifact */
+  async create(body: CreateArtifactRequest, requestOptions?: ApiRequestOptions): Promise<ArtifactResponse> {
+    return this.client.request<ArtifactResponse>(appApiPath(`/artifacts`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json' });
+  }
+
 /** 获取租户制品列表 */
-  async list(params?: ArtifactListParams): Promise<{ items: ArtifactResponse[]; pageInfo: PageInfo; }> {
+  async list(params?: ArtifactListParams, requestOptions?: ApiRequestOptions): Promise<{ items: ArtifactResponse[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<{ items: ArtifactResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/artifacts`), query));
+    return this.client.request<{ items: ArtifactResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/artifacts`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 获取制品详情 */
-  async retrieve(artifactId: string): Promise<ArtifactResponse> {
-    return this.client.get<ArtifactResponse>(appApiPath(`/artifacts/${serializePathParameter(artifactId, { name: 'artifactId', style: 'simple', explode: false })}`));
+  async retrieve(artifactId: string, requestOptions?: ApiRequestOptions): Promise<ArtifactResponse> {
+    return this.client.request<ArtifactResponse>(appApiPath(`/artifacts/${serializePathParameter(artifactId, { name: 'artifactId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 保留并下架制品 */
-  async delete(artifactId: string): Promise<void> {
-    return this.client.delete<void>(appApiPath(`/artifacts/${serializePathParameter(artifactId, { name: 'artifactId', style: 'simple', explode: false })}`));
+  async delete(artifactId: string, requestOptions?: ApiRequestOptions): Promise<void> {
+    return this.client.request<void>(appApiPath(`/artifacts/${serializePathParameter(artifactId, { name: 'artifactId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'DELETE' as any });
   }
 }
 

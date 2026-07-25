@@ -1,5 +1,5 @@
 import { appApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
 import type { CreateReleaseRequest, PageInfo, ReleaseResponse } from '../types';
 
@@ -18,42 +18,42 @@ export class ReleaseSitesReleasesApi {
 
 
 /** 获取站点发布版本列表 */
-  async list(siteId: string, params?: ReleaseSitesReleasesListParams): Promise<{ items: ReleaseResponse[]; pageInfo: PageInfo; }> {
+  async list(siteId: string, params?: ReleaseSitesReleasesListParams, requestOptions?: ApiRequestOptions): Promise<{ items: ReleaseResponse[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<{ items: ReleaseResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/releases`), query));
+    return this.client.request<{ items: ReleaseResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/releases`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 从制品创建不可变发布版本 */
-  async create(siteId: string, body: CreateReleaseRequest): Promise<ReleaseResponse> {
-    return this.client.post<ReleaseResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/releases`), body, undefined, undefined, 'application/json');
+  async create(siteId: string, body: CreateReleaseRequest, requestOptions?: ApiRequestOptions): Promise<ReleaseResponse> {
+    return this.client.request<ReleaseResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/releases`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json' });
   }
 
 /** 获取发布版本详情 */
-  async retrieve(siteId: string, releaseId: string): Promise<ReleaseResponse> {
-    return this.client.get<ReleaseResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/releases/${serializePathParameter(releaseId, { name: 'releaseId', style: 'simple', explode: false })}`));
+  async retrieve(siteId: string, releaseId: string, requestOptions?: ApiRequestOptions): Promise<ReleaseResponse> {
+    return this.client.request<ReleaseResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/releases/${serializePathParameter(releaseId, { name: 'releaseId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 }
 
 export class ReleaseSitesApi {
-
+  private client: HttpClient;
   public readonly releases: ReleaseSitesReleasesApi;
 
   constructor(client: HttpClient) {
-
+    this.client = client;
     this.releases = new ReleaseSitesReleasesApi(client);
   }
 
 }
 
 export class ReleaseApi {
-
+  private client: HttpClient;
   public readonly sites: ReleaseSitesApi;
 
   constructor(client: HttpClient) {
-
+    this.client = client;
     this.sites = new ReleaseSitesApi(client);
   }
 

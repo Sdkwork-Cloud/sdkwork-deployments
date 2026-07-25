@@ -1,5 +1,5 @@
 import { appApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
 import type { CreateHealthCheckRequest, HealthCheckResponse, PageInfo } from '../types';
 
@@ -13,33 +13,33 @@ export class MonitorSitesHealthChecksApi {
 
 
 /** 获取健康检查配置 */
-  async list(siteId: string): Promise<{ items: HealthCheckResponse[]; pageInfo: PageInfo; }> {
-    return this.client.get<{ items: HealthCheckResponse[]; pageInfo: PageInfo; }>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/health_checks`));
+  async list(siteId: string, requestOptions?: ApiRequestOptions): Promise<{ items: HealthCheckResponse[]; pageInfo: PageInfo; }> {
+    return this.client.request<{ items: HealthCheckResponse[]; pageInfo: PageInfo; }>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/health_checks`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 创建健康检查 */
-  async create(siteId: string, body: CreateHealthCheckRequest): Promise<HealthCheckResponse> {
-    return this.client.post<HealthCheckResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/health_checks`), body, undefined, undefined, 'application/json');
+  async create(siteId: string, body: CreateHealthCheckRequest, requestOptions?: ApiRequestOptions): Promise<HealthCheckResponse> {
+    return this.client.request<HealthCheckResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/health_checks`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json' });
   }
 }
 
 export class MonitorSitesApi {
-
+  private client: HttpClient;
   public readonly healthChecks: MonitorSitesHealthChecksApi;
 
   constructor(client: HttpClient) {
-
+    this.client = client;
     this.healthChecks = new MonitorSitesHealthChecksApi(client);
   }
 
 }
 
 export class MonitorApi {
-
+  private client: HttpClient;
   public readonly sites: MonitorSitesApi;
 
   constructor(client: HttpClient) {
-
+    this.client = client;
     this.sites = new MonitorSitesApi(client);
   }
 
@@ -49,7 +49,13 @@ export function createMonitorApi(client: HttpClient): MonitorApi {
   return new MonitorApi(client);
 }
 
-
+function appendQueryString(path: string, rawQueryString: string): string {
+  const query = rawQueryString.replace(/^\?+/, '');
+  if (!query) {
+    return path;
+  }
+  return path.includes('?') ? `${path}&${query}` : `${path}?${query}`;
+}
 
 interface PathParameterSpec {
   name: string;

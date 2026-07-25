@@ -1,5 +1,5 @@
 import { appApiPath } from './paths';
-import type { HttpClient } from '../http/client';
+import type { ApiRequestOptions, HttpClient } from '../http/client';
 
 import type { CreateSiteRequest, PageInfo, SiteCompositionResponse, SiteResponse, UpdateSiteCompositionRequest, UpdateSiteRequest } from '../types';
 
@@ -18,7 +18,7 @@ export class SiteCompositionApi {
 
 
 /** Replace and publish the complete live website composition */
-  async update(siteId: string, body: UpdateSiteCompositionRequest, params: SiteCompositionUpdateParams): Promise<SiteCompositionResponse> {
+  async update(siteId: string, body: UpdateSiteCompositionRequest, params: SiteCompositionUpdateParams, requestOptions?: ApiRequestOptions): Promise<SiteCompositionResponse> {
     const requestHeaders = buildRequestHeaders(
       {
         'If-Match': { value: params.ifMatch, style: 'simple', explode: false },
@@ -26,7 +26,7 @@ export class SiteCompositionApi {
       },
       {}
     );
-    return this.client.put<SiteCompositionResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/composition`), body, undefined, requestHeaders, 'application/json');
+    return this.client.request<SiteCompositionResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/composition`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PUT' as any, body, headers: requestHeaders, contentType: 'application/json' });
   }
 }
 
@@ -49,7 +49,7 @@ export class SiteApi {
 
 
 /** 获取站点列表 */
-  async list(params?: SiteListParams): Promise<{ items: SiteResponse[]; pageInfo: PageInfo; }> {
+  async list(params?: SiteListParams, requestOptions?: ApiRequestOptions): Promise<{ items: SiteResponse[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
@@ -57,37 +57,37 @@ export class SiteApi {
       { name: 'siteType', value: params?.siteType, style: 'form', explode: true, allowReserved: false },
       { name: 'keyword', value: params?.keyword, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.get<{ items: SiteResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites`), query));
+    return this.client.request<{ items: SiteResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 创建站点 */
-  async create(body: CreateSiteRequest): Promise<SiteResponse> {
-    return this.client.post<SiteResponse>(appApiPath(`/sites`), body, undefined, undefined, 'application/json');
+  async create(body: CreateSiteRequest, requestOptions?: ApiRequestOptions): Promise<SiteResponse> {
+    return this.client.request<SiteResponse>(appApiPath(`/sites`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json' });
   }
 
 /** 获取站点详情 */
-  async retrieve(siteId: string): Promise<SiteResponse> {
-    return this.client.get<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}`));
+  async retrieve(siteId: string, requestOptions?: ApiRequestOptions): Promise<SiteResponse> {
+    return this.client.request<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
   }
 
 /** 更新站点 */
-  async update(siteId: string, body: UpdateSiteRequest): Promise<SiteResponse> {
-    return this.client.patch<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}`), body, undefined, undefined, 'application/json');
+  async update(siteId: string, body: UpdateSiteRequest, requestOptions?: ApiRequestOptions): Promise<SiteResponse> {
+    return this.client.request<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PATCH' as any, body, contentType: 'application/json' });
   }
 
 /** 删除站点 */
-  async delete(siteId: string): Promise<void> {
-    return this.client.delete<void>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}`));
+  async delete(siteId: string, requestOptions?: ApiRequestOptions): Promise<void> {
+    return this.client.request<void>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'DELETE' as any });
   }
 
 /** 激活站点 */
-  async activate(siteId: string): Promise<SiteResponse> {
-    return this.client.post<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/activate`));
+  async activate(siteId: string, requestOptions?: ApiRequestOptions): Promise<SiteResponse> {
+    return this.client.request<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/activate`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any });
   }
 
 /** 暂停站点 */
-  async pause(siteId: string): Promise<SiteResponse> {
-    return this.client.post<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/pause`));
+  async pause(siteId: string, requestOptions?: ApiRequestOptions): Promise<SiteResponse> {
+    return this.client.request<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/pause`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any });
   }
 }
 

@@ -1,0 +1,28 @@
+{
+  "name": "@sdkwork/deployments-pc-console-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@sdkwork/deploy-app-sdk": "workspace:*",
+    "@sdkwork/drive-app-sdk": "workspace:*",
+    "@sdkwork/deployments-pc-commons": "workspace:*",
+    "@sdkwork/sdk-common": "workspace:*",
+    "react": "catalog:"
+  },
+  "sdkwork": {
+    "applicationCode": "deployments",
+    "architecture": "pc-react",
+    "capability": "console-core",
+    "surface": "app-console",
+    "managedBy": "tools/materialize_deployments_pc.mjs"
+  }
+}

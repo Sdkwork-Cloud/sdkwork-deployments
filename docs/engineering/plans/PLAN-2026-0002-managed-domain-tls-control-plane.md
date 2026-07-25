@@ -32,8 +32,9 @@ No implementation phase may report production readiness while any of these decis
 2. Author Web Internal TLS assignment and observation contracts.
 3. Replace the prelaunch PostgreSQL and SQLite baselines with the approved tables and constraints.
 4. Add repository ports and state-machine tests before provider implementations.
-5. Remove unconditional domain verification, `drive://` private-key references, and planned-only
-   success semantics. Do not add compatibility tables or dual writes.
+5. Preserve the implemented fail-closed exact DNS TXT token check; remove `drive://` private-key
+   references and planned-only certificate success semantics. Do not add compatibility tables or
+   dual writes.
 6. Materialize OpenAPI and regenerate SDK families from their authorities. Generated transports are
    never hand-edited.
 
@@ -42,8 +43,10 @@ generation diff review, tenant/security negative tests.
 
 ## Phase 2: Domain Proof And Anti-Takeover
 
-1. Implement canonical IDNA/public-suffix validation and global active-claim uniqueness.
-2. Implement durable DNS TXT and bounded HTTP proof workers with leases, retry, expiry, and cleanup.
+1. Extend the implemented canonical IDNA normalization with public-suffix validation and global
+   active-claim uniqueness.
+2. Promote exact DNS TXT verification into a durable worker with leases, retry, expiry, and cleanup,
+   and add the bounded HTTP proof worker.
 3. Implement periodic revalidation, suspension, hold, reclaim, and audited administrator recovery.
 4. Add domain proof UI and admin conflict/hold UI through generated SDKs.
 

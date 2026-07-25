@@ -124,10 +124,24 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "429": {
-            "$ref": "#/components/responses/RateLimited"
+            "description": "请求过于频繁",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -194,16 +208,44 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "请求参数错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "资源冲突",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "422": {
-            "$ref": "#/components/responses/ValidationError"
+            "description": "校验错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -268,10 +310,24 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -338,13 +394,34 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "422": {
-            "$ref": "#/components/responses/ValidationError"
+            "description": "校验错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -371,10 +448,24 @@
             "description": "删除成功"
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -438,10 +529,24 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -527,22 +632,64 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "请求参数错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "403": {
-            "$ref": "#/components/responses/Forbidden"
+            "description": "Access denied",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "资源冲突",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "422": {
-            "$ref": "#/components/responses/ValidationError"
+            "description": "校验错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -605,10 +752,24 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -688,7 +849,14 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -755,10 +923,24 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "资源冲突",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -826,7 +1008,14 @@
             }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -853,7 +1042,14 @@
             "description": "删除成功"
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -921,10 +1117,24 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "description": "请求参数错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -1020,7 +1230,14 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -1087,10 +1304,24 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "资源冲突",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -1158,7 +1389,14 @@
             }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -1225,7 +1463,14 @@
             }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -1306,10 +1551,24 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -1376,10 +1635,24 @@
             }
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "资源冲突",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "422": {
-            "$ref": "#/components/responses/ValidationError"
+            "description": "校验错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -1447,7 +1720,14 @@
             }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -1792,10 +2072,24 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -1823,10 +2117,24 @@
             "description": "撤销成功"
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -1891,13 +2199,34 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "422": {
-            "$ref": "#/components/responses/ValidationError"
+            "description": "校验错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -1967,10 +2296,24 @@
             }
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "资源冲突",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           },
           "422": {
-            "$ref": "#/components/responses/ValidationError"
+            "description": "校验错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -2039,7 +2382,14 @@
             }
           },
           "422": {
-            "$ref": "#/components/responses/ValidationError"
+            "description": "校验错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -2110,7 +2460,14 @@
             }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -2267,6 +2624,93 @@
       }
     },
     "/app/v3/api/artifacts": {
+      "post": {
+        "operationId": "artifacts.create",
+        "summary": "Register a Drive-backed deployment artifact",
+        "description": "Registers immutable publishing metadata after the browser uploads bytes through the Drive App SDK. Deploy stores stable Drive references only and does not own presigned upload lifecycle.",
+        "tags": [
+          "artifact"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "x-sdkwork-idempotent": true,
+        "x-sdkwork-permission": "deploy.artifacts.write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateArtifactRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Artifact registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SdkWorkApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "data"
+                      ],
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "item"
+                          ],
+                          "properties": {
+                            "item": {
+                              "$ref": "#/components/schemas/ArtifactResponse"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "x-sdkwork-api-surface": "app-api",
+        "x-sdkwork-owner": "sdkwork-deploy",
+        "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token"
+      },
       "get": {
         "operationId": "artifacts.list",
         "summary": "获取租户制品列表",
@@ -2331,7 +2775,14 @@
             }
           },
           "401": {
-            "$ref": "#/components/responses/Unauthorized"
+            "description": "未认证",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -2395,7 +2846,14 @@
             }
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -2423,7 +2881,14 @@
             "description": "已保留"
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "资源不存在",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
           }
         },
         "x-sdkwork-api-surface": "app-api",
@@ -4071,6 +4536,71 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "CreateArtifactRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "packageType",
+          "fileName",
+          "contentType",
+          "contentLength",
+          "driveUploadSessionId",
+          "driveSpaceId",
+          "driveNodeId",
+          "idempotencyKey"
+        ],
+        "properties": {
+          "siteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "packageType": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "fileName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "contentType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "contentLength": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "checksumSha256": {
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "driveUploadSessionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "driveUploadItemId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "driveSpaceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "driveNodeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
           }
         }
       },
