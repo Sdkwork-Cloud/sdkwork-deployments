@@ -12,19 +12,27 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./application-publisher": {
+      "types": "./composed/applicationPublisher/index.ts",
+      "import": "./composed/applicationPublisher/index.ts",
+      "default": "./composed/applicationPublisher/index.ts"
     }
   },
   "scripts": {
     "build": "pnpm run build:transport && pnpm run typecheck",
     "build:transport": "pnpm --dir generated/server-openapi build",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@sdkwork/drive-app-sdk": "workspace:*",
     "@sdkwork/sdk-common": "workspace:*"
   },
   "devDependencies": {
     "rollup": "^4.0.0",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "publishConfig": {
     "access": "public",
@@ -32,6 +40,7 @@
   },
   "files": [
     "src",
+    "composed",
     "generated/server-openapi/dist",
     "generated/server-openapi/src",
     "generated/server-openapi/sdkwork-sdk.json",

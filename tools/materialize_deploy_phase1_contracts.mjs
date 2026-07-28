@@ -24,6 +24,34 @@ const surfaces = [
     sdkTarget: "app",
     prefix: "/app/v3/api",
     domainTag: "deploy",
+    sdkDependencies: [
+      {
+        workspace: "sdkwork-drive-app-sdk",
+        role: "drive-uploader-capability",
+        required: true,
+        dependencyMode: "consumer-sdk",
+        apiPrefix: "/app/v3/api",
+        apiAuthority: "sdkwork-drive-app-api",
+        generatedTransportImportPolicy: "forbidden",
+        packageByLanguage: {
+          typescript: "@sdkwork/drive-app-sdk",
+        },
+      },
+    ],
+    dependencyApiExports: [
+      {
+        workspace: "sdkwork-drive-app-sdk",
+        sdkFamily: "sdkwork-drive-app-sdk",
+        apiAuthority: "sdkwork-drive-app-api",
+        surface: "app-api",
+        apiPrefix: "/app/v3/api",
+        exportMode: "composed-wrapper",
+        visibility: "app",
+        methods: ["uploader.uploadArchive"],
+        packageExport: "./application-publisher",
+        runtimeRequired: true,
+      },
+    ],
   },
   {
     yamlPath: "apis/backend-api/deploy/openapi.yaml",
@@ -119,8 +147,8 @@ function sdkManifest(profile, openapi) {
       generatedProtocols: ["http-openapi"],
       manualTransports: [],
     },
-    sdkDependencies: [],
-    dependencyApiExports: [],
+    sdkDependencies: profile.sdkDependencies ?? [],
+    dependencyApiExports: profile.dependencyApiExports ?? [],
     languages: [
       {
         language: "typescript",
