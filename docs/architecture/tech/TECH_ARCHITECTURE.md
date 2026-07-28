@@ -51,9 +51,9 @@ implementation.
 
 ## 5. API, SDK, And Data Ownership
 
-- Console remote operations use `@sdkwork/deploy-app-sdk`; package bytes use
+- Console remote operations use `@sdkwork/deployments-app-sdk`; package bytes use
   `@sdkwork/drive-app-sdk`.
-- Backend-admin operations use `@sdkwork/deploy-backend-sdk` and are not exposed through the
+- Backend-admin operations use `@sdkwork/deployments-backend-sdk` and are not exposed through the
   tenant Console.
 - `artifacts.create` accepts stable Drive references and is idempotent. Release and deployment
   creation reference immutable Deploy identities rather than upload URLs.

@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.component.spec",
+  "component": {
+    "name": "sdkwork-deployments-backend-sdk",
+    "displayName": "SDKWork Deploy Backend API SDK",
+    "version": "0.1.0",
+    "type": "sdk-family",
+    "root": "sdks/sdkwork-deployments-backend-sdk",
+    "domain": "deploy",
+    "capability": "deploy",
+    "surface": "backend-admin",
+    "languages": ["typescript"],
+    "generated": false,
+    "manifests": [
+      "sdk-manifest.json",
+      "openapi/deploy-backend-api.openapi.json",
+      "openapi/deploy-backend-api.sdkgen.json",
+      "specs/component.spec.json"
+    ]
+  },
+  "canonicalSpecs": [
+    {"file": "API_SPEC.md", "path": "../../../sdkwork-specs/API_SPEC.md", "purpose": "Backend API authority and wire contract."},
+    {"file": "SDK_SPEC.md", "path": "../../../sdkwork-specs/SDK_SPEC.md", "purpose": "SDK family ownership and generated transport rules."},
+    {"file": "SDK_WORKSPACE_GENERATION_SPEC.md", "path": "../../../sdkwork-specs/SDK_WORKSPACE_GENERATION_SPEC.md", "purpose": "Authority materialization and generated output placement."},
+    {"file": "COMPONENT_SPEC.md", "path": "../../../sdkwork-specs/COMPONENT_SPEC.md", "purpose": "Component-local contract requirements."},
+    {"file": "CODE_STYLE_SPEC.md", "path": "../../../sdkwork-specs/CODE_STYLE_SPEC.md", "purpose": "Authored and generated source boundaries."},
+    {"file": "NAMING_SPEC.md", "path": "../../../sdkwork-specs/NAMING_SPEC.md", "purpose": "SDK family, authority, and package naming."},
+    {"file": "TYPESCRIPT_CODE_SPEC.md", "path": "../../../sdkwork-specs/TYPESCRIPT_CODE_SPEC.md", "purpose": "TypeScript generated transport rules."},
+    {"file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md", "purpose": "Contract and materialization verification."},
+    {"file": "DOCUMENTATION_SPEC.md", "path": "../../../sdkwork-specs/DOCUMENTATION_SPEC.md", "purpose": "SDK documentation requirements."}
+  ],
+  "contracts": {
+    "layerRole": "sdk-generated",
+    "apiAuthority": {
+      "name": "sdkwork-deploy-backend-api",
+      "prefix": "/backend/v3/api",
+      "authorityOpenApi": "../../apis/backend-api/deploy/openapi.yaml",
+      "derivedOpenApi": [
+        "openapi/deploy-backend-api.openapi.json",
+        "openapi/deploy-backend-api.sdkgen.json"
+      ],
+      "owner": "sdkwork-deploy"
+    },
+    "publicExports": [
+      "sdkwork-deployments-backend-sdk-typescript/src/index.ts"
+    ],
+    "providedPorts": [],
+    "requiredPorts": [],
+    "runtimeEntrypoints": [
+      "bin/generate-sdk.mjs"
+    ],
+    "routeManifest": null,
+    "sdkClients": [],
+    "sdkDependencies": [],
+    "dependencyApiExports": [],
+    "dependencyApiSurfaces": [],
+    "events": [],
+    "configKeys": []
+  },
+  "verification": {
+    "commands": [
+      "pnpm sdk:generate:backend",
+      "pnpm --filter @sdkwork/deployments-backend-sdk build",
+      "node ../sdkwork-specs/tools/check-sdk-standard.mjs --workspace .",
+      "node --test tests/contract/openapi-materialization.contract.test.mjs"
+    ]
+  }
+}

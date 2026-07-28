@@ -57,7 +57,7 @@
     "sdkClients": [],
     "sdkDependencies": [
       {
-        "workspace": "sdkwork-deploy-backend-sdk",
+        "workspace": "sdkwork-deployments-backend-sdk",
         "surface": "backend-api",
         "credentialMode": "authenticated-backend-admin"
       }

@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "sdkFamily": "sdkwork-deployments-app-sdk",
+  "sdkName": "sdkwork-deployments-app-sdk",
+  "packageName": "@sdkwork/deployments-app-sdk",
+  "transportPackageName": "sdkwork-deployments-app-sdk-generated-typescript",
+  "typescript": {
+    "composedRoot": "sdkwork-deployments-app-sdk-typescript",
+    "composedEntry": "sdkwork-deployments-app-sdk-typescript/src/index.ts",
+    "transportRoot": "sdkwork-deployments-app-sdk-typescript/generated/server-openapi",
+    "transportEntry": "sdkwork-deployments-app-sdk-typescript/generated/server-openapi/src/index.ts"
+  },
+  "workspace": "sdkwork-deployments-app-sdk",
+  "title": "SDKWork Deploy App API",
+  "apiVersion": "1.0.0",
+  "openapiVersion": "3.1.2",
+  "authoritySpec": "openapi/deploy-app-api.openapi.json",
+  "generationInputSpec": "openapi/deploy-app-api.sdkgen.json",
+  "derivedSpecs": {
+    "default": "openapi/deploy-app-api.sdkgen.json"
+  },
+  "sdkOwner": "sdkwork-deploy",
+  "apiAuthority": "sdkwork-deploy-app-api",
+  "ownerOnlyOperationCount": 38,
+  "standardProfile": "sdkwork-v3",
+  "discoverySurface": {
+    "sdkTarget": "app",
+    "apiPrefix": "/app/v3/api",
+    "schemaUrl": "/app/v3/api/openapi.json",
+    "generatedProtocols": [
+      "http-openapi"
+    ],
+    "manualTransports": []
+  },
+  "sdkDependencies": [
+    {
+      "workspace": "sdkwork-drive-app-sdk",
+      "role": "drive-uploader-capability",
+      "required": true,
+      "dependencyMode": "consumer-sdk",
+      "apiPrefix": "/app/v3/api",
+      "apiAuthority": "sdkwork-drive-app-api",
+      "generatedTransportImportPolicy": "forbidden",
+      "packageByLanguage": {
+        "typescript": "@sdkwork/drive-app-sdk"
+      }
+    }
+  ],
+  "dependencyApiExports": [
+    {
+      "workspace": "sdkwork-drive-app-sdk",
+      "sdkFamily": "sdkwork-drive-app-sdk",
+      "apiAuthority": "sdkwork-drive-app-api",
+      "surface": "app-api",
+      "apiPrefix": "/app/v3/api",
+      "exportMode": "composed-wrapper",
+      "visibility": "app",
+      "methods": [
+        "uploader.uploadArchive"
+      ],
+      "packageExport": "./application-publisher",
+      "runtimeRequired": true
+    }
+  ],
+  "languages": [
+    {
+      "language": "typescript",
+      "workspace": "sdkwork-deployments-app-sdk-typescript",
+      "generationState": "materialized",
+      "releaseState": "not_published",
+      "packagePath": "sdkwork-deployments-app-sdk-typescript/generated/server-openapi",
+      "manifestPath": "sdkwork-deployments-app-sdk-typescript/generated/server-openapi/package.json",
+      "version": "0.1.0",
+      "description": "Generator-owned TypeScript transport SDK for SDKWork Deploy App API.",
+      "generatedPath": "sdkwork-deployments-app-sdk-typescript/generated/server-openapi",
+      "consumerPackageName": "@sdkwork/deployments-app-sdk",
+      "transportPackageName": "sdkwork-deployments-app-sdk-generated-typescript"
+    }
+  ],
+  "metadata": {
+    "managedBy": "tools/materialize_deploy_phase1_contracts.mjs",
+    "standardProfile": "sdkwork-v3",
+    "supportedLanguageSubset": [
+      "typescript"
+    ]
+  },
+  "openApiPath": "openapi/deploy-app-api.openapi.json",
+  "surface": "app-api"
+}

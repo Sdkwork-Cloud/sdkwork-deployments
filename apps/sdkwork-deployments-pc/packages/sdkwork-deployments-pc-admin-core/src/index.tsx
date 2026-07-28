@@ -1,4 +1,4 @@
-import { createClient, type SdkworkDeployBackendClient } from "@sdkwork/deploy-backend-sdk";
+import { createClient, type SdkworkDeployBackendClient } from "@sdkwork/deployments-backend-sdk";
 import type { AuthTokenManager } from "@sdkwork/sdk-common";
 import { normalizeDeploymentsPage, type DeploymentsAction, type DeploymentsActionContext, type DeploymentsDataSource, type DeploymentsRegistry } from "@sdkwork/deployments-pc-commons";
 import { createContext, useContext, type ReactNode } from "react";

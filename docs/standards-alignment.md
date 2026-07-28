@@ -49,8 +49,8 @@ All App and Backend handlers use SDKWork v3:
 - error: HTTP 4xx/5xx `application/problem+json` with numeric `code` and `traceId`;
 - owner OpenAPI under `apis/`, materialized authority and deterministic `*.sdkgen.json` under the
   owning family, generated transport under `generated/server-openapi`;
-- consumers import only `@sdkwork/deploy-app-sdk` or explicit backend-admin
-  `@sdkwork/deploy-backend-sdk`.
+- consumers import only `@sdkwork/deployments-app-sdk` or explicit backend-admin
+  `@sdkwork/deployments-backend-sdk`.
 
 Backend composition mutation is intentionally absent until an approved trusted operator
 credential-delegation or resolved-resource contract exists.

@@ -727,8 +727,8 @@ certificate renewal never creates a SiteRevision or content deployment.
 
 The current owner OpenAPI exposes the App API composition mutation as
 `PUT /app/v3/api/sites/{siteId}/composition` (`sites.composition.update`). The generated
-`@sdkwork/deploy-app-sdk` facade is the only supported user automation surface for it. The generated
-`@sdkwork/deploy-backend-sdk` contains the current Nginx/server/audit operator surface but does not
+`@sdkwork/deployments-app-sdk` facade is the only supported user automation surface for it. The generated
+`@sdkwork/deployments-backend-sdk` contains the current Nginx/server/audit operator surface but does not
 offer composition mutation. Adding that mutation requires an approved privileged credential model;
 an admin must not submit unvalidated provider identifiers on behalf of a tenant.
 

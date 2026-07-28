@@ -7,12 +7,12 @@
   "domain": "platform",
   "capability": "deploy",
   "apiAuthority": "sdkwork-deploy-backend-api",
-  "sdkFamily": "sdkwork-deploy-backend-sdk",
+  "sdkFamily": "sdkwork-deployments-backend-sdk",
   "prefix": "/backend/v3/api",
   "source": {
     "crateRoot": "crates/sdkwork-routes-deploy-backend-api",
     "crateImport": "sdkwork_routes_deploy_backend_api",
-    "openApiAuthority": "sdks/sdkwork-deploy-backend-sdk/openapi/deploy-backend-api.openapi.json"
+    "openApiAuthority": "sdks/sdkwork-deployments-backend-sdk/openapi/deploy-backend-api.openapi.json"
   },
   "routes": [
     {

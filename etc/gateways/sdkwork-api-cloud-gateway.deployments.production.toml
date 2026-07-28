@@ -10,7 +10,7 @@ bind = "0.0.0.0:3900"
 [[dependencySurfaces]]
 serviceId = "sdkwork-deployments-app-api"
 workspace = "sdkwork-deployments"
-sdkFamily = "sdkwork-deploy-app-sdk"
+sdkFamily = "sdkwork-deployments-app-sdk"
 apiAuthority = "sdkwork-deploy-app-api"
 surface = "app"
 apiPrefix = "/app/v3/api"

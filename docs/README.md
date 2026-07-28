@@ -22,6 +22,7 @@
 | Managed domain/TLS decision | [architecture/decisions/ADR-20260723-managed-domain-tls-control-plane.md](architecture/decisions/ADR-20260723-managed-domain-tls-control-plane.md) |
 | Managed domain/TLS plan | [engineering/plans/PLAN-2026-0002-managed-domain-tls-control-plane.md](engineering/plans/PLAN-2026-0002-managed-domain-tls-control-plane.md) |
 | Prelaunch control-plane convergence | [migrations/MIG-2026-0001-cloud-site-control-plane-convergence.md](migrations/MIG-2026-0001-cloud-site-control-plane-convergence.md) |
+| Deployments SDK family rename | [migrations/MIG-2026-0002-deployments-sdk-family-rename.md](migrations/MIG-2026-0002-deployments-sdk-family-rename.md) |
 | Commercial readiness review | [engineering/reviews/REVIEW-20260721-cloud-site-publishing-commercial-readiness.md](engineering/reviews/REVIEW-20260721-cloud-site-publishing-commercial-readiness.md) |
 
 ## Related Specs

@@ -7,12 +7,12 @@
   "domain": "platform",
   "capability": "deploy",
   "apiAuthority": "sdkwork-deploy-app-api",
-  "sdkFamily": "sdkwork-deploy-app-sdk",
+  "sdkFamily": "sdkwork-deployments-app-sdk",
   "prefix": "/app/v3/api",
   "source": {
     "crateRoot": "crates/sdkwork-routes-deploy-app-api",
     "crateImport": "sdkwork_routes_deploy_app_api",
-    "openApiAuthority": "sdks/sdkwork-deploy-app-sdk/openapi/deploy-app-api.openapi.json"
+    "openApiAuthority": "sdks/sdkwork-deployments-app-sdk/openapi/deploy-app-api.openapi.json"
   },
   "routes": [
     {

@@ -24,7 +24,7 @@ This repository follows `../sdkwork-specs/SDKWORK_WORKSPACE_SPEC.md`. Applicatio
 | `apis/` | active | Authoritative OpenAPI contracts for deploy app/backend surfaces |
 | `crates/` | active | Rust service, repository, route, and API server crates |
 | `database/` | active | Database contract, baseline DDL, migrations, seeds, drift policy |
-| `sdks/` | active | Generated deploy SDK families (`sdkwork-deploy-app-sdk`, `sdkwork-deploy-backend-sdk`); materialized by `pnpm api:materialize` |
+| `sdks/` | active | Generated deploy SDK families (`sdkwork-deployments-app-sdk`, `sdkwork-deployments-backend-sdk`); materialized by `pnpm api:materialize` |
 | `specs/` | active | Component and topology contracts |
 | `etc/` | active | Source-controlled topology profiles, gateway templates, and secret-file references |
 | `deployments/` | active | `deploy.yaml`, Docker, and Kubernetes handoff descriptors |

@@ -1,8 +1,8 @@
 packages:
   - "apps/sdkwork-deployments-pc"
   - "apps/sdkwork-deployments-pc/packages/*"
-  - "sdks/sdkwork-deploy-app-sdk/sdkwork-deploy-app-sdk-typescript"
-  - "sdks/sdkwork-deploy-backend-sdk/sdkwork-deploy-backend-sdk-typescript"
+  - "sdks/sdkwork-deployments-app-sdk/sdkwork-deployments-app-sdk-typescript"
+  - "sdks/sdkwork-deployments-backend-sdk/sdkwork-deployments-backend-sdk-typescript"
   - "../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript"
   - "../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-contracts"
   - "../sdkwork-iam/apps/sdkwork-iam-common/packages/sdkwork-iam-runtime"

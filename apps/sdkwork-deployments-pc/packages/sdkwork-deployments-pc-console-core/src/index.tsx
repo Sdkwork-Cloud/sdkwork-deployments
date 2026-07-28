@@ -1,4 +1,4 @@
-import { createClient as createDeployClient, type SdkworkDeployAppClient } from "@sdkwork/deploy-app-sdk";
+import { createClient as createDeployClient, type SdkworkDeployAppClient } from "@sdkwork/deployments-app-sdk";
 import { createDriveAppClient, type SdkworkDriveAppClient } from "@sdkwork/drive-app-sdk";
 import type { AuthTokenManager } from "@sdkwork/sdk-common";
 import { normalizeDeploymentsPage, type DeploymentsAction, type DeploymentsActionContext, type DeploymentsDataSource, type DeploymentsRegistry } from "@sdkwork/deployments-pc-commons";

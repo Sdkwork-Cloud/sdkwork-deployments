@@ -318,8 +318,8 @@ document/version operation.
 
 ### 6.9 API And SDK Automation
 
-All authenticated user workflows use `@sdkwork/deploy-app-sdk`; explicit backend-admin consumers use
-`@sdkwork/deploy-backend-sdk`. Both facades are generated from owner-only SDKWork v3 OpenAPI and
+All authenticated user workflows use `@sdkwork/deployments-app-sdk`; explicit backend-admin consumers use
+`@sdkwork/deployments-backend-sdk`. Both facades are generated from owner-only SDKWork v3 OpenAPI and
 keep their generated transport under `generated/server-openapi`. Drive, Knowledgebase, and Web
 Server integrations use their owning generated SDK family or approved service port. Business
 modules shall not add raw HTTP wrappers or manual auth headers.

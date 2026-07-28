@@ -57,7 +57,7 @@
     "sdkClients": [],
     "sdkDependencies": [
       {
-        "workspace": "sdkwork-deploy-app-sdk",
+        "workspace": "sdkwork-deployments-app-sdk",
         "surface": "app-api",
         "credentialMode": "authenticated-app-api"
       }

@@ -6,3 +6,4 @@ executable database migrations remain under the repository database lifecycle.
 ## Proposed
 
 - [MIG-2026-0001 Cloud Site Control-Plane Convergence](MIG-2026-0001-cloud-site-control-plane-convergence.md)
+- [MIG-2026-0002 Deployments SDK Family Rename](MIG-2026-0002-deployments-sdk-family-rename.md)

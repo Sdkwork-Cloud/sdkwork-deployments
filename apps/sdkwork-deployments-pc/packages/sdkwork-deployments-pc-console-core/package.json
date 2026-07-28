@@ -12,7 +12,7 @@
     }
   },
   "dependencies": {
-    "@sdkwork/deploy-app-sdk": "workspace:*",
+    "@sdkwork/deployments-app-sdk": "workspace:*",
     "@sdkwork/drive-app-sdk": "workspace:*",
     "@sdkwork/deployments-pc-commons": "workspace:*",
     "@sdkwork/sdk-common": "workspace:*",

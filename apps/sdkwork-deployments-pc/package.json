@@ -19,8 +19,8 @@
   "dependencies": {
     "@sdkwork/auth-pc-react": "workspace:*",
     "@sdkwork/auth-runtime-pc-react": "workspace:*",
-    "@sdkwork/deploy-app-sdk": "workspace:*",
-    "@sdkwork/deploy-backend-sdk": "workspace:*",
+    "@sdkwork/deployments-app-sdk": "workspace:*",
+    "@sdkwork/deployments-backend-sdk": "workspace:*",
     "@sdkwork/deployments-pc-admin-audit": "workspace:*",
     "@sdkwork/deployments-pc-admin-core": "workspace:*",
     "@sdkwork/deployments-pc-admin-infrastructure": "workspace:*",

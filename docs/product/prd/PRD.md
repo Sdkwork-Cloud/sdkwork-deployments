@@ -38,8 +38,8 @@ Drive upload, space, and node references through `artifacts.create`, then owns i
 release, deployment, and runtime-assignment business state. Disabling an application is the
 recoverable `sites.pause` command; re-enabling it is `sites.activate`.
 
-Console packages must consume `@sdkwork/deploy-app-sdk` and `@sdkwork/drive-app-sdk` through
-console-core. Backend-admin packages must consume `@sdkwork/deploy-backend-sdk` through the lazy
+Console packages must consume `@sdkwork/deployments-app-sdk` and `@sdkwork/drive-app-sdk` through
+console-core. Backend-admin packages must consume `@sdkwork/deployments-backend-sdk` through the lazy
 admin-core boundary. UI packages must not construct clients, issue raw HTTP, create authentication
 headers, or treat presigned URLs and provider object keys as business identity.
 

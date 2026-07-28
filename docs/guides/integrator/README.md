@@ -4,8 +4,8 @@
 
 | Surface | Prefix | Composed package | OpenAPI authority |
 | --- | --- | --- | --- |
-| App API | `/app/v3/api` | `@sdkwork/deploy-app-sdk` | `apis/app-api/deploy/openapi.yaml` |
-| Backend API | `/backend/v3/api` | `@sdkwork/deploy-backend-sdk` | `apis/backend-api/deploy/openapi.yaml` |
+| App API | `/app/v3/api` | `@sdkwork/deployments-app-sdk` | `apis/app-api/deploy/openapi.yaml` |
+| Backend API | `/backend/v3/api` | `@sdkwork/deployments-backend-sdk` | `apis/backend-api/deploy/openapi.yaml` |
 
 Materialized authority JSON, deterministic `*.sdkgen.json` input, family manifests, composed
 facades, and generated transport live under `sdks/sdkwork-deploy-*-sdk/`. Generated SDKWork v3
@@ -14,7 +14,7 @@ clients unwrap `data` by default. Success uses `{ code: 0, data, traceId }`; HTT
 
 ## Live Website Composition
 
-Use `@sdkwork/deploy-app-sdk`; do not call Deploy, Drive, Knowledgebase, or Web Server with raw HTTP
+Use `@sdkwork/deployments-app-sdk`; do not call Deploy, Drive, Knowledgebase, or Web Server with raw HTTP
 or manually assembled credential headers. The active mutation is generated from
 `PUT /app/v3/api/sites/{siteId}/composition` with operation id `sites.composition.update`.
 
@@ -108,8 +108,8 @@ certificate evidence.
 pnpm api:materialize
 pnpm sdk:generate
 node ../sdkwork-specs/tools/check-sdk-standard.mjs --workspace .
-pnpm --filter @sdkwork/deploy-app-sdk build
-pnpm --filter @sdkwork/deploy-backend-sdk build
+pnpm --filter @sdkwork/deployments-app-sdk build
+pnpm --filter @sdkwork/deployments-backend-sdk build
 ```
 
 See `DOCUMENTATION_SPEC.md` section 2 and [standards-alignment.md](../../standards-alignment.md).
