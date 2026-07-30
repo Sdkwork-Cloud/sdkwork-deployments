@@ -5,7 +5,7 @@ use sdkwork_deploy_contract::{
     CERTIFICATE_STATUS_REVOKED, CERTIFICATE_TYPE_CUSTOM, CERTIFICATE_TYPE_LETS_ENCRYPT,
 };
 use serde_json::json;
-use sqlx::{any::AnyRow, Row};
+use sqlx::{postgres::PgRow, Row};
 
 use crate::support::{
     new_uuid, next_id, now_rfc3339, pagination, resolve_domain_internal_id,
@@ -302,7 +302,7 @@ impl DeployRepository {
     }
 }
 
-fn map_certificate_row(row: &AnyRow) -> Result<CertificateResponse, sqlx::Error> {
+fn map_certificate_row(row: &PgRow) -> Result<CertificateResponse, sqlx::Error> {
     Ok(CertificateResponse {
         id: row.try_get("uuid")?,
         cert_name: row.try_get("cert_name")?,

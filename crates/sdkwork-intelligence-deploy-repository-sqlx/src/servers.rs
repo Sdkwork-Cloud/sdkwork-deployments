@@ -1,7 +1,7 @@
 use sdkwork_deploy_contract::{
     CreateServerRequest, DeployServiceError, DeployServiceResult, ServerPage, ServerResponse,
 };
-use sqlx::{any::AnyRow, Row};
+use sqlx::{postgres::PgRow, Row};
 
 use crate::support::{new_uuid, next_id, now_rfc3339, pagination, store_error};
 use crate::DeployRepository;
@@ -85,7 +85,7 @@ impl DeployRepository {
     }
 }
 
-fn map_server_row(row: &AnyRow) -> Result<ServerResponse, sqlx::Error> {
+fn map_server_row(row: &PgRow) -> Result<ServerResponse, sqlx::Error> {
     Ok(ServerResponse {
         id: row.try_get("uuid")?,
         name: row.try_get("name")?,

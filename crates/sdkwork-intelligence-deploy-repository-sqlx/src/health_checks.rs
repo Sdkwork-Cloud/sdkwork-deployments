@@ -2,7 +2,7 @@ use sdkwork_deploy_contract::{
     CreateHealthCheckRequest, DeployServiceError, DeployServiceResult, HealthCheckPage,
     HealthCheckResponse,
 };
-use sqlx::{any::AnyRow, Row};
+use sqlx::{postgres::PgRow, Row};
 
 use crate::support::{new_uuid, next_id, now_rfc3339, resolve_site_internal_id, store_error};
 use crate::DeployRepository;
@@ -87,7 +87,7 @@ impl DeployRepository {
     }
 }
 
-fn map_health_check_row(row: &AnyRow) -> Result<HealthCheckResponse, sqlx::Error> {
+fn map_health_check_row(row: &PgRow) -> Result<HealthCheckResponse, sqlx::Error> {
     Ok(HealthCheckResponse {
         id: row.try_get("uuid")?,
         check_type: row.try_get("check_type")?,

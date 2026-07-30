@@ -2,7 +2,7 @@ use sdkwork_deploy_contract::{
     CreateEnvVariableRequest, DeployServiceError, DeployServiceResult, EnvVariablePage,
     EnvVariableResponse,
 };
-use sqlx::{any::AnyRow, Row};
+use sqlx::{postgres::PgRow, Row};
 
 use crate::support::{
     bool_from_row, new_uuid, next_id, now_rfc3339, resolve_site_internal_id, store_error,
@@ -123,7 +123,7 @@ impl DeployRepository {
     }
 }
 
-fn map_env_variable_row(row: &AnyRow) -> Result<EnvVariableResponse, sqlx::Error> {
+fn map_env_variable_row(row: &PgRow) -> Result<EnvVariableResponse, sqlx::Error> {
     Ok(EnvVariableResponse {
         id: row.try_get("uuid")?,
         key: row.try_get("key")?,

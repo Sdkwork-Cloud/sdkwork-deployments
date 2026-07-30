@@ -2,7 +2,7 @@ use sdkwork_deploy_contract::{
     AuditLogPage, AuditLogResponse, DeployServiceError, DeployServiceResult,
 };
 use sdkwork_intelligence_deploy_service::repository::InsertAuditLogCommand;
-use sqlx::{any::AnyRow, Row};
+use sqlx::{postgres::PgRow, Row};
 
 use crate::support::{new_uuid, next_id, now_rfc3339, pagination, store_error};
 use crate::DeployRepository;
@@ -108,7 +108,7 @@ impl DeployRepository {
     }
 }
 
-fn map_audit_log_row(row: &AnyRow) -> Result<AuditLogResponse, sqlx::Error> {
+fn map_audit_log_row(row: &PgRow) -> Result<AuditLogResponse, sqlx::Error> {
     Ok(AuditLogResponse {
         id: row.try_get("uuid")?,
         action: row.try_get("action")?,

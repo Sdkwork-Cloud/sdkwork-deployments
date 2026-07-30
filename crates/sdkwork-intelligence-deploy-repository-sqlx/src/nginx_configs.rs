@@ -3,7 +3,7 @@ use sdkwork_deploy_contract::{
     NginxConfigPage, NginxConfigResponse, NginxReloadResponse, NginxStatusResponse,
     NginxValidateResponse, UpdateNginxConfigRequest,
 };
-use sqlx::{any::AnyRow, Row};
+use sqlx::{postgres::PgArguments, postgres::PgRow, PgPool, Postgres, Row};
 
 use crate::nginx_orchestrator::{parse_sdkwork_deploy_binding, publish_nginx_config};
 use crate::nginx_security::{
@@ -470,9 +470,9 @@ enum BindValue {
 }
 
 fn apply_binds<'q>(
-    mut query: sqlx::query::Query<'q, sqlx::Any, sqlx::any::AnyArguments<'q>>,
+    mut query: sqlx::query::Query<'q, Postgres, PgArguments>,
     binds: &[BindValue],
-) -> sqlx::query::Query<'q, sqlx::Any, sqlx::any::AnyArguments<'q>> {
+) -> sqlx::query::Query<'q, Postgres, PgArguments> {
     for value in binds {
         query = match value {
             BindValue::I64(value) => query.bind(*value),
@@ -484,9 +484,9 @@ fn apply_binds<'q>(
 }
 
 async fn map_nginx_config_row(
-    pool: &sqlx::AnyPool,
+    pool: &PgPool,
     tenant_id: i64,
-    row: &AnyRow,
+    row: &PgRow,
 ) -> Result<NginxConfigResponse, sqlx::Error> {
     let site_internal_id: i64 = row.try_get("site_id")?;
     let site_uuid = resolve_site_uuid(pool, tenant_id, site_internal_id)

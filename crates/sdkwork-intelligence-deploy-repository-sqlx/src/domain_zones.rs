@@ -5,7 +5,7 @@ use sdkwork_deploy_contract::{
 };
 use sdkwork_intelligence_deploy_service::{dns_txt_record_name, DomainVerificationChallenge};
 use sdkwork_utils_rust::crypto::sha256_hash;
-use sqlx::{any::AnyRow, Row};
+use sqlx::{postgres::PgRow, Row};
 
 use crate::support::{new_uuid, next_id, now_rfc3339, pagination, store_error};
 use crate::DeployRepository;
@@ -625,7 +625,7 @@ fn hostname_from_relative_name(
     Ok(hostname)
 }
 
-fn map_zone_row(row: &AnyRow) -> Result<DomainZoneResponse, sqlx::Error> {
+fn map_zone_row(row: &PgRow) -> Result<DomainZoneResponse, sqlx::Error> {
     Ok(DomainZoneResponse {
         id: row.try_get("uuid")?,
         apex_hostname: row.try_get("apex_hostname")?,
@@ -641,7 +641,7 @@ fn map_zone_row(row: &AnyRow) -> Result<DomainZoneResponse, sqlx::Error> {
     })
 }
 
-fn map_hostname_row(row: &AnyRow) -> Result<DomainHostnameResponse, sqlx::Error> {
+fn map_hostname_row(row: &PgRow) -> Result<DomainHostnameResponse, sqlx::Error> {
     let hostname: String = row.try_get("hostname_ascii")?;
     let apex: String = row.try_get("apex_hostname")?;
     let relative_name = if hostname == apex {

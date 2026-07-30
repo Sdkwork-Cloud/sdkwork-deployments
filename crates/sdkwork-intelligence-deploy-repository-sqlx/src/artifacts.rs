@@ -3,7 +3,7 @@ use sdkwork_deploy_contract::{
     DeployServiceError, DeployServiceResult, ARTIFACT_STATUS_ACTIVE, ARTIFACT_STATUS_RETAINED,
     UPLOAD_SESSION_STATUS_COMPLETED,
 };
-use sqlx::{any::AnyRow, Row};
+use sqlx::{postgres::PgRow, PgPool, Row};
 
 use crate::support::{new_uuid, next_id, now_rfc3339, pagination, resolve_site_uuid, store_error};
 use crate::DeployRepository;
@@ -287,9 +287,9 @@ impl DeployRepository {
 }
 
 async fn map_artifact_row(
-    pool: &sqlx::AnyPool,
+    pool: &PgPool,
     tenant_id: i64,
-    row: &AnyRow,
+    row: &PgRow,
 ) -> Result<ArtifactResponse, sqlx::Error> {
     let site_id = match row.try_get::<Option<i64>, _>("site_id").ok().flatten() {
         Some(site_internal_id) => Some(

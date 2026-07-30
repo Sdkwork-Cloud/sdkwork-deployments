@@ -3,7 +3,7 @@ use sdkwork_deploy_contract::{
     SiteResponse, UpdateSiteRequest,
 };
 use sdkwork_utils_rust::slugify;
-use sqlx::{any::AnyRow, Row};
+use sqlx::{postgres::PgRow, Row};
 
 use crate::support::{json_from_row, new_uuid, next_id, now_rfc3339, pagination, store_error};
 use crate::DeployRepository;
@@ -266,7 +266,7 @@ impl DeployRepository {
     }
 }
 
-fn map_site_row(row: &AnyRow) -> Result<SiteResponse, sqlx::Error> {
+fn map_site_row(row: &PgRow) -> Result<SiteResponse, sqlx::Error> {
     Ok(SiteResponse {
         id: row.try_get("uuid")?,
         name: row.try_get("name")?,

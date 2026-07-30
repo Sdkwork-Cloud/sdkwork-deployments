@@ -2,7 +2,7 @@ use sdkwork_deploy_contract::{
     CreateReleaseRequest, DeployServiceError, DeployServiceResult, ReleasePage, ReleaseResponse,
     RELEASE_STATUS_ACTIVE,
 };
-use sqlx::{any::AnyRow, Row};
+use sqlx::{postgres::PgRow, PgPool, Row};
 
 use crate::support::{
     new_uuid, next_id, now_rfc3339, pagination, resolve_site_internal_id, resolve_site_uuid,
@@ -175,9 +175,9 @@ impl DeployRepository {
 }
 
 async fn map_release_row(
-    pool: &sqlx::AnyPool,
+    pool: &PgPool,
     tenant_id: i64,
-    row: &AnyRow,
+    row: &PgRow,
 ) -> Result<ReleaseResponse, sqlx::Error> {
     let site_internal_id: i64 = row.try_get("site_id")?;
     let site_uuid = resolve_site_uuid(pool, tenant_id, site_internal_id)

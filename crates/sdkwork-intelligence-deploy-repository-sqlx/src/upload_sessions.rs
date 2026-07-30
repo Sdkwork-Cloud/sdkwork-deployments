@@ -162,7 +162,7 @@ impl DeployRepository {
 }
 
 fn map_upload_session_row(
-    row: sqlx::any::AnyRow,
+    row: sqlx::postgres::PgRow,
     site_id: Option<String>,
 ) -> DeployUploadSessionResponse {
     DeployUploadSessionResponse {

@@ -2,9 +2,7 @@
 
 use std::sync::Arc;
 
-use sdkwork_database_config::DatabaseConfig;
 use sdkwork_database_id::{NodeLease, SnowflakeIdGenerator, SnowflakeNodeAllocator};
-use sdkwork_database_sqlx::create_any_pool_from_config;
 use sdkwork_deploy_content_provider_port::{
     content_provider_port_from_env, website_provider_event_delivery_port_from_env,
 };
@@ -18,7 +16,6 @@ use sdkwork_intelligence_deploy_service::{
     DeployRepositoryPort, DeployRuntimeAssignmentRepositoryPort, DeployService,
     RuntimePublicationService,
 };
-use sqlx::AnyPool;
 
 mod domain_verification;
 
@@ -60,18 +57,13 @@ async fn snowflake_from_env() -> Result<(SnowflakeIdGenerator, Option<NodeLease>
         .map_err(|error| error.to_string())
 }
 
-async fn any_pool_from_env() -> Result<AnyPool, String> {
-    let _ = dotenvy::dotenv();
-    let config = DatabaseConfig::from_env("DEPLOY")
-        .map_err(|error| format!("read deploy database config failed: {error}"))?;
-    create_any_pool_from_config(config)
-        .await
-        .map_err(|error| format!("create deploy any pool failed: {error}"))
-}
-
 async fn repository_from_env() -> Result<Arc<DeployRepository>, String> {
-    bootstrap_deploy_database_from_env().await?;
-    let pool = any_pool_from_env().await?;
+    let database = bootstrap_deploy_database_from_env().await?;
+    let pool = database
+        .pool()
+        .as_postgres()
+        .cloned()
+        .ok_or_else(|| "Deploy authoritative database must use PostgreSQL".to_owned())?;
     let (id_generator, node_lease) = snowflake_from_env().await?;
     Ok(Arc::new(match node_lease {
         Some(node_lease) => DeployRepository::new_with_node_lease(pool, id_generator, node_lease),

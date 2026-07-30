@@ -4,7 +4,7 @@ use sdkwork_deploy_contract::{
 use sdkwork_intelligence_deploy_service::dns_txt_record_name;
 use sdkwork_intelligence_deploy_service::DomainVerificationChallenge;
 use sdkwork_utils_rust::crypto::sha256_hash;
-use sqlx::{any::AnyRow, Row};
+use sqlx::{postgres::PgRow, Row};
 
 use crate::support::{
     bool_from_row, new_uuid, next_id, now_rfc3339, pagination, resolve_site_internal_id,
@@ -368,7 +368,7 @@ impl DeployRepository {
     }
 }
 
-fn map_domain_row(row: &AnyRow) -> Result<DomainResponse, sqlx::Error> {
+fn map_domain_row(row: &PgRow) -> Result<DomainResponse, sqlx::Error> {
     Ok(DomainResponse {
         id: row.try_get("uuid")?,
         hostname: row.try_get("hostname")?,

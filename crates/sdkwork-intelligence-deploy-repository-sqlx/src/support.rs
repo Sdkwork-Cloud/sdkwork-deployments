@@ -1,8 +1,8 @@
 use chrono::{SecondsFormat, Utc};
 use sdkwork_database_id::SnowflakeIdGenerator;
 use sdkwork_deploy_contract::DeployServiceError;
-use sqlx::any::AnyRow;
-use sqlx::{AnyPool, Error as SqlxError, Row};
+use sqlx::postgres::PgRow;
+use sqlx::{Error as SqlxError, PgPool, Row};
 
 pub(crate) fn now_rfc3339() -> String {
     Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true)
@@ -39,24 +39,32 @@ pub(crate) fn sha256_hex(content: &str) -> String {
     sdkwork_utils_rust::sha256_hash(content.as_bytes())
 }
 
-pub(crate) fn bool_from_row(row: &AnyRow, column: &str) -> Result<bool, SqlxError> {
-    if let Ok(value) = row.try_get::<bool, _>(column) {
-        return Ok(value);
-    }
-    let value: i64 = row.try_get(column)?;
-    Ok(value != 0)
+pub(crate) fn bool_from_row(row: &PgRow, column: &str) -> Result<bool, SqlxError> {
+    row.try_get(column)
 }
 
 pub(crate) fn json_from_row(
-    row: &AnyRow,
+    row: &PgRow,
     column: &str,
 ) -> Result<Option<serde_json::Value>, SqlxError> {
-    let raw: Option<String> = row.try_get(column)?;
-    Ok(raw.and_then(|text| serde_json::from_str(&text).ok()))
+    row.try_get(column)
+}
+
+pub(crate) fn datetime_from_row(row: &PgRow, column: &str) -> Result<String, SqlxError> {
+    row.try_get::<chrono::DateTime<Utc>, _>(column)
+        .map(|value| value.to_rfc3339_opts(SecondsFormat::Millis, true))
+}
+
+pub(crate) fn optional_datetime_from_row(
+    row: &PgRow,
+    column: &str,
+) -> Result<Option<String>, SqlxError> {
+    row.try_get::<Option<chrono::DateTime<Utc>>, _>(column)
+        .map(|value| value.map(|value| value.to_rfc3339_opts(SecondsFormat::Millis, true)))
 }
 
 pub(crate) async fn resolve_site_internal_id(
-    pool: &AnyPool,
+    pool: &PgPool,
     tenant_id: i64,
     site_uuid: &str,
 ) -> Result<i64, DeployServiceError> {
@@ -75,7 +83,7 @@ pub(crate) async fn resolve_site_internal_id(
 }
 
 pub(crate) async fn resolve_site_uuid(
-    pool: &AnyPool,
+    pool: &PgPool,
     tenant_id: i64,
     site_internal_id: i64,
 ) -> Result<String, DeployServiceError> {
@@ -94,7 +102,7 @@ pub(crate) async fn resolve_site_uuid(
 }
 
 pub(crate) async fn resolve_domain_internal_id(
-    pool: &AnyPool,
+    pool: &PgPool,
     tenant_id: i64,
     domain_uuid: &str,
 ) -> Result<i64, DeployServiceError> {
@@ -113,7 +121,7 @@ pub(crate) async fn resolve_domain_internal_id(
 }
 
 pub(crate) async fn resolve_artifact_internal_id(
-    pool: &AnyPool,
+    pool: &PgPool,
     tenant_id: i64,
     artifact_uuid: &str,
 ) -> Result<i64, DeployServiceError> {
@@ -132,7 +140,7 @@ pub(crate) async fn resolve_artifact_internal_id(
 }
 
 pub(crate) async fn resolve_release_internal_id(
-    pool: &AnyPool,
+    pool: &PgPool,
     tenant_id: i64,
     site_internal_id: i64,
     release_uuid: &str,

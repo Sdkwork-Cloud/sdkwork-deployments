@@ -1,5 +1,5 @@
 use sdkwork_database_id::{NodeLease, SnowflakeIdGenerator};
-use sqlx::AnyPool;
+use sqlx::PgPool;
 
 mod artifacts;
 mod audit;
@@ -23,13 +23,13 @@ mod upload_sessions;
 
 #[derive(Clone)]
 pub struct DeployRepository {
-    pool: AnyPool,
+    pool: PgPool,
     id_generator: SnowflakeIdGenerator,
     _node_lease: Option<NodeLease>,
 }
 
 impl DeployRepository {
-    pub fn new(pool: AnyPool, id_generator: SnowflakeIdGenerator) -> Self {
+    pub fn new(pool: PgPool, id_generator: SnowflakeIdGenerator) -> Self {
         Self {
             pool,
             id_generator,
@@ -38,7 +38,7 @@ impl DeployRepository {
     }
 
     pub fn new_with_node_lease(
-        pool: AnyPool,
+        pool: PgPool,
         id_generator: SnowflakeIdGenerator,
         node_lease: NodeLease,
     ) -> Self {
@@ -49,7 +49,7 @@ impl DeployRepository {
         }
     }
 
-    pub fn pool(&self) -> &AnyPool {
+    pub fn pool(&self) -> &PgPool {
         &self.pool
     }
 
