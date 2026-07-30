@@ -4,11 +4,13 @@ use async_trait::async_trait;
 use sdkwork_deploy_contract::{
     is_deploy_package_artifact_type, CompleteDeployUploadSessionRequest, CreateArtifactRequest,
     CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDeploymentRequest,
-    CreateDomainRequest, CreateEnvVariableRequest, CreateHealthCheckRequest, CreateReleaseRequest,
-    CreateSiteRequest, DeployAppApi, DeployAppRequestContext, DeployServiceResult,
-    DeployUploadSessionResponse, ListSitesQuery, UpdateSiteRequest, UploadCustomCertificateRequest,
-    UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE, UPLOAD_PACKAGE_TYPE_TLS_PRIVATE_KEY,
-    UPLOAD_SESSION_STATUS_CANCELLED, UPLOAD_SESSION_STATUS_COMPLETED,
+    CreateDomainHostnameRequest, CreateDomainRequest, CreateDomainZoneRequest,
+    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest,
+    DeployAppApi, DeployAppRequestContext, DeployServiceResult, DeployUploadSessionResponse,
+    ListDomainZonesQuery, ListSitesQuery, UpdateDomainZoneRequest, UpdateSiteRequest,
+    UploadCustomCertificateRequest, UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE,
+    UPLOAD_PACKAGE_TYPE_TLS_PRIVATE_KEY, UPLOAD_SESSION_STATUS_CANCELLED,
+    UPLOAD_SESSION_STATUS_COMPLETED,
 };
 use sdkwork_deploy_drive_port::{DriveRequestCredentials, PrepareDeployUploadCommand};
 
@@ -162,8 +164,194 @@ impl DeployService {
     }
 }
 
+fn normalize_optional_text(
+    value: Option<String>,
+    maximum_length: usize,
+    field: &str,
+) -> DeployServiceResult<Option<String>> {
+    value
+        .map(|value| {
+            let value = value.trim().to_owned();
+            if value.is_empty() || value.len() > maximum_length {
+                return Err(sdkwork_deploy_contract::DeployServiceError::validation(
+                    format!("{field} must contain 1 to {maximum_length} characters"),
+                ));
+            }
+            Ok(value)
+        })
+        .transpose()
+}
+
+fn normalize_relative_hostname(
+    relative_name: &str,
+    apex_hostname: &str,
+) -> DeployServiceResult<String> {
+    let relative_name = relative_name.trim();
+    if relative_name == "@" {
+        return Ok("@".to_owned());
+    }
+    if relative_name.is_empty() || relative_name.ends_with('.') {
+        return Err(sdkwork_deploy_contract::DeployServiceError::validation(
+            "relativeName is invalid",
+        ));
+    }
+    let hostname = crate::normalize_domain_hostname(&format!("{relative_name}.{apex_hostname}"))?;
+    let suffix = format!(".{apex_hostname}");
+    hostname
+        .strip_suffix(&suffix)
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned)
+        .ok_or_else(|| {
+            sdkwork_deploy_contract::DeployServiceError::validation(
+                "relativeName must remain inside the selected domain zone",
+            )
+        })
+}
+
 #[async_trait]
 impl DeployAppApi for DeployService {
+    async fn list_domain_zones(
+        &self,
+        context: &DeployAppRequestContext,
+        query: &ListDomainZonesQuery,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainZonePage> {
+        let tenant_id = Self::require_tenant(context)?;
+        if let Some(status) = query.status.as_deref() {
+            if !matches!(status, "ACTIVE" | "PAUSED") {
+                return Err(sdkwork_deploy_contract::DeployServiceError::validation(
+                    "domain zone status is invalid",
+                ));
+            }
+        }
+        self.repository.list_domain_zones(tenant_id, query).await
+    }
+
+    async fn create_domain_zone(
+        &self,
+        context: &DeployAppRequestContext,
+        request: &CreateDomainZoneRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainZoneResponse> {
+        let tenant_id = Self::require_tenant(context)?;
+        let mut request = request.clone();
+        request.apex_hostname = crate::normalize_zone_apex(&request.apex_hostname)?;
+        request.display_name = normalize_optional_text(request.display_name, 200, "displayName")?;
+        request.dns_provider = normalize_optional_text(request.dns_provider, 64, "dnsProvider")?;
+        request.provider_zone_ref =
+            normalize_optional_text(request.provider_zone_ref, 512, "providerZoneRef")?;
+        self.repository
+            .create_domain_zone(
+                tenant_id,
+                context.organization_id,
+                context.actor_id,
+                &request,
+            )
+            .await
+    }
+
+    async fn retrieve_domain_zone(
+        &self,
+        context: &DeployAppRequestContext,
+        zone_id: &str,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainZoneResponse> {
+        let tenant_id = Self::require_tenant(context)?;
+        self.repository
+            .retrieve_domain_zone(tenant_id, zone_id)
+            .await
+    }
+
+    async fn update_domain_zone(
+        &self,
+        context: &DeployAppRequestContext,
+        zone_id: &str,
+        request: &UpdateDomainZoneRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainZoneResponse> {
+        let tenant_id = Self::require_tenant(context)?;
+        if let Some(status) = request.status.as_deref() {
+            if !matches!(status, "ACTIVE" | "PAUSED") {
+                return Err(sdkwork_deploy_contract::DeployServiceError::validation(
+                    "domain zone status is invalid",
+                ));
+            }
+        }
+        let mut request = request.clone();
+        request.display_name = normalize_optional_text(request.display_name, 200, "displayName")?;
+        request.dns_provider = normalize_optional_text(request.dns_provider, 64, "dnsProvider")?;
+        request.provider_zone_ref =
+            normalize_optional_text(request.provider_zone_ref, 512, "providerZoneRef")?;
+        self.repository
+            .update_domain_zone(tenant_id, context.actor_id, zone_id, &request)
+            .await
+    }
+
+    async fn delete_domain_zone(
+        &self,
+        context: &DeployAppRequestContext,
+        zone_id: &str,
+    ) -> DeployServiceResult<()> {
+        let tenant_id = Self::require_tenant(context)?;
+        self.repository.delete_domain_zone(tenant_id, zone_id).await
+    }
+
+    async fn list_domain_hostnames(
+        &self,
+        context: &DeployAppRequestContext,
+        zone_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainHostnamePage> {
+        let tenant_id = Self::require_tenant(context)?;
+        self.repository
+            .list_domain_hostnames(tenant_id, zone_id, page, page_size)
+            .await
+    }
+
+    async fn create_domain_hostname(
+        &self,
+        context: &DeployAppRequestContext,
+        zone_id: &str,
+        request: &CreateDomainHostnameRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainHostnameResponse> {
+        let tenant_id = Self::require_tenant(context)?;
+        let zone = self
+            .repository
+            .retrieve_domain_zone(tenant_id, zone_id)
+            .await?;
+        let relative_name =
+            normalize_relative_hostname(&request.relative_name, &zone.apex_hostname)?;
+        self.repository
+            .create_domain_hostname(
+                tenant_id,
+                context.actor_id,
+                zone_id,
+                &CreateDomainHostnameRequest { relative_name },
+            )
+            .await
+    }
+
+    async fn retrieve_domain_hostname(
+        &self,
+        context: &DeployAppRequestContext,
+        zone_id: &str,
+        hostname_id: &str,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainHostnameResponse> {
+        let tenant_id = Self::require_tenant(context)?;
+        self.repository
+            .retrieve_domain_hostname(tenant_id, zone_id, hostname_id)
+            .await
+    }
+
+    async fn delete_domain_hostname(
+        &self,
+        context: &DeployAppRequestContext,
+        zone_id: &str,
+        hostname_id: &str,
+    ) -> DeployServiceResult<()> {
+        let tenant_id = Self::require_tenant(context)?;
+        self.repository
+            .delete_domain_hostname(tenant_id, zone_id, hostname_id)
+            .await
+    }
+
     async fn list_sites(
         &self,
         context: &DeployAppRequestContext,

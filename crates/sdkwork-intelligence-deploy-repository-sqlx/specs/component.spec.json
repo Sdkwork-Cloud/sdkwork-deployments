@@ -42,7 +42,7 @@
     "dependencyApiExports": [],
     "dependencyApiSurfaces": [],
     "events": [],
-    "configKeys": ["SDKWORK_DEPLOY_TEST_POSTGRES_URL"]
+    "configKeys": ["SDKWORK_DATABASE_TEST_POSTGRES_URL"]
   },
   "verification": {
     "commands": [

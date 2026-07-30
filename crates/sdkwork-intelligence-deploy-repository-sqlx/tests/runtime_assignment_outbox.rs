@@ -1020,11 +1020,11 @@ async fn sqlite_claim_lease_fences_stale_workers_and_stops_at_attempt_limit() {
 }
 
 #[tokio::test]
-#[ignore = "requires an empty PostgreSQL database in SDKWORK_DEPLOY_TEST_POSTGRES_URL"]
+#[ignore = "requires an empty PostgreSQL database in SDKWORK_DATABASE_TEST_POSTGRES_URL"]
 async fn postgres_serializes_mutations_and_fences_assignment_leases() {
     sqlx::any::install_default_drivers();
-    let database_url = std::env::var("SDKWORK_DEPLOY_TEST_POSTGRES_URL")
-        .expect("SDKWORK_DEPLOY_TEST_POSTGRES_URL must target an empty PostgreSQL database");
+    let database_url = std::env::var("SDKWORK_DATABASE_TEST_POSTGRES_URL")
+        .expect("SDKWORK_DATABASE_TEST_POSTGRES_URL must target an empty PostgreSQL database");
     let pool = AnyPoolOptions::new()
         .max_connections(8)
         .connect(&database_url)

@@ -6,12 +6,12 @@ use sdkwork_deploy_contract::{
     ArtifactPage, ArtifactResponse, AuditLogPage, CertificatePage, CertificateResponse,
     CreateArtifactRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
     CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainRequest,
-    CreateDomainZoneRequest, CreateEnvVariableRequest,
-    CreateHealthCheckRequest, CreateNginxConfigRequest, CreateReleaseRequest, CreateServerRequest,
-    CreateSiteRequest, DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage,
-    DeploymentResponse, DomainHostnamePage, DomainHostnameResponse, DomainPage, DomainResponse,
-    DomainZonePage, DomainZoneResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage,
-    HealthCheckResponse, ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
+    CreateDomainZoneRequest, CreateEnvVariableRequest, CreateHealthCheckRequest,
+    CreateNginxConfigRequest, CreateReleaseRequest, CreateServerRequest, CreateSiteRequest,
+    DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
+    DomainHostnamePage, DomainHostnameResponse, DomainPage, DomainResponse, DomainZonePage,
+    DomainZoneResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
+    ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
     NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
     ReleasePage, ReleaseResponse, ServerPage, ServerResponse, SitePage, SiteResponse,
     UpdateDomainZoneRequest, UpdateNginxConfigRequest, UpdateSiteRequest,
@@ -63,8 +63,7 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         request: &UpdateDomainZoneRequest,
     ) -> DeployServiceResult<DomainZoneResponse>;
 
-    async fn delete_domain_zone(&self, tenant_id: i64, zone_id: &str)
-        -> DeployServiceResult<()>;
+    async fn delete_domain_zone(&self, tenant_id: i64, zone_id: &str) -> DeployServiceResult<()>;
 
     async fn list_domain_hostnames(
         &self,

@@ -152,7 +152,10 @@ mod tests {
     #[test]
     fn accepts_only_public_suffix_registrable_zone_apexes() {
         assert_eq!(normalize_zone_apex("Example.COM.").unwrap(), "example.com");
-        assert_eq!(normalize_zone_apex("example.co.uk").unwrap(), "example.co.uk");
+        assert_eq!(
+            normalize_zone_apex("example.co.uk").unwrap(),
+            "example.co.uk"
+        );
         for hostname in ["www.example.com", "co.uk", "*.example.com"] {
             assert!(normalize_zone_apex(hostname).is_err(), "{hostname}");
         }

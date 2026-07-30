@@ -4,7 +4,7 @@
 row mapping, and database transactions only; environment loading and runtime composition are not
 repository responsibilities.
 
-The ignored PostgreSQL concurrency test requires `SDKWORK_DEPLOY_TEST_POSTGRES_URL` to point to an
+The ignored PostgreSQL concurrency test requires `SDKWORK_DATABASE_TEST_POSTGRES_URL` to point to an
 empty disposable database. Run it explicitly with:
 
 ```powershell

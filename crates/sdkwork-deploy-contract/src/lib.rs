@@ -8,7 +8,7 @@ pub mod site_composition;
 
 pub use app_ports::{
     DeployAppApi, DeployAppRequestContext, DeployBackendApi, DeployBackendRequestContext,
-    ListSitesQuery,
+    ListDomainZonesQuery, ListSitesQuery,
 };
 pub use dto::*;
 pub use problem::{DeployServiceError, DeployServiceErrorKind, DeployServiceResult};

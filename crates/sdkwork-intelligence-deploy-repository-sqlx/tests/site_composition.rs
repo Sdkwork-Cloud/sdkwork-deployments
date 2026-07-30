@@ -413,11 +413,11 @@ async fn assert_composition_was_not_committed(pool: &AnyPool) {
 }
 
 #[tokio::test]
-#[ignore = "requires an empty PostgreSQL database in SDKWORK_DEPLOY_TEST_POSTGRES_URL"]
+#[ignore = "requires an empty PostgreSQL database in SDKWORK_DATABASE_TEST_POSTGRES_URL"]
 async fn postgres_composition_matches_sqlite_transaction_semantics() {
     sqlx::any::install_default_drivers();
-    let database_url = std::env::var("SDKWORK_DEPLOY_TEST_POSTGRES_URL")
-        .expect("SDKWORK_DEPLOY_TEST_POSTGRES_URL must target an empty PostgreSQL database");
+    let database_url = std::env::var("SDKWORK_DATABASE_TEST_POSTGRES_URL")
+        .expect("SDKWORK_DATABASE_TEST_POSTGRES_URL must target an empty PostgreSQL database");
     let pool = AnyPoolOptions::new()
         .max_connections(4)
         .connect(&database_url)
