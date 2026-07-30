@@ -20,31 +20,13 @@ use sdkwork_deploy_runtime_compiler::{
 use sdkwork_intelligence_deploy_service::{
     ReplaceSiteCompositionCommand, SiteCompositionRepositoryPort,
 };
-use sqlx::{Any, AnyPool, Row, Transaction};
+use sqlx::{PgPool, Postgres, Row, Transaction};
 
 use crate::support::{bool_from_row, new_uuid, next_id};
 use crate::DeployRepository;
 
 const MAXIMUM_RUNTIME_GENERATION: i64 = 9_007_199_254_740_991;
 const MAXIMUM_RUNTIME_SITES: usize = 10_000;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CompositionDatabase {
-    PostgreSql,
-    Sqlite,
-}
-
-impl CompositionDatabase {
-    fn resolve(backend_name: &str) -> DeployServiceResult<Self> {
-        match backend_name {
-            "PostgreSQL" => Ok(Self::PostgreSql),
-            "SQLite" => Ok(Self::Sqlite),
-            _ => Err(DeployServiceError::Internal(
-                "unsupported site composition database backend".to_owned(),
-            )),
-        }
-    }
-}
 
 #[derive(Clone, Debug)]
 struct StoredSite {
@@ -95,7 +77,7 @@ impl DeployRepository {
         &self,
         command: ReplaceSiteCompositionCommand,
     ) -> DeployServiceResult<SiteCompositionResponse> {
-        let (database, mut transaction) = begin_transaction(&self.pool).await?;
+        let mut transaction = begin_transaction(&self.pool).await?;
         if let Some(response) = load_idempotent_result(&mut transaction, &command).await? {
             transaction
                 .commit()
@@ -104,12 +86,11 @@ impl DeployRepository {
             return Ok(response);
         }
 
-        let site = lock_site(&mut transaction, database, &command).await?;
-        reserve_site_version(&mut transaction, database, &command, &site).await?;
+        let site = lock_site(&mut transaction, &command).await?;
+        reserve_site_version(&mut transaction, &command, &site).await?;
         let new_site_version = site.version + 1;
         let targets = load_targets(
             &mut transaction,
-            database,
             command.tenant_id,
             command.request.environment.as_str(),
         )
@@ -117,19 +98,18 @@ impl DeployRepository {
         let tenant_scope_hash = consistent_tenant_scope_hash(&targets)?;
 
         delete_current_composition(&mut transaction, site.id).await?;
-        let resources = insert_resources(self, &mut transaction, database, &command, &site).await?;
-        let variants = insert_variants(self, &mut transaction, database, &command, &site).await?;
+        let resources = insert_resources(self, &mut transaction, &command, &site).await?;
+        let variants = insert_variants(self, &mut transaction, &command, &site).await?;
         let default_variant = variants
             .get(&command.request.default_variant_key)
             .ok_or_else(|| DeployServiceError::validation("default variant is missing"))?
             .clone();
         let runtime_rules =
-            insert_variant_rules(self, &mut transaction, database, &command, &site, &variants)
+            insert_variant_rules(self, &mut transaction, &command, &site, &variants)
                 .await?;
         let runtime_mounts = insert_mounts(
             self,
             &mut transaction,
-            database,
             &command,
             &site,
             &variants,
@@ -137,7 +117,7 @@ impl DeployRepository {
         )
         .await?;
         let runtime_bindings =
-            insert_bindings(self, &mut transaction, database, &command, &site, &variants).await?;
+            insert_bindings(self, &mut transaction, &command, &site, &variants).await?;
 
         let revision_id = next_id(self.id_generator())?;
         let revision_uuid = new_uuid();
@@ -211,7 +191,6 @@ impl DeployRepository {
         .map_err(|error| DeployServiceError::validation(error.to_string()))?;
         insert_revision(
             &mut transaction,
-            database,
             &command,
             &site,
             revision_id,
@@ -224,7 +203,6 @@ impl DeployRepository {
         .await?;
         update_site_revision_pointers(
             &mut transaction,
-            database,
             &command,
             site.id,
             default_variant.id,
@@ -244,7 +222,6 @@ impl DeployRepository {
         let assignments = insert_runtime_assignments(
             self,
             &mut transaction,
-            database,
             &command,
             revision_id,
             &targets,
@@ -262,11 +239,10 @@ impl DeployRepository {
             },
             runtime_assignments: assignments,
         };
-        persist_command_result(&mut transaction, database, revision_id, &response).await?;
+        persist_command_result(&mut transaction, revision_id, &response).await?;
         insert_composition_audit(
             self,
             &mut transaction,
-            database,
             &command,
             site.id,
             revision_id,
@@ -281,23 +257,15 @@ impl DeployRepository {
 }
 
 async fn begin_transaction(
-    pool: &AnyPool,
-) -> DeployServiceResult<(CompositionDatabase, Transaction<'static, Any>)> {
-    let connection = pool
-        .acquire()
+    pool: &PgPool,
+) -> DeployServiceResult<Transaction<'static, Postgres>> {
+    pool.begin()
         .await
-        .map_err(|error| composition_store_error("acquire site composition connection", error))?;
-    let database = CompositionDatabase::resolve(connection.backend_name())?;
-    drop(connection);
-    let transaction = pool
-        .begin()
-        .await
-        .map_err(|error| composition_store_error("begin site composition transaction", error))?;
-    Ok((database, transaction))
+        .map_err(|error| composition_store_error("begin site composition transaction", error))
 }
 
 async fn load_idempotent_result(
-    transaction: &mut Transaction<'static, Any>,
+    transaction: &mut Transaction<'static, Postgres>,
     command: &ReplaceSiteCompositionCommand,
 ) -> DeployServiceResult<Option<SiteCompositionResponse>> {
     let row = sqlx::query(
@@ -332,21 +300,15 @@ async fn load_idempotent_result(
 }
 
 async fn lock_site(
-    transaction: &mut Transaction<'static, Any>,
-    database: CompositionDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     command: &ReplaceSiteCompositionCommand,
 ) -> DeployServiceResult<StoredSite> {
-    let query = if database == CompositionDatabase::PostgreSql {
+    let row = sqlx::query(
         "SELECT id, organization_id, version, desired_revision_id
          FROM deploy_site
          WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL
-         FOR UPDATE"
-    } else {
-        "SELECT id, organization_id, version, desired_revision_id
-         FROM deploy_site
-         WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL"
-    };
-    let row = sqlx::query(query)
+         FOR UPDATE",
+    )
         .bind(command.tenant_id)
         .bind(&command.site_uuid)
         .fetch_optional(&mut **transaction)
@@ -372,19 +334,14 @@ async fn lock_site(
 }
 
 async fn reserve_site_version(
-    transaction: &mut Transaction<'static, Any>,
-    database: CompositionDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     command: &ReplaceSiteCompositionCommand,
     site: &StoredSite,
 ) -> DeployServiceResult<()> {
-    let query = timestamp_query(
-        database,
-        "UPDATE deploy_site SET version = version + 1, updated_at = $3
-         WHERE id = $1 AND version = $2",
+    let result = sqlx::query(
         "UPDATE deploy_site SET version = version + 1, updated_at = CAST($3 AS TIMESTAMPTZ)
          WHERE id = $1 AND version = $2",
-    );
-    let result = sqlx::query(query)
+    )
         .bind(site.id)
         .bind(command.expected_site_version)
         .bind(&command.generated_at)
@@ -400,25 +357,17 @@ async fn reserve_site_version(
 }
 
 async fn load_targets(
-    transaction: &mut Transaction<'static, Any>,
-    database: CompositionDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     tenant_id: i64,
     environment: &str,
 ) -> DeployServiceResult<Vec<StoredTarget>> {
-    let query = if database == CompositionDatabase::PostgreSql {
+    let rows = sqlx::query(
         "SELECT id, uuid, node_uuid, tenant_scope_hash
          FROM deploy_web_node_target
          WHERE tenant_id = $1 AND environment = $2 AND status = 'ACTIVE'
            AND deleted_at IS NULL
-         ORDER BY uuid FOR UPDATE"
-    } else {
-        "SELECT id, uuid, node_uuid, tenant_scope_hash
-         FROM deploy_web_node_target
-         WHERE tenant_id = $1 AND environment = $2 AND status = 'ACTIVE'
-           AND deleted_at IS NULL
-         ORDER BY uuid"
-    };
-    let rows = sqlx::query(query)
+         ORDER BY uuid FOR UPDATE",
+    )
         .bind(tenant_id)
         .bind(environment)
         .fetch_all(&mut **transaction)
@@ -466,7 +415,7 @@ fn consistent_tenant_scope_hash(targets: &[StoredTarget]) -> DeployServiceResult
 }
 
 async fn delete_current_composition(
-    transaction: &mut Transaction<'static, Any>,
+    transaction: &mut Transaction<'static, Postgres>,
     site_id: i64,
 ) -> DeployServiceResult<()> {
     for (table, context) in [
@@ -488,8 +437,7 @@ async fn delete_current_composition(
 
 async fn insert_resources(
     repository: &DeployRepository,
-    transaction: &mut Transaction<'static, Any>,
-    database: CompositionDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     command: &ReplaceSiteCompositionCommand,
     site: &StoredSite,
 ) -> DeployServiceResult<BTreeMap<String, StoredResource>> {
@@ -500,7 +448,7 @@ async fn insert_resources(
         let capabilities = serde_json::to_string(&resource.capabilities).map_err(|_| {
             DeployServiceError::Internal("serialize capabilities failed".to_owned())
         })?;
-        let query = if database == CompositionDatabase::PostgreSql {
+        sqlx::query(
             "INSERT INTO deploy_site_resource (
                 id, uuid, tenant_id, organization_id, site_id, resource_key, provider_type,
                 provider_resource_uuid, provider_contract_version, capabilities_json, status,
@@ -508,16 +456,8 @@ async fn insert_resources(
              ) VALUES (
                 $1,$2,$3,$4,$5,$6,$7,$8,$9,CAST($10 AS JSONB),'VALID',
                 CAST($11 AS TIMESTAMPTZ),'{}',$12,$12,CAST($11 AS TIMESTAMPTZ),
-                CAST($11 AS TIMESTAMPTZ),1)"
-        } else {
-            "INSERT INTO deploy_site_resource (
-                id, uuid, tenant_id, organization_id, site_id, resource_key, provider_type,
-                provider_resource_uuid, provider_contract_version, capabilities_json, status,
-                last_validated_at, metadata, created_by, updated_by, created_at, updated_at, version
-             ) VALUES (
-                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'VALID',$11,'{}',$12,$12,$11,$11,1)"
-        };
-        sqlx::query(query)
+                CAST($11 AS TIMESTAMPTZ),1)",
+        )
             .bind(id)
             .bind(&uuid)
             .bind(command.tenant_id)
@@ -540,8 +480,7 @@ async fn insert_resources(
 
 async fn insert_variants(
     repository: &DeployRepository,
-    transaction: &mut Transaction<'static, Any>,
-    database: CompositionDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     command: &ReplaceSiteCompositionCommand,
     site: &StoredSite,
 ) -> DeployServiceResult<BTreeMap<String, StoredVariant>> {
@@ -549,19 +488,13 @@ async fn insert_variants(
     for variant in &command.request.variants {
         let id = next_id(repository.id_generator())?;
         let uuid = new_uuid();
-        let query = if database == CompositionDatabase::PostgreSql {
+        sqlx::query(
             "INSERT INTO deploy_site_variant (
                 id,uuid,tenant_id,site_id,variant_key,label,client_class,is_default,priority,
                 status,metadata,created_by,updated_by,created_at,updated_at,version
              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ACTIVE','{}',$10,$10,
-                CAST($11 AS TIMESTAMPTZ),CAST($11 AS TIMESTAMPTZ),1)"
-        } else {
-            "INSERT INTO deploy_site_variant (
-                id,uuid,tenant_id,site_id,variant_key,label,client_class,is_default,priority,
-                status,metadata,created_by,updated_by,created_at,updated_at,version
-             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ACTIVE','{}',$10,$10,$11,$11,1)"
-        };
-        sqlx::query(query)
+                CAST($11 AS TIMESTAMPTZ),CAST($11 AS TIMESTAMPTZ),1)",
+        )
             .bind(id)
             .bind(&uuid)
             .bind(command.tenant_id)
