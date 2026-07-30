@@ -100,45 +100,48 @@ CREATE INDEX idx_deploy_dns_zone_tenant_updated
 -- Date: 2026-06-14
 
 CREATE TABLE deploy_domain (
-    id              BIGINT       NOT NULL,
-    uuid            VARCHAR(64)  NOT NULL,
-    tenant_id       BIGINT       NOT NULL DEFAULT 0,
-    organization_id BIGINT       NOT NULL DEFAULT 0,
-    zone_id         BIGINT,
-    site_id         BIGINT,
-    hostname        VARCHAR(255) NOT NULL,
-    is_primary      BOOLEAN      NOT NULL DEFAULT false,
-    is_verified     BOOLEAN      NOT NULL DEFAULT false,
-    verify_token    VARCHAR(128),
-    ssl_enabled     BOOLEAN      NOT NULL DEFAULT false,
-    ssl_provider    VARCHAR(32),
-    redirect_target VARCHAR(2000),
-    status          INTEGER      NOT NULL DEFAULT 0,
-    metadata        JSONB        NOT NULL DEFAULT '{}',
-    created_at      TIMESTAMPTZ  NOT NULL,
-    updated_at      TIMESTAMPTZ  NOT NULL,
-    version         BIGINT       NOT NULL DEFAULT 0,
-    deleted_at      TIMESTAMPTZ,
+    id                  BIGINT       NOT NULL,
+    uuid                VARCHAR(36)  NOT NULL,
+    tenant_id           BIGINT       NOT NULL,
+    organization_id     BIGINT       NOT NULL DEFAULT 0,
+    zone_id             BIGINT       NOT NULL,
+    hostname_ascii      VARCHAR(253) NOT NULL,
+    hostname_type       VARCHAR(16)  NOT NULL DEFAULT 'EXACT',
+    verification_status VARCHAR(16)  NOT NULL DEFAULT 'PENDING',
+    verified_at         TIMESTAMPTZ,
+    status              VARCHAR(16)  NOT NULL DEFAULT 'ACTIVE',
+    metadata            JSONB        NOT NULL DEFAULT '{}',
+    created_by          BIGINT,
+    updated_by          BIGINT,
+    created_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    version             BIGINT       NOT NULL DEFAULT 1,
+    deleted_at          TIMESTAMPTZ,
     PRIMARY KEY (id),
     CONSTRAINT uk_deploy_domain_uuid UNIQUE (uuid),
-    CONSTRAINT uk_deploy_domain_hostname UNIQUE (hostname),
     CONSTRAINT fk_deploy_domain_zone FOREIGN KEY (zone_id) REFERENCES deploy_dns_zone(id),
-    CONSTRAINT fk_deploy_domain_site FOREIGN KEY (site_id) REFERENCES deploy_site(id)
+    CONSTRAINT chk_deploy_domain_hostname_type CHECK (hostname_type IN ('EXACT', 'WILDCARD')),
+    CONSTRAINT chk_deploy_domain_verification_status CHECK (verification_status IN ('PENDING', 'VERIFIED', 'FAILED', 'EXPIRED')),
+    CONSTRAINT chk_deploy_domain_status CHECK (status IN ('ACTIVE', 'PAUSED')),
+    CONSTRAINT chk_deploy_domain_verified_at CHECK (
+        (verification_status = 'VERIFIED' AND verified_at IS NOT NULL)
+        OR (verification_status <> 'VERIFIED' AND verified_at IS NULL)
+    )
 );
 
-COMMENT ON TABLE deploy_domain IS '域名绑定表';
-COMMENT ON COLUMN deploy_domain.hostname IS '域名，全局唯一';
-COMMENT ON COLUMN deploy_domain.is_primary IS '是否主域名';
-COMMENT ON COLUMN deploy_domain.is_verified IS '是否已验证所有权';
-COMMENT ON COLUMN deploy_domain.ssl_enabled IS '是否启用SSL';
-COMMENT ON COLUMN deploy_domain.ssl_provider IS '证书提供者：letsencrypt, custom, none';
-COMMENT ON COLUMN deploy_domain.status IS '状态：0=待处理，1=活跃，2=错误';
+COMMENT ON TABLE deploy_domain IS 'DNS Zone 下可验证、可绑定的 hostname 资源；不直接拥有应用或 TLS 配置';
+COMMENT ON COLUMN deploy_domain.hostname_ascii IS '经 IDNA 规范化的小写 ASCII hostname';
+COMMENT ON COLUMN deploy_domain.hostname_type IS 'EXACT 或 WILDCARD';
+COMMENT ON COLUMN deploy_domain.verification_status IS '所有权验证状态';
+COMMENT ON COLUMN deploy_domain.status IS 'hostname 管理生命周期状态';
 
-CREATE INDEX idx_deploy_domain_site
-    ON deploy_domain (site_id);
+CREATE UNIQUE INDEX uk_deploy_domain_active_hostname
+    ON deploy_domain (hostname_ascii)
+    WHERE deleted_at IS NULL;
 
 CREATE INDEX idx_deploy_domain_tenant_status
-    ON deploy_domain (tenant_id, status);
+    ON deploy_domain (tenant_id, status, updated_at DESC, id DESC)
+    WHERE deleted_at IS NULL;
 
 CREATE INDEX idx_deploy_domain_zone_updated
     ON deploy_domain (tenant_id, zone_id, updated_at DESC, id DESC)
@@ -859,8 +862,6 @@ CREATE TABLE deploy_site_binding (
     version              BIGINT NOT NULL DEFAULT 1,
     deleted_at           TIMESTAMPTZ NULL,
     CONSTRAINT uk_deploy_site_binding_uuid UNIQUE (uuid),
-    CONSTRAINT uk_deploy_site_binding_key UNIQUE (site_id, binding_key),
-    CONSTRAINT uk_deploy_site_binding_route UNIQUE (hostname_ascii, path_prefix, environment),
     CONSTRAINT fk_deploy_site_binding_site FOREIGN KEY (site_id) REFERENCES deploy_site(id),
     CONSTRAINT fk_deploy_site_binding_domain FOREIGN KEY (domain_id) REFERENCES deploy_domain(id),
     CONSTRAINT fk_deploy_site_binding_default_variant FOREIGN KEY (default_variant_id) REFERENCES deploy_site_variant(id),
@@ -873,6 +874,14 @@ CREATE TABLE deploy_site_binding (
 
 CREATE INDEX idx_deploy_site_binding_site_status
     ON deploy_site_binding (tenant_id, site_id, environment, status)
+    WHERE deleted_at IS NULL;
+
+CREATE UNIQUE INDEX uk_deploy_site_binding_active_key
+    ON deploy_site_binding (site_id, binding_key)
+    WHERE deleted_at IS NULL;
+
+CREATE UNIQUE INDEX uk_deploy_site_binding_active_route
+    ON deploy_site_binding (hostname_ascii, path_prefix, environment)
     WHERE deleted_at IS NULL;
 
 CREATE UNIQUE INDEX uk_deploy_site_binding_canonical

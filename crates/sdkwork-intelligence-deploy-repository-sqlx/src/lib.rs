@@ -5,6 +5,7 @@ mod artifacts;
 mod audit;
 mod certificates;
 mod deployments;
+mod domain_zones;
 mod domains;
 mod env_variables;
 mod health_checks;

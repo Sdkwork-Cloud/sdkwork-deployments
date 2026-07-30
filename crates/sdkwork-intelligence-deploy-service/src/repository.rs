@@ -5,14 +5,17 @@ use sdkwork_deploy_contract::DeployServiceResult;
 use sdkwork_deploy_contract::{
     ArtifactPage, ArtifactResponse, AuditLogPage, CertificatePage, CertificateResponse,
     CreateArtifactRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
-    CreateDeploymentRequest, CreateDomainRequest, CreateEnvVariableRequest,
+    CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainRequest,
+    CreateDomainZoneRequest, CreateEnvVariableRequest,
     CreateHealthCheckRequest, CreateNginxConfigRequest, CreateReleaseRequest, CreateServerRequest,
     CreateSiteRequest, DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage,
-    DeploymentResponse, DomainPage, DomainResponse, EnvVariablePage, EnvVariableResponse,
-    HealthCheckPage, HealthCheckResponse, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
+    DeploymentResponse, DomainHostnamePage, DomainHostnameResponse, DomainPage, DomainResponse,
+    DomainZonePage, DomainZoneResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage,
+    HealthCheckResponse, ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
     NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
     ReleasePage, ReleaseResponse, ServerPage, ServerResponse, SitePage, SiteResponse,
-    UpdateNginxConfigRequest, UpdateSiteRequest, UploadCustomCertificateRequest,
+    UpdateDomainZoneRequest, UpdateNginxConfigRequest, UpdateSiteRequest,
+    UploadCustomCertificateRequest,
 };
 
 use crate::DomainVerificationChallenge;
@@ -31,6 +34,67 @@ pub struct InsertAuditLogCommand {
 #[async_trait]
 pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sync {
     async fn ready_check(&self) -> DeployServiceResult<()>;
+
+    async fn list_domain_zones(
+        &self,
+        tenant_id: i64,
+        query: &ListDomainZonesQuery,
+    ) -> DeployServiceResult<DomainZonePage>;
+
+    async fn create_domain_zone(
+        &self,
+        tenant_id: i64,
+        organization_id: Option<i64>,
+        actor_id: Option<i64>,
+        request: &CreateDomainZoneRequest,
+    ) -> DeployServiceResult<DomainZoneResponse>;
+
+    async fn retrieve_domain_zone(
+        &self,
+        tenant_id: i64,
+        zone_id: &str,
+    ) -> DeployServiceResult<DomainZoneResponse>;
+
+    async fn update_domain_zone(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        zone_id: &str,
+        request: &UpdateDomainZoneRequest,
+    ) -> DeployServiceResult<DomainZoneResponse>;
+
+    async fn delete_domain_zone(&self, tenant_id: i64, zone_id: &str)
+        -> DeployServiceResult<()>;
+
+    async fn list_domain_hostnames(
+        &self,
+        tenant_id: i64,
+        zone_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<DomainHostnamePage>;
+
+    async fn create_domain_hostname(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        zone_id: &str,
+        request: &CreateDomainHostnameRequest,
+    ) -> DeployServiceResult<DomainHostnameResponse>;
+
+    async fn retrieve_domain_hostname(
+        &self,
+        tenant_id: i64,
+        zone_id: &str,
+        hostname_id: &str,
+    ) -> DeployServiceResult<DomainHostnameResponse>;
+
+    async fn delete_domain_hostname(
+        &self,
+        tenant_id: i64,
+        zone_id: &str,
+        hostname_id: &str,
+    ) -> DeployServiceResult<()>;
 
     async fn list_sites(
         &self,

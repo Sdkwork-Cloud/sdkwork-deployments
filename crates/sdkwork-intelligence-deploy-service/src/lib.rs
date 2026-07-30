@@ -8,8 +8,9 @@ pub mod runtime_publication;
 pub mod site_composition;
 
 pub use domain_verification::{
-    dns_txt_record_name, DomainOwnershipVerifierPort, DomainVerificationChallenge,
-    DomainVerificationObservation, UnconfiguredDomainOwnershipVerifier,
+    dns_txt_record_name, normalize_domain_hostname, normalize_zone_apex,
+    DomainOwnershipVerifierPort, DomainVerificationChallenge, DomainVerificationObservation,
+    UnconfiguredDomainOwnershipVerifier,
 };
 pub use repository::DeployRepositoryPort;
 pub use runtime_publication::{

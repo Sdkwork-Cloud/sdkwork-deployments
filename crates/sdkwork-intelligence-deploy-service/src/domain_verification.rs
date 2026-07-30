@@ -101,6 +101,16 @@ pub fn normalize_domain_hostname(value: &str) -> DeployServiceResult<String> {
     })
 }
 
+pub fn normalize_zone_apex(value: &str) -> DeployServiceResult<String> {
+    let hostname = normalize_domain_hostname(value)?;
+    if hostname.starts_with("*.") || psl::domain_str(&hostname) != Some(hostname.as_str()) {
+        return Err(DeployServiceError::validation(
+            "zone apex must be a registrable root domain",
+        ));
+    }
+    Ok(hostname)
+}
+
 pub fn dns_txt_record_name(hostname: &str) -> DeployServiceResult<String> {
     let hostname = hostname.strip_prefix("*.").unwrap_or(hostname);
     let record_name = format!("{DOMAIN_VERIFICATION_RECORD_LABEL}.{hostname}");
@@ -114,7 +124,7 @@ pub fn dns_txt_record_name(hostname: &str) -> DeployServiceResult<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{dns_txt_record_name, normalize_domain_hostname};
+    use super::{dns_txt_record_name, normalize_domain_hostname, normalize_zone_apex};
 
     #[test]
     fn normalizes_idna_case_trailing_dot_and_wildcard() {
@@ -136,6 +146,15 @@ mod tests {
     fn rejects_ip_single_label_and_ambiguous_wildcards() {
         for hostname in ["127.0.0.1", "localhost", "*.*.example.com", ""] {
             assert!(normalize_domain_hostname(hostname).is_err(), "{hostname}");
+        }
+    }
+
+    #[test]
+    fn accepts_only_public_suffix_registrable_zone_apexes() {
+        assert_eq!(normalize_zone_apex("Example.COM.").unwrap(), "example.com");
+        assert_eq!(normalize_zone_apex("example.co.uk").unwrap(), "example.co.uk");
+        for hostname in ["www.example.com", "co.uk", "*.example.com"] {
+            assert!(normalize_zone_apex(hostname).is_err(), "{hostname}");
         }
     }
 }

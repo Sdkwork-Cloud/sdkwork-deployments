@@ -52,6 +52,101 @@ pub struct UpdateSiteRequest {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct DomainZoneResponse {
+    pub id: String,
+    #[serde(rename = "apexHostname")]
+    pub apex_hostname: String,
+    #[serde(rename = "displayName", skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+    #[serde(rename = "dnsProvider", skip_serializing_if = "Option::is_none")]
+    pub dns_provider: Option<String>,
+    pub status: String,
+    #[serde(rename = "hostnameCount")]
+    pub hostname_count: i64,
+    #[serde(rename = "verifiedHostnameCount")]
+    pub verified_hostname_count: i64,
+    #[serde(rename = "certificateCount")]
+    pub certificate_count: i64,
+    #[serde(rename = "bindingCount")]
+    pub binding_count: i64,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+    pub version: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct DomainZonePage {
+    pub items: Vec<DomainZoneResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CreateDomainZoneRequest {
+    #[serde(rename = "apexHostname")]
+    pub apex_hostname: String,
+    #[serde(rename = "displayName", default)]
+    pub display_name: Option<String>,
+    #[serde(rename = "dnsProvider", default)]
+    pub dns_provider: Option<String>,
+    #[serde(rename = "providerZoneRef", default)]
+    pub provider_zone_ref: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct UpdateDomainZoneRequest {
+    #[serde(rename = "displayName", default)]
+    pub display_name: Option<String>,
+    #[serde(rename = "dnsProvider", default)]
+    pub dns_provider: Option<String>,
+    #[serde(rename = "providerZoneRef", default)]
+    pub provider_zone_ref: Option<String>,
+    #[serde(default)]
+    pub status: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct DomainHostnameResponse {
+    pub id: String,
+    #[serde(rename = "zoneId")]
+    pub zone_id: String,
+    pub hostname: String,
+    #[serde(rename = "relativeName")]
+    pub relative_name: String,
+    #[serde(rename = "hostnameType")]
+    pub hostname_type: String,
+    #[serde(rename = "verificationStatus")]
+    pub verification_status: String,
+    #[serde(rename = "verifiedAt", skip_serializing_if = "Option::is_none")]
+    pub verified_at: Option<String>,
+    pub status: String,
+    #[serde(rename = "certificateCount")]
+    pub certificate_count: i64,
+    #[serde(rename = "bindingCount")]
+    pub binding_count: i64,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+    pub version: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct DomainHostnamePage {
+    pub items: Vec<DomainHostnameResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CreateDomainHostnameRequest {
+    #[serde(rename = "relativeName")]
+    pub relative_name: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct DomainResponse {
     pub id: String,
     pub hostname: String,

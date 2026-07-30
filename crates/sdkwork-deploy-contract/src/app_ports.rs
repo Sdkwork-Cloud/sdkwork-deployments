@@ -35,8 +35,125 @@ pub struct ListSitesQuery {
     pub keyword: Option<String>,
 }
 
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct ListDomainZonesQuery {
+    #[serde(default = "crate::dto::default_page")]
+    pub page: i32,
+    #[serde(default = "crate::dto::default_page_size")]
+    pub page_size: i32,
+    pub status: Option<String>,
+    pub keyword: Option<String>,
+}
+
 #[async_trait]
 pub trait DeployAppApi: Send + Sync {
+    async fn list_domain_zones(
+        &self,
+        _context: &DeployAppRequestContext,
+        _query: &ListDomainZonesQuery,
+    ) -> DeployServiceResult<DomainZonePage> {
+        Err(crate::DeployServiceError::Internal(
+            "domain zone API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn create_domain_zone(
+        &self,
+        _context: &DeployAppRequestContext,
+        _request: &CreateDomainZoneRequest,
+    ) -> DeployServiceResult<DomainZoneResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "domain zone API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_domain_zone(
+        &self,
+        _context: &DeployAppRequestContext,
+        _zone_id: &str,
+    ) -> DeployServiceResult<DomainZoneResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "domain zone API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn update_domain_zone(
+        &self,
+        _context: &DeployAppRequestContext,
+        _zone_id: &str,
+        _request: &UpdateDomainZoneRequest,
+    ) -> DeployServiceResult<DomainZoneResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "domain zone API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn delete_domain_zone(
+        &self,
+        _context: &DeployAppRequestContext,
+        _zone_id: &str,
+    ) -> DeployServiceResult<()> {
+        Err(crate::DeployServiceError::Internal(
+            "domain zone API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_domain_hostnames(
+        &self,
+        _context: &DeployAppRequestContext,
+        _zone_id: &str,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<DomainHostnamePage> {
+        Err(crate::DeployServiceError::Internal(
+            "domain hostname API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn create_domain_hostname(
+        &self,
+        _context: &DeployAppRequestContext,
+        _zone_id: &str,
+        _request: &CreateDomainHostnameRequest,
+    ) -> DeployServiceResult<DomainHostnameResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "domain hostname API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_domain_hostname(
+        &self,
+        _context: &DeployAppRequestContext,
+        _zone_id: &str,
+        _hostname_id: &str,
+    ) -> DeployServiceResult<DomainHostnameResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "domain hostname API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn delete_domain_hostname(
+        &self,
+        _context: &DeployAppRequestContext,
+        _zone_id: &str,
+        _hostname_id: &str,
+    ) -> DeployServiceResult<()> {
+        Err(crate::DeployServiceError::Internal(
+            "domain hostname API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn verify_domain_hostname(
+        &self,
+        _context: &DeployAppRequestContext,
+        _zone_id: &str,
+        _hostname_id: &str,
+    ) -> DeployServiceResult<DomainVerifyResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "domain hostname verification API is not implemented".to_owned(),
+        ))
+    }
+
     async fn list_sites(
         &self,
         context: &DeployAppRequestContext,
