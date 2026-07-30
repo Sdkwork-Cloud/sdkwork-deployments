@@ -172,34 +172,16 @@ impl DeployRepository {
     ) -> DeployServiceResult<()> {
         let published_at =
             normalize_timestamp(published_at, "runtime assignment publication time")?;
-        let mut connection =
-            self.pool.acquire().await.map_err(|error| {
-                store_error("acquire deploy runtime publication connection", error)
-            })?;
-        let database = RuntimeAssignmentDatabase::resolve(connection.backend_name())?;
-        let update_query = match database {
-            RuntimeAssignmentDatabase::PostgreSql => {
-                "UPDATE deploy_runtime_assignment
-                 SET publish_status = 'PUBLISHED', remote_assignment_uuid = $3,
-                     published_at = CAST($4 AS TIMESTAMPTZ), next_attempt_at = NULL,
-                     lease_owner = NULL, lease_expires_at = NULL, last_error_code = NULL,
-                     updated_at = CAST($4 AS TIMESTAMPTZ), version = version + 1
-                 WHERE uuid = $1 AND lease_owner = $2 AND snapshot_uuid = $5
-                   AND snapshot_sha256 = $6 AND generation = $7
-                   AND publish_status = 'PUBLISHING'"
-            }
-            RuntimeAssignmentDatabase::Sqlite => {
-                "UPDATE deploy_runtime_assignment
-                 SET publish_status = 'PUBLISHED', remote_assignment_uuid = $3,
-                     published_at = $4, next_attempt_at = NULL, lease_owner = NULL,
-                     lease_expires_at = NULL, last_error_code = NULL,
-                     updated_at = $4, version = version + 1
-                 WHERE uuid = $1 AND lease_owner = $2 AND snapshot_uuid = $5
-                   AND snapshot_sha256 = $6 AND generation = $7
-                   AND publish_status = 'PUBLISHING'"
-            }
-        };
-        let result = sqlx::query(update_query)
+        let result = sqlx::query(
+            "UPDATE deploy_runtime_assignment
+             SET publish_status = 'PUBLISHED', remote_assignment_uuid = $3,
+                 published_at = CAST($4 AS TIMESTAMPTZ), next_attempt_at = NULL,
+                 lease_owner = NULL, lease_expires_at = NULL, last_error_code = NULL,
+                 updated_at = CAST($4 AS TIMESTAMPTZ), version = version + 1
+             WHERE uuid = $1 AND lease_owner = $2 AND snapshot_uuid = $5
+               AND snapshot_sha256 = $6 AND generation = $7
+               AND publish_status = 'PUBLISHING'",
+        )
             .bind(assignment_uuid)
             .bind(lease_owner)
             .bind(&receipt.assignment_uuid)
@@ -207,7 +189,7 @@ impl DeployRepository {
             .bind(&receipt.snapshot_uuid)
             .bind(&receipt.snapshot_sha256)
             .bind(receipt.generation.parse::<i64>().unwrap_or_default())
-            .execute(&mut *connection)
+            .execute(&self.pool)
             .await
             .map_err(|error| store_error("mark deploy runtime assignment published", error))?;
         if result.rows_affected() == 0 {
@@ -230,36 +212,20 @@ impl DeployRepository {
             .map(|value| normalize_timestamp(value, "runtime assignment next attempt time"))
             .transpose()?;
         let updated_at = normalize_timestamp(updated_at, "runtime assignment failure time")?;
-        let mut connection = self
-            .pool
-            .acquire()
-            .await
-            .map_err(|error| store_error("acquire deploy runtime failure connection", error))?;
-        let database = RuntimeAssignmentDatabase::resolve(connection.backend_name())?;
-        let update_query = match database {
-            RuntimeAssignmentDatabase::PostgreSql => {
-                "UPDATE deploy_runtime_assignment
-                 SET publish_status = 'FAILED',
-                     next_attempt_at = CAST($3 AS TIMESTAMPTZ), lease_owner = NULL,
-                     lease_expires_at = NULL, last_error_code = $4,
-                     updated_at = CAST($5 AS TIMESTAMPTZ), version = version + 1
-                 WHERE uuid = $1 AND lease_owner = $2 AND publish_status = 'PUBLISHING'"
-            }
-            RuntimeAssignmentDatabase::Sqlite => {
-                "UPDATE deploy_runtime_assignment
-                 SET publish_status = 'FAILED', next_attempt_at = $3,
-                     lease_owner = NULL, lease_expires_at = NULL, last_error_code = $4,
-                     updated_at = $5, version = version + 1
-                 WHERE uuid = $1 AND lease_owner = $2 AND publish_status = 'PUBLISHING'"
-            }
-        };
-        let result = sqlx::query(update_query)
+        let result = sqlx::query(
+            "UPDATE deploy_runtime_assignment
+             SET publish_status = 'FAILED',
+                 next_attempt_at = CAST($3 AS TIMESTAMPTZ), lease_owner = NULL,
+                 lease_expires_at = NULL, last_error_code = $4,
+                 updated_at = CAST($5 AS TIMESTAMPTZ), version = version + 1
+             WHERE uuid = $1 AND lease_owner = $2 AND publish_status = 'PUBLISHING'",
+        )
             .bind(assignment_uuid)
             .bind(lease_owner)
             .bind(next_attempt_at.as_deref())
             .bind(error_code)
             .bind(&updated_at)
-            .execute(&mut *connection)
+            .execute(&self.pool)
             .await
             .map_err(|error| store_error("mark deploy runtime assignment failed", error))?;
         if result.rows_affected() == 0 {
@@ -347,8 +313,8 @@ impl DeployRepository {
         let observed_at =
             normalize_timestamp(&observation.observed_at, "runtime observation source time")?;
         let ingested_at = normalize_timestamp(ingested_at, "runtime observation ingestion time")?;
-        let (database, mut transaction) = begin_runtime_assignment_transaction(&self.pool).await?;
-        let assignment_query = if database == RuntimeAssignmentDatabase::PostgreSql {
+        let mut transaction = begin_runtime_assignment_transaction(&self.pool).await?;
+        let row = sqlx::query(
             "SELECT a.id AS runtime_assignment_id, a.node_target_id,
                     r.site_id, a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
                     t.node_uuid, t.environment, a.trigger_site_revision_id,
@@ -360,21 +326,8 @@ impl DeployRepository {
              INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
              LEFT JOIN deploy_site_revision r ON r.id = a.trigger_site_revision_id
              WHERE a.uuid = $1
-             FOR UPDATE OF a"
-        } else {
-            "SELECT a.id AS runtime_assignment_id, a.node_target_id,
-                    r.site_id, a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
-                    t.node_uuid, t.environment, a.trigger_site_revision_id,
-                    a.generation, a.snapshot_uuid, a.snapshot_sha256,
-                    a.desired_state_sha256,
-                    CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
-                    a.remote_assignment_uuid, a.attempt_count, a.lease_owner
-             FROM deploy_runtime_assignment a
-             INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
-             LEFT JOIN deploy_site_revision r ON r.id = a.trigger_site_revision_id
-             WHERE a.uuid = $1"
-        };
-        let row = sqlx::query(assignment_query)
+             FOR UPDATE OF a",
+        )
             .bind(assignment_uuid)
             .fetch_optional(&mut *transaction)
             .await
@@ -440,7 +393,7 @@ impl DeployRepository {
 
         let id = next_id(&self.id_generator)?;
         let uuid = new_uuid();
-        let insert_query = if database == RuntimeAssignmentDatabase::PostgreSql {
+        sqlx::query(
             "INSERT INTO deploy_site_target_observation (
                 id, uuid, tenant_id, site_id, site_revision_id, node_target_id,
                 runtime_assignment_id, remote_observation_uuid, remote_assignment_uuid,
@@ -449,18 +402,8 @@ impl DeployRepository {
              ) VALUES (
                 $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,
                 CAST($18 AS TIMESTAMPTZ),CAST($19 AS TIMESTAMPTZ),CAST($19 AS TIMESTAMPTZ)
-             )"
-        } else {
-            "INSERT INTO deploy_site_target_observation (
-                id, uuid, tenant_id, site_id, site_revision_id, node_target_id,
-                runtime_assignment_id, remote_observation_uuid, remote_assignment_uuid,
-                generation, snapshot_uuid, snapshot_sha256, environment, state,
-                node_version, reason_code, detail, observed_at, ingested_at, created_at
-             ) VALUES (
-                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19
-             )"
-        };
-        sqlx::query(insert_query)
+             )",
+        )
             .bind(id)
             .bind(uuid)
             .bind(observation.tenant_id)
@@ -487,7 +430,6 @@ impl DeployRepository {
         let revision_activated = if observation.state == RuntimeObservationState::Active {
             activate_site_revision_if_converged(
                 &mut transaction,
-                database,
                 observation.tenant_id,
                 site_id,
                 assignment.trigger_site_revision_id,
@@ -530,7 +472,6 @@ impl DeployRuntimeAssignmentMutationPort for SqlxRuntimeAssignmentMutation {
         command: PersistRuntimeAssignmentCommand,
     ) -> DeployServiceResult<RuntimeAssignmentState> {
         let SqlxRuntimeAssignmentMutation {
-            database,
             mut transaction,
             id_generator,
             target_id,
@@ -558,7 +499,7 @@ impl DeployRuntimeAssignmentMutationPort for SqlxRuntimeAssignmentMutation {
             .map_err(|error| DeployServiceError::Internal(error.to_string()))?;
         let created_at =
             normalize_timestamp(&command.created_at, "runtime assignment creation time")?;
-        let insert_query = if database == RuntimeAssignmentDatabase::PostgreSql {
+        sqlx::query(
             "INSERT INTO deploy_runtime_assignment (
                 id, uuid, tenant_id, node_target_id, generation, snapshot_uuid,
                 snapshot_sha256, desired_state_sha256, runtime_set_json, runtime_set_bytes,
@@ -566,18 +507,8 @@ impl DeployRuntimeAssignmentMutationPort for SqlxRuntimeAssignmentMutation {
              ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, CAST($9 AS JSONB), $10,
                  'PENDING', 0, CAST($11 AS TIMESTAMPTZ), CAST($11 AS TIMESTAMPTZ), 1
-             )"
-        } else {
-            "INSERT INTO deploy_runtime_assignment (
-                id, uuid, tenant_id, node_target_id, generation, snapshot_uuid,
-                snapshot_sha256, desired_state_sha256, runtime_set_json, runtime_set_bytes,
-                publish_status, attempt_count, created_at, updated_at, version
-             ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-                'PENDING', 0, $11, $11, 1
-             )"
-        };
-        sqlx::query(insert_query)
+             )",
+        )
             .bind(id)
             .bind(&command.assignment_uuid)
             .bind(tenant_id)
@@ -592,24 +523,14 @@ impl DeployRuntimeAssignmentMutationPort for SqlxRuntimeAssignmentMutation {
             .execute(&mut *transaction)
             .await
             .map_err(|error| store_error("insert deploy runtime assignment", error))?;
-        let supersede_query = match database {
-            RuntimeAssignmentDatabase::PostgreSql => {
-                "UPDATE deploy_runtime_assignment
-                 SET publish_status = 'SUPERSEDED', lease_owner = NULL,
-                     lease_expires_at = NULL, updated_at = CAST($1 AS TIMESTAMPTZ),
-                     version = version + 1
-                 WHERE node_target_id = $2 AND generation < $3
-                   AND publish_status <> 'SUPERSEDED'"
-            }
-            RuntimeAssignmentDatabase::Sqlite => {
-                "UPDATE deploy_runtime_assignment
-                 SET publish_status = 'SUPERSEDED', lease_owner = NULL,
-                     lease_expires_at = NULL, updated_at = $1, version = version + 1
-                 WHERE node_target_id = $2 AND generation < $3
-                   AND publish_status <> 'SUPERSEDED'"
-            }
-        };
-        sqlx::query(supersede_query)
+        sqlx::query(
+            "UPDATE deploy_runtime_assignment
+             SET publish_status = 'SUPERSEDED', lease_owner = NULL,
+                 lease_expires_at = NULL, updated_at = CAST($1 AS TIMESTAMPTZ),
+                 version = version + 1
+             WHERE node_target_id = $2 AND generation < $3
+               AND publish_status <> 'SUPERSEDED'",
+        )
             .bind(&created_at)
             .bind(target_id)
             .bind(next_generation as i64)
@@ -632,25 +553,15 @@ impl DeployRuntimeAssignmentMutationPort for SqlxRuntimeAssignmentMutation {
 }
 
 async fn begin_runtime_assignment_transaction(
-    pool: &AnyPool,
-) -> DeployServiceResult<(RuntimeAssignmentDatabase, Transaction<'static, Any>)> {
-    let connection = pool
-        .acquire()
+    pool: &PgPool,
+) -> DeployServiceResult<Transaction<'static, Postgres>> {
+    pool.begin()
         .await
-        .map_err(|error| store_error("acquire deploy runtime assignment connection", error))?;
-    let database = RuntimeAssignmentDatabase::resolve(connection.backend_name())?;
-    let begin_statement = match database {
-        RuntimeAssignmentDatabase::PostgreSql => None,
-        RuntimeAssignmentDatabase::Sqlite => Some(Cow::Borrowed("BEGIN IMMEDIATE")),
-    };
-    let transaction = Transaction::begin(connection, begin_statement)
-        .await
-        .map_err(|error| store_error("begin deploy runtime assignment transaction", error))?;
-    Ok((database, transaction))
+        .map_err(|error| store_error("begin deploy runtime assignment transaction", error))
 }
 
 async fn latest_runtime_assignment_for_target(
-    transaction: &mut Transaction<'static, Any>,
+    transaction: &mut Transaction<'static, Postgres>,
     target_id: i64,
 ) -> DeployServiceResult<Option<RuntimeAssignmentState>> {
     let row = sqlx::query(
@@ -674,7 +585,7 @@ async fn latest_runtime_assignment_for_target(
 }
 
 async fn runtime_assignment_by_uuid(
-    transaction: &mut Transaction<'static, Any>,
+    transaction: &mut Transaction<'static, Postgres>,
     assignment_uuid: &str,
 ) -> DeployServiceResult<Option<RuntimeAssignmentState>> {
     let row = sqlx::query(
@@ -695,31 +606,8 @@ async fn runtime_assignment_by_uuid(
     row.as_ref().map(map_assignment_row).transpose()
 }
 
-async fn runtime_assignment_by_id(
-    transaction: &mut Transaction<'static, Any>,
-    assignment_id: i64,
-) -> DeployServiceResult<Option<RuntimeAssignmentState>> {
-    let row = sqlx::query(
-        "SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
-                t.node_uuid, t.environment, a.trigger_site_revision_id,
-                a.generation, a.snapshot_uuid, a.snapshot_sha256,
-                a.desired_state_sha256,
-                CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
-                a.remote_assignment_uuid, a.attempt_count, a.lease_owner
-         FROM deploy_runtime_assignment a
-         INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
-         WHERE a.id = $1",
-    )
-    .bind(assignment_id)
-    .fetch_optional(&mut **transaction)
-    .await
-    .map_err(|error| store_error("reload claimed deploy runtime assignment", error))?;
-    row.as_ref().map(map_assignment_row).transpose()
-}
-
 async fn activate_site_revision_if_converged(
-    transaction: &mut Transaction<'static, Any>,
-    database: RuntimeAssignmentDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     tenant_id: i64,
     site_id: Option<i64>,
     site_revision_id: Option<i64>,
@@ -753,18 +641,12 @@ async fn activate_site_revision_if_converged(
         return Ok(false);
     }
 
-    let update_query = if database == RuntimeAssignmentDatabase::PostgreSql {
+    let updated = sqlx::query(
         "UPDATE deploy_site
          SET current_revision_id = $3, updated_at = CAST($4 AS TIMESTAMPTZ), version = version + 1
          WHERE id = $1 AND tenant_id = $2 AND desired_revision_id = $3
-           AND (current_revision_id IS NULL OR current_revision_id <> $3)"
-    } else {
-        "UPDATE deploy_site
-         SET current_revision_id = $3, updated_at = $4, version = version + 1
-         WHERE id = $1 AND tenant_id = $2 AND desired_revision_id = $3
-           AND (current_revision_id IS NULL OR current_revision_id <> $3)"
-    };
-    let updated = sqlx::query(update_query)
+           AND (current_revision_id IS NULL OR current_revision_id <> $3)",
+    )
         .bind(site_id)
         .bind(tenant_id)
         .bind(site_revision_id)
@@ -775,7 +657,7 @@ async fn activate_site_revision_if_converged(
     Ok(updated.rows_affected() == 1)
 }
 
-fn map_assignment_row(row: &AnyRow) -> DeployServiceResult<RuntimeAssignmentState> {
+fn map_assignment_row(row: &PgRow) -> DeployServiceResult<RuntimeAssignmentState> {
     let generation: i64 = row
         .try_get("generation")
         .map_err(|error| DeployServiceError::Internal(error.to_string()))?;
