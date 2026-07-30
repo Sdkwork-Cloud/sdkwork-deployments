@@ -1,24 +1,45 @@
 schema_version: 1
 kind: sdkwork.database.schema
+database_role: authoritative-server
 module_id: deploy
 contract_version: 1.0.0
 owner_team: deploy-platform
 compliance_level: L2
 engines:
   - postgres
-  - sqlite
 table_prefix: deploy_
 tables:
   - name: deploy_site
     lifecycle_status: active
     owner: deploy-platform
+  - name: deploy_dns_zone
+    lifecycle_status: active
+    owner: deploy-platform
   - name: deploy_domain
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_domain_verification
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_nginx_config
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_certificate
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_certificate_identifier
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_certificate_version
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_acme_account
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_certificate_order
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_certificate_challenge
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_deployment
@@ -63,6 +84,12 @@ tables:
   - name: deploy_site_binding
     lifecycle_status: active
     owner: deploy-platform
+  - name: deploy_tls_policy
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_listener_certificate_binding
+    lifecycle_status: active
+    owner: deploy-platform
   - name: deploy_site_revision
     lifecycle_status: active
     owner: deploy-platform
@@ -73,5 +100,17 @@ tables:
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_site_target_observation
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_certificate_distribution
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_tls_runtime_snapshot
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_tls_runtime_assignment
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_tls_target_observation
     lifecycle_status: active
     owner: deploy-platform

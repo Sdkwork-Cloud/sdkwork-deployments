@@ -44,8 +44,8 @@
     "configKeys": [
       "SDKWORK_DEPLOY_ENVIRONMENT",
       "SDKWORK_DEPLOY_DEV_AUTH_BYPASS",
-      "SDKWORK_IAM_DATABASE_URL",
-      "SDKWORK_IAM_DATABASE_ENGINE"
+      "SDKWORK_DATABASE_URL",
+      "SDKWORK_DATABASE_ENGINE"
     ]
   },
   "verification": {

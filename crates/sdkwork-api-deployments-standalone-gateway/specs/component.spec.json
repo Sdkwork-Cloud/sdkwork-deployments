@@ -50,7 +50,7 @@
     "configKeys": [
       "SDKWORK_DEPLOY_APPLICATION_PUBLIC_INGRESS_BIND",
       "SDKWORK_DEPLOY_ENVIRONMENT",
-      "SDKWORK_DEPLOY_DATABASE_*"
+      "SDKWORK_DATABASE_*"
     ]
   },
   "verification": {

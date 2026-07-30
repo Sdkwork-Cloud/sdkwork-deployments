@@ -7,7 +7,7 @@ use sdkwork_intelligence_deploy_service::DeployRepositoryPort;
 use sqlx::{any::AnyPoolOptions, AnyPool};
 
 const SQLITE_BASELINE: &str =
-    include_str!("../../../database/ddl/baseline/sqlite/0001_deploy_baseline.sql");
+    include_str!("../../../tests/fixtures/database/sqlite/ddl/baseline/0001_deploy_baseline.sql");
 
 struct SqliteTestFile(PathBuf);
 
@@ -61,7 +61,7 @@ async fn seed_site(pool: &AnyPool) {
 }
 
 #[tokio::test]
-async fn domain_activation_requires_the_current_exact_verification_token() {
+async fn domain_activation_requires_external_evidence_for_the_current_attempt() {
     let (repository, _database) = test_repository().await;
     let domain = repository
         .create_domain(
@@ -81,13 +81,28 @@ async fn domain_activation_requires_the_current_exact_verification_token() {
         .domain_verification_challenge(7, "site-1", &domain.id)
         .await
         .expect("load pending challenge");
-    let token = pending.token.expect("pending challenge token");
+    let token = pending.token.expect("new challenge returns the proof once");
+    let verification_id = pending
+        .verification_id
+        .expect("pending challenge verification id");
+    let proof_sha256 = pending.proof_sha256.expect("pending proof digest");
     assert!(!pending.verified);
+    assert_eq!(
+        sdkwork_utils_rust::crypto::sha256_hash(token.as_bytes()),
+        proof_sha256
+    );
 
     assert!(!repository
-        .confirm_domain_verification(7, "site-1", &domain.id, "wrong-token")
+        .confirm_domain_verification(
+            7,
+            "site-1",
+            &domain.id,
+            &verification_id,
+            &"0".repeat(64),
+            "test-resolver",
+        )
         .await
-        .expect("reject wrong token"));
+        .expect("reject mismatched observation"));
     assert!(
         !repository
             .domain_verification_challenge(7, "site-1", &domain.id)
@@ -97,9 +112,16 @@ async fn domain_activation_requires_the_current_exact_verification_token() {
     );
 
     assert!(repository
-        .confirm_domain_verification(7, "site-1", &domain.id, &token)
+        .confirm_domain_verification(
+            7,
+            "site-1",
+            &domain.id,
+            &verification_id,
+            &proof_sha256,
+            "test-resolver",
+        )
         .await
-        .expect("confirm exact token"));
+        .expect("confirm exact observed digest"));
     let verified = repository
         .domain_verification_challenge(7, "site-1", &domain.id)
         .await
@@ -107,7 +129,14 @@ async fn domain_activation_requires_the_current_exact_verification_token() {
     assert!(verified.verified);
     assert!(verified.token.is_none());
     assert!(!repository
-        .confirm_domain_verification(7, "site-1", &domain.id, &token)
+        .confirm_domain_verification(
+            7,
+            "site-1",
+            &domain.id,
+            &verification_id,
+            &proof_sha256,
+            "test-resolver",
+        )
         .await
         .expect("repeat confirmation is idempotent"));
 }

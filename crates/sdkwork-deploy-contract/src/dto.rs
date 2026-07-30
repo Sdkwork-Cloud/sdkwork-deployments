@@ -101,8 +101,14 @@ pub(crate) fn default_page_size() -> i32 {
 pub struct DomainVerifyResponse {
     pub verified: bool,
     pub method: String,
+    #[serde(rename = "verificationId", skip_serializing_if = "Option::is_none")]
+    pub verification_id: Option<String>,
+    #[serde(rename = "recordName", skip_serializing_if = "Option::is_none")]
+    pub record_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub token: Option<String>,
+    #[serde(rename = "expiresAt", skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

@@ -16,17 +16,19 @@ Build from the SDKWork workspace root so Cargo sibling dependencies are availabl
 docker build -f sdkwork-deployments/deployments/docker/Dockerfile -t sdkwork-api-deployments-standalone-gateway:latest .
 ```
 
-Run with SQLite (development only):
+Run against the workspace PostgreSQL development database:
 
 ```bash
 docker run --rm -p 3900:8080 \
-  -e SDKWORK_DEPLOY_DATABASE_ENGINE=sqlite \
-  -e SDKWORK_DEPLOY_DATABASE_URL=sqlite:///app/data/deploy.db \
-  -e SDKWORK_DEPLOY_DATABASE_AUTO_MIGRATE=true \
+  -e SDKWORK_DATABASE_URL=postgresql://sdkwork_ai_dev:change-me@host.docker.internal:5432/sdkwork_ai_dev \
+  -e SDKWORK_DATABASE_SCHEMA=sdkwork_ai_dev \
+  -e SDKWORK_DATABASE_AUTO_MIGRATE=true \
   sdkwork-api-deployments-standalone-gateway:latest
 ```
 
-Production deployments must use PostgreSQL and IAM database credentials via secrets. They must
+Production deployments must inject the shared PostgreSQL identity through `SDKWORK_DATABASE_*`.
+Deploy and IAM modules use that same database and schema; no module-specific database secret is
+supported. Production deployments must
 also set `SDKWORK_DEPLOY_USE_MEMORY_DRIVE=false`, `SDKWORK_DEPLOY_USE_MEMORY_CONTENT_PROVIDER=false`,
 `SDKWORK_DRIVE_FACADE_URL`, the Drive/Knowledgebase Internal API URLs, and
 `SDKWORK_DEPLOY_WEB_INTERNAL_API_URL`. Mount each Internal API ingress token as a read-only file at
@@ -34,7 +36,7 @@ the path declared by its corresponding `*_INGRESS_TOKEN_FILE` key. Production Sn
 the shared database lease allocator; static node ids are rejected.
 
 The worker does not serve HTTP and does not need the Drive App SDK or IAM/CORS/listener
-configuration. It requires the Deploy database URL, Web and Drive Internal URLs and ingress-token
+configuration. It requires the workspace database URL, Web and Drive Internal URLs and ingress-token
 files, the HTTPS provider-event callback base, the protected per-Web-Node derivation-secret
 directory, a unique `SDKWORK_NODE_INSTANCE_ID`, and the bounded runtime-assignment batch, polling,
 lease, expiration, and renew-before settings from the selected topology profile. Kubernetes

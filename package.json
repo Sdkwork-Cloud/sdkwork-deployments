@@ -23,7 +23,7 @@
                     "sdk:generate":  "pnpm sdk:generate:app && pnpm sdk:generate:backend",
                     "sdk:generate:app":  "node sdks/sdkwork-deployments-app-sdk/bin/generate-sdk.mjs",
                     "sdk:generate:backend":  "node sdks/sdkwork-deployments-backend-sdk/bin/generate-sdk.mjs",
-                    "db:materialize:contract":  "node ../sdkwork-specs/tools/materialize-database-contract-from-baseline.mjs --root . --baseline database/ddl/baseline/postgres/0001_deploy_baseline.sql --module-id deploy --owner deploy-platform --prefixes deploy_ --engines postgres,sqlite",
+                    "db:materialize:contract":  "node ../sdkwork-specs/tools/materialize-database-contract-from-baseline.mjs --root . --baseline database/ddl/baseline/postgres/0001_deploy_baseline.sql --module-id deploy --owner deploy-platform --prefixes deploy_ --engines postgres",
                     "db:validate":  "node ../sdkwork-specs/tools/check-database-framework-standard.mjs --root .",
                     "db:plan":  "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . plan",
                     "db:init":  "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . init",

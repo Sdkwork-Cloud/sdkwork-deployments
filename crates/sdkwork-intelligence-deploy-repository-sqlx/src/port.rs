@@ -142,10 +142,19 @@ impl DeployRepositoryPort for DeployRepository {
         tenant_id: i64,
         site_id: &str,
         domain_id: &str,
-        token: &str,
+        verification_id: &str,
+        observed_sha256: &str,
+        verifier_identity: &str,
     ) -> DeployServiceResult<bool> {
-        self.confirm_domain_verification_repo(tenant_id, site_id, domain_id, token)
-            .await
+        self.confirm_domain_verification_repo(
+            tenant_id,
+            site_id,
+            domain_id,
+            verification_id,
+            observed_sha256,
+            verifier_identity,
+        )
+        .await
     }
 
     async fn list_deployments(

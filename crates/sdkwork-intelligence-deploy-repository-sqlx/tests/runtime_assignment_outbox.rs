@@ -23,7 +23,7 @@ use sdkwork_intelligence_deploy_service::RuntimePublicationService;
 use sqlx::{any::AnyPoolOptions, AnyPool, Row};
 
 const SQLITE_BASELINE: &str =
-    include_str!("../../../database/ddl/baseline/sqlite/0001_deploy_baseline.sql");
+    include_str!("../../../tests/fixtures/database/sqlite/ddl/baseline/0001_deploy_baseline.sql");
 const POSTGRES_BASELINE: &str =
     include_str!("../../../database/ddl/baseline/postgres/0001_deploy_baseline.sql");
 

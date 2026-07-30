@@ -2032,9 +2032,20 @@ components:
           type: string
           enum:
             - DNS_TXT
+        verificationId:
+          type: string
+          format: uuid
+          description: "当前所有权验证尝试标识；域名已验证时可省略。"
+        recordName:
+          type: string
+          description: "需要配置 TXT 记录的完整规范名称；域名已验证时可省略。"
         token:
           type: string
-          description: "待验证时必须写入 _sdkwork-verification.<hostname> 的精确 TXT 值；验证完成后省略。"
+          description: "仅在创建验证尝试时返回一次的明文 proof；后续查询和验证响应不会再次返回。"
+        expiresAt:
+          type: string
+          format: date-time
+          description: "当前验证尝试的失效时间；域名已验证时可省略。"
     CreateDeploymentRequest:
       type: object
       required:

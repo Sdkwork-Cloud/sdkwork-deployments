@@ -29,9 +29,9 @@ spec:
               value: cloud
             - name: SDKWORK_DEPLOY_PROFILE_ID
               value: cloud.production
-            - name: SDKWORK_DEPLOY_DATABASE_AUTO_MIGRATE
+            - name: SDKWORK_DATABASE_AUTO_MIGRATE
               value: "true"
-            - name: SDKWORK_DEPLOY_DATABASE_URL
+            - name: SDKWORK_DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: sdkwork-deploy-database

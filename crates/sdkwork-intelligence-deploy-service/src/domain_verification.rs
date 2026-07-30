@@ -10,9 +10,13 @@ const DOMAIN_VERIFICATION_RECORD_LABEL: &str = "_sdkwork-verification";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DomainVerificationChallenge {
+    pub verification_id: Option<String>,
     pub hostname: String,
+    pub record_name: Option<String>,
     pub verified: bool,
+    pub proof_sha256: Option<String>,
     pub token: Option<String>,
+    pub expires_at: Option<String>,
 }
 
 impl DomainVerificationChallenge {
@@ -20,26 +24,48 @@ impl DomainVerificationChallenge {
         DomainVerifyResponse {
             verified: self.verified,
             method: DOMAIN_VERIFICATION_METHOD_DNS_TXT.to_owned(),
+            verification_id: self.verification_id.clone(),
+            record_name: self.record_name.clone(),
             token: if self.verified {
                 None
             } else {
                 self.token.clone()
             },
+            expires_at: self.expires_at.clone(),
         }
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DomainVerificationObservation {
+    pub matched: bool,
+    pub observed_sha256: Option<String>,
+    pub verifier_identity: String,
+}
+
 #[async_trait]
 pub trait DomainOwnershipVerifierPort: Send + Sync {
-    async fn verify_dns_txt(&self, hostname: &str, token: &str) -> DeployServiceResult<bool>;
+    async fn verify_dns_txt(
+        &self,
+        hostname: &str,
+        expected_sha256: &str,
+    ) -> DeployServiceResult<DomainVerificationObservation>;
 }
 
 pub struct UnconfiguredDomainOwnershipVerifier;
 
 #[async_trait]
 impl DomainOwnershipVerifierPort for UnconfiguredDomainOwnershipVerifier {
-    async fn verify_dns_txt(&self, _hostname: &str, _token: &str) -> DeployServiceResult<bool> {
-        Ok(false)
+    async fn verify_dns_txt(
+        &self,
+        _hostname: &str,
+        _expected_sha256: &str,
+    ) -> DeployServiceResult<DomainVerificationObservation> {
+        Ok(DomainVerificationObservation {
+            matched: false,
+            observed_sha256: None,
+            verifier_identity: "unconfigured".to_owned(),
+        })
     }
 }
 

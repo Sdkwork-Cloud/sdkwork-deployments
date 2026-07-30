@@ -114,7 +114,9 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         tenant_id: i64,
         site_id: &str,
         domain_id: &str,
-        token: &str,
+        verification_id: &str,
+        observed_sha256: &str,
+        verifier_identity: &str,
     ) -> DeployServiceResult<bool>;
 
     async fn list_deployments(

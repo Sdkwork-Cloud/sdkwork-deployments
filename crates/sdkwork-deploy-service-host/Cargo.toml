@@ -11,7 +11,7 @@ sqlx.workspace = true
 tokio.workspace = true
 sdkwork-database-config.workspace = true
 sdkwork-database-id.workspace = true
-sdkwork-database-sqlx.workspace = true
+sdkwork-database-sqlx = { workspace = true, features = ["any"] }
 sdkwork-deploy-core.workspace = true
 sdkwork-deploy-contract.workspace = true
 sdkwork-deploy-database-host.workspace = true
@@ -20,3 +20,4 @@ sdkwork-deploy-content-provider-port.workspace = true
 sdkwork-deploy-web-port.workspace = true
 sdkwork-intelligence-deploy-repository-sqlx.workspace = true
 sdkwork-intelligence-deploy-service.workspace = true
+sdkwork-utils-rust.workspace = true

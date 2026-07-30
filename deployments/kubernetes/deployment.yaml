@@ -67,17 +67,12 @@ spec:
               value: https://web-internal.sdkwork.com
             - name: SDKWORK_DEPLOY_WEB_INTERNAL_API_INGRESS_TOKEN_FILE
               value: /run/secrets/sdkwork/deploy-web-internal-ingress-token
-            - name: SDKWORK_DEPLOY_DATABASE_AUTO_MIGRATE
+            - name: SDKWORK_DATABASE_AUTO_MIGRATE
               value: "false"
-            - name: SDKWORK_DEPLOY_DATABASE_URL
+            - name: SDKWORK_DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: sdkwork-deploy-database
-                  key: database-url
-            - name: SDKWORK_IAM_DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: sdkwork-deploy-iam-database
                   key: database-url
           volumeMounts:
             - name: provider-ingress-tokens

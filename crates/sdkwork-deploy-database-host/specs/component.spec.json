@@ -38,7 +38,7 @@
     "dependencyApiExports": [],
     "dependencyApiSurfaces": [],
     "events": [],
-    "configKeys": ["SDKWORK_DEPLOY_APP_ROOT", "SDKWORK_DEPLOY_DATABASE_*"]
+    "configKeys": ["SDKWORK_DEPLOY_APP_ROOT", "SDKWORK_DATABASE_*"]
   },
   "verification": {
     "commands": ["cargo test -p sdkwork-deploy-database-host", "pnpm db:validate"]

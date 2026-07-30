@@ -9,7 +9,7 @@ pub mod site_composition;
 
 pub use domain_verification::{
     dns_txt_record_name, DomainOwnershipVerifierPort, DomainVerificationChallenge,
-    UnconfiguredDomainOwnershipVerifier,
+    DomainVerificationObservation, UnconfiguredDomainOwnershipVerifier,
 };
 pub use repository::DeployRepositoryPort;
 pub use runtime_publication::{

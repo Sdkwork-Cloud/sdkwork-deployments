@@ -54,9 +54,9 @@ spec:
               value: "1000"
             - name: SDKWORK_DEPLOY_RUNTIME_ASSIGNMENT_LEASE_SECONDS
               value: "30"
-            - name: SDKWORK_DEPLOY_DATABASE_AUTO_MIGRATE
+            - name: SDKWORK_DATABASE_AUTO_MIGRATE
               value: "false"
-            - name: SDKWORK_DEPLOY_DATABASE_URL
+            - name: SDKWORK_DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: sdkwork-deploy-database
