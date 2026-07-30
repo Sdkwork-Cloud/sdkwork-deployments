@@ -140,6 +140,7 @@ impl DeployWebRuntimePort for SdkWebRuntimeFacade {
                 )
             })?
             .to_owned();
+        let idempotency_key = snapshot.snapshot_uuid.clone();
         let response = self
             .client()?
             .runtime()
@@ -149,6 +150,7 @@ impl DeployWebRuntimePort for SdkWebRuntimeFacade {
                 &PublishRuntimeAssignmentRequest {
                     runtime_set: snapshot,
                 },
+                &idempotency_key,
             )
             .await
             .map_err(map_web_sdk_error)?;
