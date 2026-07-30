@@ -516,8 +516,7 @@ async fn insert_variants(
 
 async fn insert_variant_rules(
     repository: &DeployRepository,
-    transaction: &mut Transaction<'static, Any>,
-    database: CompositionDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     command: &ReplaceSiteCompositionCommand,
     site: &StoredSite,
     variants: &BTreeMap<String, StoredVariant>,
@@ -545,19 +544,13 @@ async fn insert_variant_rules(
                 },
             ),
         };
-        let query = if database == CompositionDatabase::PostgreSql {
+        sqlx::query(
             "INSERT INTO deploy_site_variant_rule (
                 id,uuid,tenant_id,site_id,rule_key,target_variant_id,rule_type,match_value,
                 priority,status,created_by,updated_by,created_at,updated_at,version
              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ACTIVE',$10,$10,
-                CAST($11 AS TIMESTAMPTZ),CAST($11 AS TIMESTAMPTZ),1)"
-        } else {
-            "INSERT INTO deploy_site_variant_rule (
-                id,uuid,tenant_id,site_id,rule_key,target_variant_id,rule_type,match_value,
-                priority,status,created_by,updated_by,created_at,updated_at,version
-             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ACTIVE',$10,$10,$11,$11,1)"
-        };
-        sqlx::query(query)
+                CAST($11 AS TIMESTAMPTZ),CAST($11 AS TIMESTAMPTZ),1)",
+        )
             .bind(id)
             .bind(&uuid)
             .bind(command.tenant_id)
@@ -584,8 +577,7 @@ async fn insert_variant_rules(
 
 async fn insert_mounts(
     repository: &DeployRepository,
-    transaction: &mut Transaction<'static, Any>,
-    database: CompositionDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     command: &ReplaceSiteCompositionCommand,
     site: &StoredSite,
     variants: &BTreeMap<String, StoredVariant>,
@@ -603,21 +595,14 @@ async fn insert_mounts(
             .ok_or_else(|| DeployServiceError::validation("unknown mount resource"))?;
         let index_files = serde_json::to_string(&mount.index_files)
             .map_err(|_| DeployServiceError::Internal("serialize index files failed".to_owned()))?;
-        let query = if database == CompositionDatabase::PostgreSql {
+        sqlx::query(
             "INSERT INTO deploy_site_mount (
                 id,uuid,tenant_id,site_id,mount_key,variant_id,resource_id,path_prefix,
                 resource_subpath,mount_mode,handler_type,index_files_json,spa_fallback_path,
                 priority,status,created_by,updated_by,created_at,updated_at,version
              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,CAST($12 AS JSONB),$13,$14,
-                'ACTIVE',$15,$15,CAST($16 AS TIMESTAMPTZ),CAST($16 AS TIMESTAMPTZ),1)"
-        } else {
-            "INSERT INTO deploy_site_mount (
-                id,uuid,tenant_id,site_id,mount_key,variant_id,resource_id,path_prefix,
-                resource_subpath,mount_mode,handler_type,index_files_json,spa_fallback_path,
-                priority,status,created_by,updated_by,created_at,updated_at,version
-             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'ACTIVE',$15,$15,$16,$16,1)"
-        };
-        sqlx::query(query)
+                'ACTIVE',$15,$15,CAST($16 AS TIMESTAMPTZ),CAST($16 AS TIMESTAMPTZ),1)",
+        )
             .bind(id)
             .bind(&uuid)
             .bind(command.tenant_id)
@@ -656,8 +641,7 @@ async fn insert_mounts(
 
 async fn insert_bindings(
     repository: &DeployRepository,
-    transaction: &mut Transaction<'static, Any>,
-    database: CompositionDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     command: &ReplaceSiteCompositionCommand,
     site: &StoredSite,
     variants: &BTreeMap<String, StoredVariant>,
@@ -677,7 +661,7 @@ async fn insert_bindings(
         let id = next_id(repository.id_generator())?;
         let uuid = new_uuid();
         let persisted = binding_action(&binding.action, variants)?;
-        let query = if database == CompositionDatabase::PostgreSql {
+        sqlx::query(
             "INSERT INTO deploy_site_binding (
                 id,uuid,tenant_id,organization_id,site_id,binding_key,domain_id,hostname_ascii,
                 environment,path_prefix,action_type,default_variant_id,forced_variant_id,
@@ -686,18 +670,8 @@ async fn insert_bindings(
                 created_at,updated_at,version
              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,
                 $18,$19,'ACTIVE',CAST($20 AS TIMESTAMPTZ),CAST($20 AS TIMESTAMPTZ),$21,$21,
-                CAST($20 AS TIMESTAMPTZ),CAST($20 AS TIMESTAMPTZ),1)"
-        } else {
-            "INSERT INTO deploy_site_binding (
-                id,uuid,tenant_id,organization_id,site_id,binding_key,domain_id,hostname_ascii,
-                environment,path_prefix,action_type,default_variant_id,forced_variant_id,
-                redirect_scheme,redirect_hostname,redirect_path_prefix,redirect_status_code,
-                preserve_path,preserve_query,status,verified_at,activated_at,created_by,updated_by,
-                created_at,updated_at,version
-             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,
-                $18,$19,'ACTIVE',$20,$20,$21,$21,$20,$20,1)"
-        };
-        sqlx::query(query)
+                CAST($20 AS TIMESTAMPTZ),CAST($20 AS TIMESTAMPTZ),1)",
+        )
             .bind(id)
             .bind(&uuid)
             .bind(command.tenant_id)
