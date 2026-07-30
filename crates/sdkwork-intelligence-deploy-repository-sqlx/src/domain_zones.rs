@@ -3,9 +3,11 @@ use sdkwork_deploy_contract::{
     DomainHostnamePage, DomainHostnameResponse, DomainZonePage, DomainZoneResponse,
     ListDomainZonesQuery, UpdateDomainZoneRequest,
 };
+use sdkwork_intelligence_deploy_service::{dns_txt_record_name, DomainVerificationChallenge};
+use sdkwork_utils_rust::crypto::sha256_hash;
 use sqlx::{any::AnyRow, Row};
 
-use crate::support::{new_uuid, next_id, pagination, store_error};
+use crate::support::{new_uuid, next_id, now_rfc3339, pagination, store_error};
 use crate::DeployRepository;
 
 const ZONE_SELECT: &str =
@@ -217,6 +219,205 @@ impl DeployRepository {
             return Err(DeployServiceError::not_found("domain zone not found"));
         }
         Ok(())
+    }
+}
+
+impl DeployRepository {
+    pub(super) async fn domain_hostname_verification_challenge_repo(
+        &self,
+        tenant_id: i64,
+        zone_id: &str,
+        hostname_id: &str,
+    ) -> DeployServiceResult<DomainVerificationChallenge> {
+        let row = sqlx::query(
+            "SELECT d.id, d.hostname_ascii, d.verification_status
+             FROM deploy_domain d JOIN deploy_dns_zone z ON z.id = d.zone_id
+             WHERE z.tenant_id = $1 AND z.uuid = $2 AND d.uuid = $3
+               AND z.deleted_at IS NULL AND d.deleted_at IS NULL",
+        )
+        .bind(tenant_id)
+        .bind(zone_id)
+        .bind(hostname_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|error| store_error("load deploy_domain verification target", error))?
+        .ok_or_else(|| DeployServiceError::not_found("domain hostname not found"))?;
+        let domain_id: i64 = row.try_get("id").map_err(|error| {
+            DeployServiceError::Internal(format!("map deploy_domain id: {error}"))
+        })?;
+        let hostname: String = row.try_get("hostname_ascii").map_err(|error| {
+            DeployServiceError::Internal(format!("map deploy_domain hostname: {error}"))
+        })?;
+        let status: String = row.try_get("verification_status").map_err(|error| {
+            DeployServiceError::Internal(format!("map deploy_domain verification: {error}"))
+        })?;
+        if status == "VERIFIED" {
+            return Ok(DomainVerificationChallenge {
+                verification_id: None,
+                hostname,
+                record_name: None,
+                verified: true,
+                proof_sha256: None,
+                token: None,
+                expires_at: None,
+            });
+        }
+
+        let now = chrono::Utc::now();
+        let now_text = now.to_rfc3339();
+        let active = sqlx::query(
+            "SELECT uuid, record_name, proof_sha256, expires_at
+             FROM deploy_domain_verification
+             WHERE tenant_id = $1 AND domain_id = $2 AND status IN ('PENDING', 'CHECKING')
+             ORDER BY id DESC LIMIT 1",
+        )
+        .bind(tenant_id)
+        .bind(domain_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|error| store_error("load active deploy_domain_verification", error))?;
+        if let Some(active) = active {
+            let expires_at: String = active.try_get("expires_at").map_err(|error| {
+                DeployServiceError::Internal(format!("map verification expiry: {error}"))
+            })?;
+            let expired = chrono::DateTime::parse_from_rfc3339(&expires_at)
+                .map(|value| value <= now)
+                .unwrap_or(true);
+            if !expired {
+                return Ok(DomainVerificationChallenge {
+                    verification_id: Some(active.try_get("uuid").map_err(|error| {
+                        DeployServiceError::Internal(format!("map verification uuid: {error}"))
+                    })?),
+                    hostname,
+                    record_name: Some(active.try_get("record_name").map_err(|error| {
+                        DeployServiceError::Internal(format!("map verification record: {error}"))
+                    })?),
+                    verified: false,
+                    proof_sha256: Some(active.try_get("proof_sha256").map_err(|error| {
+                        DeployServiceError::Internal(format!("map verification proof: {error}"))
+                    })?),
+                    token: None,
+                    expires_at: Some(expires_at),
+                });
+            }
+            sqlx::query(
+                "UPDATE deploy_domain_verification
+                 SET status = 'EXPIRED', updated_at = $3, version = version + 1
+                 WHERE tenant_id = $1 AND domain_id = $2 AND status IN ('PENDING', 'CHECKING')",
+            )
+            .bind(tenant_id)
+            .bind(domain_id)
+            .bind(&now_text)
+            .execute(&self.pool)
+            .await
+            .map_err(|error| store_error("expire deploy_domain_verification", error))?;
+        }
+
+        let verification_id = new_uuid();
+        let token = format!("sdkwork-domain-verification={}", new_uuid());
+        let proof_sha256 = sha256_hash(token.as_bytes());
+        let record_name = dns_txt_record_name(&hostname)?;
+        let expires_at = (now + chrono::Duration::minutes(30)).to_rfc3339();
+        sqlx::query(
+            "INSERT INTO deploy_domain_verification (
+                id, uuid, tenant_id, domain_id, method, record_name, proof_sha256, status,
+                attempt_count, next_attempt_at, expires_at, created_at, updated_at, version
+             ) VALUES ($1, $2, $3, $4, 'DNS_TXT', $5, $6, 'PENDING', 0, $7, $8, $7, $7, 1)",
+        )
+        .bind(next_id(self.id_generator())?)
+        .bind(&verification_id)
+        .bind(tenant_id)
+        .bind(domain_id)
+        .bind(&record_name)
+        .bind(&proof_sha256)
+        .bind(&now_text)
+        .bind(&expires_at)
+        .execute(&self.pool)
+        .await
+        .map_err(|error| store_error("insert deploy_domain_verification", error))?;
+        Ok(DomainVerificationChallenge {
+            verification_id: Some(verification_id),
+            hostname,
+            record_name: Some(record_name),
+            verified: false,
+            proof_sha256: Some(proof_sha256),
+            token: Some(token),
+            expires_at: Some(expires_at),
+        })
+    }
+
+    pub(super) async fn confirm_domain_hostname_verification_repo(
+        &self,
+        tenant_id: i64,
+        zone_id: &str,
+        hostname_id: &str,
+        verification_id: &str,
+        observed_sha256: &str,
+        verifier_identity: &str,
+    ) -> DeployServiceResult<bool> {
+        let now = now_rfc3339();
+        let mut transaction = self
+            .pool
+            .begin()
+            .await
+            .map_err(|error| store_error("begin domain hostname verification", error))?;
+        let verification = sqlx::query(
+            "UPDATE deploy_domain_verification v
+             SET status = 'VERIFIED', observed_sha256 = $5, verifier_identity = $6,
+                 checked_at = $7, verified_at = $7, attempt_count = attempt_count + 1,
+                 updated_at = $7, version = version + 1
+             WHERE v.tenant_id = $1 AND v.uuid = $4 AND v.domain_id = (
+                 SELECT d.id FROM deploy_domain d JOIN deploy_dns_zone z ON z.id = d.zone_id
+                 WHERE z.tenant_id = $1 AND z.uuid = $2 AND d.uuid = $3
+                   AND d.verification_status <> 'VERIFIED'
+                   AND z.deleted_at IS NULL AND d.deleted_at IS NULL
+             ) AND v.proof_sha256 = $5 AND v.status IN ('PENDING', 'CHECKING') AND v.expires_at > $7",
+        )
+        .bind(tenant_id)
+        .bind(zone_id)
+        .bind(hostname_id)
+        .bind(verification_id)
+        .bind(observed_sha256)
+        .bind(verifier_identity)
+        .bind(&now)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| store_error("confirm deploy_domain_verification", error))?;
+        if verification.rows_affected() != 1 {
+            transaction
+                .rollback()
+                .await
+                .map_err(|error| store_error("rollback rejected domain verification", error))?;
+            return Ok(false);
+        }
+        let domain = sqlx::query(
+            "UPDATE deploy_domain d
+             SET verification_status = 'VERIFIED', verified_at = $4,
+                 updated_at = $4, version = version + 1
+             FROM deploy_dns_zone z
+             WHERE d.zone_id = z.id AND z.tenant_id = $1 AND z.uuid = $2 AND d.uuid = $3
+               AND d.verification_status <> 'VERIFIED'
+               AND z.deleted_at IS NULL AND d.deleted_at IS NULL",
+        )
+        .bind(tenant_id)
+        .bind(zone_id)
+        .bind(hostname_id)
+        .bind(&now)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| store_error("activate verified deploy_domain", error))?;
+        if domain.rows_affected() != 1 {
+            transaction
+                .rollback()
+                .await
+                .map_err(|error| store_error("rollback domain activation", error))?;
+            return Ok(false);
+        }
+        transaction
+            .commit()
+            .await
+            .map_err(|error| store_error("commit domain hostname verification", error))?;
+        Ok(true)
     }
 }
 

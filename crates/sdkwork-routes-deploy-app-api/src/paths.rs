@@ -3,8 +3,7 @@ pub const PREFIX: &str = "/app/v3/api";
 pub const DOMAIN_ZONES: &str = "/app/v3/api/domain_zones";
 pub const DOMAIN_ZONE: &str = "/app/v3/api/domain_zones/{zoneId}";
 pub const DOMAIN_ZONE_HOSTNAMES: &str = "/app/v3/api/domain_zones/{zoneId}/hostnames";
-pub const DOMAIN_ZONE_HOSTNAME: &str =
-    "/app/v3/api/domain_zones/{zoneId}/hostnames/{hostnameId}";
+pub const DOMAIN_ZONE_HOSTNAME: &str = "/app/v3/api/domain_zones/{zoneId}/hostnames/{hostnameId}";
 pub const DOMAIN_ZONE_HOSTNAME_VERIFY: &str =
     "/app/v3/api/domain_zones/{zoneId}/hostnames/{hostnameId}/verify";
 pub const SITES: &str = "/app/v3/api/sites";

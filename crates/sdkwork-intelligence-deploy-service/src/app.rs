@@ -352,6 +352,76 @@ impl DeployAppApi for DeployService {
             .await
     }
 
+    async fn verify_domain_hostname(
+        &self,
+        context: &DeployAppRequestContext,
+        zone_id: &str,
+        hostname_id: &str,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainVerifyResponse> {
+        let tenant_id = Self::require_tenant(context)?;
+        let challenge = self
+            .repository
+            .domain_hostname_verification_challenge(tenant_id, zone_id, hostname_id)
+            .await?;
+        if challenge.verified || challenge.token.is_some() {
+            return Ok(challenge.response());
+        }
+        let verification_id = challenge.verification_id.as_deref().ok_or_else(|| {
+            sdkwork_deploy_contract::DeployServiceError::Internal(
+                "pending domain has no verification attempt".to_owned(),
+            )
+        })?;
+        let proof_sha256 = challenge.proof_sha256.as_deref().ok_or_else(|| {
+            sdkwork_deploy_contract::DeployServiceError::Internal(
+                "pending domain verification has no proof digest".to_owned(),
+            )
+        })?;
+        let observation = self
+            .domain_ownership_verifier
+            .verify_dns_txt(&challenge.hostname, proof_sha256)
+            .await?;
+        if !observation.matched {
+            return Ok(challenge.response());
+        }
+        let observed_sha256 = observation.observed_sha256.as_deref().ok_or_else(|| {
+            sdkwork_deploy_contract::DeployServiceError::Internal(
+                "matched domain verification has no observed digest".to_owned(),
+            )
+        })?;
+        if self
+            .repository
+            .confirm_domain_hostname_verification(
+                tenant_id,
+                zone_id,
+                hostname_id,
+                verification_id,
+                observed_sha256,
+                &observation.verifier_identity,
+            )
+            .await?
+        {
+            return Ok(sdkwork_deploy_contract::DomainVerifyResponse {
+                verified: true,
+                method: crate::domain_verification::DOMAIN_VERIFICATION_METHOD_DNS_TXT.to_owned(),
+                verification_id: Some(verification_id.to_owned()),
+                record_name: challenge.record_name,
+                token: None,
+                expires_at: challenge.expires_at,
+            });
+        }
+        let current = self
+            .repository
+            .domain_hostname_verification_challenge(tenant_id, zone_id, hostname_id)
+            .await?;
+        if current.verified {
+            Ok(current.response())
+        } else {
+            Err(sdkwork_deploy_contract::DeployServiceError::conflict(
+                "domain verification challenge changed; retry with the current token",
+            ))
+        }
+    }
+
     async fn list_sites(
         &self,
         context: &DeployAppRequestContext,

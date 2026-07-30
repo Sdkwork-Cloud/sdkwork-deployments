@@ -5,6 +5,66 @@ use sdkwork_web_core::{HttpMethod, HttpRoute, HttpRouteManifest};
 const HTTP_ROUTES: &[HttpRoute] = &[
     HttpRoute::dual_token(
         HttpMethod::Get,
+        "/app/v3/api/domain_zones",
+        "domain",
+        "domainZones.list",
+    ).with_required_permission("deploy.domainZones.read"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/domain_zones",
+        "domain",
+        "domainZones.create",
+    ).with_required_permission("deploy.domainZones.write").with_idempotent(true),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/domain_zones/{zoneId}",
+        "domain",
+        "domainZones.retrieve",
+    ).with_required_permission("deploy.domainZones.read"),
+    HttpRoute::dual_token(
+        HttpMethod::Patch,
+        "/app/v3/api/domain_zones/{zoneId}",
+        "domain",
+        "domainZones.update",
+    ).with_required_permission("deploy.domainZones.write"),
+    HttpRoute::dual_token(
+        HttpMethod::Delete,
+        "/app/v3/api/domain_zones/{zoneId}",
+        "domain",
+        "domainZones.delete",
+    ).with_required_permission("deploy.domainZones.write"),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/domain_zones/{zoneId}/hostnames",
+        "domain",
+        "domainZones.hostnames.list",
+    ).with_required_permission("deploy.domainZones.write"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/domain_zones/{zoneId}/hostnames",
+        "domain",
+        "domainZones.hostnames.create",
+    ).with_required_permission("deploy.domainZones.write").with_idempotent(true),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/domain_zones/{zoneId}/hostnames/{hostnameId}",
+        "domain",
+        "domainZones.hostnames.retrieve",
+    ).with_required_permission("deploy.domainZones.write"),
+    HttpRoute::dual_token(
+        HttpMethod::Delete,
+        "/app/v3/api/domain_zones/{zoneId}/hostnames/{hostnameId}",
+        "domain",
+        "domainZones.hostnames.delete",
+    ).with_required_permission("deploy.domainZones.write"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/domain_zones/{zoneId}/hostnames/{hostnameId}/verify",
+        "domain",
+        "domainZones.hostnames.verify",
+    ).with_required_permission("deploy.domainZones.write").with_idempotent(true),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
         "/app/v3/api/sites",
         "site",
         "sites.list",
