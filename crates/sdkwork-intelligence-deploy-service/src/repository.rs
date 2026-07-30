@@ -95,6 +95,23 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         hostname_id: &str,
     ) -> DeployServiceResult<()>;
 
+    async fn domain_hostname_verification_challenge(
+        &self,
+        tenant_id: i64,
+        zone_id: &str,
+        hostname_id: &str,
+    ) -> DeployServiceResult<DomainVerificationChallenge>;
+
+    async fn confirm_domain_hostname_verification(
+        &self,
+        tenant_id: i64,
+        zone_id: &str,
+        hostname_id: &str,
+        verification_id: &str,
+        observed_sha256: &str,
+        verifier_identity: &str,
+    ) -> DeployServiceResult<bool>;
+
     async fn list_sites(
         &self,
         tenant_id: i64,

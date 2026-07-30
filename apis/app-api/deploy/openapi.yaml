@@ -14,6 +14,300 @@ security:
   - AuthToken: []
     AccessToken: []
 paths:
+  /app/v3/api/domain_zones:
+    get:
+      operationId: domainZones.list
+      summary: List root domain zones
+      tags:
+        - domain
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ACTIVE, PAUSED]
+        - name: keyword
+          in: query
+          schema:
+            type: string
+            maxLength: 253
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties: false
+                        required: [items, pageInfo]
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/DomainZoneResponse'
+                          pageInfo:
+                            $ref: '#/components/schemas/PageInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: domainZones.create
+      summary: Define a root domain zone
+      tags:
+        - domain
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDomainZoneRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        required: [item]
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/DomainZoneResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /app/v3/api/domain_zones/{zoneId}:
+    parameters:
+      - $ref: '#/components/parameters/DomainZoneIdParam'
+    get:
+      operationId: domainZones.retrieve
+      summary: Retrieve a root domain zone
+      tags:
+        - domain
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        required: [item]
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/DomainZoneResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: domainZones.update
+      summary: Update a root domain zone
+      tags:
+        - domain
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDomainZoneRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        required: [item]
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/DomainZoneResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      operationId: domainZones.delete
+      summary: Delete an empty root domain zone
+      tags:
+        - domain
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /app/v3/api/domain_zones/{zoneId}/hostnames:
+    parameters:
+      - $ref: '#/components/parameters/DomainZoneIdParam'
+    get:
+      operationId: domainZones.hostnames.list
+      summary: List hostnames in a root domain zone
+      tags:
+        - domain
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties: false
+                        required: [items, pageInfo]
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/DomainHostnameResponse'
+                          pageInfo:
+                            $ref: '#/components/schemas/PageInfo'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: domainZones.hostnames.create
+      summary: Create a hostname in a root domain zone
+      tags:
+        - domain
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDomainHostnameRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        required: [item]
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/DomainHostnameResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /app/v3/api/domain_zones/{zoneId}/hostnames/{hostnameId}:
+    parameters:
+      - $ref: '#/components/parameters/DomainZoneIdParam'
+      - $ref: '#/components/parameters/DomainHostnameIdParam'
+    get:
+      operationId: domainZones.hostnames.retrieve
+      summary: Retrieve a domain hostname
+      tags:
+        - domain
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        required: [item]
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/DomainHostnameResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: domainZones.hostnames.delete
+      summary: Delete an unbound domain hostname
+      tags:
+        - domain
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /app/v3/api/domain_zones/{zoneId}/hostnames/{hostnameId}/verify:
+    parameters:
+      - $ref: '#/components/parameters/DomainZoneIdParam'
+      - $ref: '#/components/parameters/DomainHostnameIdParam'
+    post:
+      operationId: domainZones.hostnames.verify
+      summary: Verify domain hostname ownership
+      tags:
+        - domain
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
+      responses:
+        '200':
+          description: Verification state
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        required: [item]
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/DomainVerifyResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /app/v3/api/sites:
     get:
       operationId: sites.list
@@ -1489,6 +1783,20 @@ components:
         minLength: 1
         maxLength: 128
         pattern: '^[A-Za-z0-9._:-]+$'
+    DomainZoneIdParam:
+      name: zoneId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DomainHostnameIdParam:
+      name: hostnameId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     DomainIdParam:
       name: domainId
       in: path
@@ -2019,6 +2327,161 @@ components:
           type: integer
         pageSize:
           type: integer
+    CreateDomainZoneRequest:
+      type: object
+      additionalProperties: false
+      required: [apexHostname]
+      properties:
+        apexHostname:
+          type: string
+          minLength: 3
+          maxLength: 253
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        dnsProvider:
+          type: string
+          minLength: 1
+          maxLength: 64
+        providerZoneRef:
+          type: string
+          minLength: 1
+          maxLength: 512
+    UpdateDomainZoneRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        dnsProvider:
+          type: string
+          minLength: 1
+          maxLength: 64
+        providerZoneRef:
+          type: string
+          minLength: 1
+          maxLength: 512
+        status:
+          type: string
+          enum: [ACTIVE, PAUSED]
+    DomainZoneResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - apexHostname
+        - status
+        - hostnameCount
+        - verifiedHostnameCount
+        - certificateCount
+        - bindingCount
+        - updatedAt
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        apexHostname:
+          type: string
+        displayName:
+          type: string
+        dnsProvider:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, PAUSED]
+        hostnameCount:
+          type: integer
+          format: int64
+          minimum: 0
+        verifiedHostnameCount:
+          type: integer
+          format: int64
+          minimum: 0
+        certificateCount:
+          type: integer
+          format: int64
+          minimum: 0
+        bindingCount:
+          type: integer
+          format: int64
+          minimum: 0
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: string
+          pattern: '^[0-9]+$'
+    CreateDomainHostnameRequest:
+      type: object
+      additionalProperties: false
+      required: [relativeName]
+      properties:
+        relativeName:
+          type: string
+          minLength: 1
+          maxLength: 253
+          description: Use @ for the apex, a relative label path such as www or api.eu, or * for a wildcard hostname.
+    DomainHostnameResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - zoneId
+        - hostname
+        - relativeName
+        - hostnameType
+        - verificationStatus
+        - status
+        - certificateCount
+        - bindingCount
+        - createdAt
+        - updatedAt
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        zoneId:
+          type: string
+          format: uuid
+        hostname:
+          type: string
+        relativeName:
+          type: string
+        hostnameType:
+          type: string
+          enum: [EXACT, WILDCARD]
+        verificationStatus:
+          type: string
+          enum: [PENDING, VERIFIED, FAILED, EXPIRED]
+        verifiedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [ACTIVE, PAUSED]
+        certificateCount:
+          type: integer
+          format: int64
+          minimum: 0
+        bindingCount:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: string
+          pattern: '^[0-9]+$'
     CreateDomainRequest:
       type: object
       required:

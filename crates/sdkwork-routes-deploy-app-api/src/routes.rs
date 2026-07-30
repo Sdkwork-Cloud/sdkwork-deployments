@@ -8,9 +8,10 @@ use axum::{
 use sdkwork_deploy_contract::{
     CompleteDeployUploadSessionRequest, CreateArtifactRequest, CreateCertificateRequest,
     CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainRequest,
-    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest,
-    DeployAppApi, DeployAppRequestContext, ListSitesQuery, UpdateSiteCompositionRequest,
-    UpdateSiteRequest, UploadCustomCertificateRequest,
+    CreateDomainHostnameRequest, CreateDomainZoneRequest, CreateEnvVariableRequest,
+    CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest, DeployAppApi,
+    DeployAppRequestContext, ListDomainZonesQuery, ListSitesQuery, UpdateDomainZoneRequest,
+    UpdateSiteCompositionRequest, UpdateSiteRequest, UploadCustomCertificateRequest,
 };
 use sdkwork_routes_deploy_common::{
     envelope, finish_api_json, finish_created_api_json, finish_no_content, ok_json, service_result,
@@ -35,6 +36,28 @@ where
 
 pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
     Router::new()
+        .route(
+            paths::DOMAIN_ZONES,
+            get(list_domain_zones).post(create_domain_zone),
+        )
+        .route(
+            paths::DOMAIN_ZONE,
+            get(retrieve_domain_zone)
+                .patch(update_domain_zone)
+                .delete(delete_domain_zone),
+        )
+        .route(
+            paths::DOMAIN_ZONE_HOSTNAMES,
+            get(list_domain_hostnames).post(create_domain_hostname),
+        )
+        .route(
+            paths::DOMAIN_ZONE_HOSTNAME,
+            get(retrieve_domain_hostname).delete(delete_domain_hostname),
+        )
+        .route(
+            paths::DOMAIN_ZONE_HOSTNAME_VERIFY,
+            post(verify_domain_hostname),
+        )
         .route(paths::SITES, get(list_sites).post(create_site))
         .route(
             paths::SITE,
@@ -121,6 +144,197 @@ fn default_page() -> i32 {
 
 fn default_page_size() -> i32 {
     20
+}
+
+async fn list_domain_zones(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Query(query): Query<ListDomainZonesQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let page = state.api.list_domain_zones(&context, &query).await?;
+            ok_json(envelope::domain_zone_page(page))
+        }
+        .await,
+    )
+}
+
+async fn create_domain_zone(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Json(request): Json<CreateDomainZoneRequest>,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state.api.create_domain_zone(&context, &request).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+async fn retrieve_domain_zone(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(zone_id): Path<String>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state.api.retrieve_domain_zone(&context, &zone_id).await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+async fn update_domain_zone(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(zone_id): Path<String>,
+    Json(request): Json<UpdateDomainZoneRequest>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .update_domain_zone(&context, &zone_id, &request)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+async fn delete_domain_zone(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(zone_id): Path<String>,
+) -> Response {
+    finish_no_content(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            service_result(state.api.delete_domain_zone(&context, &zone_id).await)
+        }
+        .await,
+    )
+}
+
+async fn list_domain_hostnames(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(zone_id): Path<String>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let page = state
+                .api
+                .list_domain_hostnames(&context, &zone_id, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::domain_hostname_page(page))
+        }
+        .await,
+    )
+}
+
+async fn create_domain_hostname(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(zone_id): Path<String>,
+    Json(request): Json<CreateDomainHostnameRequest>,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .create_domain_hostname(&context, &zone_id, &request)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+async fn retrieve_domain_hostname(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((zone_id, hostname_id)): Path<(String, String)>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .retrieve_domain_hostname(&context, &zone_id, &hostname_id)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+async fn delete_domain_hostname(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((zone_id, hostname_id)): Path<(String, String)>,
+) -> Response {
+    finish_no_content(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            service_result(
+                state
+                    .api
+                    .delete_domain_hostname(&context, &zone_id, &hostname_id)
+                    .await,
+            )
+        }
+        .await,
+    )
+}
+
+async fn verify_domain_hostname(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((zone_id, hostname_id)): Path<(String, String)>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .verify_domain_hostname(&context, &zone_id, &hostname_id)
+                .await?;
+            ok_json(envelope::domain_verify(item))
+        }
+        .await,
+    )
 }
 
 async fn list_sites(

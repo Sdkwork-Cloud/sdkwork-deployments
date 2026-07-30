@@ -121,6 +121,36 @@ impl DeployRepositoryPort for DeployRepository {
             .await
     }
 
+    async fn domain_hostname_verification_challenge(
+        &self,
+        tenant_id: i64,
+        zone_id: &str,
+        hostname_id: &str,
+    ) -> DeployServiceResult<DomainVerificationChallenge> {
+        self.domain_hostname_verification_challenge_repo(tenant_id, zone_id, hostname_id)
+            .await
+    }
+
+    async fn confirm_domain_hostname_verification(
+        &self,
+        tenant_id: i64,
+        zone_id: &str,
+        hostname_id: &str,
+        verification_id: &str,
+        observed_sha256: &str,
+        verifier_identity: &str,
+    ) -> DeployServiceResult<bool> {
+        self.confirm_domain_hostname_verification_repo(
+            tenant_id,
+            zone_id,
+            hostname_id,
+            verification_id,
+            observed_sha256,
+            verifier_identity,
+        )
+        .await
+    }
+
     async fn list_sites(
         &self,
         tenant_id: i64,
