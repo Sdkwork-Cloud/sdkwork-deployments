@@ -792,7 +792,7 @@ fn optional_variant<'a>(
 }
 
 async fn load_verified_domain(
-    transaction: &mut Transaction<'static, Any>,
+    transaction: &mut Transaction<'static, Postgres>,
     tenant_id: i64,
     site_id: i64,
     domain_uuid: &str,
@@ -845,7 +845,7 @@ fn runtime_resource(
 }
 
 async fn next_revision_number(
-    transaction: &mut Transaction<'static, Any>,
+    transaction: &mut Transaction<'static, Postgres>,
     site_id: i64,
 ) -> DeployServiceResult<i64> {
     let row = sqlx::query(
@@ -862,8 +862,7 @@ async fn next_revision_number(
 
 #[allow(clippy::too_many_arguments)]
 async fn insert_revision(
-    transaction: &mut Transaction<'static, Any>,
-    database: CompositionDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     command: &ReplaceSiteCompositionCommand,
     site: &StoredSite,
     revision_id: i64,
@@ -875,23 +874,15 @@ async fn insert_revision(
 ) -> DeployServiceResult<()> {
     let descriptor_json = serde_json::to_string(descriptor)
         .map_err(|_| DeployServiceError::Internal("serialize site revision failed".to_owned()))?;
-    let query = if database == CompositionDatabase::PostgreSql {
+    sqlx::query(
         "INSERT INTO deploy_site_revision (
             id,uuid,tenant_id,organization_id,site_id,revision_no,environment,
             descriptor_schema_version,descriptor_json,descriptor_sha256,compiler_version,
             source_config_version,idempotency_key,request_sha256,result_json,validation_status,
             validation_report_json,supersedes_revision_id,created_by,created_at
          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,CAST($9 AS JSONB),$10,$11,$12,$13,$14,
-            '{}','VALID','{}',$15,$16,CAST($17 AS TIMESTAMPTZ))"
-    } else {
-        "INSERT INTO deploy_site_revision (
-            id,uuid,tenant_id,organization_id,site_id,revision_no,environment,
-            descriptor_schema_version,descriptor_json,descriptor_sha256,compiler_version,
-            source_config_version,idempotency_key,request_sha256,result_json,validation_status,
-            validation_report_json,supersedes_revision_id,created_by,created_at
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'{}','VALID','{}',$15,$16,$17)"
-    };
-    sqlx::query(query)
+            '{}','VALID','{}',$15,$16,CAST($17 AS TIMESTAMPTZ))",
+    )
         .bind(revision_id)
         .bind(revision_uuid)
         .bind(command.tenant_id)
@@ -916,21 +907,16 @@ async fn insert_revision(
 }
 
 async fn update_site_revision_pointers(
-    transaction: &mut Transaction<'static, Any>,
-    database: CompositionDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     command: &ReplaceSiteCompositionCommand,
     site_id: i64,
     default_variant_id: i64,
     revision_id: i64,
 ) -> DeployServiceResult<()> {
-    let query = timestamp_query(
-        database,
-        "UPDATE deploy_site SET default_variant_id = $2, desired_revision_id = $3,
-            updated_at = $4 WHERE id = $1",
+    sqlx::query(
         "UPDATE deploy_site SET default_variant_id = $2, desired_revision_id = $3,
             updated_at = CAST($4 AS TIMESTAMPTZ) WHERE id = $1",
-    );
-    sqlx::query(query)
+    )
         .bind(site_id)
         .bind(default_variant_id)
         .bind(revision_id)
@@ -942,7 +928,7 @@ async fn update_site_revision_pointers(
 }
 
 async fn load_other_descriptors(
-    transaction: &mut Transaction<'static, Any>,
+    transaction: &mut Transaction<'static, Postgres>,
     tenant_id: i64,
     excluded_site_id: i64,
     environment: &str,
@@ -976,8 +962,7 @@ async fn load_other_descriptors(
 #[allow(clippy::too_many_arguments)]
 async fn insert_runtime_assignments(
     repository: &DeployRepository,
-    transaction: &mut Transaction<'static, Any>,
-    database: CompositionDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     command: &ReplaceSiteCompositionCommand,
     revision_id: i64,
     targets: &[StoredTarget],
@@ -1014,21 +999,14 @@ async fn insert_runtime_assignments(
             as i64;
         let assignment_id = next_id(repository.id_generator())?;
         let assignment_uuid = new_uuid();
-        let query = if database == CompositionDatabase::PostgreSql {
+        sqlx::query(
             "INSERT INTO deploy_runtime_assignment (
                 id,uuid,tenant_id,node_target_id,trigger_site_revision_id,generation,
                 snapshot_uuid,snapshot_sha256,desired_state_sha256,runtime_set_json,
                 runtime_set_bytes,publish_status,attempt_count,created_at,updated_at,version
              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,CAST($10 AS JSONB),$11,'PENDING',0,
-                CAST($12 AS TIMESTAMPTZ),CAST($12 AS TIMESTAMPTZ),1)"
-        } else {
-            "INSERT INTO deploy_runtime_assignment (
-                id,uuid,tenant_id,node_target_id,trigger_site_revision_id,generation,
-                snapshot_uuid,snapshot_sha256,desired_state_sha256,runtime_set_json,
-                runtime_set_bytes,publish_status,attempt_count,created_at,updated_at,version
-             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'PENDING',0,$12,$12,1)"
-        };
-        sqlx::query(query)
+                CAST($12 AS TIMESTAMPTZ),CAST($12 AS TIMESTAMPTZ),1)",
+        )
             .bind(assignment_id)
             .bind(&assignment_uuid)
             .bind(command.tenant_id)
@@ -1044,20 +1022,13 @@ async fn insert_runtime_assignments(
             .execute(&mut **transaction)
             .await
             .map_err(|error| composition_store_error("insert runtime assignment", error))?;
-        let supersede_query = timestamp_query(
-            database,
-            "UPDATE deploy_runtime_assignment SET publish_status = 'SUPERSEDED',
-                lease_owner = NULL, lease_expires_at = NULL, updated_at = $1,
-                version = version + 1
-             WHERE node_target_id = $2 AND generation < $3
-               AND publish_status <> 'SUPERSEDED'",
+        sqlx::query(
             "UPDATE deploy_runtime_assignment SET publish_status = 'SUPERSEDED',
                 lease_owner = NULL, lease_expires_at = NULL,
                 updated_at = CAST($1 AS TIMESTAMPTZ), version = version + 1
              WHERE node_target_id = $2 AND generation < $3
                AND publish_status <> 'SUPERSEDED'",
-        );
-        sqlx::query(supersede_query)
+        )
             .bind(&command.generated_at)
             .bind(target.id)
             .bind(generation)
@@ -1075,7 +1046,7 @@ async fn insert_runtime_assignments(
 }
 
 async fn next_target_generation(
-    transaction: &mut Transaction<'static, Any>,
+    transaction: &mut Transaction<'static, Postgres>,
     target_id: i64,
 ) -> DeployServiceResult<i64> {
     let row = sqlx::query(
@@ -1091,20 +1062,16 @@ async fn next_target_generation(
 }
 
 async fn persist_command_result(
-    transaction: &mut Transaction<'static, Any>,
-    database: CompositionDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     revision_id: i64,
     response: &SiteCompositionResponse,
 ) -> DeployServiceResult<()> {
     let result_json = serde_json::to_string(response).map_err(|_| {
         DeployServiceError::Internal("serialize composition result failed".to_owned())
     })?;
-    let query = if database == CompositionDatabase::PostgreSql {
-        "UPDATE deploy_site_revision SET result_json = CAST($2 AS JSONB) WHERE id = $1"
-    } else {
-        "UPDATE deploy_site_revision SET result_json = $2 WHERE id = $1"
-    };
-    sqlx::query(query)
+    sqlx::query(
+        "UPDATE deploy_site_revision SET result_json = CAST($2 AS JSONB) WHERE id = $1",
+    )
         .bind(revision_id)
         .bind(result_json)
         .execute(&mut **transaction)
@@ -1115,8 +1082,7 @@ async fn persist_command_result(
 
 async fn insert_composition_audit(
     repository: &DeployRepository,
-    transaction: &mut Transaction<'static, Any>,
-    database: CompositionDatabase,
+    transaction: &mut Transaction<'static, Postgres>,
     command: &ReplaceSiteCompositionCommand,
     site_id: i64,
     revision_id: i64,
@@ -1129,19 +1095,13 @@ async fn insert_composition_audit(
         "environment": command.request.environment.as_str(),
     })
     .to_string();
-    let query = if database == CompositionDatabase::PostgreSql {
+    sqlx::query(
         "INSERT INTO deploy_audit_log (
             id,uuid,tenant_id,organization_id,operator_id,operator_type,action,target_type,
             target_id,target_uuid,metadata,created_at
          ) VALUES ($1,$2,$3,$4,$5,'USER','sites.composition.update','site',$6,$7,
-            CAST($8 AS JSONB),CAST($9 AS TIMESTAMPTZ))"
-    } else {
-        "INSERT INTO deploy_audit_log (
-            id,uuid,tenant_id,organization_id,operator_id,operator_type,action,target_type,
-            target_id,target_uuid,metadata,created_at
-         ) VALUES ($1,$2,$3,$4,$5,'USER','sites.composition.update','site',$6,$7,$8,$9)"
-    };
-    sqlx::query(query)
+            CAST($8 AS JSONB),CAST($9 AS TIMESTAMPTZ))",
+    )
         .bind(audit_id)
         .bind(audit_uuid)
         .bind(command.tenant_id)
@@ -1155,17 +1115,6 @@ async fn insert_composition_audit(
         .await
         .map_err(|error| composition_store_error("insert site composition audit", error))?;
     Ok(())
-}
-
-fn timestamp_query<'a>(
-    database: CompositionDatabase,
-    sqlite: &'a str,
-    postgres: &'a str,
-) -> &'a str {
-    match database {
-        CompositionDatabase::PostgreSql => postgres,
-        CompositionDatabase::Sqlite => sqlite,
-    }
 }
 
 fn runtime_environment(
