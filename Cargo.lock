@@ -2232,11 +2232,8 @@ name = "sdkwork-deploy-service-host"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "dotenvy",
  "hickory-resolver",
- "sdkwork-database-config",
  "sdkwork-database-id",
- "sdkwork-database-sqlx",
  "sdkwork-deploy-content-provider-port",
  "sdkwork-deploy-contract",
  "sdkwork-deploy-core",
@@ -2246,7 +2243,6 @@ dependencies = [
  "sdkwork-intelligence-deploy-repository-sqlx",
  "sdkwork-intelligence-deploy-service",
  "sdkwork-utils-rust",
- "sqlx",
  "tokio",
 ]
 

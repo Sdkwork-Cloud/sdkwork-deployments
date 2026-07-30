@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use async_trait::async_trait;
 use chrono::{DateTime, SecondsFormat, Utc};
 use sdkwork_database_id::SnowflakeIdGenerator;
@@ -10,7 +8,8 @@ use sdkwork_intelligence_deploy_service::runtime_publication::{
     RuntimeAssignmentPublishStatus, RuntimeAssignmentState, RuntimeObservationEvidence,
     RuntimeObservationPersistenceResult, RuntimeObservationState,
 };
-use sqlx::{any::AnyRow, Any, AnyPool, Row, Transaction};
+use sqlx::postgres::PgRow;
+use sqlx::{PgPool, Postgres, Row, Transaction};
 
 use crate::support::{new_uuid, next_id, store_error};
 use crate::DeployRepository;
@@ -26,27 +25,8 @@ fn normalize_timestamp(value: &str, field: &str) -> DeployServiceResult<String> 
         })
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum RuntimeAssignmentDatabase {
-    PostgreSql,
-    Sqlite,
-}
-
-impl RuntimeAssignmentDatabase {
-    fn resolve(backend_name: &str) -> DeployServiceResult<Self> {
-        match backend_name {
-            "PostgreSQL" => Ok(Self::PostgreSql),
-            "SQLite" => Ok(Self::Sqlite),
-            _ => Err(DeployServiceError::Internal(format!(
-                "unsupported runtime assignment database backend {backend_name}"
-            ))),
-        }
-    }
-}
-
 struct SqlxRuntimeAssignmentMutation {
-    database: RuntimeAssignmentDatabase,
-    transaction: Transaction<'static, Any>,
+    transaction: Transaction<'static, Postgres>,
     id_generator: SnowflakeIdGenerator,
     target_id: i64,
     tenant_id: i64,
@@ -84,16 +64,12 @@ impl DeployRepository {
         target_uuid: &str,
         tenant_id: i64,
     ) -> DeployServiceResult<Box<dyn DeployRuntimeAssignmentMutationPort>> {
-        let (database, mut transaction) = begin_runtime_assignment_transaction(&self.pool).await?;
-        let target_query = if database == RuntimeAssignmentDatabase::PostgreSql {
+        let mut transaction = begin_runtime_assignment_transaction(&self.pool).await?;
+        let target = sqlx::query(
             "SELECT id, tenant_id FROM deploy_web_node_target
              WHERE uuid = $1 AND tenant_id = $2 AND status = 'ACTIVE' AND deleted_at IS NULL
-             FOR UPDATE"
-        } else {
-            "SELECT id, tenant_id FROM deploy_web_node_target
-             WHERE uuid = $1 AND tenant_id = $2 AND status = 'ACTIVE' AND deleted_at IS NULL"
-        };
-        let target = sqlx::query(target_query)
+             FOR UPDATE",
+        )
             .bind(target_uuid)
             .bind(tenant_id)
             .fetch_optional(&mut *transaction)
@@ -108,7 +84,6 @@ impl DeployRepository {
             .as_ref()
             .map_or(1, |assignment| assignment.generation.saturating_add(1));
         Ok(Box::new(SqlxRuntimeAssignmentMutation {
-            database,
             transaction,
             id_generator: self.id_generator.clone(),
             target_id,
@@ -129,9 +104,8 @@ impl DeployRepository {
         let now = normalize_timestamp(now, "runtime assignment claim time")?;
         let lease_expires_at =
             normalize_timestamp(lease_expires_at, "runtime assignment lease expiry")?;
-        let (database, mut transaction) = begin_runtime_assignment_transaction(&self.pool).await?;
-        let assignments = if database == RuntimeAssignmentDatabase::PostgreSql {
-            let rows = sqlx::query(
+        let mut transaction = begin_runtime_assignment_transaction(&self.pool).await?;
+        let rows = sqlx::query(
                 "WITH candidates AS (
                     SELECT a.id
                     FROM deploy_runtime_assignment a
@@ -170,72 +144,18 @@ impl DeployRepository {
                  INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
                  ORDER BY a.created_at, a.id",
             )
-            .bind(&now)
-            .bind(maximum_attempts)
-            .bind(maximum_items)
-            .bind(lease_owner)
-            .bind(&lease_expires_at)
-            .fetch_all(&mut *transaction)
-            .await
-            .map_err(|error| store_error("claim PostgreSQL runtime assignments", error))?;
-            rows.iter()
-                .map(map_assignment_row)
-                .collect::<DeployServiceResult<Vec<_>>>()?
-        } else {
-            let candidate_rows = sqlx::query(
-                "SELECT a.id
-                 FROM deploy_runtime_assignment a
-                 INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
-                 WHERE (
-                    (a.publish_status IN ('PENDING', 'FAILED')
-                     AND a.attempt_count < $2
-                     AND (a.next_attempt_at IS NULL OR a.next_attempt_at <= $1))
-                    OR (a.publish_status = 'PUBLISHING'
-                        AND a.attempt_count < $2
-                        AND a.lease_expires_at <= $1)
-                 )
-                   AND t.status = 'ACTIVE' AND t.deleted_at IS NULL
-                 ORDER BY COALESCE(a.next_attempt_at, a.lease_expires_at, a.created_at),
-                          a.created_at, a.id
-                 LIMIT $3",
-            )
-            .bind(&now)
-            .bind(maximum_attempts)
-            .bind(maximum_items)
-            .fetch_all(&mut *transaction)
-            .await
-            .map_err(|error| store_error("select SQLite runtime assignment claims", error))?;
-            let mut assignments = Vec::with_capacity(candidate_rows.len());
-            for candidate in candidate_rows {
-                let assignment_id: i64 = candidate
-                    .try_get("id")
-                    .map_err(|error| DeployServiceError::Internal(error.to_string()))?;
-                sqlx::query(
-                    "UPDATE deploy_runtime_assignment
-                     SET publish_status = 'PUBLISHING', attempt_count = attempt_count + 1,
-                         next_attempt_at = NULL, lease_owner = $2, lease_expires_at = $3,
-                         updated_at = $4, version = version + 1
-                     WHERE id = $1",
-                )
-                .bind(assignment_id)
-                .bind(lease_owner)
-                .bind(&lease_expires_at)
-                .bind(&now)
-                .execute(&mut *transaction)
-                .await
-                .map_err(|error| store_error("claim SQLite runtime assignment", error))?;
-                assignments.push(
-                    runtime_assignment_by_id(&mut transaction, assignment_id)
-                        .await?
-                        .ok_or_else(|| {
-                            DeployServiceError::Internal(
-                                "claimed runtime assignment could not be reloaded".to_owned(),
-                            )
-                        })?,
-                );
-            }
-            assignments
-        };
+        .bind(&now)
+        .bind(maximum_attempts)
+        .bind(maximum_items)
+        .bind(lease_owner)
+        .bind(&lease_expires_at)
+        .fetch_all(&mut *transaction)
+        .await
+        .map_err(|error| store_error("claim PostgreSQL runtime assignments", error))?;
+        let assignments = rows
+            .iter()
+            .map(map_assignment_row)
+            .collect::<DeployServiceResult<Vec<_>>>()?;
         transaction
             .commit()
             .await
