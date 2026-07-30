@@ -75,6 +75,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -188,6 +191,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       responses:
         '200':
           description: 校验结果
@@ -223,6 +229,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       responses:
         '200':
           description: 部署成功
@@ -253,6 +262,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       responses:
         '200':
           description: "热加载结果"
@@ -345,6 +357,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -441,6 +456,16 @@ components:
       in: header
       name: Access-Token
   parameters:
+    IdempotencyKeyParam:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Stable command identity. Reuse with a different request is rejected.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._:-]+$'
     PageParam:
       name: page
       in: query

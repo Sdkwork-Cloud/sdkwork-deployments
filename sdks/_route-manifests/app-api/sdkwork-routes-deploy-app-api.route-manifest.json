@@ -157,7 +157,7 @@
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
       "permission": "deploy.sites.write",
-      "idempotent": false
+      "idempotent": true
     },
     {
       "method": "PUT",
@@ -205,7 +205,7 @@
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
       "permission": "deploy.sites.write",
-      "idempotent": false
+      "idempotent": true
     },
     {
       "method": "GET",
@@ -661,7 +661,7 @@
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
       "permission": "deploy.certificates.write",
-      "idempotent": false
+      "idempotent": true
     },
     {
       "method": "POST",
@@ -685,7 +685,7 @@
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
       "permission": "deploy.certificates.write",
-      "idempotent": false
+      "idempotent": true
     },
     {
       "method": "POST",
@@ -757,7 +757,7 @@
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
       "permission": "deploy.uploadSessions.write",
-      "idempotent": false
+      "idempotent": true
     },
     {
       "method": "POST",
@@ -781,7 +781,7 @@
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
       "permission": "deploy.uploadSessions.write",
-      "idempotent": false
+      "idempotent": true
     },
     {
       "method": "POST",

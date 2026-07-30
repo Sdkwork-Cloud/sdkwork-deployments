@@ -133,7 +133,7 @@
       "requestContext": "WebRequestContext",
       "apiSurface": "backend-api",
       "permission": "deploy.configs.write",
-      "idempotent": false
+      "idempotent": true
     },
     {
       "method": "POST",

@@ -163,6 +163,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -253,8 +259,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.sites.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.sites.write"
       }
     },
     "/app/v3/api/sites/{siteId}": {
@@ -494,6 +499,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "responses": {
           "200": {
             "description": "激活成功",
@@ -717,6 +728,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "responses": {
           "200": {
             "description": "暂停成功",
@@ -878,6 +895,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -948,8 +971,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.sites.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.sites.write"
       }
     },
     "/app/v3/api/sites/{siteId}/domains/{domainId}": {
@@ -1082,6 +1104,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "responses": {
           "200": {
             "description": "验证成功",
@@ -1142,8 +1170,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.sites.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.sites.write"
       }
     },
     "/app/v3/api/sites/{siteId}/deployments": {
@@ -1259,6 +1286,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1329,8 +1362,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.sites.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.sites.write"
       }
     },
     "/app/v3/api/sites/{siteId}/deployments/{deploymentId}": {
@@ -1428,6 +1460,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "responses": {
           "200": {
             "description": "回滚成功",
@@ -1478,8 +1516,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.sites.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.sites.write"
       }
     },
     "/app/v3/api/sites/{siteId}/releases": {
@@ -1590,6 +1627,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1660,8 +1703,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.sites.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.sites.write"
       }
     },
     "/app/v3/api/sites/{siteId}/releases/{releaseId}": {
@@ -1828,6 +1870,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1878,8 +1926,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.sites.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.sites.write"
       }
     },
     "/app/v3/api/certificates": {
@@ -1965,6 +2012,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -2015,8 +2068,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.certificates.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.certificates.write"
       }
     },
     "/app/v3/api/certificates/{certificateId}": {
@@ -2164,6 +2216,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "responses": {
           "200": {
             "description": "续期已计划",
@@ -2249,6 +2307,12 @@
           {
             "AuthToken": [],
             "AccessToken": []
+          }
+        ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
           }
         ],
         "requestBody": {
@@ -2337,6 +2401,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -2397,8 +2467,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.uploadSessions.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.uploadSessions.write"
       }
     },
     "/app/v3/api/upload_sessions/{uploadSessionId}": {
@@ -2503,6 +2572,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -2580,6 +2655,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "responses": {
           "200": {
             "description": "已取消",
@@ -2639,6 +2720,11 @@
         ],
         "x-sdkwork-idempotent": true,
         "x-sdkwork-permission": "deploy.artifacts.write",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -2979,6 +3065,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -3029,8 +3121,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.sites.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.sites.write"
       }
     }
   },

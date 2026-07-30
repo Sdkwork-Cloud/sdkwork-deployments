@@ -87,6 +87,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -219,6 +222,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       responses:
         '200':
           description: "激活成功"
@@ -311,6 +317,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       responses:
         '200':
           description: "暂停成功"
@@ -383,6 +392,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -471,6 +483,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       responses:
         '200':
           description: "验证成功"
@@ -554,6 +569,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -628,6 +646,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       responses:
         '200':
           description: "回滚成功"
@@ -700,6 +721,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -812,6 +836,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -882,6 +909,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -971,6 +1001,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       responses:
         '200':
           description: 续期已计划
@@ -1008,6 +1041,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -1046,6 +1082,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -1127,6 +1166,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -1168,6 +1210,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       responses:
         '200':
           description: "已取消"
@@ -1199,6 +1244,8 @@ paths:
           AccessToken: []
       x-sdkwork-idempotent: true
       x-sdkwork-permission: deploy.artifacts.write
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -1358,6 +1405,9 @@ paths:
       security:
         - AuthToken: []
           AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:

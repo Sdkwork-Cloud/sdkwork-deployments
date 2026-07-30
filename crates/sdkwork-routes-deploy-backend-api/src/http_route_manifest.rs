@@ -32,7 +32,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/backend/v3/api/nginx/configs/{configId}/validate",
         "nginx",
         "configs.validate",
-    ).with_required_permission("deploy.configs.write"),
+    ).with_required_permission("deploy.configs.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/nginx/configs/{configId}/deploy",

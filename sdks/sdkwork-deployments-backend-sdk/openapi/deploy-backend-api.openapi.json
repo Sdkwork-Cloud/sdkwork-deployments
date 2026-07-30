@@ -133,6 +133,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -183,8 +189,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.configs.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.configs.write"
       }
     },
     "/backend/v3/api/nginx/configs/{configId}": {
@@ -362,6 +367,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "responses": {
           "200": {
             "description": "校验结果",
@@ -429,6 +440,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "responses": {
           "200": {
             "description": "部署成功",
@@ -479,8 +496,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.configs.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.configs.write"
       }
     },
     "/backend/v3/api/nginx/reload": {
@@ -494,6 +510,12 @@
           {
             "AuthToken": [],
             "AccessToken": []
+          }
+        ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
           }
         ],
         "responses": {
@@ -536,8 +558,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.runtime.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.runtime.write"
       }
     },
     "/backend/v3/api/nginx/status": {
@@ -679,6 +700,12 @@
             "AccessToken": []
           }
         ],
+        "x-sdkwork-idempotent": true,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyParam"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -729,8 +756,7 @@
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.servers.write",
-        "x-sdkwork-idempotent": true
+        "x-sdkwork-permission": "deploy.servers.write"
       }
     },
     "/backend/v3/api/audit_logs": {
@@ -858,6 +884,18 @@
       }
     },
     "parameters": {
+      "IdempotencyKeyParam": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "Stable command identity. Reuse with a different request is rejected.",
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9._:-]+$"
+        }
+      },
       "PageParam": {
         "name": "page",
         "in": "query",

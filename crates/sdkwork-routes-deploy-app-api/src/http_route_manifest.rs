@@ -38,7 +38,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/sites/{siteId}/activate",
         "site",
         "sites.activate",
-    ).with_required_permission("deploy.sites.write"),
+    ).with_required_permission("deploy.sites.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Put,
         "/app/v3/api/sites/{siteId}/composition",
@@ -50,7 +50,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/sites/{siteId}/pause",
         "site",
         "sites.pause",
-    ).with_required_permission("deploy.sites.write"),
+    ).with_required_permission("deploy.sites.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/app/v3/api/sites/{siteId}/domains",
@@ -164,13 +164,13 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/certificates/{certificateId}/renew",
         "certificate",
         "certificates.renew",
-    ).with_required_permission("deploy.certificates.write"),
+    ).with_required_permission("deploy.certificates.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/app/v3/api/certificates/upload",
         "certificate",
         "certificates.upload",
-    ).with_required_permission("deploy.certificates.write"),
+    ).with_required_permission("deploy.certificates.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/app/v3/api/upload_sessions",
@@ -188,13 +188,13 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/upload_sessions/{uploadSessionId}/complete",
         "uploadSession",
         "uploadSessions.complete",
-    ).with_required_permission("deploy.uploadSessions.write"),
+    ).with_required_permission("deploy.uploadSessions.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/app/v3/api/upload_sessions/{uploadSessionId}/cancel",
         "uploadSession",
         "uploadSessions.cancel",
-    ).with_required_permission("deploy.uploadSessions.write"),
+    ).with_required_permission("deploy.uploadSessions.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/app/v3/api/artifacts",
