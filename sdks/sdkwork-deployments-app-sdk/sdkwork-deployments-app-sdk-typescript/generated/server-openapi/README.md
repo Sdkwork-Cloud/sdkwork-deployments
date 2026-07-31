@@ -58,8 +58,8 @@ const client = new SdkworkDeployAppClient({
 
 ## API Modules
 
-- `client.site` - site API
 - `client.domain` - domain API
+- `client.site` - site API
 - `client.deployment` - deployment API
 - `client.release` - release API
 - `client.envVariable` - env_variable API
@@ -69,6 +69,19 @@ const client = new SdkworkDeployAppClient({
 - `client.monitor` - monitor API
 
 ## Usage Examples
+
+### domain
+
+```typescript
+// List root domain zones
+const params = {
+  page: 1,
+  page_size: 2,
+  status: 'ACTIVE',
+  keyword: 'keyword',
+};
+const result = await client.domain.domainZones.list(params);
+```
 
 ### site
 
@@ -82,18 +95,6 @@ const params = {
   keyword: 'keyword',
 };
 const result = await client.site.list(params);
-```
-
-### domain
-
-```typescript
-// 获取站点域名列表
-const siteId = '1';
-const params = {
-  page: 1,
-  page_size: 2,
-};
-const result = await client.domain.sites.domains.list(siteId, params);
 ```
 
 ### deployment
@@ -146,17 +147,9 @@ const result = await client.certificate.list(params);
 ### upload_session
 
 ```typescript
-// 创建 Drive-backed 包上传会话
-const body = {
-  siteId: 'siteId',
-  packageType: 1,
-  fileName: 'fileName',
-  contentType: 'contentType',
-  contentLength: 1,
-  checksum: 'checksum',
-  idempotencyKey: 'idempotencyKey',
-};
-const result = await client.uploadSession.create(body);
+// 获取上传会话
+const uploadSessionId = '1';
+const result = await client.uploadSession.retrieve(uploadSessionId);
 ```
 
 ### artifact

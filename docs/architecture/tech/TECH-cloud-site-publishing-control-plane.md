@@ -186,10 +186,10 @@ provider versions/generations.
 
 ## 4. Portable Database Contract
 
-This section defines the portable contract. The prelaunch PostgreSQL and SQLite baselines now own
-the Site composition, revision, Node target, and runtime assignment tables described below. TLS,
-entitlement, usage, observation projection, RLS, and their repository/API implementations remain
-open and must not be inferred from the implemented subset. All runtime business tables use
+This section defines the PostgreSQL contract. The prelaunch baseline owns the domain Zone,
+hostname, certificate lifecycle, Site composition, revision, Node target, runtime assignment, and
+TLS workflow tables described below. Provider workers, entitlement, usage, RLS, and production
+observation evidence remain gated and must not be inferred from schema presence. All runtime business tables use
 SDKWork-generated `BIGINT id`, stable `uuid`, tenant scope, audit timestamps/actors, lifecycle state,
 and optimistic `version` as required by `DATABASE_SPEC.md`.
 
@@ -236,19 +236,16 @@ Unique/index contract: `(tenant_id, slug)`, `(tenant_id, site_status, updated_at
 revision lookup. Existing numeric `site_type`/`status` require expand-and-contract mapping rather
 than silent reinterpretation.
 
-#### `deploy_domain`
+#### `deploy_dns_zone` And `deploy_domain`
 
-Purpose: globally unique normalized domain ownership and verification aggregate, separate from where
-the domain is mounted.
+`deploy_dns_zone` is the explicit tenant-owned root-domain inventory (`apex_hostname`, display and
+DNS-provider metadata, status). `deploy_domain` is a normalized exact or wildcard hostname under a
+Zone (`zone_id`, `hostname_ascii`, `hostname_type`, verification state, lifecycle state). Neither
+table owns a Site. `deploy_domain_verification` stores expiring proof attempts and observed digests.
 
-Specific columns: `hostname_ascii`, `hostname_display`, `domain_type` (`SYSTEM`, `CUSTOM`,
-`WILDCARD`), `verification_status`, `verification_method`, `verification_token_hash`,
-`verification_expires_at`, `verified_at`, `last_revalidated_at`, `takeover_hold_until`,
-`dns_observation_json`, and `status_reason_code`.
-
-Unique/index contract: globally unique active `hostname_ascii`; tenant/status/updated list; expiry
-and revalidation worker indexes. TXT values and DNS credentials are never stored as reusable secret
-material.
+Unique/index contract: globally unique active apex and hostname values; tenant/status/updated lists;
+Zone-scoped hostname paging; verification due indexes. Plaintext proof is returned only on attempt
+creation. DNS credentials and reusable proof values are never stored in ordinary columns.
 
 #### `deploy_deployment`
 
@@ -318,15 +315,14 @@ Unique active `(variant_id, url_prefix)`; lookup index `(variant_id, mount_statu
 
 | Column | Contract |
 | --- | --- |
-| `site_id`, `domain_id` | Site/domain ownership |
+| `site_id`, `domain_id` | association between independently owned Site and verified hostname |
 | `hostname_ascii` | denormalized immutable comparison key for bounded hot lookup |
 | `path_prefix` | normalized binding prefix |
-| `binding_type` | `SYSTEM`, `CUSTOM`, `WILDCARD`, `PREVIEW` |
-| `binding_role` | `PRIMARY`, `ALIAS`, `REDIRECT` |
+| `binding_key` | stable Site-local identity |
+| `action_type`, `is_canonical` | `SERVE` or `REDIRECT`; at most one active canonical binding per environment |
 | `forced_variant_id` | nullable Site-owned Variant |
 | `default_variant_id` | nullable Binding-specific default |
-| `redirect_binding_id` | nullable target for alias redirect |
-| `tls_policy_id` | nullable while draft; required for active HTTPS |
+| `redirect_scheme`, `redirect_hostname`, `redirect_path_prefix`, `redirect_status_code` | bounded redirect target |
 | `binding_status` | pending/verified/active/paused/failed/archived |
 | `verified_at`, `activated_at` | state evidence |
 
@@ -403,24 +399,23 @@ EAB secrets are secret references only.
 
 #### `deploy_certificate`
 
-Columns: `certificate_name`, `certificate_source`, `certificate_mode`, `key_algorithm`,
-`current_version_id`, `desired_version_id`, `certificate_status`, `not_before`, `not_after`,
-`renewal_state`, `next_renewal_at`, `last_renewal_at`, `failure_count`, `last_error_code`,
-`issuer_name`, and audit/version fields. Existing certificate rows migrate to this aggregate without
-copying plaintext private keys.
+Lifecycle aggregate columns: `cert_name`, `certificate_source`, `ca_profile`,
+`preferred_key_algorithm`, `auto_renew`, `renewal_status`, `status`, `desired_version_id`,
+`current_version_id`, idempotency/request digest, and audit/version fields. It contains no Site,
+hostname, PEM, filesystem path, or private-key column.
 
-#### `deploy_certificate_domain`
+#### `deploy_certificate_identifier`
 
-Columns: `certificate_id`, `domain_id`, `hostname_ascii`, `san_position`, `is_common_name`,
-`coverage_status`, and timestamps. Unique `(certificate_id, hostname_ascii)`; reverse index supports
-domain coverage lookup.
+Many-to-many coverage rows contain `certificate_id`, `domain_id`, `identifier_type`,
+`hostname_ascii`, and `position`. Unique certificate/hostname and certificate/position constraints
+prevent duplicate SAN intent; a tenant/domain/certificate reverse index supports coverage lookup.
 
 #### `deploy_certificate_version`
 
-Immutable columns: `certificate_id`, `version_no`, `certificate_secret_ref`, `private_key_secret_ref`,
-`chain_secret_ref`, `leaf_sha256`, `spki_sha256`, `serial_number_hash`, `issuer_name`, `not_before`,
-`not_after`, `key_algorithm`, `source_order_id`, `validation_status`, and `created_at`. Secret values
-are never returned through list APIs.
+Immutable columns include certificate/version identity, serial/fingerprint/SPKI/chain digests,
+issuer, subject, key algorithm, validity, `secret_bundle_ref`, source order, status, actor, and
+creation time. One opaque immutable bundle reference replaces separate certificate/key/path fields;
+secret values are never returned through list APIs.
 
 #### `deploy_certificate_order`
 
@@ -431,16 +426,16 @@ secret-referenced as classified by the ACME adapter.
 
 #### `deploy_certificate_challenge`
 
-Columns: `order_id`, `domain_id`, `challenge_type`, `challenge_status`, `token_hash`,
-`key_authorization_secret_ref`, `dns_provider_binding_ref`, `dns_record_name`, `dns_value_hash`,
-`presented_at`, `validated_at`, `cleanup_at`, `next_attempt_at`, and `last_error_code`. Wildcard rows
-must use `DNS01`.
+Columns: `order_id`, `identifier_id`, `challenge_type`, proof digest/optional secret reference,
+presentation reference, status, bounded attempts, retry/check/validation times, and error code.
+Wildcard identifiers must use `DNS_01`.
 
-#### `deploy_certificate_target_observation`
+#### `deploy_listener_certificate_binding` And `deploy_tls_target_observation`
 
-Columns: `certificate_id`, `certificate_version_id`, `target_uuid`, `region`,
-`observed_leaf_sha256`, `observed_spki_sha256`, `sni_probe_status`, `loaded_at`, `last_seen_at`, and
-`last_error_code`. Unique `(certificate_version_id, target_uuid)`.
+Listener bindings associate a Site route with certificate/version and key algorithm. The active
+unique `(site_binding_id, key_algorithm)` constraint permits parallel RSA/ECDSA selection while
+preventing ambiguity. TLS observations retain generation-fenced received/material/loaded/served/
+public-verified or failed evidence with bounded reason and fingerprint fields.
 
 ### 4.6 Entitlement And Usage Read Models
 
@@ -735,7 +730,7 @@ an admin must not submit unvalidated provider identifiers on behalf of a tenant.
 Target resource groups as the remaining product surface is implemented:
 
 - app API: `sites`, `siteResources`, `siteVariants`, `siteVariantRules`, `siteMounts`,
-  `siteBindings`, `domains`, `tlsPolicies`, `certificates`, `siteRevisions`, `siteAnalytics`,
+  `siteBindings`, `domainZones`, `domainHostnames`, `tlsPolicies`, `certificates`, `siteRevisions`, `siteAnalytics`,
   `siteUsage`, and validation/preview/activation commands;
 - backend API: tenant publishing administration, domain conflicts/holds, certificate orders and
   challenges, runtime revisions/targets, provider health, entitlement projections, metering
@@ -867,8 +862,10 @@ Commercial GA requires:
    route/provider-scoped invalidation against opaque WebsiteRoot/WikiPublication references.
 4. Completed: cloud artifacts exclude Web Server standalone Site/domain/TLS management and consume
    only Deploy-owned immutable assignments; no compatibility import or dual write exists.
-5. Implement Deploy cloud certificate secret custody, ACME issue/renew/distribute/SNI verification, and TLS
-   snapshot activation.
+5. Completed contract/schema foundation: root-domain and hostname APIs, Site/hostname and
+   certificate/hostname many-to-many relations, immutable secret-bundle versions, TLS workflow
+   tables, OpenAPI materialization, generated SDKs, and PostgreSQL integration coverage. Remaining:
+   provider-backed custody, ACME issue/renew/distribute/SNI verification, and TLS activation.
 6. Add tenant console, source-product views, and platform admin views through generated SDKs.
 7. Add entitlement, usage, abuse, support, and incident workflows.
 8. Run pilot, security, load, recovery, renewal, reconciliation, and staged GA gates.

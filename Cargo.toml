@@ -31,7 +31,7 @@ dotenvy = "0.15"
 http = "1.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite", "postgres", "any", "migrate", "chrono", "json"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "postgres", "migrate", "chrono", "json"] }
 thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "time"] }
 tower = { version = "0.5", features = ["util"] }

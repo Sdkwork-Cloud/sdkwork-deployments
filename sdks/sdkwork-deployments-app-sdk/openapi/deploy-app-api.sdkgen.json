@@ -32,6 +32,12 @@
         "tags": [
           "domain"
         ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
         "parameters": [
           {
             "$ref": "#/components/parameters/PageParam"
@@ -125,6 +131,12 @@
         "tags": [
           "domain"
         ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
         "x-sdkwork-idempotent": true,
         "parameters": [
           {
@@ -216,6 +228,12 @@
         "tags": [
           "domain"
         ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -273,6 +291,12 @@
         "summary": "Update a root domain zone",
         "tags": [
           "domain"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
         ],
         "requestBody": {
           "required": true,
@@ -352,6 +376,12 @@
         "tags": [
           "domain"
         ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
         "responses": {
           "204": {
             "description": "Deleted"
@@ -396,6 +426,12 @@
         "summary": "List hostnames in a root domain zone",
         "tags": [
           "domain"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
         ],
         "parameters": [
           {
@@ -470,6 +506,12 @@
         "summary": "Create a hostname in a root domain zone",
         "tags": [
           "domain"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
         ],
         "x-sdkwork-idempotent": true,
         "parameters": [
@@ -575,6 +617,12 @@
         "tags": [
           "domain"
         ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -633,6 +681,12 @@
         "tags": [
           "domain"
         ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
         "responses": {
           "204": {
             "description": "Deleted"
@@ -680,6 +734,12 @@
         "summary": "Verify domain hostname ownership",
         "tags": [
           "domain"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
         ],
         "x-sdkwork-idempotent": true,
         "parameters": [
@@ -1495,382 +1555,6 @@
           },
           "401": {
             "description": "未认证",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "资源不存在",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-owner": "sdkwork-deploy",
-        "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.sites.write"
-      }
-    },
-    "/app/v3/api/sites/{siteId}/domains": {
-      "parameters": [
-        {
-          "$ref": "#/components/parameters/SiteIdParam"
-        }
-      ],
-      "get": {
-        "operationId": "sites.domains.list",
-        "summary": "获取站点域名列表",
-        "tags": [
-          "domain"
-        ],
-        "security": [
-          {
-            "AuthToken": [],
-            "AccessToken": []
-          }
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/PageParam"
-          },
-          {
-            "$ref": "#/components/parameters/PageSizeParam"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SdkWorkApiResponse"
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "data"
-                      ],
-                      "properties": {
-                        "data": {
-                          "type": "object",
-                          "additionalProperties": false,
-                          "required": [
-                            "items",
-                            "pageInfo"
-                          ],
-                          "properties": {
-                            "items": {
-                              "type": "array",
-                              "items": {
-                                "$ref": "#/components/schemas/DomainResponse"
-                              }
-                            },
-                            "pageInfo": {
-                              "$ref": "#/components/schemas/PageInfo"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "未认证",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-owner": "sdkwork-deploy",
-        "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.sites.write"
-      },
-      "post": {
-        "operationId": "sites.domains.create",
-        "summary": "绑定域名",
-        "tags": [
-          "domain"
-        ],
-        "security": [
-          {
-            "AuthToken": [],
-            "AccessToken": []
-          }
-        ],
-        "x-sdkwork-idempotent": true,
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/IdempotencyKeyParam"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateDomainRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "创建成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SdkWorkApiResponse"
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "data"
-                      ],
-                      "properties": {
-                        "data": {
-                          "type": "object",
-                          "required": [
-                            "item"
-                          ],
-                          "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/DomainResponse"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "未认证",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "资源冲突",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-owner": "sdkwork-deploy",
-        "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.sites.write"
-      }
-    },
-    "/app/v3/api/sites/{siteId}/domains/{domainId}": {
-      "parameters": [
-        {
-          "$ref": "#/components/parameters/SiteIdParam"
-        },
-        {
-          "$ref": "#/components/parameters/DomainIdParam"
-        }
-      ],
-      "get": {
-        "operationId": "sites.domains.retrieve",
-        "summary": "获取域名详情",
-        "tags": [
-          "domain"
-        ],
-        "security": [
-          {
-            "AuthToken": [],
-            "AccessToken": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SdkWorkApiResponse"
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "data"
-                      ],
-                      "properties": {
-                        "data": {
-                          "type": "object",
-                          "required": [
-                            "item"
-                          ],
-                          "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/DomainResponse"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "资源不存在",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-owner": "sdkwork-deploy",
-        "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.sites.write"
-      },
-      "delete": {
-        "operationId": "sites.domains.delete",
-        "summary": "解绑域名",
-        "tags": [
-          "domain"
-        ],
-        "security": [
-          {
-            "AuthToken": [],
-            "AccessToken": []
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "删除成功"
-          },
-          "404": {
-            "description": "资源不存在",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-owner": "sdkwork-deploy",
-        "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.sites.write"
-      }
-    },
-    "/app/v3/api/sites/{siteId}/domains/{domainId}/verify": {
-      "parameters": [
-        {
-          "$ref": "#/components/parameters/SiteIdParam"
-        },
-        {
-          "$ref": "#/components/parameters/DomainIdParam"
-        }
-      ],
-      "post": {
-        "operationId": "sites.domains.verify",
-        "summary": "验证域名所有权",
-        "description": "查询 _sdkwork-verification.<hostname> DNS TXT 记录。仅当记录值与响应 token 完全一致时才激活域名；未观察到证明时返回 verified=false，调用方配置 TXT 后可幂等重试。",
-        "tags": [
-          "domain"
-        ],
-        "security": [
-          {
-            "AuthToken": [],
-            "AccessToken": []
-          }
-        ],
-        "x-sdkwork-idempotent": true,
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/IdempotencyKeyParam"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "验证成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SdkWorkApiResponse"
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "data"
-                      ],
-                      "properties": {
-                        "data": {
-                          "type": "object",
-                          "required": [
-                            "item"
-                          ],
-                          "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/DomainVerifyResponse"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "请求参数错误",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2879,7 +2563,7 @@
       "delete": {
         "operationId": "certificates.delete",
         "summary": "撤销证书",
-        "description": "将证书标记为已撤销；私钥与证书文件仍由 Drive 生命周期管理。",
+        "description": "撤销证书生命周期聚合并停止自动续期；密钥材料由 Secret Manager/KMS 生命周期独立管理。",
         "tags": [
           "certificate"
         ],
@@ -2931,7 +2615,7 @@
       "post": {
         "operationId": "certificates.renew",
         "summary": "计划托管证书续期",
-        "description": "仅适用于 Let's Encrypt 托管证书（certType=1）。将 renewal_status 置为已计划；\nACME 自动化 worker 尚未上线时不会立即签发新证书。自定义证书须通过 certificates.upload 替换。\n",
+        "description": "仅适用于已激活且启用自动续期的托管证书；命令将续期状态原子调整为 PLANNED，由 ACME worker 领取。",
         "tags": [
           "certificate"
         ],
@@ -2993,99 +2677,6 @@
           },
           "404": {
             "description": "资源不存在",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "校验错误",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
-                }
-              }
-            }
-          }
-        },
-        "x-sdkwork-api-surface": "app-api",
-        "x-sdkwork-owner": "sdkwork-deploy",
-        "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.certificates.write"
-      }
-    },
-    "/app/v3/api/certificates/upload": {
-      "post": {
-        "operationId": "certificates.upload",
-        "summary": "从已完成的 Drive 上传会话注册自定义 TLS 证书",
-        "description": "客户端须先通过 uploadSessions 上传并完成证书 PEM（packageType=6）\n与私钥 PEM（packageType=7），再调用本接口绑定元数据。响应不包含私钥内容。\n",
-        "tags": [
-          "certificate"
-        ],
-        "security": [
-          {
-            "AuthToken": [],
-            "AccessToken": []
-          }
-        ],
-        "x-sdkwork-idempotent": true,
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/IdempotencyKeyParam"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UploadCustomCertificateRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "证书已注册",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "allOf": [
-                    {
-                      "$ref": "#/components/schemas/SdkWorkApiResponse"
-                    },
-                    {
-                      "type": "object",
-                      "required": [
-                        "data"
-                      ],
-                      "properties": {
-                        "data": {
-                          "type": "object",
-                          "required": [
-                            "item"
-                          ],
-                          "properties": {
-                            "item": {
-                              "$ref": "#/components/schemas/CertificateResponse"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "资源冲突",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3931,15 +3522,6 @@
       },
       "DomainHostnameIdParam": {
         "name": "hostnameId",
-        "in": "path",
-        "required": true,
-        "schema": {
-          "type": "string",
-          "format": "uuid"
-        }
-      },
-      "DomainIdParam": {
-        "name": "domainId",
         "in": "path",
         "required": true,
         "schema": {
@@ -5120,80 +4702,6 @@
           }
         }
       },
-      "CreateDomainRequest": {
-        "type": "object",
-        "required": [
-          "hostname"
-        ],
-        "properties": {
-          "hostname": {
-            "type": "string",
-            "maxLength": 255
-          },
-          "isPrimary": {
-            "type": "boolean",
-            "default": false
-          },
-          "sslEnabled": {
-            "type": "boolean",
-            "default": true
-          },
-          "sslProvider": {
-            "type": "string",
-            "enum": [
-              "letsencrypt",
-              "custom",
-              "none"
-            ]
-          }
-        }
-      },
-      "DomainResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "hostname": {
-            "type": "string"
-          },
-          "isPrimary": {
-            "type": "boolean"
-          },
-          "isVerified": {
-            "type": "boolean"
-          },
-          "sslEnabled": {
-            "type": "boolean"
-          },
-          "sslProvider": {
-            "type": "string"
-          },
-          "status": {
-            "type": "integer"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "DomainPage": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DomainResponse"
-            }
-          },
-          "total": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
       "DomainVerifyResponse": {
         "type": "object",
         "required": [
@@ -5390,60 +4898,59 @@
       "CreateCertificateRequest": {
         "type": "object",
         "required": [
-          "certName"
-        ],
-        "properties": {
-          "certName": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "siteId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "domainId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        }
-      },
-      "UploadCustomCertificateRequest": {
-        "type": "object",
-        "required": [
           "certName",
-          "certificateUploadSessionId",
-          "privateKeyUploadSessionId",
-          "idempotencyKey"
+          "domainIds"
         ],
         "properties": {
           "certName": {
             "type": "string",
+            "minLength": 1,
             "maxLength": 200
           },
-          "siteId": {
-            "type": "string",
-            "format": "uuid"
+          "domainIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           },
-          "domainId": {
+          "caProfile": {
             "type": "string",
-            "format": "uuid"
+            "enum": [
+              "LETS_ENCRYPT_STAGING",
+              "LETS_ENCRYPT_PRODUCTION"
+            ],
+            "default": "LETS_ENCRYPT_PRODUCTION"
           },
-          "certificateUploadSessionId": {
+          "preferredKeyAlgorithm": {
             "type": "string",
-            "format": "uuid"
-          },
-          "privateKeyUploadSessionId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "idempotencyKey": {
-            "type": "string",
-            "maxLength": 128
+            "enum": [
+              "RSA",
+              "ECDSA"
+            ],
+            "default": "ECDSA"
           }
         }
       },
       "CertificateResponse": {
         "type": "object",
+        "required": [
+          "id",
+          "certName",
+          "certificateSource",
+          "caProfile",
+          "preferredKeyAlgorithm",
+          "identifiers",
+          "autoRenew",
+          "renewalStatus",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "version"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -5452,8 +4959,38 @@
           "certName": {
             "type": "string"
           },
-          "certType": {
-            "type": "integer"
+          "certificateSource": {
+            "type": "string",
+            "enum": [
+              "MANAGED",
+              "CUSTOM"
+            ]
+          },
+          "caProfile": {
+            "type": "string",
+            "enum": [
+              "LETS_ENCRYPT_STAGING",
+              "LETS_ENCRYPT_PRODUCTION",
+              "CUSTOM"
+            ]
+          },
+          "preferredKeyAlgorithm": {
+            "type": "string",
+            "enum": [
+              "RSA",
+              "ECDSA"
+            ]
+          },
+          "identifiers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "hostname"
+            }
+          },
+          "currentVersionId": {
+            "type": "string",
+            "format": "uuid"
           },
           "issuer": {
             "type": "string"
@@ -5469,12 +5006,37 @@
           "autoRenew": {
             "type": "boolean"
           },
+          "renewalStatus": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "PLANNED",
+              "PROCESSING",
+              "FAILED"
+            ]
+          },
           "status": {
-            "type": "integer"
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ISSUING",
+              "ACTIVE",
+              "EXPIRED",
+              "FAILED",
+              "REVOKED"
+            ]
           },
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
           }
         }
       },

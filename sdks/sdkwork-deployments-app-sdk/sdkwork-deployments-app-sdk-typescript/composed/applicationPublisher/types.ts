@@ -71,6 +71,7 @@ export type ApplicationPublishDeployment = Omit<
 >;
 
 export interface ApplicationPublishIdempotencyKeys {
+  site?: string;
   artifact?: string;
   release?: string;
   deployment?: string;

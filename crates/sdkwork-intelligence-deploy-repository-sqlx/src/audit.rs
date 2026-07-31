@@ -4,7 +4,7 @@ use sdkwork_deploy_contract::{
 use sdkwork_intelligence_deploy_service::repository::InsertAuditLogCommand;
 use sqlx::{postgres::PgRow, Row};
 
-use crate::support::{new_uuid, next_id, now_rfc3339, pagination, store_error};
+use crate::support::{datetime_from_row, new_uuid, next_id, now_rfc3339, pagination, store_error};
 use crate::DeployRepository;
 
 impl DeployRepository {
@@ -113,6 +113,6 @@ fn map_audit_log_row(row: &PgRow) -> Result<AuditLogResponse, sqlx::Error> {
         id: row.try_get("uuid")?,
         action: row.try_get("action")?,
         resource: row.try_get("target_type")?,
-        created_at: row.try_get("created_at")?,
+        created_at: datetime_from_row(row, "created_at")?,
     })
 }

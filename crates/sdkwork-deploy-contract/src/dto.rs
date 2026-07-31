@@ -146,44 +146,6 @@ pub struct CreateDomainHostnameRequest {
     pub relative_name: String,
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct DomainResponse {
-    pub id: String,
-    pub hostname: String,
-    #[serde(rename = "isPrimary")]
-    pub is_primary: bool,
-    #[serde(rename = "isVerified")]
-    pub is_verified: bool,
-    #[serde(rename = "sslEnabled")]
-    pub ssl_enabled: bool,
-    #[serde(rename = "sslProvider", skip_serializing_if = "Option::is_none")]
-    pub ssl_provider: Option<String>,
-    pub status: i32,
-    #[serde(rename = "createdAt")]
-    pub created_at: String,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct DomainPage {
-    pub items: Vec<DomainResponse>,
-    pub total: i64,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CreateDomainRequest {
-    pub hostname: String,
-    #[serde(rename = "isPrimary", default)]
-    pub is_primary: bool,
-    #[serde(rename = "sslEnabled", default = "default_true")]
-    pub ssl_enabled: bool,
-    #[serde(rename = "sslProvider", default)]
-    pub ssl_provider: Option<String>,
-}
-
-fn default_true() -> bool {
-    true
-}
-
 pub(crate) fn default_page() -> i32 {
     1
 }
@@ -279,61 +241,66 @@ pub struct CertificateResponse {
     pub id: String,
     #[serde(rename = "certName")]
     pub cert_name: String,
-    #[serde(rename = "certType", skip_serializing_if = "Option::is_none")]
-    pub cert_type: Option<i32>,
+    #[serde(rename = "certificateSource")]
+    pub certificate_source: String,
+    #[serde(rename = "caProfile")]
+    pub ca_profile: String,
+    #[serde(rename = "preferredKeyAlgorithm")]
+    pub preferred_key_algorithm: String,
+    pub identifiers: Vec<String>,
+    #[serde(rename = "currentVersionId", skip_serializing_if = "Option::is_none")]
+    pub current_version_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub issuer: Option<String>,
     #[serde(rename = "notBefore", skip_serializing_if = "Option::is_none")]
     pub not_before: Option<String>,
     #[serde(rename = "notAfter", skip_serializing_if = "Option::is_none")]
     pub not_after: Option<String>,
-    #[serde(rename = "autoRenew", skip_serializing_if = "Option::is_none")]
-    pub auto_renew: Option<bool>,
-    pub status: i32,
+    #[serde(rename = "autoRenew")]
+    pub auto_renew: bool,
+    #[serde(rename = "renewalStatus")]
+    pub renewal_status: String,
+    pub status: String,
     #[serde(rename = "createdAt")]
     pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+    pub version: String,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CertificatePage {
     pub items: Vec<CertificateResponse>,
     pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CreateCertificateRequest {
     #[serde(rename = "certName")]
     pub cert_name: String,
-    #[serde(rename = "siteId", default)]
-    pub site_id: Option<String>,
-    #[serde(rename = "domainId", default)]
-    pub domain_id: Option<String>,
+    #[serde(rename = "domainIds")]
+    pub domain_ids: Vec<String>,
+    #[serde(rename = "caProfile", default = "default_certificate_ca_profile")]
+    pub ca_profile: String,
+    #[serde(
+        rename = "preferredKeyAlgorithm",
+        default = "default_certificate_key_algorithm"
+    )]
+    pub preferred_key_algorithm: String,
 }
 
-/// Registers a custom TLS certificate from completed Drive upload sessions.
-/// Private key material is referenced by Drive node id only; it is never returned on the wire.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct UploadCustomCertificateRequest {
-    #[serde(rename = "certName")]
-    pub cert_name: String,
-    #[serde(rename = "siteId", default)]
-    pub site_id: Option<String>,
-    #[serde(rename = "domainId", default)]
-    pub domain_id: Option<String>,
-    #[serde(rename = "certificateUploadSessionId")]
-    pub certificate_upload_session_id: String,
-    #[serde(rename = "privateKeyUploadSessionId")]
-    pub private_key_upload_session_id: String,
-    #[serde(rename = "idempotencyKey")]
-    pub idempotency_key: String,
+fn default_certificate_ca_profile() -> String {
+    "LETS_ENCRYPT_PRODUCTION".to_owned()
 }
 
-pub const UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE: i32 = 6;
-pub const UPLOAD_PACKAGE_TYPE_TLS_PRIVATE_KEY: i32 = 7;
+fn default_certificate_key_algorithm() -> String {
+    "ECDSA".to_owned()
+}
 
-/// Returns true when the upload session package type produces a deployable artifact (not TLS material).
 pub fn is_deploy_package_artifact_type(package_type: i32) -> bool {
-    (1..=UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE - 1).contains(&package_type)
+    (1..=5).contains(&package_type)
 }
 
 pub const ARTIFACT_STATUS_ACTIVE: i32 = 1;
@@ -432,16 +399,11 @@ pub struct CreateReleaseRequest {
 pub const UPLOAD_SESSION_STATUS_COMPLETED: i32 = 1;
 pub const UPLOAD_SESSION_STATUS_CANCELLED: i32 = 2;
 
-pub const CERTIFICATE_TYPE_LETS_ENCRYPT: i32 = 1;
-pub const CERTIFICATE_TYPE_CUSTOM: i32 = 2;
-
-pub const CERTIFICATE_STATUS_PENDING: i32 = 0;
-pub const CERTIFICATE_STATUS_ACTIVE: i32 = 1;
-pub const CERTIFICATE_STATUS_EXPIRED: i32 = 2;
-pub const CERTIFICATE_STATUS_REVOKED: i32 = 3;
-
-pub const CERTIFICATE_RENEWAL_STATUS_NONE: i32 = 0;
-pub const CERTIFICATE_RENEWAL_STATUS_PLANNED: i32 = 1;
+pub const CERTIFICATE_SOURCE_MANAGED: &str = "MANAGED";
+pub const CERTIFICATE_STATUS_PENDING: &str = "PENDING";
+pub const CERTIFICATE_STATUS_REVOKED: &str = "REVOKED";
+pub const CERTIFICATE_RENEWAL_STATUS_NONE: &str = "NONE";
+pub const CERTIFICATE_RENEWAL_STATUS_PLANNED: &str = "PLANNED";
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct HealthCheckResponse {

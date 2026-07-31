@@ -2,7 +2,7 @@
 
 Status: active
 Owner: SDKWork maintainers
-Updated: 2026-07-24
+Updated: 2026-07-30
 Specs: ARCHITECTURE_DECISION_SPEC.md, DOCUMENTATION_SPEC.md, DOMAIN_SPEC.md, DATABASE_SPEC.md,
 DEPLOYMENT_SPEC.md, SECURITY_SPEC.md
 
@@ -21,7 +21,7 @@ Architecture detail lives in the linked TECH shards above. The cloud publishing 
   authenticated runtime observations, immutable convergence evidence, strict all-target quorum, and
   current-revision advancement are implemented. The Deployments PC Console/backend-admin host and
   Drive-backed artifact registration flow are implemented. External public probes, cloud TLS
-  automation, metering, and production evidence remain gated by the linked ADR, prelaunch
+  provider automation, metering, and production evidence remain gated by the linked ADR, prelaunch
   convergence record, and readiness review.
 
 
@@ -59,20 +59,24 @@ implementation.
   creation reference immutable Deploy identities rather than upload URLs.
 - Site pause is the reversible application-disable semantic; destructive deletion remains a
   separate confirmed operation.
+- `deploy_dns_zone` owns root-domain inventory; `deploy_domain` owns verified hostnames;
+  `deploy_site_binding` is the only Site/hostname association.
+- `deploy_certificate_identifier` provides certificate/hostname many-to-many coverage, and
+  `deploy_listener_certificate_binding` permits parallel RSA/ECDSA versions per listener.
 
 ## 6. Security, Privacy, And Observability
 
 The root creates one TokenManager shared by IAM and authenticated SDK clients. Public runtime
-configuration contains only non-secret base URLs and profile metadata. Custom TLS private-key
-custody remains outside Drive and outside the browser until the review-gated Secret Manager design
-is implemented.
+configuration contains only non-secret base URLs and profile metadata. TLS private-key custody
+remains outside Drive, ordinary SQL columns, API responses, and browsers. Secret Manager/KMS
+absence fails closed; only opaque immutable bundle references may cross the control-plane boundary.
 
 ## 7. Deployment And Runtime Topology
 
 ## 8. Architecture Decision Index
 
 - [ADR-20260721 Unified Cloud Site Publishing Control Plane](../decisions/ADR-20260721-unified-cloud-site-publishing-control-plane.md)
-- [ADR-20260723 Managed Domain And TLS Control Plane](../decisions/ADR-20260723-managed-domain-tls-control-plane.md) - proposed; implementation is review-gated.
+- [ADR-20260723 Managed Domain And TLS Control Plane](../decisions/ADR-20260723-managed-domain-tls-control-plane.md) - accepted; production enablement remains evidence-gated.
 
 ## 9. Verification
 

@@ -1,6 +1,6 @@
 import type { DomainVerifyResponse } from './domain-verify-response';
 
-export interface SitesDomainsVerifyResponse {
+export interface DomainZonesHostnamesVerifyResponse {
   code: 0;
   data: unknown & { item: DomainVerifyResponse; };
   /** Server-owned request correlation id. */

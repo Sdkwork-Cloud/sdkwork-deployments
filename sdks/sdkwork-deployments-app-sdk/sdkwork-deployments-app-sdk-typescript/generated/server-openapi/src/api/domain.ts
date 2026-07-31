@@ -1,15 +1,23 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { CreateDomainRequest, DomainResponse, DomainVerifyResponse, PageInfo } from '../types';
+import type { CreateDomainHostnameRequest, CreateDomainZoneRequest, DomainHostnameResponse, DomainVerifyResponse, DomainZoneResponse, PageInfo, UpdateDomainZoneRequest } from '../types';
 
 
-export interface DomainSitesDomainsListParams {
+export interface DomainDomainZonesHostnamesListParams {
   page?: number;
   pageSize?: number;
 }
 
-export class DomainSitesDomainsApi {
+export interface DomainDomainZonesHostnamesCreateParams {
+  idempotencyKey: string;
+}
+
+export interface DomainDomainZonesHostnamesVerifyParams {
+  idempotencyKey: string;
+}
+
+export class DomainDomainZonesHostnamesApi {
   private client: HttpClient;
 
   constructor(client: HttpClient) {
@@ -17,54 +25,114 @@ export class DomainSitesDomainsApi {
   }
 
 
-/** 获取站点域名列表 */
-  async list(siteId: string, params?: DomainSitesDomainsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: DomainResponse[]; pageInfo: PageInfo; }> {
+/** List hostnames in a root domain zone */
+  async list(zoneId: string, params?: DomainDomainZonesHostnamesListParams, requestOptions?: ApiRequestOptions): Promise<{ items: DomainHostnameResponse[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: DomainResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
+    return this.client.request<{ items: DomainHostnameResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/domain_zones/${serializePathParameter(zoneId, { name: 'zoneId', style: 'simple', explode: false })}/hostnames`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
-/** 绑定域名 */
-  async create(siteId: string, body: CreateDomainRequest, requestOptions?: ApiRequestOptions): Promise<DomainResponse> {
-    return this.client.request<DomainResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json' });
+/** Create a hostname in a root domain zone */
+  async create(zoneId: string, body: CreateDomainHostnameRequest, params: DomainDomainZonesHostnamesCreateParams, requestOptions?: ApiRequestOptions): Promise<DomainHostnameResponse> {
+    const requestHeaders = buildRequestHeaders(
+      {
+        'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
+      },
+      {}
+    );
+    return this.client.request<DomainHostnameResponse>(appApiPath(`/domain_zones/${serializePathParameter(zoneId, { name: 'zoneId', style: 'simple', explode: false })}/hostnames`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
-/** 获取域名详情 */
-  async retrieve(siteId: string, domainId: string, requestOptions?: ApiRequestOptions): Promise<DomainResponse> {
-    return this.client.request<DomainResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains/${serializePathParameter(domainId, { name: 'domainId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
+/** Retrieve a domain hostname */
+  async retrieve(zoneId: string, hostnameId: string, requestOptions?: ApiRequestOptions): Promise<DomainHostnameResponse> {
+    return this.client.request<DomainHostnameResponse>(appApiPath(`/domain_zones/${serializePathParameter(zoneId, { name: 'zoneId', style: 'simple', explode: false })}/hostnames/${serializePathParameter(hostnameId, { name: 'hostnameId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 
-/** 解绑域名 */
-  async delete(siteId: string, domainId: string, requestOptions?: ApiRequestOptions): Promise<void> {
-    return this.client.request<void>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains/${serializePathParameter(domainId, { name: 'domainId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'DELETE' as any });
+/** Delete an unbound domain hostname */
+  async delete(zoneId: string, hostnameId: string, requestOptions?: ApiRequestOptions): Promise<void> {
+    return this.client.request<void>(appApiPath(`/domain_zones/${serializePathParameter(zoneId, { name: 'zoneId', style: 'simple', explode: false })}/hostnames/${serializePathParameter(hostnameId, { name: 'hostnameId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'DELETE' as any });
   }
 
-/** 验证域名所有权 */
-  async verify(siteId: string, domainId: string, requestOptions?: ApiRequestOptions): Promise<DomainVerifyResponse> {
-    return this.client.request<DomainVerifyResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/domains/${serializePathParameter(domainId, { name: 'domainId', style: 'simple', explode: false })}/verify`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any });
+/** Verify domain hostname ownership */
+  async verify(zoneId: string, hostnameId: string, params: DomainDomainZonesHostnamesVerifyParams, requestOptions?: ApiRequestOptions): Promise<DomainVerifyResponse> {
+    const requestHeaders = buildRequestHeaders(
+      {
+        'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
+      },
+      {}
+    );
+    return this.client.request<DomainVerifyResponse>(appApiPath(`/domain_zones/${serializePathParameter(zoneId, { name: 'zoneId', style: 'simple', explode: false })}/hostnames/${serializePathParameter(hostnameId, { name: 'hostnameId', style: 'simple', explode: false })}/verify`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, headers: requestHeaders, sdkworkUnwrapKind: 'item' });
   }
 }
 
-export class DomainSitesApi {
+export interface DomainDomainZonesListParams {
+  page?: number;
+  pageSize?: number;
+  status?: 'ACTIVE' | 'PAUSED';
+  keyword?: string;
+}
+
+export interface DomainDomainZonesCreateParams {
+  idempotencyKey: string;
+}
+
+export class DomainDomainZonesApi {
   private client: HttpClient;
-  public readonly domains: DomainSitesDomainsApi;
+  public readonly hostnames: DomainDomainZonesHostnamesApi;
 
   constructor(client: HttpClient) {
     this.client = client;
-    this.domains = new DomainSitesDomainsApi(client);
+    this.hostnames = new DomainDomainZonesHostnamesApi(client);
   }
 
+
+/** List root domain zones */
+  async list(params?: DomainDomainZonesListParams, requestOptions?: ApiRequestOptions): Promise<{ items: DomainZoneResponse[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
+      { name: 'keyword', value: params?.keyword, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: DomainZoneResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/domain_zones`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+
+/** Define a root domain zone */
+  async create(body: CreateDomainZoneRequest, params: DomainDomainZonesCreateParams, requestOptions?: ApiRequestOptions): Promise<DomainZoneResponse> {
+    const requestHeaders = buildRequestHeaders(
+      {
+        'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
+      },
+      {}
+    );
+    return this.client.request<DomainZoneResponse>(appApiPath(`/domain_zones`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Retrieve a root domain zone */
+  async retrieve(zoneId: string, requestOptions?: ApiRequestOptions): Promise<DomainZoneResponse> {
+    return this.client.request<DomainZoneResponse>(appApiPath(`/domain_zones/${serializePathParameter(zoneId, { name: 'zoneId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+
+/** Update a root domain zone */
+  async update(zoneId: string, body: UpdateDomainZoneRequest, requestOptions?: ApiRequestOptions): Promise<DomainZoneResponse> {
+    return this.client.request<DomainZoneResponse>(appApiPath(`/domain_zones/${serializePathParameter(zoneId, { name: 'zoneId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PATCH' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Delete an empty root domain zone */
+  async delete(zoneId: string, requestOptions?: ApiRequestOptions): Promise<void> {
+    return this.client.request<void>(appApiPath(`/domain_zones/${serializePathParameter(zoneId, { name: 'zoneId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'DELETE' as any });
+  }
 }
 
 export class DomainApi {
   private client: HttpClient;
-  public readonly sites: DomainSitesApi;
+  public readonly domainZones: DomainDomainZonesApi;
 
   constructor(client: HttpClient) {
     this.client = client;
-    this.sites = new DomainSitesApi(client);
+    this.domainZones = new DomainDomainZonesApi(client);
   }
 
 }
@@ -303,4 +371,79 @@ function encodeQueryValue(value: string, allowReserved: boolean): string {
     .replace(/%2C/gi, ',')
     .replace(/%3B/gi, ';')
     .replace(/%3D/gi, '=');
+}
+function buildRequestHeaders(
+  headers: Record<string, HeaderParameterSpec | undefined>,
+  cookies: Record<string, HeaderParameterSpec | undefined> = {},
+): Record<string, string> | undefined {
+  const requestHeaders: Record<string, string> = {};
+
+  for (const [name, parameter] of Object.entries(headers)) {
+    const serialized = serializeParameterValue(parameter);
+    if (serialized !== undefined) {
+      requestHeaders[name] = serialized;
+    }
+  }
+
+  const cookieHeader = buildCookieHeader(cookies);
+  if (cookieHeader) {
+    requestHeaders.Cookie = requestHeaders.Cookie
+      ? `${requestHeaders.Cookie}; ${cookieHeader}`
+      : cookieHeader;
+  }
+
+  return Object.keys(requestHeaders).length > 0 ? requestHeaders : undefined;
+}
+
+interface HeaderParameterSpec {
+  value: unknown;
+  style: string;
+  explode: boolean;
+  contentType?: string;
+}
+
+function buildCookieHeader(cookies: Record<string, HeaderParameterSpec | undefined>): string | undefined {
+  const pairs: string[] = [];
+  for (const [name, parameter] of Object.entries(cookies)) {
+    const serialized = serializeParameterValue(parameter);
+    if (serialized !== undefined) {
+      pairs.push(`${encodeURIComponent(name)}=${encodeURIComponent(serialized)}`);
+    }
+  }
+  return pairs.length > 0 ? pairs.join('; ') : undefined;
+}
+
+function serializeParameterValue(parameter: HeaderParameterSpec | undefined): string | undefined {
+  const value = parameter?.value;
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (parameter?.contentType) {
+    return JSON.stringify(value);
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => serializeHeaderPrimitive(item)).join(',');
+  }
+  if (typeof value === 'object' && value !== null) {
+    return serializeHeaderObject(value as Record<string, unknown>, parameter?.explode === true);
+  }
+  return serializeHeaderPrimitive(value);
+}
+
+function serializeHeaderObject(value: Record<string, unknown>, explode: boolean): string {
+  const entries = Object.entries(value).filter(([, entryValue]) => entryValue !== undefined && entryValue !== null);
+  if (explode) {
+    return entries.map(([key, entryValue]) => `${key}=${serializeHeaderPrimitive(entryValue)}`).join(',');
+  }
+  return entries.flatMap(([key, entryValue]) => [key, serializeHeaderPrimitive(entryValue)]).join(',');
+}
+
+function serializeHeaderPrimitive(value: unknown): string {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  return String(value);
 }

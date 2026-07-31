@@ -1,7 +1,7 @@
 export { BaseApi } from './base';
 export { appApiPath } from './paths';
-export { SiteApi, createSiteApi } from './site';
 export { DomainApi, createDomainApi } from './domain';
+export { SiteApi, createSiteApi } from './site';
 export { DeploymentApi, createDeploymentApi } from './deployment';
 export { ReleaseApi, createReleaseApi } from './release';
 export { EnvVariableApi, createEnvVariableApi } from './env-variable';

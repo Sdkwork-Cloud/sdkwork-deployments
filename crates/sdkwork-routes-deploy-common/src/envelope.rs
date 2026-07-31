@@ -3,7 +3,7 @@
 use sdkwork_deploy_contract::{
     ArtifactPage, ArtifactResponse, AuditLogPage, AuditLogResponse, CertificatePage,
     CertificateResponse, DeploymentPage, DeploymentResponse, DomainHostnamePage,
-    DomainHostnameResponse, DomainPage, DomainResponse, DomainVerifyResponse, DomainZonePage,
+    DomainHostnameResponse, DomainVerifyResponse, DomainZonePage,
     DomainZoneResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
     NginxConfigPage, NginxConfigResponse, NginxReloadResponse, NginxStatusResponse,
     NginxValidateResponse, ReleasePage, ReleaseResponse, ServerPage, ServerResponse, SitePage,
@@ -26,10 +26,6 @@ pub fn domain_zone_page(page: DomainZonePage) -> SdkWorkPageData<DomainZoneRespo
 
 pub fn domain_hostname_page(page: DomainHostnamePage) -> SdkWorkPageData<DomainHostnameResponse> {
     offset_page(page.items, page.page, page.page_size, page.total)
-}
-
-pub fn domain_page(data: DomainPage, page: i32, page_size: i32) -> SdkWorkPageData<DomainResponse> {
-    offset_page(data.items, page, page_size, data.total)
 }
 
 pub fn deployment_page(page: DeploymentPage) -> SdkWorkPageData<DeploymentResponse> {

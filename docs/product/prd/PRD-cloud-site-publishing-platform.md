@@ -76,7 +76,8 @@ products:
 - upload governed multi-format sources and assets to a Wiki source tree and make eligible pages available quickly;
 - bind one or more custom domains;
 - route desktop, mobile, tablet, TV, or bot traffic to different site resources when required;
-- obtain and renew free certificates automatically, or upload managed custom certificates;
+- obtain and renew managed certificates automatically, with reviewed custom secret ingest as a
+  separate future capability;
 - preview, pause, recover, audit, and measure a site without rebuilding its content;
 - buy capacity and features through clear, enforceable entitlements.
 
@@ -232,10 +233,18 @@ a Drive content transaction, not a Deploy Release or a SiteRevision.
 
 ### 6.4 Domains And URL Bindings
 
-A Site may have system domains and one or more custom domains. One verified domain may bind to
-multiple applications through non-overlapping path prefixes, or to one Site whose Variants point to
-different application directories. The same active `(hostname, pathPrefix, environment)` cannot be
-claimed by multiple tenants or Sites.
+Domain management begins with a paginated root-domain Zone inventory, comparable to mature cloud
+DNS consoles. Each row shows apex, verification coverage, hostname count, application binding count,
+certificate count, status, and last update. Selecting the apex opens a dedicated Zone page; it does
+not expand an embedded table or redirect through a Site page. The Zone page owns hostname creation,
+search, verification, pause/resume, binding inspection, certificate coverage, and guarded deletion.
+The row operation menu exposes only state-valid commands: open, edit metadata, pause/resume, copy
+nameservers or verification data, and delete when impact analysis reports zero child references.
+
+A Site may bind one or more verified hostnames through `deploy_site_binding`; a hostname does not own
+a Site. One verified hostname may bind to multiple applications through non-overlapping path
+prefixes, or to one Site whose Variants point to different application directories. The same active
+`(hostname, pathPrefix, environment)` cannot be claimed by multiple tenants or Sites.
 
 Host matching order is exact host, then an explicitly approved wildcard. Path matching is longest
 prefix. IDNA is normalized to ASCII for comparison while the display form is retained for UI.
@@ -290,10 +299,13 @@ inherit public visibility.
 
 ### 6.7 TLS And Certificates
 
-Certificate source types are `ACME_MANAGED`, `CUSTOM`, `SELF_SIGNED`, and `DISABLED`. Supported
-deployment modes are one certificate per domain, shared SAN certificates, and wildcard
-certificates. ACME challenges include HTTP-01, DNS-01, and TLS-ALPN-01; wildcard issuance requires
-DNS-01.
+Certificate source types are managed ACME and reviewed custom Secret Manager imports; self-signed
+material is standalone-only and disabled for cloud production. Certificate-to-hostname coverage is
+many-to-many: one certificate may contain multiple exact/wildcard identifiers, and one hostname may
+retain multiple certificates for rotation, CA migration, and parallel RSA/ECDSA negotiation.
+Listener bindings select at most one active version per key algorithm and route while preserving the
+last known good version. ACME challenges initially support HTTP-01 and DNS-01; wildcard issuance
+requires DNS-01. TLS-ALPN-01 remains disabled until its listener activation contract is approved.
 
 Managed certificates shall be issued, distributed, verified, renewed, and hot-switched without a
 content deployment. Existing valid certificates remain active when renewal fails. Private keys and
@@ -338,7 +350,7 @@ resolved-resource contract exists. List and search operations are store-paginate
 | --- | --- | --- |
 | Overview | Site health, traffic, certificate warnings, quota use, recent changes | Create site, open incident, review warnings |
 | Sites | Searchable site list, status, primary domain, source, freshness, owner | Create, filter, pause, archive |
-| Domains | Domain inventory, verification, bindings, TLS, expiry | Add, verify, bind, redirect, remove |
+| Domains | Root-domain Zone inventory, verification coverage, hostname/binding/certificate counts | Define root domain, open, edit, pause/resume, guarded delete |
 | Usage & Plan | Entitlements, current usage, forecast, overage state | Change plan, export usage, set alerts |
 | Audit | Actor, action, resource, result, trace, time | Filter, export, investigate |
 
@@ -362,7 +374,7 @@ resolved-resource contract exists. List and search operations are store-paginate
 | Resources | provider type, Space/Knowledgebase identity, root, validation, reconnect |
 | Routes & Mounts | URL prefix, handler, root/alias, index/fallback, precedence simulator |
 | Variants | variant list, target resource/mounts, rule priority, test client classifier |
-| Domains | verification records, canonical/alias role, redirects, HSTS readiness |
+| Domains | linked verified hostnames, canonical/alias role, paths, redirects, HSTS readiness |
 | TLS | source, covered names, current version, expiry, renewal, distribution observations |
 | Delivery | cache, compression, headers, MIME, SPA, error pages, robots, directory policy |
 | Analytics | requests, bandwidth, cache ratio, status, latency, top paths, referrers |
@@ -432,7 +444,7 @@ implementation. The UI matrix does not replace server-side authorization.
 Plans may control:
 
 - active Sites, resources, variants, mounts, system domains, and custom domains;
-- wildcard domains, managed certificates, custom certificate upload, and certificate mode;
+- wildcard domains, managed certificates, reviewed custom secret ingest, and certificate mode;
 - monthly requests, outbound transfer, cache purge volume, preview duration, and log retention;
 - Drive Website storage and version retention through Drive-owned entitlements;
 - Knowledgebase Wiki page count, search index size, and publish automation through
@@ -522,7 +534,7 @@ generation, Drive/Wiki delivery and event processing, TV routing, and cloud arti
 
 ### Phase 1 - Static Website Pilot
 
-Drive Website Space, directory resource, STATIC/SPA mounts, system/custom domain, managed single-name
+Drive Website Space, directory resource, STATIC/SPA mounts, root-domain/hostname binding, managed single-name
 certificate, one region, preview, activation, rollback, basic analytics, and quota enforcement.
 
 ### Phase 2 - Wiki And Variants

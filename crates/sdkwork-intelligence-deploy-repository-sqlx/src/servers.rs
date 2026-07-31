@@ -3,7 +3,7 @@ use sdkwork_deploy_contract::{
 };
 use sqlx::{postgres::PgRow, Row};
 
-use crate::support::{new_uuid, next_id, now_rfc3339, pagination, store_error};
+use crate::support::{datetime_from_row, new_uuid, next_id, now_rfc3339, pagination, store_error};
 use crate::DeployRepository;
 
 impl DeployRepository {
@@ -92,6 +92,6 @@ fn map_server_row(row: &PgRow) -> Result<ServerResponse, sqlx::Error> {
         host: row.try_get("host")?,
         ssh_port: row.try_get("ssh_port")?,
         status: row.try_get("status")?,
-        created_at: row.try_get("created_at")?,
+        created_at: datetime_from_row(row, "created_at")?,
     })
 }

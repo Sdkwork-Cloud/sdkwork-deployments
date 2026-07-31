@@ -5,7 +5,9 @@ use sdkwork_deploy_contract::{
 };
 use sqlx::{postgres::PgRow, PgPool, Row};
 
-use crate::support::{new_uuid, next_id, now_rfc3339, pagination, resolve_site_uuid, store_error};
+use crate::support::{
+    datetime_from_row, new_uuid, next_id, now_rfc3339, pagination, resolve_site_uuid, store_error,
+};
 use crate::DeployRepository;
 
 const ARTIFACT_SELECT: &str = "a.uuid, a.site_id, a.package_type, a.file_name, a.content_type,
@@ -311,6 +313,6 @@ async fn map_artifact_row(
         drive_node_id: row.try_get("drive_node_id")?,
         upload_session_id: row.try_get("upload_session_uuid")?,
         status: row.try_get("status")?,
-        created_at: row.try_get("created_at")?,
+        created_at: datetime_from_row(row, "created_at")?,
     })
 }

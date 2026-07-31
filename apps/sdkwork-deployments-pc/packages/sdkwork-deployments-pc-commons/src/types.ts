@@ -1,3 +1,5 @@
+import type { ComponentType } from "react";
+
 export type DeploymentsSurface = "app-console" | "backend-admin";
 export type DeploymentsResourceKey = "sites" | "configuration" | "domains" | "certificates" | "artifacts" | "releases" | "deployments" | "monitoring" | "nginx" | "servers" | "audit";
 export interface DeploymentsModuleEntry { description: string; label: string; order: number; permission: string; resource: DeploymentsResourceKey; }
@@ -8,4 +10,5 @@ export interface DeploymentsActionContext { body: Record<string, unknown>; file?
 export interface DeploymentsAction { bodyTemplate: Record<string, unknown>; dangerous?: boolean; execute(context: DeploymentsActionContext): Promise<unknown>; id: string; label: string; requiresFile?: boolean; requiresScope?: boolean; requiresSelection?: boolean; }
 export interface DeploymentsDataSource { actions: readonly DeploymentsAction[]; load(query: DeploymentsQuery): Promise<DeploymentsPage>; requiresScope?: boolean; }
 export type DeploymentsRegistry = Partial<Record<DeploymentsResourceKey, DeploymentsDataSource>>;
-
+export interface DeploymentsResourcePageProps { locale: import("./i18n/index.ts").DeploymentsLocale; }
+export type DeploymentsResourcePages = Partial<Record<DeploymentsResourceKey, ComponentType<DeploymentsResourcePageProps>>>;

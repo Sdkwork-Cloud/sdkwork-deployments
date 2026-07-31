@@ -1,5 +1,4 @@
-use std::fs;
-use std::path::PathBuf;
+mod common;
 
 use sdkwork_database_id::SnowflakeIdGenerator;
 use sdkwork_deploy_content_provider_port::ValidatedContentProviderResource;
@@ -15,40 +14,10 @@ use sdkwork_intelligence_deploy_repository_sqlx::DeployRepository;
 use sdkwork_intelligence_deploy_service::{
     ReplaceSiteCompositionCommand, SiteCompositionRepositoryPort,
 };
-use sqlx::{any::AnyPoolOptions, AnyPool, Row};
+use sqlx::{PgPool, Row};
 
-const SQLITE_BASELINE: &str =
-    include_str!("../../../tests/fixtures/database/sqlite/ddl/baseline/0001_deploy_baseline.sql");
-const POSTGRES_BASELINE: &str =
-    include_str!("../../../database/ddl/baseline/postgres/0001_deploy_baseline.sql");
-
-struct SqliteTestFile(PathBuf);
-
-impl Drop for SqliteTestFile {
-    fn drop(&mut self) {
-        let _ = fs::remove_file(&self.0);
-        let _ = fs::remove_file(self.0.with_extension("db-shm"));
-        let _ = fs::remove_file(self.0.with_extension("db-wal"));
-    }
-}
-
-async fn test_repository() -> (DeployRepository, AnyPool, SqliteTestFile) {
-    sqlx::any::install_default_drivers();
-    let relative_path = PathBuf::from(format!(
-        "target/site-composition-{}.db",
-        sdkwork_database_id::uuid_v4()
-    ));
-    fs::create_dir_all("target").expect("create Cargo target directory");
-    let database_url = format!("sqlite://{}?mode=rwc", relative_path.display());
-    let pool = AnyPoolOptions::new()
-        .max_connections(4)
-        .connect(&database_url)
-        .await
-        .expect("connect file-backed SQLite");
-    sqlx::raw_sql(SQLITE_BASELINE)
-        .execute(&pool)
-        .await
-        .expect("apply SQLite baseline");
+async fn test_repository() -> (DeployRepository, PgPool) {
+    let pool = common::postgres_pool().await;
     seed_control_plane(&pool).await;
     (
         DeployRepository::new(
@@ -56,11 +25,10 @@ async fn test_repository() -> (DeployRepository, AnyPool, SqliteTestFile) {
             SnowflakeIdGenerator::new(2).expect("Snowflake generator"),
         ),
         pool,
-        SqliteTestFile(relative_path),
     )
 }
 
-async fn seed_control_plane(pool: &AnyPool) {
+async fn seed_control_plane(pool: &PgPool) {
     sqlx::query(
         "INSERT INTO deploy_site (
             id,uuid,tenant_id,organization_id,name,slug,site_type,status,runtime_config,
@@ -72,11 +40,22 @@ async fn seed_control_plane(pool: &AnyPool) {
     .await
     .expect("insert site");
     sqlx::query(
-        "INSERT INTO deploy_domain (
-            id,uuid,tenant_id,organization_id,site_id,hostname,is_verified,status,metadata,
+        "INSERT INTO deploy_dns_zone (
+            id,uuid,tenant_id,organization_id,apex_hostname,status,
             created_at,updated_at,version
-         ) VALUES (20,'domain-1',7,9,10,'docs.example.com',TRUE,1,'{}',
-                   '2026-07-22T00:00:00Z','2026-07-22T00:00:00Z',0)",
+         ) VALUES (19,'zone-1',7,9,'example.com','ACTIVE',
+                   '2026-07-22T00:00:00Z','2026-07-22T00:00:00Z',1)",
+    )
+    .execute(pool)
+    .await
+    .expect("insert DNS zone");
+    sqlx::query(
+        "INSERT INTO deploy_domain (
+            id,uuid,tenant_id,organization_id,zone_id,hostname_ascii,hostname_type,
+            verification_status,verified_at,status,metadata,created_at,updated_at,version
+         ) VALUES (20,'domain-1',7,9,19,'docs.example.com','EXACT','VERIFIED',
+                   '2026-07-22T00:00:00Z','ACTIVE','{}',
+                   '2026-07-22T00:00:00Z','2026-07-22T00:00:00Z',1)",
     )
     .execute(pool)
     .await
@@ -201,8 +180,9 @@ fn tv_command(
 }
 
 #[tokio::test]
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
 async fn composition_is_atomic_idempotent_and_does_not_create_releases() {
-    let (repository, pool, _file) = test_repository().await;
+    let (repository, pool) = test_repository().await;
     let first = repository
         .replace_site_composition(command(
             0,
@@ -290,8 +270,9 @@ async fn composition_is_atomic_idempotent_and_does_not_create_releases() {
 }
 
 #[tokio::test]
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
 async fn composition_persists_tv_client_class_and_compiles_the_runtime_rule() {
-    let (repository, pool, _file) = test_repository().await;
+    let (repository, pool) = test_repository().await;
     repository
         .replace_site_composition(tv_command(0, "composition-tv", &"9".repeat(64)))
         .await
@@ -318,14 +299,26 @@ async fn composition_persists_tv_client_class_and_compiles_the_runtime_rule() {
 }
 
 #[tokio::test]
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
 async fn composition_rejects_a_domain_owned_by_another_tenant() {
-    let (repository, pool, _file) = test_repository().await;
+    let (repository, pool) = test_repository().await;
+    sqlx::query(
+        "INSERT INTO deploy_dns_zone (
+            id,uuid,tenant_id,organization_id,apex_hostname,status,
+            created_at,updated_at,version
+         ) VALUES (29,'zone-foreign',8,9,'foreign.example.com','ACTIVE',
+                   '2026-07-22T00:00:00Z','2026-07-22T00:00:00Z',1)",
+    )
+    .execute(&pool)
+    .await
+    .expect("insert foreign tenant DNS zone");
     sqlx::query(
         "INSERT INTO deploy_domain (
-            id,uuid,tenant_id,organization_id,site_id,hostname,is_verified,status,metadata,
-            created_at,updated_at,version
-         ) VALUES (21,'domain-foreign',8,9,10,'foreign.example.com',TRUE,1,'{}',
-                   '2026-07-22T00:00:00Z','2026-07-22T00:00:00Z',0)",
+            id,uuid,tenant_id,organization_id,zone_id,hostname_ascii,hostname_type,
+            verification_status,verified_at,status,metadata,created_at,updated_at,version
+         ) VALUES (21,'domain-foreign',8,9,29,'foreign.example.com','EXACT','VERIFIED',
+                   '2026-07-22T00:00:00Z','ACTIVE','{}',
+                   '2026-07-22T00:00:00Z','2026-07-22T00:00:00Z',1)",
     )
     .execute(&pool)
     .await
@@ -347,8 +340,9 @@ async fn composition_rejects_a_domain_owned_by_another_tenant() {
 }
 
 #[tokio::test]
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
 async fn composition_requires_an_active_web_target() {
-    let (repository, pool, _file) = test_repository().await;
+    let (repository, pool) = test_repository().await;
     sqlx::query("DELETE FROM deploy_web_node_target WHERE tenant_id = 7")
         .execute(&pool)
         .await
@@ -368,8 +362,9 @@ async fn composition_requires_an_active_web_target() {
 }
 
 #[tokio::test]
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
 async fn composition_rejects_inconsistent_target_tenant_scope() {
-    let (repository, pool, _file) = test_repository().await;
+    let (repository, pool) = test_repository().await;
     sqlx::query(
         "INSERT INTO deploy_web_node_target (
             id,uuid,tenant_id,node_uuid,environment,tenant_scope_hash,status,
@@ -397,7 +392,7 @@ async fn composition_rejects_inconsistent_target_tenant_scope() {
     assert_composition_was_not_committed(&pool).await;
 }
 
-async fn assert_composition_was_not_committed(pool: &AnyPool) {
+async fn assert_composition_was_not_committed(pool: &PgPool) {
     let row = sqlx::query(
         "SELECT version,
                 (SELECT COUNT(*) FROM deploy_site_revision) AS revisions,
@@ -413,20 +408,9 @@ async fn assert_composition_was_not_committed(pool: &AnyPool) {
 }
 
 #[tokio::test]
-#[ignore = "requires an empty PostgreSQL database in SDKWORK_DATABASE_TEST_POSTGRES_URL"]
-async fn postgres_composition_matches_sqlite_transaction_semantics() {
-    sqlx::any::install_default_drivers();
-    let database_url = std::env::var("SDKWORK_DATABASE_TEST_POSTGRES_URL")
-        .expect("SDKWORK_DATABASE_TEST_POSTGRES_URL must target an empty PostgreSQL database");
-    let pool = AnyPoolOptions::new()
-        .max_connections(4)
-        .connect(&database_url)
-        .await
-        .expect("connect PostgreSQL integration database");
-    sqlx::raw_sql(POSTGRES_BASELINE)
-        .execute(&pool)
-        .await
-        .expect("apply PostgreSQL baseline");
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
+async fn postgres_composition_is_atomic_and_idempotent() {
+    let pool = common::postgres_pool().await;
     seed_control_plane(&pool).await;
     let repository = DeployRepository::new(
         pool.clone(),

@@ -8,10 +8,10 @@ use axum::{
 use sdkwork_deploy_contract::{
     CompleteDeployUploadSessionRequest, CreateArtifactRequest, CreateCertificateRequest,
     CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainHostnameRequest,
-    CreateDomainRequest, CreateDomainZoneRequest, CreateEnvVariableRequest,
+    CreateDomainZoneRequest, CreateEnvVariableRequest,
     CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest, DeployAppApi,
     DeployAppRequestContext, ListDomainZonesQuery, ListSitesQuery, UpdateDomainZoneRequest,
-    UpdateSiteCompositionRequest, UpdateSiteRequest, UploadCustomCertificateRequest,
+    UpdateSiteCompositionRequest, UpdateSiteRequest,
 };
 use sdkwork_routes_deploy_common::{
     envelope, finish_api_json, finish_created_api_json, finish_no_content, ok_json, service_result,
@@ -66,12 +66,6 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
         .route(paths::SITE_COMPOSITION, put(update_site_composition))
         .route(paths::SITE_ACTIVATE, post(activate_site))
         .route(paths::SITE_PAUSE, post(pause_site))
-        .route(paths::SITE_DOMAINS, get(list_domains).post(create_domain))
-        .route(
-            paths::SITE_DOMAIN,
-            get(retrieve_domain).delete(delete_domain),
-        )
-        .route(paths::SITE_DOMAIN_VERIFY, post(verify_domain))
         .route(
             paths::SITE_DEPLOYMENTS,
             get(list_deployments).post(create_deployment),
@@ -96,7 +90,6 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
             get(retrieve_certificate).delete(delete_certificate),
         )
         .route(paths::CERTIFICATE_RENEW, post(renew_certificate))
-        .route(paths::CERTIFICATES_UPLOAD, post(upload_custom_certificate))
         .route(paths::UPLOAD_SESSIONS, post(create_upload_session))
         .route(paths::UPLOAD_SESSION, get(retrieve_upload_session))
         .route(
@@ -531,109 +524,6 @@ async fn pause_site(
     )
 }
 
-async fn list_domains(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
-    Query(query): Query<PageQuery>,
-) -> Response {
-    finish_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let page = state
-                .api
-                .list_domains(&context, &site_id, query.page, query.page_size)
-                .await?;
-            ok_json(envelope::domain_page(page, query.page, query.page_size))
-        }
-        .await,
-    )
-}
-
-async fn create_domain(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
-    Json(request): Json<CreateDomainRequest>,
-) -> Response {
-    finish_created_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let item = state
-                .api
-                .create_domain(&context, &site_id, &request)
-                .await?;
-            ok_json(envelope::resource(item))
-        }
-        .await,
-    )
-}
-
-async fn retrieve_domain(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path((site_id, domain_id)): Path<(String, String)>,
-) -> Response {
-    finish_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let item = state
-                .api
-                .retrieve_domain(&context, &site_id, &domain_id)
-                .await?;
-            ok_json(envelope::resource(item))
-        }
-        .await,
-    )
-}
-
-async fn delete_domain(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path((site_id, domain_id)): Path<(String, String)>,
-) -> Response {
-    finish_no_content(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            service_result(
-                state
-                    .api
-                    .delete_domain(&context, &site_id, &domain_id)
-                    .await,
-            )
-        }
-        .await,
-    )
-}
-
-async fn verify_domain(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path((site_id, domain_id)): Path<(String, String)>,
-) -> Response {
-    finish_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let item = state
-                .api
-                .verify_domain(&context, &site_id, &domain_id)
-                .await?;
-            ok_json(envelope::domain_verify(item))
-        }
-        .await,
-    )
-}
-
 async fn list_deployments(
     ctx: WebRequestContext,
     State(state): State<AppState>,
@@ -924,32 +814,17 @@ async fn create_certificate(
     ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
+    headers: HeaderMap,
     Json(request): Json<CreateCertificateRequest>,
 ) -> Response {
     finish_created_api_json(
         &ctx,
         async {
             let context = require_app_context(context)?;
-            let item = state.api.create_certificate(&context, &request).await?;
-            ok_json(envelope::resource(item))
-        }
-        .await,
-    )
-}
-
-async fn upload_custom_certificate(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Json(request): Json<UploadCustomCertificateRequest>,
-) -> Response {
-    finish_created_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
+            let idempotency_key = required_header(&headers, "idempotency-key")?;
             let item = state
                 .api
-                .upload_custom_certificate(&context, &request)
+                .create_certificate(&context, &idempotency_key, &request)
                 .await?;
             ok_json(envelope::resource(item))
         }

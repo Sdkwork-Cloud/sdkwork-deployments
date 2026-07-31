@@ -1,7 +1,8 @@
+mod common;
+
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use std::{fs, path::PathBuf};
 
 use async_trait::async_trait;
 use sdkwork_database_id::SnowflakeIdGenerator;
@@ -20,42 +21,7 @@ use sdkwork_intelligence_deploy_service::runtime_publication::{
     DeployRuntimeAssignmentRepositoryPort, RuntimeAssignmentPublishStatus, RuntimeTarget,
 };
 use sdkwork_intelligence_deploy_service::RuntimePublicationService;
-use sqlx::{any::AnyPoolOptions, AnyPool, Row};
-
-const SQLITE_BASELINE: &str =
-    include_str!("../../../tests/fixtures/database/sqlite/ddl/baseline/0001_deploy_baseline.sql");
-const POSTGRES_BASELINE: &str =
-    include_str!("../../../database/ddl/baseline/postgres/0001_deploy_baseline.sql");
-
-struct SqliteTestFile(PathBuf);
-
-impl Drop for SqliteTestFile {
-    fn drop(&mut self) {
-        let _ = fs::remove_file(&self.0);
-        let _ = fs::remove_file(self.0.with_extension("db-shm"));
-        let _ = fs::remove_file(self.0.with_extension("db-wal"));
-    }
-}
-
-async fn file_backed_sqlite_pool() -> (AnyPool, SqliteTestFile) {
-    sqlx::any::install_default_drivers();
-    let relative_path = PathBuf::from(format!(
-        "target/runtime-assignment-{}.db",
-        sdkwork_database_id::uuid_v4()
-    ));
-    fs::create_dir_all("target").expect("create Cargo target directory");
-    let database_url = format!("sqlite://{}?mode=rwc", relative_path.display());
-    let pool = AnyPoolOptions::new()
-        .max_connections(4)
-        .connect(&database_url)
-        .await
-        .expect("connect file-backed SQLite");
-    sqlx::raw_sql(SQLITE_BASELINE)
-        .execute(&pool)
-        .await
-        .expect("apply SQLite baseline");
-    (pool, SqliteTestFile(relative_path))
-}
+use sqlx::Row;
 
 #[derive(Default)]
 struct AcceptingWebRuntime;
@@ -284,17 +250,9 @@ impl DeployWebRuntimePort for SelectiveActiveWebRuntime {
 }
 
 #[tokio::test]
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
 async fn site_revision_activates_only_after_all_frozen_targets_are_active() {
-    sqlx::any::install_default_drivers();
-    let pool = AnyPoolOptions::new()
-        .max_connections(1)
-        .connect("sqlite::memory:")
-        .await
-        .expect("connect SQLite");
-    sqlx::raw_sql(SQLITE_BASELINE)
-        .execute(&pool)
-        .await
-        .expect("apply SQLite baseline");
+    let pool = common::postgres_pool().await;
     sqlx::query(
         "INSERT INTO deploy_site (
             id, uuid, tenant_id, name, slug, status, runtime_config, metadata,
@@ -417,17 +375,9 @@ async fn site_revision_activates_only_after_all_frozen_targets_are_active() {
 }
 
 #[tokio::test]
-async fn sqlite_outbox_is_durable_idempotent_and_publishable() {
-    sqlx::any::install_default_drivers();
-    let pool = AnyPoolOptions::new()
-        .max_connections(1)
-        .connect("sqlite::memory:")
-        .await
-        .expect("connect SQLite");
-    sqlx::raw_sql(SQLITE_BASELINE)
-        .execute(&pool)
-        .await
-        .expect("apply SQLite baseline");
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
+async fn postgres_outbox_is_durable_idempotent_and_publishable() {
+    let pool = common::postgres_pool().await;
     sqlx::query(
         "INSERT INTO deploy_web_node_target (
             id, uuid, tenant_id, node_uuid, environment, tenant_scope_hash,
@@ -502,17 +452,9 @@ async fn sqlite_outbox_is_durable_idempotent_and_publishable() {
 }
 
 #[tokio::test]
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
 async fn provider_event_delivery_failure_prevents_web_publication() {
-    sqlx::any::install_default_drivers();
-    let pool = AnyPoolOptions::new()
-        .max_connections(1)
-        .connect("sqlite::memory:")
-        .await
-        .expect("connect SQLite");
-    sqlx::raw_sql(SQLITE_BASELINE)
-        .execute(&pool)
-        .await
-        .expect("apply SQLite baseline");
+    let pool = common::postgres_pool().await;
     sqlx::query(
         "INSERT INTO deploy_web_node_target (
             id, uuid, tenant_id, node_uuid, environment, tenant_scope_hash,
@@ -580,17 +522,9 @@ async fn provider_event_delivery_failure_prevents_web_publication() {
 }
 
 #[tokio::test]
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
 async fn active_assignment_renewal_is_cursor_bounded_and_failure_isolated() {
-    sqlx::any::install_default_drivers();
-    let pool = AnyPoolOptions::new()
-        .max_connections(1)
-        .connect("sqlite::memory:")
-        .await
-        .expect("connect SQLite");
-    sqlx::raw_sql(SQLITE_BASELINE)
-        .execute(&pool)
-        .await
-        .expect("apply SQLite baseline");
+    let pool = common::postgres_pool().await;
     let tenant_scope_hash = "1".repeat(64);
     for (id, target_uuid, node_uuid) in [
         (1_i64, "target-a", "node-a"),
@@ -733,17 +667,9 @@ async fn active_assignment_renewal_is_cursor_bounded_and_failure_isolated() {
 }
 
 #[tokio::test]
-async fn sqlite_outbox_reuses_assignment_when_descriptor_order_changes() {
-    sqlx::any::install_default_drivers();
-    let pool = AnyPoolOptions::new()
-        .max_connections(1)
-        .connect("sqlite::memory:")
-        .await
-        .expect("connect SQLite");
-    sqlx::raw_sql(SQLITE_BASELINE)
-        .execute(&pool)
-        .await
-        .expect("apply SQLite baseline");
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
+async fn postgres_outbox_reuses_assignment_when_descriptor_order_changes() {
+    let pool = common::postgres_pool().await;
     let tenant_scope_hash = "1".repeat(64);
     sqlx::query(
         "INSERT INTO deploy_web_node_target (
@@ -799,8 +725,9 @@ async fn sqlite_outbox_reuses_assignment_when_descriptor_order_changes() {
 }
 
 #[tokio::test]
-async fn sqlite_concurrent_mutations_are_serialized_and_idempotent() {
-    let (pool, _database_file) = file_backed_sqlite_pool().await;
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
+async fn postgres_concurrent_mutations_are_serialized_and_idempotent() {
+    let pool = common::postgres_pool().await;
     let tenant_scope_hash = "1".repeat(64);
     sqlx::query(
         "INSERT INTO deploy_web_node_target (
@@ -889,17 +816,9 @@ async fn sqlite_concurrent_mutations_are_serialized_and_idempotent() {
 }
 
 #[tokio::test]
-async fn sqlite_claim_lease_fences_stale_workers_and_stops_at_attempt_limit() {
-    sqlx::any::install_default_drivers();
-    let pool = AnyPoolOptions::new()
-        .max_connections(1)
-        .connect("sqlite::memory:")
-        .await
-        .expect("connect SQLite");
-    sqlx::raw_sql(SQLITE_BASELINE)
-        .execute(&pool)
-        .await
-        .expect("apply SQLite baseline");
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
+async fn postgres_claim_lease_fences_stale_workers_and_stops_at_attempt_limit() {
+    let pool = common::postgres_pool().await;
     sqlx::query(
         "INSERT INTO deploy_web_node_target (
             id, uuid, tenant_id, node_uuid, environment, tenant_scope_hash,
@@ -1020,20 +939,9 @@ async fn sqlite_claim_lease_fences_stale_workers_and_stops_at_attempt_limit() {
 }
 
 #[tokio::test]
-#[ignore = "requires an empty PostgreSQL database in SDKWORK_DATABASE_TEST_POSTGRES_URL"]
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
 async fn postgres_serializes_mutations_and_fences_assignment_leases() {
-    sqlx::any::install_default_drivers();
-    let database_url = std::env::var("SDKWORK_DATABASE_TEST_POSTGRES_URL")
-        .expect("SDKWORK_DATABASE_TEST_POSTGRES_URL must target an empty PostgreSQL database");
-    let pool = AnyPoolOptions::new()
-        .max_connections(8)
-        .connect(&database_url)
-        .await
-        .expect("connect PostgreSQL integration database");
-    sqlx::raw_sql(POSTGRES_BASELINE)
-        .execute(&pool)
-        .await
-        .expect("apply PostgreSQL baseline");
+    let pool = common::postgres_pool().await;
 
     let tenant_scope_hash = "1".repeat(64);
     sqlx::query(

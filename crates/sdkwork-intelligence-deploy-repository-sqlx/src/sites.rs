@@ -5,7 +5,9 @@ use sdkwork_deploy_contract::{
 use sdkwork_utils_rust::slugify;
 use sqlx::{postgres::PgRow, Row};
 
-use crate::support::{json_from_row, new_uuid, next_id, now_rfc3339, pagination, store_error};
+use crate::support::{
+    datetime_from_row, json_from_row, new_uuid, next_id, now_rfc3339, pagination, store_error,
+};
 use crate::DeployRepository;
 
 impl DeployRepository {
@@ -275,8 +277,8 @@ fn map_site_row(row: &PgRow) -> Result<SiteResponse, sqlx::Error> {
         site_type: row.try_get("site_type")?,
         status: row.try_get("status")?,
         runtime_config: json_from_row(row, "runtime_config")?,
-        created_at: row.try_get("created_at")?,
-        updated_at: row.try_get("updated_at")?,
+        created_at: datetime_from_row(row, "created_at")?,
+        updated_at: datetime_from_row(row, "updated_at")?,
         version: row.try_get::<i64, _>("version")?.to_string(),
     })
 }

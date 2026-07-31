@@ -50,7 +50,8 @@
   ],
   "contracts": {
     "publicExports": [
-      "src/index.ts"
+      "src/index.ts",
+      "src/management.ts"
     ],
     "runtimeEntrypoints": [],
     "routeManifest": null,

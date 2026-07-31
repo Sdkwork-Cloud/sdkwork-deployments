@@ -1,9 +1,9 @@
-import { Boxes, ChevronLeft, ChevronRight, LogOut, RefreshCw, Search, Settings2, Shield, Upload, X } from "lucide-react";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Activity, AppWindow, Boxes, ChevronLeft, ChevronRight, FileKey2, Globe2, LogOut, Package, RefreshCw, Rocket, ScrollText, Search, Server, ServerCog, Settings2, Shield, Tags, Upload, X } from "lucide-react";
+import { Suspense, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 
 import { translateDeployments, type DeploymentsLocale, type DeploymentsMessageKey } from "./i18n/index.ts";
-import type { DeploymentsAction, DeploymentsDataSource, DeploymentsModuleEntry, DeploymentsPcModuleDefinition, DeploymentsRegistry, DeploymentsResourceKey } from "./types.ts";
+import type { DeploymentsAction, DeploymentsDataSource, DeploymentsModuleEntry, DeploymentsPcModuleDefinition, DeploymentsRegistry, DeploymentsResourceKey, DeploymentsResourcePages } from "./types.ts";
 
 export interface DeploymentsWorkspaceProps {
   locale: DeploymentsLocale;
@@ -11,20 +11,22 @@ export interface DeploymentsWorkspaceProps {
   onSignOut?(): void;
   permissionScope: readonly string[];
   registry: DeploymentsRegistry;
+  resourcePages?: DeploymentsResourcePages;
   surface: "app-console" | "backend-admin";
   userLabel?: string;
 }
 
-export function DeploymentsWorkspace({ locale, modules, onSignOut, permissionScope, registry, surface, userLabel }: DeploymentsWorkspaceProps) {
-  const location = useLocation();
+export function DeploymentsWorkspace({ locale, modules, onSignOut, permissionScope, registry, resourcePages, surface, userLabel }: DeploymentsWorkspaceProps) {
   const t = translator(locale);
   const entries = useMemo(() => modules.flatMap((module) => module.entries).filter((entry) => permissionScope.length === 0 || permissionScope.includes(entry.permission)).sort((a, b) => a.order - b.order), [modules, permissionScope]);
   const base = surface === "backend-admin" ? "/admin" : "/console";
-  const current = entries.find((entry) => location.pathname.endsWith(`/${entry.resource}`)) ?? entries[0];
-  if (!current) return <main className="empty-access" role="alert"><Shield size={22} /><h1>{t("access.title")}</h1><p>{t("access.description")}</p></main>;
+  if (entries.length === 0) return <main className="empty-access" role="alert"><Shield size={22} /><h1>{t("access.title")}</h1><p>{t("access.description")}</p></main>;
   return <div className="app-layout">
-    <aside className="sidebar"><div className="brand"><span className="brand-mark"><Boxes size={19} /></span><div><strong>{t("brand.name")}</strong><small>{t(`surface.${surface}`)}</small></div></div><nav aria-label={t("nav.primary")}>{entries.map((entry) => <NavLink key={entry.resource} to={`${base}/${entry.resource}`}><span>{resourceText(t, entry.resource, "label")}</span></NavLink>)}</nav><div className="sidebar-footer"><span title={userLabel}>{userLabel ?? t("auth.user")}</span>{onSignOut && <button className="icon-button" type="button" title={t("auth.signOut")} onClick={onSignOut}><LogOut size={17} /></button>}</div></aside>
-    <main className="workspace"><Routes><Route path="/:resource" element={<Page entry={current} locale={locale} source={registry[current.resource]} />} /><Route path="*" element={<Navigate to={`${base}/${current.resource}`} replace />} /></Routes></main>
+    <aside className="sidebar"><div className="brand"><span className="brand-mark"><Boxes size={19} /></span><div><strong>{t("brand.name")}</strong><small>{t(`surface.${surface}`)}</small></div></div><nav aria-label={t("nav.primary")}>{entries.map((entry) => <NavLink key={entry.resource} to={`${base}/${entry.resource}`} title={resourceText(t, entry.resource, "label")}><span className="nav-icon">{resourceIcon(entry.resource)}</span><span className="nav-label">{resourceText(t, entry.resource, "label")}</span></NavLink>)}</nav><div className="sidebar-footer"><span title={userLabel}>{userLabel ?? t("auth.user")}</span>{onSignOut && <button className="icon-button" type="button" title={t("auth.signOut")} onClick={onSignOut}><LogOut size={17} /></button>}</div></aside>
+    <main className="workspace"><Routes>{entries.map((entry) => {
+      const ResourcePage = resourcePages?.[entry.resource];
+      return <Route key={entry.resource} path={`${entry.resource}/*`} element={ResourcePage ? <Suspense fallback={<div className="resource-loading" aria-busy="true"><RefreshCw size={20} /></div>}><ResourcePage locale={locale} /></Suspense> : <Page entry={entry} locale={locale} source={registry[entry.resource]} />} />;
+    })}<Route path="*" element={<Navigate to={`${base}/${entries[0].resource}`} replace />} /></Routes></main>
   </div>;
 }
 
@@ -96,3 +98,20 @@ function recordKey(item: Record<string, unknown>, index: number): string { retur
 function display(value: unknown, column: string): ReactNode { if (value === undefined || value === null) return "-"; if (column.toLowerCase().includes("status")) return <span className={`status-badge status-${String(value).toLowerCase()}`}>{String(value)}</span>; return typeof value === "object" ? JSON.stringify(value) : String(value); }
 function humanize(value: string): string { return value.replace(/([a-z])([A-Z])/g, "$1 $2").replaceAll("_", " "); }
 function sensitive(value: string): boolean { return /secret|password|token|private|key/i.test(value); }
+function resourceIcon(resource: DeploymentsResourceKey): ReactNode {
+  const icons = {
+    sites: AppWindow,
+    configuration: Settings2,
+    domains: Globe2,
+    certificates: FileKey2,
+    artifacts: Package,
+    releases: Tags,
+    deployments: Rocket,
+    monitoring: Activity,
+    nginx: ServerCog,
+    servers: Server,
+    audit: ScrollText,
+  } satisfies Record<DeploymentsResourceKey, typeof AppWindow>;
+  const Icon = icons[resource];
+  return <Icon size={17} />;
+}

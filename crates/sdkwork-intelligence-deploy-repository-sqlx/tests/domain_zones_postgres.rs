@@ -1,22 +1,16 @@
+mod common;
+
 use sdkwork_database_id::SnowflakeIdGenerator;
 use sdkwork_deploy_contract::{
     CreateDomainHostnameRequest, CreateDomainZoneRequest, ListDomainZonesQuery,
 };
 use sdkwork_intelligence_deploy_repository_sqlx::DeployRepository;
 use sdkwork_intelligence_deploy_service::DeployRepositoryPort;
-use sqlx::any::AnyPoolOptions;
 
 #[tokio::test]
 #[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
 async fn postgres_domain_zone_lifecycle_enforces_resource_boundaries() {
-    sqlx::any::install_default_drivers();
-    let database_url = std::env::var("SDKWORK_DATABASE_TEST_POSTGRES_URL")
-        .expect("SDKWORK_DATABASE_TEST_POSTGRES_URL is required");
-    let pool = AnyPoolOptions::new()
-        .max_connections(4)
-        .connect(&database_url)
-        .await
-        .expect("connect PostgreSQL");
+    let pool = common::postgres_pool().await;
     let repository = DeployRepository::new(
         pool,
         SnowflakeIdGenerator::new(4).expect("Snowflake generator"),

@@ -5,17 +5,16 @@ use sdkwork_deploy_contract::DeployServiceResult;
 use sdkwork_deploy_contract::{
     ArtifactPage, ArtifactResponse, AuditLogPage, CertificatePage, CertificateResponse,
     CreateArtifactRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
-    CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainRequest,
-    CreateDomainZoneRequest, CreateEnvVariableRequest, CreateHealthCheckRequest,
+    CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
+    CreateEnvVariableRequest, CreateHealthCheckRequest,
     CreateNginxConfigRequest, CreateReleaseRequest, CreateServerRequest, CreateSiteRequest,
     DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
-    DomainHostnamePage, DomainHostnameResponse, DomainPage, DomainResponse, DomainZonePage,
-    DomainZoneResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
+    DomainHostnamePage, DomainHostnameResponse, DomainZonePage, DomainZoneResponse, EnvVariablePage,
+    EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
     ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
     NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
     ReleasePage, ReleaseResponse, ServerPage, ServerResponse, SitePage, SiteResponse,
     UpdateDomainZoneRequest, UpdateNginxConfigRequest, UpdateSiteRequest,
-    UploadCustomCertificateRequest,
 };
 
 use crate::DomainVerificationChallenge;
@@ -153,52 +152,6 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         status: i32,
     ) -> DeployServiceResult<SiteResponse>;
 
-    async fn list_domains(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        page: i32,
-        page_size: i32,
-    ) -> DeployServiceResult<DomainPage>;
-
-    async fn create_domain(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        request: &CreateDomainRequest,
-    ) -> DeployServiceResult<DomainResponse>;
-
-    async fn retrieve_domain(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        domain_id: &str,
-    ) -> DeployServiceResult<DomainResponse>;
-
-    async fn delete_domain(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        domain_id: &str,
-    ) -> DeployServiceResult<()>;
-
-    async fn domain_verification_challenge(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        domain_id: &str,
-    ) -> DeployServiceResult<DomainVerificationChallenge>;
-
-    async fn confirm_domain_verification(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        domain_id: &str,
-        verification_id: &str,
-        observed_sha256: &str,
-        verifier_identity: &str,
-    ) -> DeployServiceResult<bool>;
-
     async fn list_deployments(
         &self,
         tenant_id: i64,
@@ -312,22 +265,11 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
     async fn create_certificate(
         &self,
         tenant_id: i64,
+        organization_id: Option<i64>,
+        actor_id: Option<i64>,
+        idempotency_key: &str,
         request: &CreateCertificateRequest,
     ) -> DeployServiceResult<CertificateResponse>;
-
-    async fn upload_custom_certificate(
-        &self,
-        tenant_id: i64,
-        request: &UploadCustomCertificateRequest,
-        certificate_upload: &DeployUploadSessionResponse,
-        private_key_upload: &DeployUploadSessionResponse,
-    ) -> DeployServiceResult<CertificateResponse>;
-
-    async fn find_certificate_by_idempotency_key(
-        &self,
-        tenant_id: i64,
-        idempotency_key: &str,
-    ) -> DeployServiceResult<Option<CertificateResponse>>;
 
     async fn retrieve_certificate(
         &self,

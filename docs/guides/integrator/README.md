@@ -82,20 +82,20 @@ Drive WebsiteRoot or Knowledgebase Wiki content changes.
 
 ## Managed TLS Prelaunch Gate
 
-Managed and custom certificate integration is not available for commercial use. The current
-metadata-only certificate operations do not prove domain ownership, issue or renew a certificate,
-distribute certificate material, activate Web Nodes, or prove the certificate served for an SNI.
-Integrators must not use `certificates.upload`, certificate/private-key Drive upload sessions, or
-Drive node references as a private-key custody mechanism.
+Managed certificate creation accepts one or more verified `domainIds` and creates an idempotent
+certificate lifecycle intent. A hostname may be covered by multiple certificates, including
+parallel RSA and ECDSA listener bindings. The current operation does not claim issuance,
+distribution, Web Node activation, or served-SNI verification. There is no certificate/private-key
+Drive upload API, and Drive node references are not a private-key custody mechanism.
 
 The proposed
 [managed domain and TLS decision](../../architecture/decisions/ADR-20260723-managed-domain-tls-control-plane.md)
-replaces that prelaunch contract with durable domain proof, ACME workflows, immutable certificate
+defines the production contract for durable domain proof, ACME workflows, immutable certificate
 versions, KMS/Secret Manager custody, one-time custom secret ingest, target-scoped distribution, and
 loaded/served/public observations. Its
 [implementation plan](../../engineering/plans/PLAN-2026-0002-managed-domain-tls-control-plane.md)
-is blocked on human review. Do not integrate the replacement operations until the ADR is accepted,
-the authored OpenAPI is updated, and the generated SDK families are regenerated and released.
+tracks the remaining provider and operational evidence. Do not treat a pending lifecycle intent as
+an active certificate until the observation chain reaches the required quorum.
 
 Until that release gate passes, production deployments must use the externally terminated TLS
 profile declared by the deployment architecture. A pending row or planned renewal is control-plane

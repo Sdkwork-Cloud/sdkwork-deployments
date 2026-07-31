@@ -5,7 +5,7 @@ use sdkwork_deploy_contract::{
 use sqlx::{postgres::PgRow, PgPool, Row};
 
 use crate::support::{
-    new_uuid, next_id, now_rfc3339, pagination, resolve_release_internal_id,
+    datetime_from_row, new_uuid, next_id, now_rfc3339, pagination, resolve_release_internal_id,
     resolve_site_internal_id, resolve_site_uuid, store_error,
 };
 use crate::DeployRepository;
@@ -352,6 +352,6 @@ async fn map_deployment_row(
         status: row.try_get("status")?,
         deploy_type: row.try_get("deploy_type")?,
         release_id: row.try_get("release_uuid").ok(),
-        created_at: row.try_get("created_at")?,
+        created_at: datetime_from_row(row, "created_at")?,
     })
 }

@@ -2,8 +2,8 @@ import { HttpClient, createHttpClient } from './http/client';
 import type { SdkworkAppConfig } from './types/common';
 import type { AuthTokenManager } from '@sdkwork/sdk-common';
 
-import { SiteApi, createSiteApi } from './api/site';
 import { DomainApi, createDomainApi } from './api/domain';
+import { SiteApi, createSiteApi } from './api/site';
 import { DeploymentApi, createDeploymentApi } from './api/deployment';
 import { ReleaseApi, createReleaseApi } from './api/release';
 import { EnvVariableApi, createEnvVariableApi } from './api/env-variable';
@@ -15,8 +15,8 @@ import { MonitorApi, createMonitorApi } from './api/monitor';
 export class SdkworkDeployAppClient {
   private httpClient: HttpClient;
 
-  public readonly site: SiteApi;
   public readonly domain: DomainApi;
+  public readonly site: SiteApi;
   public readonly deployment: DeploymentApi;
   public readonly release: ReleaseApi;
   public readonly envVariable: EnvVariableApi;
@@ -27,9 +27,9 @@ export class SdkworkDeployAppClient {
 
   constructor(config: SdkworkAppConfig) {
     this.httpClient = createHttpClient(config);
-    this.site = createSiteApi(this.httpClient);
-
     this.domain = createDomainApi(this.httpClient);
+
+    this.site = createSiteApi(this.httpClient);
 
     this.deployment = createDeploymentApi(this.httpClient);
 

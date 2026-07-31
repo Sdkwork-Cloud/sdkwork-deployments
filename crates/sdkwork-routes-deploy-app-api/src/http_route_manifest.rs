@@ -113,36 +113,6 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     ).with_required_permission("deploy.sites.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Get,
-        "/app/v3/api/sites/{siteId}/domains",
-        "domain",
-        "sites.domains.list",
-    ).with_required_permission("deploy.sites.write"),
-    HttpRoute::dual_token(
-        HttpMethod::Post,
-        "/app/v3/api/sites/{siteId}/domains",
-        "domain",
-        "sites.domains.create",
-    ).with_required_permission("deploy.sites.write").with_idempotent(true),
-    HttpRoute::dual_token(
-        HttpMethod::Get,
-        "/app/v3/api/sites/{siteId}/domains/{domainId}",
-        "domain",
-        "sites.domains.retrieve",
-    ).with_required_permission("deploy.sites.write"),
-    HttpRoute::dual_token(
-        HttpMethod::Delete,
-        "/app/v3/api/sites/{siteId}/domains/{domainId}",
-        "domain",
-        "sites.domains.delete",
-    ).with_required_permission("deploy.sites.write"),
-    HttpRoute::dual_token(
-        HttpMethod::Post,
-        "/app/v3/api/sites/{siteId}/domains/{domainId}/verify",
-        "domain",
-        "sites.domains.verify",
-    ).with_required_permission("deploy.sites.write").with_idempotent(true),
-    HttpRoute::dual_token(
-        HttpMethod::Get,
         "/app/v3/api/sites/{siteId}/deployments",
         "deployment",
         "sites.deployments.list",
@@ -224,12 +194,6 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/app/v3/api/certificates/{certificateId}/renew",
         "certificate",
         "certificates.renew",
-    ).with_required_permission("deploy.certificates.write").with_idempotent(true),
-    HttpRoute::dual_token(
-        HttpMethod::Post,
-        "/app/v3/api/certificates/upload",
-        "certificate",
-        "certificates.upload",
     ).with_required_permission("deploy.certificates.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Post,

@@ -4,13 +4,11 @@ use async_trait::async_trait;
 use sdkwork_deploy_contract::{
     is_deploy_package_artifact_type, CompleteDeployUploadSessionRequest, CreateArtifactRequest,
     CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDeploymentRequest,
-    CreateDomainHostnameRequest, CreateDomainRequest, CreateDomainZoneRequest,
+    CreateDomainHostnameRequest, CreateDomainZoneRequest,
     CreateEnvVariableRequest, CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest,
     DeployAppApi, DeployAppRequestContext, DeployServiceResult, DeployUploadSessionResponse,
     ListDomainZonesQuery, ListSitesQuery, UpdateDomainZoneRequest, UpdateSiteRequest,
-    UploadCustomCertificateRequest, UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE,
-    UPLOAD_PACKAGE_TYPE_TLS_PRIVATE_KEY, UPLOAD_SESSION_STATUS_CANCELLED,
-    UPLOAD_SESSION_STATUS_COMPLETED,
+    UPLOAD_SESSION_STATUS_CANCELLED, UPLOAD_SESSION_STATUS_COMPLETED,
 };
 use sdkwork_deploy_drive_port::{DriveRequestCredentials, PrepareDeployUploadCommand};
 
@@ -74,9 +72,9 @@ impl DeployService {
                 "contentType is required",
             ));
         }
-        if !(1..=7).contains(&request.package_type) {
+        if !is_deploy_package_artifact_type(request.package_type) {
             return Err(sdkwork_deploy_contract::DeployServiceError::validation(
-                "packageType must be between 1 and 7",
+                "packageType must be a deployable artifact type between 1 and 5",
             ));
         }
         Ok(())
@@ -98,57 +96,6 @@ impl DeployService {
             }
             _ => Ok(()),
         }
-    }
-
-    fn ensure_completed_upload_for_certificate(
-        session: &DeployUploadSessionResponse,
-        expected_package_type: i32,
-        label: &str,
-    ) -> DeployServiceResult<()> {
-        if session.package_type != expected_package_type {
-            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
-                format!("{label} upload session has unexpected packageType"),
-            ));
-        }
-        if session.status != UPLOAD_SESSION_STATUS_COMPLETED {
-            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
-                format!("{label} upload session is not completed"),
-            ));
-        }
-        if session.drive_node_id.as_deref().unwrap_or("").is_empty() {
-            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
-                format!("{label} upload session is missing drive node reference"),
-            ));
-        }
-        Ok(())
-    }
-
-    fn validate_upload_certificate_request(
-        request: &UploadCustomCertificateRequest,
-    ) -> DeployServiceResult<()> {
-        if request.cert_name.trim().is_empty() {
-            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
-                "certName is required",
-            ));
-        }
-        if request.certificate_upload_session_id.trim().is_empty()
-            || request.private_key_upload_session_id.trim().is_empty()
-        {
-            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
-                "certificateUploadSessionId and privateKeyUploadSessionId are required",
-            ));
-        }
-        if request.certificate_upload_session_id == request.private_key_upload_session_id {
-            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
-                "certificate and private key upload sessions must differ",
-            ));
-        }
-        if request.idempotency_key.trim().is_empty() {
-            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
-                "idempotencyKey is required",
-            ));
-        }
-        Ok(())
     }
 
     fn upload_session_request_matches_stored(
@@ -543,134 +490,6 @@ impl DeployAppApi for DeployService {
         Ok(site)
     }
 
-    async fn list_domains(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        page: i32,
-        page_size: i32,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainPage> {
-        let tenant_id = Self::require_tenant(context)?;
-        self.repository
-            .list_domains(tenant_id, site_id, page, page_size)
-            .await
-    }
-
-    async fn create_domain(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        request: &CreateDomainRequest,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainResponse> {
-        let tenant_id = Self::require_tenant(context)?;
-        let mut request = request.clone();
-        request.hostname =
-            crate::domain_verification::normalize_domain_hostname(&request.hostname)?;
-        self.repository
-            .create_domain(tenant_id, site_id, &request)
-            .await
-    }
-
-    async fn retrieve_domain(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        domain_id: &str,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainResponse> {
-        let tenant_id = Self::require_tenant(context)?;
-        self.repository
-            .retrieve_domain(tenant_id, site_id, domain_id)
-            .await
-    }
-
-    async fn delete_domain(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        domain_id: &str,
-    ) -> DeployServiceResult<()> {
-        let tenant_id = Self::require_tenant(context)?;
-        self.repository
-            .delete_domain(tenant_id, site_id, domain_id)
-            .await
-    }
-
-    async fn verify_domain(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        domain_id: &str,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainVerifyResponse> {
-        let tenant_id = Self::require_tenant(context)?;
-        let challenge = self
-            .repository
-            .domain_verification_challenge(tenant_id, site_id, domain_id)
-            .await?;
-        if challenge.verified {
-            return Ok(challenge.response());
-        }
-
-        if challenge.token.is_some() {
-            return Ok(challenge.response());
-        }
-        let verification_id = challenge.verification_id.as_deref().ok_or_else(|| {
-            sdkwork_deploy_contract::DeployServiceError::Internal(
-                "pending domain has no verification attempt".to_owned(),
-            )
-        })?;
-        let proof_sha256 = challenge.proof_sha256.as_deref().ok_or_else(|| {
-            sdkwork_deploy_contract::DeployServiceError::Internal(
-                "pending domain verification has no proof digest".to_owned(),
-            )
-        })?;
-        let observation = self
-            .domain_ownership_verifier
-            .verify_dns_txt(&challenge.hostname, proof_sha256)
-            .await?;
-        if !observation.matched {
-            return Ok(challenge.response());
-        }
-        let observed_sha256 = observation.observed_sha256.as_deref().ok_or_else(|| {
-            sdkwork_deploy_contract::DeployServiceError::Internal(
-                "matched domain verification has no observation digest".to_owned(),
-            )
-        })?;
-
-        if self
-            .repository
-            .confirm_domain_verification(
-                tenant_id,
-                site_id,
-                domain_id,
-                verification_id,
-                observed_sha256,
-                &observation.verifier_identity,
-            )
-            .await?
-        {
-            return Ok(sdkwork_deploy_contract::DomainVerifyResponse {
-                verified: true,
-                method: crate::domain_verification::DOMAIN_VERIFICATION_METHOD_DNS_TXT.to_owned(),
-                verification_id: Some(verification_id.to_owned()),
-                record_name: challenge.record_name,
-                token: None,
-                expires_at: challenge.expires_at,
-            });
-        }
-
-        let current = self
-            .repository
-            .domain_verification_challenge(tenant_id, site_id, domain_id)
-            .await?;
-        if current.verified {
-            Ok(current.response())
-        } else {
-            Err(sdkwork_deploy_contract::DeployServiceError::conflict(
-                "domain verification challenge changed; retry with the current token",
-            ))
-        }
-    }
-
     async fn list_deployments(
         &self,
         context: &DeployAppRequestContext,
@@ -891,62 +710,19 @@ impl DeployAppApi for DeployService {
     async fn create_certificate(
         &self,
         context: &DeployAppRequestContext,
+        idempotency_key: &str,
         request: &CreateCertificateRequest,
     ) -> DeployServiceResult<sdkwork_deploy_contract::CertificateResponse> {
         let tenant_id = Self::require_tenant(context)?;
-        self.repository.create_certificate(tenant_id, request).await
-    }
-
-    async fn upload_custom_certificate(
-        &self,
-        context: &DeployAppRequestContext,
-        request: &UploadCustomCertificateRequest,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::CertificateResponse> {
-        let tenant_id = Self::require_tenant(context)?;
-        Self::validate_upload_certificate_request(request)?;
-        if let Some(existing) = self
-            .repository
-            .find_certificate_by_idempotency_key(tenant_id, &request.idempotency_key)
-            .await?
-        {
-            return Ok(existing);
-        }
-        let certificate_upload = self
-            .repository
-            .retrieve_upload_session_ref(tenant_id, &request.certificate_upload_session_id)
-            .await?;
-        let private_key_upload = self
-            .repository
-            .retrieve_upload_session_ref(tenant_id, &request.private_key_upload_session_id)
-            .await?;
-        Self::ensure_completed_upload_for_certificate(
-            &certificate_upload,
-            UPLOAD_PACKAGE_TYPE_TLS_CERTIFICATE,
-            "certificate",
-        )?;
-        Self::ensure_completed_upload_for_certificate(
-            &private_key_upload,
-            UPLOAD_PACKAGE_TYPE_TLS_PRIVATE_KEY,
-            "private key",
-        )?;
-        match self
-            .repository
-            .upload_custom_certificate(tenant_id, request, &certificate_upload, &private_key_upload)
+        self.repository
+            .create_certificate(
+                tenant_id,
+                context.organization_id,
+                context.actor_id,
+                idempotency_key,
+                request,
+            )
             .await
-        {
-            Ok(response) => Ok(response),
-            Err(error @ sdkwork_deploy_contract::DeployServiceError::Conflict(_)) => {
-                if let Some(existing) = self
-                    .repository
-                    .find_certificate_by_idempotency_key(tenant_id, &request.idempotency_key)
-                    .await?
-                {
-                    return Ok(existing);
-                }
-                Err(error)
-            }
-            Err(error) => Err(error),
-        }
     }
 
     async fn retrieve_certificate(

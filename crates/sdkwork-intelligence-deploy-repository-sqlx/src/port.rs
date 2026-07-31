@@ -4,17 +4,16 @@ use async_trait::async_trait;
 use sdkwork_deploy_contract::{
     ArtifactPage, ArtifactResponse, AuditLogPage, CertificatePage, CertificateResponse,
     CreateArtifactRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
-    CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainRequest,
-    CreateDomainZoneRequest, CreateEnvVariableRequest, CreateHealthCheckRequest,
-    CreateNginxConfigRequest, CreateReleaseRequest, CreateServerRequest, CreateSiteRequest,
-    DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
-    DomainHostnamePage, DomainHostnameResponse, DomainPage, DomainResponse, DomainZonePage,
-    DomainZoneResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
-    ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
-    NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
-    ReleasePage, ReleaseResponse, ServerPage, ServerResponse, SitePage, SiteResponse,
-    UpdateDomainZoneRequest, UpdateNginxConfigRequest, UpdateSiteRequest,
-    UploadCustomCertificateRequest,
+    CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
+    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateNginxConfigRequest,
+    CreateReleaseRequest, CreateServerRequest, CreateSiteRequest, DeployAppRequestContext,
+    DeployUploadSessionResponse, DeploymentPage, DeploymentResponse, DomainHostnamePage,
+    DomainHostnameResponse, DomainZonePage, DomainZoneResponse, EnvVariablePage,
+    EnvVariableResponse, HealthCheckPage, HealthCheckResponse, ListDomainZonesQuery,
+    ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage, NginxConfigResponse,
+    NginxReloadResponse, NginxStatusResponse, NginxValidateResponse, ReleasePage, ReleaseResponse,
+    ServerPage, ServerResponse, SitePage, SiteResponse, UpdateDomainZoneRequest,
+    UpdateNginxConfigRequest, UpdateSiteRequest,
 };
 use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
 use sdkwork_deploy_web_port::RuntimeAssignmentReceipt;
@@ -205,75 +204,6 @@ impl DeployRepositoryPort for DeployRepository {
         self.set_site_status_repo(tenant_id, site_id, status).await
     }
 
-    async fn list_domains(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        page: i32,
-        page_size: i32,
-    ) -> DeployServiceResult<DomainPage> {
-        self.list_domains_repo(tenant_id, site_id, page, page_size)
-            .await
-    }
-
-    async fn create_domain(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        request: &CreateDomainRequest,
-    ) -> DeployServiceResult<DomainResponse> {
-        self.create_domain_repo(tenant_id, site_id, request).await
-    }
-
-    async fn retrieve_domain(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        domain_id: &str,
-    ) -> DeployServiceResult<DomainResponse> {
-        self.retrieve_domain_repo(tenant_id, site_id, domain_id)
-            .await
-    }
-
-    async fn delete_domain(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        domain_id: &str,
-    ) -> DeployServiceResult<()> {
-        self.delete_domain_repo(tenant_id, site_id, domain_id).await
-    }
-
-    async fn domain_verification_challenge(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        domain_id: &str,
-    ) -> DeployServiceResult<DomainVerificationChallenge> {
-        self.domain_verification_challenge_repo(tenant_id, site_id, domain_id)
-            .await
-    }
-
-    async fn confirm_domain_verification(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        domain_id: &str,
-        verification_id: &str,
-        observed_sha256: &str,
-        verifier_identity: &str,
-    ) -> DeployServiceResult<bool> {
-        self.confirm_domain_verification_repo(
-            tenant_id,
-            site_id,
-            domain_id,
-            verification_id,
-            observed_sha256,
-            verifier_identity,
-        )
-        .await
-    }
-
     async fn list_deployments(
         &self,
         tenant_id: i64,
@@ -431,34 +361,19 @@ impl DeployRepositoryPort for DeployRepository {
     async fn create_certificate(
         &self,
         tenant_id: i64,
+        organization_id: Option<i64>,
+        actor_id: Option<i64>,
+        idempotency_key: &str,
         request: &CreateCertificateRequest,
     ) -> DeployServiceResult<CertificateResponse> {
-        self.create_certificate_repo(tenant_id, request).await
-    }
-
-    async fn upload_custom_certificate(
-        &self,
-        tenant_id: i64,
-        request: &UploadCustomCertificateRequest,
-        certificate_upload: &DeployUploadSessionResponse,
-        private_key_upload: &DeployUploadSessionResponse,
-    ) -> DeployServiceResult<CertificateResponse> {
-        self.upload_custom_certificate_repo(
+        self.create_certificate_repo(
             tenant_id,
+            organization_id,
+            actor_id,
+            idempotency_key,
             request,
-            certificate_upload,
-            private_key_upload,
         )
         .await
-    }
-
-    async fn find_certificate_by_idempotency_key(
-        &self,
-        tenant_id: i64,
-        idempotency_key: &str,
-    ) -> DeployServiceResult<Option<CertificateResponse>> {
-        self.find_certificate_by_idempotency_key_repo(tenant_id, idempotency_key)
-            .await
     }
 
     async fn retrieve_certificate(

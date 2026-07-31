@@ -26,7 +26,7 @@ export class SiteCompositionApi {
       },
       {}
     );
-    return this.client.request<SiteCompositionResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/composition`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PUT' as any, body, headers: requestHeaders, contentType: 'application/json' });
+    return this.client.request<SiteCompositionResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/composition`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PUT' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -36,6 +36,18 @@ export interface SiteListParams {
   status?: 0 | 1 | 2 | 3;
   siteType?: 1 | 2 | 3 | 4 | 5 | 6;
   keyword?: string;
+}
+
+export interface SiteCreateParams {
+  idempotencyKey: string;
+}
+
+export interface SiteActivateParams {
+  idempotencyKey: string;
+}
+
+export interface SitePauseParams {
+  idempotencyKey: string;
 }
 
 export class SiteApi {
@@ -57,22 +69,28 @@ export class SiteApi {
       { name: 'siteType', value: params?.siteType, style: 'form', explode: true, allowReserved: false },
       { name: 'keyword', value: params?.keyword, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: SiteResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
+    return this.client.request<{ items: SiteResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** 创建站点 */
-  async create(body: CreateSiteRequest, requestOptions?: ApiRequestOptions): Promise<SiteResponse> {
-    return this.client.request<SiteResponse>(appApiPath(`/sites`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json' });
+  async create(body: CreateSiteRequest, params: SiteCreateParams, requestOptions?: ApiRequestOptions): Promise<SiteResponse> {
+    const requestHeaders = buildRequestHeaders(
+      {
+        'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
+      },
+      {}
+    );
+    return this.client.request<SiteResponse>(appApiPath(`/sites`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** 获取站点详情 */
   async retrieve(siteId: string, requestOptions?: ApiRequestOptions): Promise<SiteResponse> {
-    return this.client.request<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
+    return this.client.request<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 
 /** 更新站点 */
   async update(siteId: string, body: UpdateSiteRequest, requestOptions?: ApiRequestOptions): Promise<SiteResponse> {
-    return this.client.request<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PATCH' as any, body, contentType: 'application/json' });
+    return this.client.request<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PATCH' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** 删除站点 */
@@ -81,13 +99,25 @@ export class SiteApi {
   }
 
 /** 激活站点 */
-  async activate(siteId: string, requestOptions?: ApiRequestOptions): Promise<SiteResponse> {
-    return this.client.request<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/activate`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any });
+  async activate(siteId: string, params: SiteActivateParams, requestOptions?: ApiRequestOptions): Promise<SiteResponse> {
+    const requestHeaders = buildRequestHeaders(
+      {
+        'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
+      },
+      {}
+    );
+    return this.client.request<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/activate`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, headers: requestHeaders, sdkworkUnwrapKind: 'item' });
   }
 
 /** 暂停站点 */
-  async pause(siteId: string, requestOptions?: ApiRequestOptions): Promise<SiteResponse> {
-    return this.client.request<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/pause`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any });
+  async pause(siteId: string, params: SitePauseParams, requestOptions?: ApiRequestOptions): Promise<SiteResponse> {
+    const requestHeaders = buildRequestHeaders(
+      {
+        'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
+      },
+      {}
+    );
+    return this.client.request<SiteResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/pause`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, headers: requestHeaders, sdkworkUnwrapKind: 'item' });
   }
 }
 

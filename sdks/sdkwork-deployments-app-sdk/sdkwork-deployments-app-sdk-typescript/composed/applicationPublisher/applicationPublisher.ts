@@ -76,6 +76,13 @@ export function createDeployApplicationPublisher(
                 siteType: request.site.siteType,
                 runtimeConfig: request.site.runtimeConfig,
               },
+              {
+                idempotencyKey: resolveIdempotencyKey(
+                  request.idempotencyKeys?.site,
+                  createIdempotencyKey,
+                  'createSite',
+                ),
+              },
               { signal: request.signal, timeout: undefined },
             );
             siteEvidence = createdApplicationPublishSiteEvidence(created);
@@ -125,6 +132,11 @@ export function createDeployApplicationPublisher(
 
         throwIfAborted(request.signal, 'registerArtifact');
         startStage('registerArtifact');
+        const artifactIdempotencyKey = resolveIdempotencyKey(
+          request.idempotencyKeys?.artifact,
+          createIdempotencyKey,
+          'registerArtifact',
+        );
         const artifact = await options.deployClient.artifact.create(
           {
             siteId: siteEvidence.id,
@@ -137,12 +149,9 @@ export function createDeployApplicationPublisher(
             driveUploadItemId: uploadEvidence.uploadItemId,
             driveSpaceId: uploadEvidence.driveSpaceId,
             driveNodeId: uploadEvidence.driveNodeId,
-            idempotencyKey: resolveIdempotencyKey(
-              request.idempotencyKeys?.artifact,
-              createIdempotencyKey,
-              'registerArtifact',
-            ),
+            idempotencyKey: artifactIdempotencyKey,
           },
+          { idempotencyKey: artifactIdempotencyKey },
           { signal: request.signal, timeout: undefined },
         );
         const artifactId = requireResponseId(
@@ -156,17 +165,19 @@ export function createDeployApplicationPublisher(
 
         throwIfAborted(request.signal, 'createRelease');
         startStage('createRelease');
+        const releaseIdempotencyKey = resolveIdempotencyKey(
+          request.idempotencyKeys?.release,
+          createIdempotencyKey,
+          'createRelease',
+        );
         const release = await options.deployClient.release.sites.releases.create(
           siteEvidence.id,
           {
             artifactId,
             versionTag: normalizedOptionalText(request.release?.versionTag),
-            idempotencyKey: resolveIdempotencyKey(
-              request.idempotencyKeys?.release,
-              createIdempotencyKey,
-              'createRelease',
-            ),
+            idempotencyKey: releaseIdempotencyKey,
           },
+          { idempotencyKey: releaseIdempotencyKey },
           { signal: request.signal, timeout: undefined },
         );
         const releaseId = requireResponseId(
@@ -182,18 +193,20 @@ export function createDeployApplicationPublisher(
         if (request.deployment) {
           throwIfAborted(request.signal, 'createDeployment');
           startStage('createDeployment');
+          const deploymentIdempotencyKey = resolveIdempotencyKey(
+            request.idempotencyKeys?.deployment,
+            createIdempotencyKey,
+            'createDeployment',
+          );
           const deployment =
             await options.deployClient.deployment.sites.deployments.create(
               siteEvidence.id,
               {
                 ...request.deployment,
                 releaseId,
-                idempotencyKey: resolveIdempotencyKey(
-                  request.idempotencyKeys?.deployment,
-                  createIdempotencyKey,
-                  'createDeployment',
-                ),
+                idempotencyKey: deploymentIdempotencyKey,
               },
+              { idempotencyKey: deploymentIdempotencyKey },
               { signal: request.signal, timeout: undefined },
             );
           const deploymentId = requireResponseId(
@@ -337,7 +350,7 @@ function requireResponseId(
 function resolveIdempotencyKey(
   value: string | undefined,
   createIdempotencyKey: () => string,
-  stage: 'registerArtifact' | 'createRelease' | 'createDeployment',
+  stage: 'createSite' | 'registerArtifact' | 'createRelease' | 'createDeployment',
 ): string {
   if (value !== undefined) {
     return requireText(value, 'idempotency key');

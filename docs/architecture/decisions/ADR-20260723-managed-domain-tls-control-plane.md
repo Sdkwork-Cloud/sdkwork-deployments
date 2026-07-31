@@ -1,9 +1,10 @@
 # ADR-20260723 Managed Domain And TLS Control Plane
 
-Status: proposed
+Status: accepted
 Requirement: REQ-2026-0001
 Owner: SDKWork Deploy maintainers
 Date: 2026-07-23
+Updated: 2026-07-30
 Specs: ARCHITECTURE_DECISION_SPEC.md, API_SPEC.md, INTERNAL_API_SPEC.md, DATABASE_SPEC.md,
 MIGRATION_SPEC.md, SECURITY_SPEC.md, PRIVACY_SPEC.md, CONFIG_SPEC.md, DEPLOYMENT_SPEC.md,
 NGINX_SPEC.md, OBSERVABILITY_SPEC.md, TEST_SPEC.md
@@ -11,17 +12,17 @@ NGINX_SPEC.md, OBSERVABILITY_SPEC.md, TEST_SPEC.md
 ## Context
 
 The accepted cloud publishing architecture assigns domain and certificate control-plane ownership to
-SDKWork Deploy and HTTP/TLS execution to SDKWork Web Server. The current Deploy implementation only
-partially satisfies that boundary:
+SDKWork Deploy and HTTP/TLS execution to SDKWork Web Server. Deploy now has explicit root-domain
+Zones, tenant-owned hostname resources, expiring DNS TXT attempts, Site bindings, certificate
+identifiers, immutable certificate versions, ACME workflow tables, distribution state, TLS runtime
+snapshots, listener bindings, and observations. Managed certificate creation is idempotent and may
+cover multiple active verified hostnames; the same hostname may be covered by multiple certificate
+aggregates. The former site-owned domain API and Drive private-key upload path have been removed.
 
-- `domains.verify` performs bounded exact DNS TXT token proof and fails closed on resolver errors or
-  stale/mismatched observations, but durable proof expiry, periodic revalidation, takeover holds,
-  and HTTP/CNAME verification workers are not implemented;
-- managed certificate creation persists only a pending metadata row;
-- renewal changes only `renewal_status` and performs no ACME operation;
-- custom certificate upload represents the private key as a Drive node reference;
-- there is no durable ACME account, order, challenge, immutable certificate version, distribution,
-  activation observation, served fingerprint, rollback, or revocation model.
+Production provider execution remains gated: periodic revalidation and takeover holds, ACME/DNS
+workers, approved KMS/Secret Manager custody, material distribution, public SNI probes, rollback,
+revocation, and operational drills still require implementation evidence. A `PENDING` certificate
+row is an accepted intent, not proof of issuance or activation.
 
 Web Server now has a bounded native TLS consumer that can validate an immutable snapshot and mounted
 certificate material, build an exact/wildcard SNI index, enforce TLS policy, atomically replace the
@@ -195,7 +196,8 @@ is no compatibility table, dual write, backfill, or legacy Drive private-key pat
 
 | Table | Responsibility | Critical constraints |
 | --- | --- | --- |
-| `deploy_domain` | Canonical claim and lifecycle | globally exclusive active normalized host; tenant/site scoped; optimistic version |
+| `deploy_dns_zone` | Explicit root-domain inventory | globally exclusive active normalized apex; tenant-owned; soft delete |
+| `deploy_domain` | Canonical hostname claim and lifecycle | globally exclusive active normalized host; tenant/Zone scoped; no Site ownership |
 | `deploy_domain_verification` | Expiring proof attempt and observation | token digest only; lease/fence; bounded retry; immutable success evidence |
 | `deploy_tls_policy` | Domain/Site TLS source, challenge, renewal, rollout policy | one active policy per binding scope; no secret values |
 | `deploy_acme_account` | Tenant/platform CA account metadata | account key secret reference only; directory/profile uniqueness |
@@ -211,20 +213,20 @@ is no compatibility table, dual write, backfill, or legacy Drive private-key pat
 
 Every table follows the standard SDKWork `id`, `uuid`, tenant/ownership, audit, lifecycle, and
 optimistic concurrency fields that apply to its profile. High-cardinality workflow tables have
-status/next-attempt/lease indexes; tenant reads lead with `tenant_id`; observations are time
-partition/retention candidates in PostgreSQL and explicitly bounded in standalone SQLite.
+status/next-attempt/lease indexes; tenant reads lead with `tenant_id`; observations are bounded
+retention/partition candidates in PostgreSQL.
 
 ## API And UI Consequences
 
-The current `domains.verify` command already fails closed and succeeds only after exact DNS TXT token
-observation. The accepted API replaces this synchronous token-confirmation flow with a request to
-check the latest active durable verification attempt, while a separate creation operation returns
-the one-time proof. Existing certificate create/renew responses must report accepted workflow state,
-not issued/renewed success.
+The current `domainZones.hostnames.verify` command fails closed and succeeds only after exact DNS TXT
+token observation. A newly created attempt returns its proof once; subsequent reads expose only the
+digest and bounded attempt metadata. Certificate create accepts `domainIds` and reports accepted
+workflow state, not issued/renewed success.
 
-The custom certificate input removes `certificateNodeId` and `privateKeyNodeId` and uses a one-time
-secret-ingest session. This is a breaking prelaunch API/SDK correction and requires approval and SDK
-regeneration from authored OpenAPI.
+The former custom upload input and `/certificates/upload` operation are removed. A future custom
+certificate capability must use a separately reviewed one-time secret-ingest session; it cannot
+reuse Drive upload sessions, node identifiers, or ordinary JSON private-key fields. App OpenAPI and
+generated SDK families are materialized from this accepted contract.
 
 Tenant UI must expose domain proof instructions, observed checks, TLS policy, certificate/version
 history, renewal, rollout quorum, expiry, rollback, and bounded failure reasons. Admin UI must expose
@@ -253,7 +255,8 @@ fingerprints, revocation, and audited recovery actions. No UI can display or dow
   Web Internal SDK dependencies.
 - Web Server gains TLS assignment ingestion/observation contracts and cloud material delivery, while
   its standalone `web_*` certificate manager remains isolated from cloud authority.
-- Domain verification and certificate APIs change before launch; generated SDKs must be regenerated.
+- Domain verification and certificate APIs changed before launch; generated SDKs are regenerated
+  from the App OpenAPI authority.
 - Production native TLS remains disabled until KMS/Secret Manager custody, material distribution,
   node/public observations, rollback, and expiry drills have evidence.
 - CA, DNS, KMS/Secret Manager, and external probe providers require explicit production configuration,
@@ -261,8 +264,8 @@ fingerprints, revocation, and audited recovery actions. No UI can display or dow
 
 ## Verification
 
-- PostgreSQL and SQLite contract tests cover all states, constraints, tenant isolation, leases,
-  idempotency, retries, rollback, revocation, retention, and failure recovery.
+- PostgreSQL integration tests cover current domain proof, certificate identifier cardinality,
+  tenant/status boundaries, idempotency, composition transactions, outbox concurrency, and leases.
 - Domain tests cover IDNA, public suffixes, exact/wildcard conflicts, DNS/HTTP proof, rebinding/SSRF,
   expiry, revalidation, hold/reclaim, and cross-tenant races.
 - ACME tests use a controlled test CA and DNS/HTTP solvers; no production CA is used by CI.
@@ -274,17 +277,16 @@ fingerprints, revocation, and audited recovery actions. No UI can display or dow
   Drive/Wiki content, renewal, renewal failure, rollback, revocation, node loss, and public probes.
 - Production enablement requires Security, Database, API/SDK, Operations, and Release approval.
 
-## Review Gate
+## Production Gate
 
-Approval of this ADR is required before changing Deploy database baselines/migrations, public or
-internal OpenAPI, generated SDKs, secret-provider custody, production TLS policy, or Nginx/runtime
-operations. Approval must also select the production KMS/Secret Manager and DNS automation provider
-profiles; provider credentials and live infrastructure changes are outside this source change.
+This ADR authorizes the prelaunch schema/API replacement. Production TLS enablement still requires
+human approval of the KMS/Secret Manager, DNS automation, CA, material-delivery and external-probe
+profiles, plus security and operations evidence. Provider credentials and live infrastructure
+changes remain outside this source change.
 
 ## Supersedes / Superseded By
 
 This decision refines the certificate section of
 `ADR-20260721-unified-cloud-site-publishing-control-plane.md`. It does not supersede that ownership
-decision. The existing exact DNS TXT proof is an aligned implementation foundation, not approval of
-the remaining decision. When accepted and implemented, this decision supersedes the simplified
-certificate metadata, Drive private-key reference, and planned-only renewal behavior.
+decision. It supersedes the simplified site-owned domain model, single-domain certificate metadata,
+Drive private-key reference, and planned-only renewal success semantics.

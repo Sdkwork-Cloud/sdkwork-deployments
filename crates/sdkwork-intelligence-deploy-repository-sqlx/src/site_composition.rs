@@ -22,7 +22,7 @@ use sdkwork_intelligence_deploy_service::{
 };
 use sqlx::{PgPool, Postgres, Row, Transaction};
 
-use crate::support::{bool_from_row, new_uuid, next_id};
+use crate::support::{new_uuid, next_id};
 use crate::DeployRepository;
 
 const MAXIMUM_RUNTIME_GENERATION: i64 = 9_007_199_254_740_991;
@@ -105,8 +105,7 @@ impl DeployRepository {
             .ok_or_else(|| DeployServiceError::validation("default variant is missing"))?
             .clone();
         let runtime_rules =
-            insert_variant_rules(self, &mut transaction, &command, &site, &variants)
-                .await?;
+            insert_variant_rules(self, &mut transaction, &command, &site, &variants).await?;
         let runtime_mounts = insert_mounts(
             self,
             &mut transaction,
@@ -240,14 +239,7 @@ impl DeployRepository {
             runtime_assignments: assignments,
         };
         persist_command_result(&mut transaction, revision_id, &response).await?;
-        insert_composition_audit(
-            self,
-            &mut transaction,
-            &command,
-            site.id,
-            revision_id,
-        )
-        .await?;
+        insert_composition_audit(self, &mut transaction, &command, site.id, revision_id).await?;
         transaction
             .commit()
             .await
@@ -256,9 +248,7 @@ impl DeployRepository {
     }
 }
 
-async fn begin_transaction(
-    pool: &PgPool,
-) -> DeployServiceResult<Transaction<'static, Postgres>> {
+async fn begin_transaction(pool: &PgPool) -> DeployServiceResult<Transaction<'static, Postgres>> {
     pool.begin()
         .await
         .map_err(|error| composition_store_error("begin site composition transaction", error))
@@ -309,12 +299,12 @@ async fn lock_site(
          WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL
          FOR UPDATE",
     )
-        .bind(command.tenant_id)
-        .bind(&command.site_uuid)
-        .fetch_optional(&mut **transaction)
-        .await
-        .map_err(|error| composition_store_error("lock site composition", error))?
-        .ok_or_else(|| DeployServiceError::not_found("site not found"))?;
+    .bind(command.tenant_id)
+    .bind(&command.site_uuid)
+    .fetch_optional(&mut **transaction)
+    .await
+    .map_err(|error| composition_store_error("lock site composition", error))?
+    .ok_or_else(|| DeployServiceError::not_found("site not found"))?;
     let site = StoredSite {
         id: row
             .try_get("id")
@@ -342,12 +332,12 @@ async fn reserve_site_version(
         "UPDATE deploy_site SET version = version + 1, updated_at = CAST($3 AS TIMESTAMPTZ)
          WHERE id = $1 AND version = $2",
     )
-        .bind(site.id)
-        .bind(command.expected_site_version)
-        .bind(&command.generated_at)
-        .execute(&mut **transaction)
-        .await
-        .map_err(|error| composition_store_error("reserve site composition version", error))?;
+    .bind(site.id)
+    .bind(command.expected_site_version)
+    .bind(&command.generated_at)
+    .execute(&mut **transaction)
+    .await
+    .map_err(|error| composition_store_error("reserve site composition version", error))?;
     if result.rows_affected() != 1 {
         return Err(DeployServiceError::conflict(
             "site composition version changed; refresh and retry",
@@ -368,11 +358,11 @@ async fn load_targets(
            AND deleted_at IS NULL
          ORDER BY uuid FOR UPDATE",
     )
-        .bind(tenant_id)
-        .bind(environment)
-        .fetch_all(&mut **transaction)
-        .await
-        .map_err(|error| composition_store_error("load Web Node targets", error))?;
+    .bind(tenant_id)
+    .bind(environment)
+    .fetch_all(&mut **transaction)
+    .await
+    .map_err(|error| composition_store_error("load Web Node targets", error))?;
     if rows.is_empty() {
         return Err(DeployServiceError::conflict(
             "no active Web Node target exists for the requested environment",
@@ -458,21 +448,21 @@ async fn insert_resources(
                 CAST($11 AS TIMESTAMPTZ),'{}',$12,$12,CAST($11 AS TIMESTAMPTZ),
                 CAST($11 AS TIMESTAMPTZ),1)",
         )
-            .bind(id)
-            .bind(&uuid)
-            .bind(command.tenant_id)
-            .bind(site.organization_id)
-            .bind(site.id)
-            .bind(&resource.key)
-            .bind(provider_type_name(resource.provider_type))
-            .bind(&resource.provider_resource_uuid)
-            .bind(&resource.provider_contract_version)
-            .bind(&capabilities)
-            .bind(&command.generated_at)
-            .bind(command.actor_id)
-            .execute(&mut **transaction)
-            .await
-            .map_err(|error| composition_store_error("insert site resource", error))?;
+        .bind(id)
+        .bind(&uuid)
+        .bind(command.tenant_id)
+        .bind(site.organization_id)
+        .bind(site.id)
+        .bind(&resource.key)
+        .bind(provider_type_name(resource.provider_type))
+        .bind(&resource.provider_resource_uuid)
+        .bind(&resource.provider_contract_version)
+        .bind(&capabilities)
+        .bind(&command.generated_at)
+        .bind(command.actor_id)
+        .execute(&mut **transaction)
+        .await
+        .map_err(|error| composition_store_error("insert site resource", error))?;
         stored.insert(resource.key.clone(), StoredResource { id, uuid });
     }
     Ok(stored)
@@ -495,20 +485,20 @@ async fn insert_variants(
              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ACTIVE','{}',$10,$10,
                 CAST($11 AS TIMESTAMPTZ),CAST($11 AS TIMESTAMPTZ),1)",
         )
-            .bind(id)
-            .bind(&uuid)
-            .bind(command.tenant_id)
-            .bind(site.id)
-            .bind(&variant.key)
-            .bind(&variant.label)
-            .bind(client_class_name(variant.client_class))
-            .bind(variant.key == command.request.default_variant_key)
-            .bind(i32::from(variant.priority))
-            .bind(command.actor_id)
-            .bind(&command.generated_at)
-            .execute(&mut **transaction)
-            .await
-            .map_err(|error| composition_store_error("insert site variant", error))?;
+        .bind(id)
+        .bind(&uuid)
+        .bind(command.tenant_id)
+        .bind(site.id)
+        .bind(&variant.key)
+        .bind(&variant.label)
+        .bind(client_class_name(variant.client_class))
+        .bind(variant.key == command.request.default_variant_key)
+        .bind(i32::from(variant.priority))
+        .bind(command.actor_id)
+        .bind(&command.generated_at)
+        .execute(&mut **transaction)
+        .await
+        .map_err(|error| composition_store_error("insert site variant", error))?;
         stored.insert(variant.key.clone(), StoredVariant { id, uuid });
     }
     Ok(stored)
@@ -551,20 +541,20 @@ async fn insert_variant_rules(
              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ACTIVE',$10,$10,
                 CAST($11 AS TIMESTAMPTZ),CAST($11 AS TIMESTAMPTZ),1)",
         )
-            .bind(id)
-            .bind(&uuid)
-            .bind(command.tenant_id)
-            .bind(site.id)
-            .bind(&rule.key)
-            .bind(variant.id)
-            .bind(rule_type)
-            .bind(match_value)
-            .bind(i32::from(rule.priority))
-            .bind(command.actor_id)
-            .bind(&command.generated_at)
-            .execute(&mut **transaction)
-            .await
-            .map_err(|error| composition_store_error("insert site variant rule", error))?;
+        .bind(id)
+        .bind(&uuid)
+        .bind(command.tenant_id)
+        .bind(site.id)
+        .bind(&rule.key)
+        .bind(variant.id)
+        .bind(rule_type)
+        .bind(match_value)
+        .bind(i32::from(rule.priority))
+        .bind(command.actor_id)
+        .bind(&command.generated_at)
+        .execute(&mut **transaction)
+        .await
+        .map_err(|error| composition_store_error("insert site variant rule", error))?;
         runtime.push(RuntimeVariantRule {
             rule_uuid: uuid,
             variant_uuid: variant.uuid.clone(),
@@ -603,25 +593,25 @@ async fn insert_mounts(
              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,CAST($12 AS JSONB),$13,$14,
                 'ACTIVE',$15,$15,CAST($16 AS TIMESTAMPTZ),CAST($16 AS TIMESTAMPTZ),1)",
         )
-            .bind(id)
-            .bind(&uuid)
-            .bind(command.tenant_id)
-            .bind(site.id)
-            .bind(&mount.key)
-            .bind(variant.id)
-            .bind(resource.id)
-            .bind(&mount.path_prefix)
-            .bind(&mount.resource_subpath)
-            .bind(mount_mode_name(mount.mode))
-            .bind(mount_handler_name(mount.handler))
-            .bind(&index_files)
-            .bind(mount.spa_fallback.as_deref())
-            .bind(i32::from(mount.priority))
-            .bind(command.actor_id)
-            .bind(&command.generated_at)
-            .execute(&mut **transaction)
-            .await
-            .map_err(|error| composition_store_error("insert site mount", error))?;
+        .bind(id)
+        .bind(&uuid)
+        .bind(command.tenant_id)
+        .bind(site.id)
+        .bind(&mount.key)
+        .bind(variant.id)
+        .bind(resource.id)
+        .bind(&mount.path_prefix)
+        .bind(&mount.resource_subpath)
+        .bind(mount_mode_name(mount.mode))
+        .bind(mount_handler_name(mount.handler))
+        .bind(&index_files)
+        .bind(mount.spa_fallback.as_deref())
+        .bind(i32::from(mount.priority))
+        .bind(command.actor_id)
+        .bind(&command.generated_at)
+        .execute(&mut **transaction)
+        .await
+        .map_err(|error| composition_store_error("insert site mount", error))?;
         runtime.push(RuntimeMount {
             mount_uuid: uuid,
             variant_uuid: variant.uuid.clone(),
@@ -653,8 +643,7 @@ async fn insert_bindings(
             domain.clone()
         } else {
             let domain =
-                load_verified_domain(transaction, command.tenant_id, site.id, &binding.domain_id)
-                    .await?;
+                load_verified_domain(transaction, command.tenant_id, &binding.domain_id).await?;
             domains.insert(binding.domain_id.clone(), domain.clone());
             domain
         };
@@ -672,30 +661,30 @@ async fn insert_bindings(
                 $18,$19,'ACTIVE',CAST($20 AS TIMESTAMPTZ),CAST($20 AS TIMESTAMPTZ),$21,$21,
                 CAST($20 AS TIMESTAMPTZ),CAST($20 AS TIMESTAMPTZ),1)",
         )
-            .bind(id)
-            .bind(&uuid)
-            .bind(command.tenant_id)
-            .bind(site.organization_id)
-            .bind(site.id)
-            .bind(&binding.key)
-            .bind(domain.id)
-            .bind(&domain.hostname)
-            .bind(command.request.environment.as_str())
-            .bind(&binding.path_prefix)
-            .bind(persisted.action_type)
-            .bind(persisted.default_variant_id)
-            .bind(persisted.forced_variant_id)
-            .bind(persisted.redirect_scheme)
-            .bind(persisted.redirect_hostname)
-            .bind(persisted.redirect_path_prefix)
-            .bind(persisted.redirect_status_code)
-            .bind(persisted.preserve_path)
-            .bind(persisted.preserve_query)
-            .bind(&command.generated_at)
-            .bind(command.actor_id)
-            .execute(&mut **transaction)
-            .await
-            .map_err(|error| composition_store_error("insert site binding", error))?;
+        .bind(id)
+        .bind(&uuid)
+        .bind(command.tenant_id)
+        .bind(site.organization_id)
+        .bind(site.id)
+        .bind(&binding.key)
+        .bind(domain.id)
+        .bind(&domain.hostname)
+        .bind(command.request.environment.as_str())
+        .bind(&binding.path_prefix)
+        .bind(persisted.action_type)
+        .bind(persisted.default_variant_id)
+        .bind(persisted.forced_variant_id)
+        .bind(persisted.redirect_scheme)
+        .bind(persisted.redirect_hostname)
+        .bind(persisted.redirect_path_prefix)
+        .bind(persisted.redirect_status_code)
+        .bind(persisted.preserve_path)
+        .bind(persisted.preserve_query)
+        .bind(&command.generated_at)
+        .bind(command.actor_id)
+        .execute(&mut **transaction)
+        .await
+        .map_err(|error| composition_store_error("insert site binding", error))?;
         runtime.push(RuntimeBinding {
             binding_uuid: uuid,
             hostname: domain.hostname,
@@ -794,34 +783,26 @@ fn optional_variant<'a>(
 async fn load_verified_domain(
     transaction: &mut Transaction<'static, Postgres>,
     tenant_id: i64,
-    site_id: i64,
     domain_uuid: &str,
 ) -> DeployServiceResult<StoredDomain> {
     let row = sqlx::query(
-        "SELECT id, hostname, is_verified, status FROM deploy_domain
-         WHERE tenant_id = $1 AND site_id = $2 AND uuid = $3 AND deleted_at IS NULL",
+        "SELECT id, hostname_ascii FROM deploy_domain
+         WHERE tenant_id = $1 AND uuid = $2
+           AND verification_status = 'VERIFIED' AND status = 'ACTIVE'
+           AND deleted_at IS NULL",
     )
     .bind(tenant_id)
-    .bind(site_id)
     .bind(domain_uuid)
     .fetch_optional(&mut **transaction)
     .await
     .map_err(|error| composition_store_error("load site binding domain", error))?
     .ok_or_else(|| DeployServiceError::not_found("domain not found for site"))?;
-    let verified = bool_from_row(&row, "is_verified")
-        .map_err(|_| DeployServiceError::Internal("invalid domain record".to_owned()))?;
-    let status: i32 = row.try_get("status").unwrap_or_default();
-    if !verified || status != 1 {
-        return Err(DeployServiceError::validation(
-            "site binding requires an active verified domain",
-        ));
-    }
     Ok(StoredDomain {
         id: row
             .try_get("id")
             .map_err(|_| DeployServiceError::Internal("invalid domain record".to_owned()))?,
         hostname: row
-            .try_get("hostname")
+            .try_get("hostname_ascii")
             .map_err(|_| DeployServiceError::Internal("invalid domain record".to_owned()))?,
     })
 }
@@ -883,26 +864,26 @@ async fn insert_revision(
          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,CAST($9 AS JSONB),$10,$11,$12,$13,$14,
             '{}','VALID','{}',$15,$16,CAST($17 AS TIMESTAMPTZ))",
     )
-        .bind(revision_id)
-        .bind(revision_uuid)
-        .bind(command.tenant_id)
-        .bind(site.organization_id)
-        .bind(site.id)
-        .bind(revision_number)
-        .bind(command.request.environment.as_str())
-        .bind(WEBSITE_RUNTIME_SCHEMA_VERSION)
-        .bind(&descriptor_json)
-        .bind(descriptor_sha256)
-        .bind(DESCRIPTOR_COMPILER_VERSION)
-        .bind(source_config_version)
-        .bind(&command.idempotency_key)
-        .bind(&command.request_sha256)
-        .bind(site.desired_revision_id)
-        .bind(command.actor_id)
-        .bind(&command.generated_at)
-        .execute(&mut **transaction)
-        .await
-        .map_err(|error| composition_store_error("insert site revision", error))?;
+    .bind(revision_id)
+    .bind(revision_uuid)
+    .bind(command.tenant_id)
+    .bind(site.organization_id)
+    .bind(site.id)
+    .bind(revision_number)
+    .bind(command.request.environment.as_str())
+    .bind(WEBSITE_RUNTIME_SCHEMA_VERSION)
+    .bind(&descriptor_json)
+    .bind(descriptor_sha256)
+    .bind(DESCRIPTOR_COMPILER_VERSION)
+    .bind(source_config_version)
+    .bind(&command.idempotency_key)
+    .bind(&command.request_sha256)
+    .bind(site.desired_revision_id)
+    .bind(command.actor_id)
+    .bind(&command.generated_at)
+    .execute(&mut **transaction)
+    .await
+    .map_err(|error| composition_store_error("insert site revision", error))?;
     Ok(())
 }
 
@@ -917,13 +898,13 @@ async fn update_site_revision_pointers(
         "UPDATE deploy_site SET default_variant_id = $2, desired_revision_id = $3,
             updated_at = CAST($4 AS TIMESTAMPTZ) WHERE id = $1",
     )
-        .bind(site_id)
-        .bind(default_variant_id)
-        .bind(revision_id)
-        .bind(&command.generated_at)
-        .execute(&mut **transaction)
-        .await
-        .map_err(|error| composition_store_error("update site revision pointers", error))?;
+    .bind(site_id)
+    .bind(default_variant_id)
+    .bind(revision_id)
+    .bind(&command.generated_at)
+    .execute(&mut **transaction)
+    .await
+    .map_err(|error| composition_store_error("update site revision pointers", error))?;
     Ok(())
 }
 
@@ -1007,21 +988,21 @@ async fn insert_runtime_assignments(
              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,CAST($10 AS JSONB),$11,'PENDING',0,
                 CAST($12 AS TIMESTAMPTZ),CAST($12 AS TIMESTAMPTZ),1)",
         )
-            .bind(assignment_id)
-            .bind(&assignment_uuid)
-            .bind(command.tenant_id)
-            .bind(target.id)
-            .bind(revision_id)
-            .bind(generation)
-            .bind(&snapshot_uuid)
-            .bind(&compiled.snapshot_sha256)
-            .bind(&desired_state_sha256)
-            .bind(&runtime_set_json)
-            .bind(runtime_set_bytes)
-            .bind(&command.generated_at)
-            .execute(&mut **transaction)
-            .await
-            .map_err(|error| composition_store_error("insert runtime assignment", error))?;
+        .bind(assignment_id)
+        .bind(&assignment_uuid)
+        .bind(command.tenant_id)
+        .bind(target.id)
+        .bind(revision_id)
+        .bind(generation)
+        .bind(&snapshot_uuid)
+        .bind(&compiled.snapshot_sha256)
+        .bind(&desired_state_sha256)
+        .bind(&runtime_set_json)
+        .bind(runtime_set_bytes)
+        .bind(&command.generated_at)
+        .execute(&mut **transaction)
+        .await
+        .map_err(|error| composition_store_error("insert runtime assignment", error))?;
         sqlx::query(
             "UPDATE deploy_runtime_assignment SET publish_status = 'SUPERSEDED',
                 lease_owner = NULL, lease_expires_at = NULL,
@@ -1029,12 +1010,12 @@ async fn insert_runtime_assignments(
              WHERE node_target_id = $2 AND generation < $3
                AND publish_status <> 'SUPERSEDED'",
         )
-            .bind(&command.generated_at)
-            .bind(target.id)
-            .bind(generation)
-            .execute(&mut **transaction)
-            .await
-            .map_err(|error| composition_store_error("supersede runtime assignments", error))?;
+        .bind(&command.generated_at)
+        .bind(target.id)
+        .bind(generation)
+        .execute(&mut **transaction)
+        .await
+        .map_err(|error| composition_store_error("supersede runtime assignments", error))?;
         responses.push(SiteRuntimeAssignmentResponse {
             target_id: target.uuid.clone(),
             assignment_id: assignment_uuid,
@@ -1069,9 +1050,7 @@ async fn persist_command_result(
     let result_json = serde_json::to_string(response).map_err(|_| {
         DeployServiceError::Internal("serialize composition result failed".to_owned())
     })?;
-    sqlx::query(
-        "UPDATE deploy_site_revision SET result_json = CAST($2 AS JSONB) WHERE id = $1",
-    )
+    sqlx::query("UPDATE deploy_site_revision SET result_json = CAST($2 AS JSONB) WHERE id = $1")
         .bind(revision_id)
         .bind(result_json)
         .execute(&mut **transaction)
@@ -1102,18 +1081,18 @@ async fn insert_composition_audit(
          ) VALUES ($1,$2,$3,$4,$5,'USER','sites.composition.update','site',$6,$7,
             CAST($8 AS JSONB),CAST($9 AS TIMESTAMPTZ))",
     )
-        .bind(audit_id)
-        .bind(audit_uuid)
-        .bind(command.tenant_id)
-        .bind(command.organization_id)
-        .bind(command.actor_id)
-        .bind(site_id)
-        .bind(&command.site_uuid)
-        .bind(metadata)
-        .bind(&command.generated_at)
-        .execute(&mut **transaction)
-        .await
-        .map_err(|error| composition_store_error("insert site composition audit", error))?;
+    .bind(audit_id)
+    .bind(audit_uuid)
+    .bind(command.tenant_id)
+    .bind(command.organization_id)
+    .bind(command.actor_id)
+    .bind(site_id)
+    .bind(&command.site_uuid)
+    .bind(metadata)
+    .bind(&command.generated_at)
+    .execute(&mut **transaction)
+    .await
+    .map_err(|error| composition_store_error("insert site composition audit", error))?;
     Ok(())
 }
 

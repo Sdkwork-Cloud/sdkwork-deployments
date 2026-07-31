@@ -128,62 +128,6 @@ impl DeployAppApi for StubAppApi {
         ))
     }
 
-    async fn list_domains(
-        &self,
-        _context: &DeployAppRequestContext,
-        _site_id: &str,
-        _page: i32,
-        _page_size: i32,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainPage> {
-        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
-            "not implemented".into(),
-        ))
-    }
-
-    async fn create_domain(
-        &self,
-        _context: &DeployAppRequestContext,
-        _site_id: &str,
-        _request: &sdkwork_deploy_contract::CreateDomainRequest,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainResponse> {
-        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
-            "not implemented".into(),
-        ))
-    }
-
-    async fn retrieve_domain(
-        &self,
-        _context: &DeployAppRequestContext,
-        _site_id: &str,
-        _domain_id: &str,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainResponse> {
-        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
-            "not implemented".into(),
-        ))
-    }
-
-    async fn delete_domain(
-        &self,
-        _context: &DeployAppRequestContext,
-        _site_id: &str,
-        _domain_id: &str,
-    ) -> DeployServiceResult<()> {
-        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
-            "not implemented".into(),
-        ))
-    }
-
-    async fn verify_domain(
-        &self,
-        _context: &DeployAppRequestContext,
-        _site_id: &str,
-        _domain_id: &str,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainVerifyResponse> {
-        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
-            "not implemented".into(),
-        ))
-    }
-
     async fn list_deployments(
         &self,
         _context: &DeployAppRequestContext,
@@ -331,17 +275,8 @@ impl DeployAppApi for StubAppApi {
     async fn create_certificate(
         &self,
         _context: &DeployAppRequestContext,
+        _idempotency_key: &str,
         _request: &sdkwork_deploy_contract::CreateCertificateRequest,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::CertificateResponse> {
-        Err(sdkwork_deploy_contract::DeployServiceError::Internal(
-            "not implemented".into(),
-        ))
-    }
-
-    async fn upload_custom_certificate(
-        &self,
-        _context: &DeployAppRequestContext,
-        _request: &sdkwork_deploy_contract::UploadCustomCertificateRequest,
     ) -> DeployServiceResult<sdkwork_deploy_contract::CertificateResponse> {
         Err(sdkwork_deploy_contract::DeployServiceError::Internal(
             "not implemented".into(),

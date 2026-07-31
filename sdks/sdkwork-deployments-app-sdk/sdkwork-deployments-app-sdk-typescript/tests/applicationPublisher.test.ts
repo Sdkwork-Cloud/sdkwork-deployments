@@ -204,7 +204,8 @@ describe('createDeployApplicationPublisher', () => {
         driveUploadItemId: 'upload-item-1',
         idempotencyKey: 'idempotency-1',
       }),
-      expect.any(Object),
+      { idempotencyKey: 'idempotency-1' },
+      { signal: undefined, timeout: undefined },
     );
     expect(progress).toContainEqual(
       expect.objectContaining({
@@ -262,6 +263,11 @@ describe('createDeployApplicationPublisher', () => {
       'drive.uploadArchive',
     ]);
     expect(result.site).toMatchObject({ id: 'created-site', resolution: 'created' });
+    expect(clients.mocks.siteCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'BirdCoder', slug: 'birdcoder' }),
+      { idempotencyKey: 'idempotency-1' },
+      { signal: undefined, timeout: undefined },
+    );
   });
 
   it('rejects an incomplete exact lookup instead of creating a duplicate Site', async () => {

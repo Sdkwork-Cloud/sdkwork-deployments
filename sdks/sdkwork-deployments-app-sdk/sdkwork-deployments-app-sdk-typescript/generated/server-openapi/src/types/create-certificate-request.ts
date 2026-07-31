@@ -1,5 +1,6 @@
 export interface CreateCertificateRequest {
   certName: string;
-  siteId?: string;
-  domainId?: string;
+  domainIds: string[];
+  caProfile?: 'LETS_ENCRYPT_STAGING' | 'LETS_ENCRYPT_PRODUCTION';
+  preferredKeyAlgorithm?: 'RSA' | 'ECDSA';
 }

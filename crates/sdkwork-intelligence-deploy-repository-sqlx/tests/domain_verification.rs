@@ -1,84 +1,50 @@
-use std::{fs, path::PathBuf};
+mod common;
 
 use sdkwork_database_id::SnowflakeIdGenerator;
-use sdkwork_deploy_contract::CreateDomainRequest;
+use sdkwork_deploy_contract::{CreateDomainHostnameRequest, CreateDomainZoneRequest};
 use sdkwork_intelligence_deploy_repository_sqlx::DeployRepository;
 use sdkwork_intelligence_deploy_service::DeployRepositoryPort;
-use sqlx::{any::AnyPoolOptions, AnyPool};
-
-const SQLITE_BASELINE: &str =
-    include_str!("../../../tests/fixtures/database/sqlite/ddl/baseline/0001_deploy_baseline.sql");
-
-struct SqliteTestFile(PathBuf);
-
-impl Drop for SqliteTestFile {
-    fn drop(&mut self) {
-        let _ = fs::remove_file(&self.0);
-        let _ = fs::remove_file(self.0.with_extension("db-shm"));
-        let _ = fs::remove_file(self.0.with_extension("db-wal"));
-    }
-}
-
-async fn test_repository() -> (DeployRepository, SqliteTestFile) {
-    sqlx::any::install_default_drivers();
-    let relative_path = PathBuf::from(format!(
-        "target/domain-verification-{}.db",
-        sdkwork_database_id::uuid_v4()
-    ));
-    fs::create_dir_all("target").expect("create Cargo target directory");
-    let database_url = format!("sqlite://{}?mode=rwc", relative_path.display());
-    let pool = AnyPoolOptions::new()
-        .max_connections(2)
-        .connect(&database_url)
-        .await
-        .expect("connect file-backed SQLite");
-    sqlx::raw_sql(SQLITE_BASELINE)
-        .execute(&pool)
-        .await
-        .expect("apply SQLite baseline");
-    seed_site(&pool).await;
-
-    (
-        DeployRepository::new(
-            pool,
-            SnowflakeIdGenerator::new(3).expect("Snowflake generator"),
-        ),
-        SqliteTestFile(relative_path),
-    )
-}
-
-async fn seed_site(pool: &AnyPool) {
-    sqlx::query(
-        "INSERT INTO deploy_site (
-            id,uuid,tenant_id,organization_id,name,slug,site_type,status,runtime_config,
-            metadata,created_at,updated_at,version
-         ) VALUES (10,'site-1',7,9,'Docs','docs',1,1,'{}','{}',
-                   '2026-07-23T00:00:00Z','2026-07-23T00:00:00Z',0)",
-    )
-    .execute(pool)
-    .await
-    .expect("insert site");
-}
 
 #[tokio::test]
+#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
 async fn domain_activation_requires_external_evidence_for_the_current_attempt() {
-    let (repository, _database) = test_repository().await;
-    let domain = repository
-        .create_domain(
+    let pool = common::postgres_pool().await;
+    let repository = DeployRepository::new(
+        pool,
+        SnowflakeIdGenerator::new(3).expect("Snowflake generator"),
+    );
+    let apex = format!(
+        "verify{}.dev",
+        sdkwork_database_id::uuid_v4().replace('-', "")
+    );
+    let zone = repository
+        .create_domain_zone(
             7,
-            "site-1",
-            &CreateDomainRequest {
-                hostname: "docs.example.com".to_owned(),
-                is_primary: true,
-                ssl_enabled: true,
-                ssl_provider: Some("letsencrypt".to_owned()),
+            Some(9),
+            Some(11),
+            &CreateDomainZoneRequest {
+                apex_hostname: apex,
+                display_name: Some("Verification test".to_owned()),
+                dns_provider: Some("manual".to_owned()),
+                provider_zone_ref: None,
             },
         )
         .await
-        .expect("create pending domain");
+        .expect("create root domain zone");
+    let hostname = repository
+        .create_domain_hostname(
+            7,
+            Some(11),
+            &zone.id,
+            &CreateDomainHostnameRequest {
+                relative_name: "docs".to_owned(),
+            },
+        )
+        .await
+        .expect("create pending hostname");
 
     let pending = repository
-        .domain_verification_challenge(7, "site-1", &domain.id)
+        .domain_hostname_verification_challenge(7, &zone.id, &hostname.id)
         .await
         .expect("load pending challenge");
     let token = pending.token.expect("new challenge returns the proof once");
@@ -93,10 +59,10 @@ async fn domain_activation_requires_external_evidence_for_the_current_attempt() 
     );
 
     assert!(!repository
-        .confirm_domain_verification(
+        .confirm_domain_hostname_verification(
             7,
-            "site-1",
-            &domain.id,
+            &zone.id,
+            &hostname.id,
             &verification_id,
             &"0".repeat(64),
             "test-resolver",
@@ -105,17 +71,17 @@ async fn domain_activation_requires_external_evidence_for_the_current_attempt() 
         .expect("reject mismatched observation"));
     assert!(
         !repository
-            .domain_verification_challenge(7, "site-1", &domain.id)
+            .domain_hostname_verification_challenge(7, &zone.id, &hostname.id)
             .await
             .expect("reload pending challenge")
             .verified
     );
 
     assert!(repository
-        .confirm_domain_verification(
+        .confirm_domain_hostname_verification(
             7,
-            "site-1",
-            &domain.id,
+            &zone.id,
+            &hostname.id,
             &verification_id,
             &proof_sha256,
             "test-resolver",
@@ -123,16 +89,16 @@ async fn domain_activation_requires_external_evidence_for_the_current_attempt() 
         .await
         .expect("confirm exact observed digest"));
     let verified = repository
-        .domain_verification_challenge(7, "site-1", &domain.id)
+        .domain_hostname_verification_challenge(7, &zone.id, &hostname.id)
         .await
-        .expect("load verified domain");
+        .expect("load verified hostname");
     assert!(verified.verified);
     assert!(verified.token.is_none());
     assert!(!repository
-        .confirm_domain_verification(
+        .confirm_domain_hostname_verification(
             7,
-            "site-1",
-            &domain.id,
+            &zone.id,
+            &hostname.id,
             &verification_id,
             &proof_sha256,
             "test-resolver",

@@ -3,7 +3,7 @@
 Status: active
 Owner: SDKWork maintainers
 Application: sdkwork-deploy
-Updated: 2026-07-24
+Updated: 2026-07-30
 Specs: REQUIREMENTS_SPEC.md, DOCUMENTATION_SPEC.md
 
 ## Document Map
@@ -29,7 +29,8 @@ WikiPublication content changes do not enter the artifact/release pipeline.
 ## 2. Deployments PC Product Surface
 
 `apps/sdkwork-deployments-pc` is the runnable PC management application. Its tenant Console covers
-sites, environment configuration, domains, managed-certificate metadata, package artifacts,
+sites, environment configuration, root-domain Zones and hostname details, managed-certificate
+lifecycle metadata, package artifacts,
 releases, deployments, and monitoring. Its separately loaded backend-admin surface exposes only
 the Nginx, server, and audit operations currently defined by the Deploy Backend API.
 
@@ -43,11 +44,16 @@ console-core. Backend-admin packages must consume `@sdkwork/deployments-backend-
 admin-core boundary. UI packages must not construct clients, issue raw HTTP, create authentication
 headers, or treat presigned URLs and provider object keys as business identity.
 
-Custom certificate private-key ingestion is not commercially enabled. Production deployments use
-the externally terminated TLS profile until the managed-domain/TLS ADR is accepted and the
-KMS/Secret Manager custody, distribution, activation, and served-certificate evidence chain is
-implemented. The PC application must not present Drive-backed private-key upload as successful
-production certificate activation.
+The domain inventory lists root-domain Zones first. Opening a Zone navigates to a dedicated hostname
+management page with verification, binding, certificate coverage, pause, and guarded-delete
+operations. Site workspaces associate existing verified hostnames through bindings; hostname rows
+do not own a Site. A Site supports multiple hostnames and a hostname may be covered by multiple
+certificate aggregates.
+
+Custom private-key ingestion remains disabled until an approved Secret Manager/KMS provider is
+configured. There is no Drive-backed private-key path. Production deployments use externally
+terminated TLS until distribution, activation, and served-certificate evidence meet the commercial
+release gate.
 
 
 ## 9. Open Questions

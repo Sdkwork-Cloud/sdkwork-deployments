@@ -239,50 +239,48 @@ CREATE INDEX idx_deploy_nginx_config_type_status
 -- Date: 2026-06-14
 
 CREATE TABLE deploy_certificate (
-    id              BIGINT       NOT NULL,
-    uuid            VARCHAR(64)  NOT NULL,
-    tenant_id       BIGINT       NOT NULL DEFAULT 0,
-    domain_id       BIGINT,
-    site_id         BIGINT,
-    cert_name       VARCHAR(200) NOT NULL,
-    cert_type       INTEGER      NOT NULL DEFAULT 1,
-    issuer          VARCHAR(200),
-    subject         VARCHAR(500),
-    san_list        TEXT,
-    fingerprint     VARCHAR(128),
-    cert_path       VARCHAR(500),
-    key_path        VARCHAR(500),
-    chain_path      VARCHAR(500),
-    not_before      TIMESTAMPTZ,
-    not_after       TIMESTAMPTZ,
-    auto_renew      BOOLEAN      NOT NULL DEFAULT true,
-    renewal_status  INTEGER      NOT NULL DEFAULT 0,
-    status          INTEGER      NOT NULL DEFAULT 0,
-    metadata        JSONB        NOT NULL DEFAULT '{}',
-    created_at      TIMESTAMPTZ  NOT NULL,
-    updated_at      TIMESTAMPTZ  NOT NULL,
-    version         BIGINT       NOT NULL DEFAULT 0,
+    id                      BIGINT       NOT NULL,
+    uuid                    VARCHAR(36)  NOT NULL,
+    tenant_id               BIGINT       NOT NULL,
+    organization_id         BIGINT       NOT NULL DEFAULT 0,
+    cert_name               VARCHAR(200) NOT NULL,
+    certificate_source      VARCHAR(16)  NOT NULL DEFAULT 'MANAGED',
+    ca_profile              VARCHAR(32)  NOT NULL DEFAULT 'LETS_ENCRYPT_PRODUCTION',
+    preferred_key_algorithm VARCHAR(16)  NOT NULL DEFAULT 'ECDSA',
+    auto_renew              BOOLEAN      NOT NULL DEFAULT TRUE,
+    renewal_status          VARCHAR(16)  NOT NULL DEFAULT 'NONE',
+    status                  VARCHAR(16)  NOT NULL DEFAULT 'PENDING',
+    idempotency_key         VARCHAR(128) NOT NULL,
+    request_sha256          VARCHAR(64)  NOT NULL,
+    metadata                JSONB        NOT NULL DEFAULT '{}',
+    created_by              BIGINT,
+    updated_by              BIGINT,
+    created_at              TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    version                 BIGINT       NOT NULL DEFAULT 1,
+    deleted_at              TIMESTAMPTZ,
     PRIMARY KEY (id),
-    CONSTRAINT uk_deploy_certificate_uuid UNIQUE (uuid)
+    CONSTRAINT uk_deploy_certificate_uuid UNIQUE (uuid),
+    CONSTRAINT uk_deploy_certificate_idempotency UNIQUE (tenant_id, idempotency_key),
+    CONSTRAINT chk_deploy_certificate_source CHECK (certificate_source IN ('MANAGED', 'CUSTOM')),
+    CONSTRAINT chk_deploy_certificate_ca_profile CHECK (ca_profile IN ('LETS_ENCRYPT_STAGING', 'LETS_ENCRYPT_PRODUCTION', 'CUSTOM')),
+    CONSTRAINT chk_deploy_certificate_key_algorithm CHECK (preferred_key_algorithm IN ('RSA', 'ECDSA')),
+    CONSTRAINT chk_deploy_certificate_renewal_status CHECK (renewal_status IN ('NONE', 'PLANNED', 'PROCESSING', 'FAILED')),
+    CONSTRAINT chk_deploy_certificate_status CHECK (status IN ('PENDING', 'ISSUING', 'ACTIVE', 'EXPIRED', 'FAILED', 'REVOKED')),
+    CONSTRAINT chk_deploy_certificate_request_hash CHECK (request_sha256 ~ '^[0-9a-f]{64}$')
 );
 
-COMMENT ON TABLE deploy_certificate IS 'SSL证书表';
-COMMENT ON COLUMN deploy_certificate.cert_type IS '证书类型：1=Let''s Encrypt，2=自定义，3=自签名';
-COMMENT ON COLUMN deploy_certificate.san_list IS 'Subject Alternative Names，逗号分隔';
-COMMENT ON COLUMN deploy_certificate.auto_renew IS '是否自动续期';
-COMMENT ON COLUMN deploy_certificate.renewal_status IS '续期状态：0=无，1=已计划，2=处理中，3=失败';
-COMMENT ON COLUMN deploy_certificate.status IS '状态：0=待处理，1=活跃，2=过期，3=已撤销';
-
-CREATE INDEX idx_deploy_certificate_domain
-    ON deploy_certificate (domain_id);
-
-CREATE INDEX idx_deploy_certificate_expiry
-    ON deploy_certificate (not_after)
-    WHERE status = 1;
+COMMENT ON TABLE deploy_certificate IS 'TLS certificate lifecycle aggregate; hostname identifiers and immutable material versions are stored separately';
+COMMENT ON COLUMN deploy_certificate.certificate_source IS 'MANAGED ACME lifecycle or CUSTOM secret-manager lifecycle';
+COMMENT ON COLUMN deploy_certificate.preferred_key_algorithm IS 'Preferred issuance key algorithm; active RSA and ECDSA versions may coexist';
 
 CREATE INDEX idx_deploy_certificate_renewal
-    ON deploy_certificate (renewal_status, not_after)
-    WHERE auto_renew = true AND status = 1;
+    ON deploy_certificate (tenant_id, renewal_status, updated_at, id)
+    WHERE auto_renew = TRUE AND status IN ('ACTIVE', 'FAILED') AND deleted_at IS NULL;
+
+CREATE INDEX idx_deploy_certificate_tenant_updated
+    ON deploy_certificate (tenant_id, updated_at DESC, id DESC)
+    WHERE deleted_at IS NULL;
 
 CREATE TABLE deploy_certificate_identifier (
     id              BIGINT       NOT NULL,

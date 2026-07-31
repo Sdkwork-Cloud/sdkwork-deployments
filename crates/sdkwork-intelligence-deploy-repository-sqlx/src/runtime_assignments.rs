@@ -70,12 +70,12 @@ impl DeployRepository {
              WHERE uuid = $1 AND tenant_id = $2 AND status = 'ACTIVE' AND deleted_at IS NULL
              FOR UPDATE",
         )
-            .bind(target_uuid)
-            .bind(tenant_id)
-            .fetch_optional(&mut *transaction)
-            .await
-            .map_err(|error| store_error("resolve deploy Web Node target", error))?
-            .ok_or_else(|| DeployServiceError::not_found("Web Node target not found"))?;
+        .bind(target_uuid)
+        .bind(tenant_id)
+        .fetch_optional(&mut *transaction)
+        .await
+        .map_err(|error| store_error("resolve deploy Web Node target", error))?
+        .ok_or_else(|| DeployServiceError::not_found("Web Node target not found"))?;
         let target_id: i64 = target
             .try_get("id")
             .map_err(|error| DeployServiceError::Internal(error.to_string()))?;
@@ -106,7 +106,7 @@ impl DeployRepository {
             normalize_timestamp(lease_expires_at, "runtime assignment lease expiry")?;
         let mut transaction = begin_runtime_assignment_transaction(&self.pool).await?;
         let rows = sqlx::query(
-                "WITH candidates AS (
+            "WITH candidates AS (
                     SELECT a.id
                     FROM deploy_runtime_assignment a
                     INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
@@ -143,7 +143,7 @@ impl DeployRepository {
                  FROM claimed a
                  INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
                  ORDER BY a.created_at, a.id",
-            )
+        )
         .bind(&now)
         .bind(maximum_attempts)
         .bind(maximum_items)
@@ -182,16 +182,16 @@ impl DeployRepository {
                AND snapshot_sha256 = $6 AND generation = $7
                AND publish_status = 'PUBLISHING'",
         )
-            .bind(assignment_uuid)
-            .bind(lease_owner)
-            .bind(&receipt.assignment_uuid)
-            .bind(&published_at)
-            .bind(&receipt.snapshot_uuid)
-            .bind(&receipt.snapshot_sha256)
-            .bind(receipt.generation.parse::<i64>().unwrap_or_default())
-            .execute(&self.pool)
-            .await
-            .map_err(|error| store_error("mark deploy runtime assignment published", error))?;
+        .bind(assignment_uuid)
+        .bind(lease_owner)
+        .bind(&receipt.assignment_uuid)
+        .bind(&published_at)
+        .bind(&receipt.snapshot_uuid)
+        .bind(&receipt.snapshot_sha256)
+        .bind(receipt.generation.parse::<i64>().unwrap_or_default())
+        .execute(&self.pool)
+        .await
+        .map_err(|error| store_error("mark deploy runtime assignment published", error))?;
         if result.rows_affected() == 0 {
             return Err(DeployServiceError::conflict(
                 "runtime assignment publication state changed concurrently",
@@ -220,14 +220,14 @@ impl DeployRepository {
                  updated_at = CAST($5 AS TIMESTAMPTZ), version = version + 1
              WHERE uuid = $1 AND lease_owner = $2 AND publish_status = 'PUBLISHING'",
         )
-            .bind(assignment_uuid)
-            .bind(lease_owner)
-            .bind(next_attempt_at.as_deref())
-            .bind(error_code)
-            .bind(&updated_at)
-            .execute(&self.pool)
-            .await
-            .map_err(|error| store_error("mark deploy runtime assignment failed", error))?;
+        .bind(assignment_uuid)
+        .bind(lease_owner)
+        .bind(next_attempt_at.as_deref())
+        .bind(error_code)
+        .bind(&updated_at)
+        .execute(&self.pool)
+        .await
+        .map_err(|error| store_error("mark deploy runtime assignment failed", error))?;
         if result.rows_affected() == 0 {
             return Err(DeployServiceError::conflict(
                 "runtime assignment publication state changed concurrently",
@@ -328,11 +328,11 @@ impl DeployRepository {
              WHERE a.uuid = $1
              FOR UPDATE OF a",
         )
-            .bind(assignment_uuid)
-            .fetch_optional(&mut *transaction)
-            .await
-            .map_err(|error| store_error("lock runtime assignment observation", error))?
-            .ok_or_else(|| DeployServiceError::not_found("runtime assignment not found"))?;
+        .bind(assignment_uuid)
+        .fetch_optional(&mut *transaction)
+        .await
+        .map_err(|error| store_error("lock runtime assignment observation", error))?
+        .ok_or_else(|| DeployServiceError::not_found("runtime assignment not found"))?;
         let assignment = map_assignment_row(&row)?;
         observation.validate_for(&assignment)?;
         let runtime_assignment_id: i64 = row
@@ -404,28 +404,28 @@ impl DeployRepository {
                 CAST($18 AS TIMESTAMPTZ),CAST($19 AS TIMESTAMPTZ),CAST($19 AS TIMESTAMPTZ)
              )",
         )
-            .bind(id)
-            .bind(uuid)
-            .bind(observation.tenant_id)
-            .bind(site_id)
-            .bind(assignment.trigger_site_revision_id)
-            .bind(node_target_id)
-            .bind(runtime_assignment_id)
-            .bind(&observation.observation_uuid)
-            .bind(&observation.assignment_uuid)
-            .bind(observation.generation as i64)
-            .bind(&observation.snapshot_uuid)
-            .bind(&observation.snapshot_sha256)
-            .bind(observation.environment.as_str())
-            .bind(observation.state.as_str())
-            .bind(&observation.node_version)
-            .bind(&observation.reason_code)
-            .bind(&observation.detail)
-            .bind(&observed_at)
-            .bind(&ingested_at)
-            .execute(&mut *transaction)
-            .await
-            .map_err(|error| store_error("insert runtime observation evidence", error))?;
+        .bind(id)
+        .bind(uuid)
+        .bind(observation.tenant_id)
+        .bind(site_id)
+        .bind(assignment.trigger_site_revision_id)
+        .bind(node_target_id)
+        .bind(runtime_assignment_id)
+        .bind(&observation.observation_uuid)
+        .bind(&observation.assignment_uuid)
+        .bind(observation.generation as i64)
+        .bind(&observation.snapshot_uuid)
+        .bind(&observation.snapshot_sha256)
+        .bind(observation.environment.as_str())
+        .bind(observation.state.as_str())
+        .bind(&observation.node_version)
+        .bind(&observation.reason_code)
+        .bind(&observation.detail)
+        .bind(&observed_at)
+        .bind(&ingested_at)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| store_error("insert runtime observation evidence", error))?;
 
         let revision_activated = if observation.state == RuntimeObservationState::Active {
             activate_site_revision_if_converged(
@@ -509,20 +509,20 @@ impl DeployRuntimeAssignmentMutationPort for SqlxRuntimeAssignmentMutation {
                  'PENDING', 0, CAST($11 AS TIMESTAMPTZ), CAST($11 AS TIMESTAMPTZ), 1
              )",
         )
-            .bind(id)
-            .bind(&command.assignment_uuid)
-            .bind(tenant_id)
-            .bind(target_id)
-            .bind(next_generation as i64)
-            .bind(&command.snapshot_uuid)
-            .bind(&command.snapshot_sha256)
-            .bind(&command.desired_state_sha256)
-            .bind(&runtime_set_json)
-            .bind(command.runtime_set_bytes as i64)
-            .bind(&created_at)
-            .execute(&mut *transaction)
-            .await
-            .map_err(|error| store_error("insert deploy runtime assignment", error))?;
+        .bind(id)
+        .bind(&command.assignment_uuid)
+        .bind(tenant_id)
+        .bind(target_id)
+        .bind(next_generation as i64)
+        .bind(&command.snapshot_uuid)
+        .bind(&command.snapshot_sha256)
+        .bind(&command.desired_state_sha256)
+        .bind(&runtime_set_json)
+        .bind(command.runtime_set_bytes as i64)
+        .bind(&created_at)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| store_error("insert deploy runtime assignment", error))?;
         sqlx::query(
             "UPDATE deploy_runtime_assignment
              SET publish_status = 'SUPERSEDED', lease_owner = NULL,
@@ -531,12 +531,12 @@ impl DeployRuntimeAssignmentMutationPort for SqlxRuntimeAssignmentMutation {
              WHERE node_target_id = $2 AND generation < $3
                AND publish_status <> 'SUPERSEDED'",
         )
-            .bind(&created_at)
-            .bind(target_id)
-            .bind(next_generation as i64)
-            .execute(&mut *transaction)
-            .await
-            .map_err(|error| store_error("supersede older deploy runtime assignments", error))?;
+        .bind(&created_at)
+        .bind(target_id)
+        .bind(next_generation as i64)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| store_error("supersede older deploy runtime assignments", error))?;
         let assignment = runtime_assignment_by_uuid(&mut transaction, &command.assignment_uuid)
             .await?
             .ok_or_else(|| {
@@ -647,13 +647,13 @@ async fn activate_site_revision_if_converged(
          WHERE id = $1 AND tenant_id = $2 AND desired_revision_id = $3
            AND (current_revision_id IS NULL OR current_revision_id <> $3)",
     )
-        .bind(site_id)
-        .bind(tenant_id)
-        .bind(site_revision_id)
-        .bind(activated_at)
-        .execute(&mut **transaction)
-        .await
-        .map_err(|error| store_error("activate converged site revision", error))?;
+    .bind(site_id)
+    .bind(tenant_id)
+    .bind(site_revision_id)
+    .bind(activated_at)
+    .execute(&mut **transaction)
+    .await
+    .map_err(|error| store_error("activate converged site revision", error))?;
     Ok(updated.rows_affected() == 1)
 }
 

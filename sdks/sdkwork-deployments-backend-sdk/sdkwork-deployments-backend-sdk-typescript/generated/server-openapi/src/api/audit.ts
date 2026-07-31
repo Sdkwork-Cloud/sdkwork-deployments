@@ -33,7 +33,7 @@ export class AuditAuditLogsApi {
       { name: 'startDate', value: params?.startDate, style: 'form', explode: true, allowReserved: false },
       { name: 'endDate', value: params?.endDate, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: AuditLogResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/audit_logs`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any });
+    return this.client.request<{ items: AuditLogResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/audit_logs`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 

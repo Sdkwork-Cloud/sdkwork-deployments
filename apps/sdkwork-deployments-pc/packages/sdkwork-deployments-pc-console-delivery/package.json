@@ -9,10 +9,19 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./management": {
+      "types": "./src/management.ts",
+      "import": "./src/management.ts",
+      "default": "./src/management.ts"
     }
   },
   "dependencies": {
-    "@sdkwork/deployments-pc-commons": "workspace:*"
+    "@sdkwork/deployments-pc-commons": "workspace:*",
+    "@sdkwork/deployments-pc-console-core": "workspace:*",
+    "lucide-react": "catalog:",
+    "react": "catalog:",
+    "react-router-dom": "^7.15.0"
   },
   "sdkwork": {
     "applicationCode": "deployments",

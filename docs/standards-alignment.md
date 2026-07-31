@@ -34,12 +34,14 @@ The runtime worker registers and renews referenced Drive WebsiteRoot channels th
 Drive Internal SDK before Web publication. Drive then delivers ordinary events directly to the
 Node-qualified Web callback; Deploy is not the event relay or acknowledgement authority.
 
-Custom domain creation normalizes bounded IDNA hostnames before the global claim is persisted.
-`sites.domains.verify` exposes an exact DNS TXT challenge at
-`_sdkwork-verification.<hostname>`; only an observed current token can atomically activate the
-domain. Missing records, mismatches, resolver failures, and stale tokens fail closed. Durable proof
-expiry/revalidation, wildcard-overlap claim serialization, takeover holds, and production DNS
-incident evidence remain launch gates.
+Domain management starts with tenant-owned `domain_zones`. Opening a Zone lists its apex and child
+hostname resources; application association exists only through `deploy_site_binding`, so one Site
+can use multiple hostnames and one verified hostname can participate in multiple non-conflicting
+application routes. `domainZones.hostnames.verify` exposes an expiring DNS TXT challenge at
+`_sdkwork-verification.<hostname>`; only an observed current token can atomically verify the
+hostname. Missing records, mismatches, resolver failures, and stale tokens fail closed. Periodic
+revalidation, wildcard-overlap claim serialization, takeover holds, and production DNS incident
+evidence remain launch gates.
 
 ## API And SDK Contract
 
@@ -67,8 +69,9 @@ which supports atomic rotation without restart.
 
 Drive upload sessions, `deploy_artifact`, `deploy_release`, and `deploy_deployment` remain valid for
 Git, package, image, and frozen-bundle workflows. They are not the publication mechanism for a live
-WebsiteRoot or WikiPublication. Certificate upload sessions are metadata registration inputs and do
-not move private-key custody into ordinary Deploy columns.
+WebsiteRoot or WikiPublication. Certificate and private-key upload sessions are not part of the
+Drive artifact pipeline. Certificate material is represented only by immutable Secret Manager/KMS
+bundle references and is never accepted through a Drive node reference.
 
 ## Verification
 

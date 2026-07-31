@@ -206,42 +206,6 @@ pub trait DeployAppApi: Send + Sync {
         site_id: &str,
     ) -> DeployServiceResult<SiteResponse>;
 
-    async fn list_domains(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        page: i32,
-        page_size: i32,
-    ) -> DeployServiceResult<DomainPage>;
-
-    async fn create_domain(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        request: &CreateDomainRequest,
-    ) -> DeployServiceResult<DomainResponse>;
-
-    async fn retrieve_domain(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        domain_id: &str,
-    ) -> DeployServiceResult<DomainResponse>;
-
-    async fn delete_domain(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        domain_id: &str,
-    ) -> DeployServiceResult<()>;
-
-    async fn verify_domain(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        domain_id: &str,
-    ) -> DeployServiceResult<DomainVerifyResponse>;
-
     async fn list_deployments(
         &self,
         context: &DeployAppRequestContext,
@@ -343,13 +307,8 @@ pub trait DeployAppApi: Send + Sync {
     async fn create_certificate(
         &self,
         context: &DeployAppRequestContext,
+        idempotency_key: &str,
         request: &CreateCertificateRequest,
-    ) -> DeployServiceResult<CertificateResponse>;
-
-    async fn upload_custom_certificate(
-        &self,
-        context: &DeployAppRequestContext,
-        request: &UploadCustomCertificateRequest,
     ) -> DeployServiceResult<CertificateResponse>;
 
     async fn retrieve_certificate(

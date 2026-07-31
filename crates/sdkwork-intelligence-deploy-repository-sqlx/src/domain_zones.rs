@@ -7,7 +7,9 @@ use sdkwork_intelligence_deploy_service::{dns_txt_record_name, DomainVerificatio
 use sdkwork_utils_rust::crypto::sha256_hash;
 use sqlx::{postgres::PgRow, Row};
 
-use crate::support::{new_uuid, next_id, now_rfc3339, pagination, store_error};
+use crate::support::{
+    datetime_from_row, new_uuid, next_id, optional_datetime_from_row, pagination, store_error,
+};
 use crate::DeployRepository;
 
 const ZONE_SELECT: &str =
@@ -264,7 +266,6 @@ impl DeployRepository {
         }
 
         let now = chrono::Utc::now();
-        let now_text = now.to_rfc3339();
         let active = sqlx::query(
             "SELECT uuid, record_name, proof_sha256, expires_at
              FROM deploy_domain_verification
@@ -277,13 +278,11 @@ impl DeployRepository {
         .await
         .map_err(|error| store_error("load active deploy_domain_verification", error))?;
         if let Some(active) = active {
-            let expires_at: String = active.try_get("expires_at").map_err(|error| {
-                DeployServiceError::Internal(format!("map verification expiry: {error}"))
-            })?;
-            let expired = chrono::DateTime::parse_from_rfc3339(&expires_at)
-                .map(|value| value <= now)
-                .unwrap_or(true);
-            if !expired {
+            let expires_at: chrono::DateTime<chrono::Utc> =
+                active.try_get("expires_at").map_err(|error| {
+                    DeployServiceError::Internal(format!("map verification expiry: {error}"))
+                })?;
+            if expires_at > now {
                 return Ok(DomainVerificationChallenge {
                     verification_id: Some(active.try_get("uuid").map_err(|error| {
                         DeployServiceError::Internal(format!("map verification uuid: {error}"))
@@ -297,7 +296,7 @@ impl DeployRepository {
                         DeployServiceError::Internal(format!("map verification proof: {error}"))
                     })?),
                     token: None,
-                    expires_at: Some(expires_at),
+                    expires_at: Some(expires_at.to_rfc3339()),
                 });
             }
             sqlx::query(
@@ -307,7 +306,7 @@ impl DeployRepository {
             )
             .bind(tenant_id)
             .bind(domain_id)
-            .bind(&now_text)
+            .bind(now)
             .execute(&self.pool)
             .await
             .map_err(|error| store_error("expire deploy_domain_verification", error))?;
@@ -317,7 +316,7 @@ impl DeployRepository {
         let token = format!("sdkwork-domain-verification={}", new_uuid());
         let proof_sha256 = sha256_hash(token.as_bytes());
         let record_name = dns_txt_record_name(&hostname)?;
-        let expires_at = (now + chrono::Duration::minutes(30)).to_rfc3339();
+        let expires_at = now + chrono::Duration::minutes(30);
         sqlx::query(
             "INSERT INTO deploy_domain_verification (
                 id, uuid, tenant_id, domain_id, method, record_name, proof_sha256, status,
@@ -330,8 +329,8 @@ impl DeployRepository {
         .bind(domain_id)
         .bind(&record_name)
         .bind(&proof_sha256)
-        .bind(&now_text)
-        .bind(&expires_at)
+        .bind(now)
+        .bind(expires_at)
         .execute(&self.pool)
         .await
         .map_err(|error| store_error("insert deploy_domain_verification", error))?;
@@ -342,7 +341,7 @@ impl DeployRepository {
             verified: false,
             proof_sha256: Some(proof_sha256),
             token: Some(token),
-            expires_at: Some(expires_at),
+            expires_at: Some(expires_at.to_rfc3339()),
         })
     }
 
@@ -355,7 +354,7 @@ impl DeployRepository {
         observed_sha256: &str,
         verifier_identity: &str,
     ) -> DeployServiceResult<bool> {
-        let now = now_rfc3339();
+        let now = chrono::Utc::now();
         let mut transaction = self
             .pool
             .begin()
@@ -379,7 +378,7 @@ impl DeployRepository {
         .bind(verification_id)
         .bind(observed_sha256)
         .bind(verifier_identity)
-        .bind(&now)
+        .bind(now)
         .execute(&mut *transaction)
         .await
         .map_err(|error| store_error("confirm deploy_domain_verification", error))?;
@@ -393,7 +392,7 @@ impl DeployRepository {
         let domain = sqlx::query(
             "UPDATE deploy_domain d
              SET verification_status = 'VERIFIED', verified_at = $4,
-                 updated_at = $4, version = version + 1
+                 updated_at = $4, version = d.version + 1
              FROM deploy_dns_zone z
              WHERE d.zone_id = z.id AND z.tenant_id = $1 AND z.uuid = $2 AND d.uuid = $3
                AND d.verification_status <> 'VERIFIED'
@@ -402,7 +401,7 @@ impl DeployRepository {
         .bind(tenant_id)
         .bind(zone_id)
         .bind(hostname_id)
-        .bind(&now)
+        .bind(now)
         .execute(&mut *transaction)
         .await
         .map_err(|error| store_error("activate verified deploy_domain", error))?;
@@ -573,7 +572,7 @@ impl DeployRepository {
         }
         let result = sqlx::query(
             "UPDATE deploy_domain d
-             SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP, version = version + 1
+             SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP, version = d.version + 1
              FROM deploy_dns_zone z
              WHERE d.zone_id = z.id AND z.tenant_id = $1 AND z.uuid = $2 AND d.uuid = $3
                AND z.deleted_at IS NULL AND d.deleted_at IS NULL",
@@ -636,7 +635,7 @@ fn map_zone_row(row: &PgRow) -> Result<DomainZoneResponse, sqlx::Error> {
         verified_hostname_count: row.try_get("verified_hostname_count")?,
         certificate_count: row.try_get("certificate_count")?,
         binding_count: row.try_get("binding_count")?,
-        updated_at: row.try_get("updated_at")?,
+        updated_at: datetime_from_row(row, "updated_at")?,
         version: row.try_get::<i64, _>("version")?.to_string(),
     })
 }
@@ -659,12 +658,12 @@ fn map_hostname_row(row: &PgRow) -> Result<DomainHostnameResponse, sqlx::Error> 
         relative_name,
         hostname_type: row.try_get("hostname_type")?,
         verification_status: row.try_get("verification_status")?,
-        verified_at: row.try_get("verified_at").ok(),
+        verified_at: optional_datetime_from_row(row, "verified_at")?,
         status: row.try_get("status")?,
         certificate_count: row.try_get("certificate_count")?,
         binding_count: row.try_get("binding_count")?,
-        created_at: row.try_get("created_at")?,
-        updated_at: row.try_get("updated_at")?,
+        created_at: datetime_from_row(row, "created_at")?,
+        updated_at: datetime_from_row(row, "updated_at")?,
         version: row.try_get::<i64, _>("version")?.to_string(),
     })
 }

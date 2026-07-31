@@ -5,7 +5,9 @@ use sdkwork_deploy_contract::{
     DeployServiceResult, DeployUploadSessionResponse,
 };
 
-use crate::support::{new_uuid, next_id, now_rfc3339, resolve_site_internal_id, store_error};
+use crate::support::{
+    datetime_from_row, new_uuid, next_id, now_rfc3339, resolve_site_internal_id, store_error,
+};
 use crate::DeployRepository;
 
 impl DeployRepository {
@@ -98,7 +100,9 @@ impl DeployRepository {
             None => None,
         };
 
-        Ok(map_upload_session_row(row, site_uuid))
+        map_upload_session_row(&row, site_uuid).map_err(|error| {
+            DeployServiceError::Internal(format!("map deploy upload session ref: {error}"))
+        })
     }
 
     pub(crate) async fn find_upload_session_by_idempotency_key_repo(
@@ -130,7 +134,11 @@ impl DeployRepository {
             None => None,
         };
 
-        Ok(Some(map_upload_session_row(row, site_uuid)))
+        map_upload_session_row(&row, site_uuid)
+            .map(Some)
+            .map_err(|error| {
+                DeployServiceError::Internal(format!("map deploy upload session ref: {error}"))
+            })
     }
 
     pub(crate) async fn update_upload_session_status_repo(
@@ -162,23 +170,23 @@ impl DeployRepository {
 }
 
 fn map_upload_session_row(
-    row: sqlx::postgres::PgRow,
+    row: &sqlx::postgres::PgRow,
     site_id: Option<String>,
-) -> DeployUploadSessionResponse {
-    DeployUploadSessionResponse {
-        id: row.try_get("uuid").unwrap_or_default(),
+) -> Result<DeployUploadSessionResponse, sqlx::Error> {
+    Ok(DeployUploadSessionResponse {
+        id: row.try_get("uuid")?,
         site_id,
-        package_type: row.try_get("package_type").unwrap_or(1),
-        file_name: row.try_get("file_name").unwrap_or_default(),
-        content_type: row.try_get("content_type").unwrap_or_default(),
-        content_length: row.try_get("content_length").unwrap_or(0),
+        package_type: row.try_get("package_type")?,
+        file_name: row.try_get("file_name")?,
+        content_type: row.try_get("content_type")?,
+        content_length: row.try_get("content_length")?,
         checksum: row.try_get("checksum").ok(),
-        status: row.try_get("status").unwrap_or(0),
-        drive_upload_session_id: row.try_get("drive_upload_session_id").unwrap_or_default(),
+        status: row.try_get("status")?,
+        drive_upload_session_id: row.try_get("drive_upload_session_id")?,
         drive_upload_item_id: row.try_get("drive_upload_item_id").ok(),
         drive_space_id: row.try_get("drive_space_id").ok(),
         drive_node_id: row.try_get("drive_node_id").ok(),
-        created_at: row.try_get("created_at").unwrap_or_default(),
-        updated_at: row.try_get("updated_at").unwrap_or_default(),
-    }
+        created_at: datetime_from_row(row, "created_at")?,
+        updated_at: datetime_from_row(row, "updated_at")?,
+    })
 }
