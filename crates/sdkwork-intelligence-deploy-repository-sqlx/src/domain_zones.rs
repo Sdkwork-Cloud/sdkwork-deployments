@@ -86,6 +86,34 @@ impl DeployRepository {
         actor_id: Option<i64>,
         request: &CreateDomainZoneRequest,
     ) -> DeployServiceResult<DomainZoneResponse> {
+        let apex = request.apex_hostname.as_str();
+        // The apex must not already be registered as a hostname (zone apexes
+        // live in deploy_domain as well), and it must not nest under or
+        // contain an existing zone apex so zones never overlap. Both checks
+        // are global, matching the global unique indexes.
+        let conflicts: (bool, bool) = sqlx::query_as(
+            "SELECT
+                EXISTS (SELECT 1 FROM deploy_domain
+                        WHERE deleted_at IS NULL AND hostname_ascii = $1),
+                EXISTS (SELECT 1 FROM deploy_dns_zone
+                        WHERE deleted_at IS NULL AND (apex_hostname = $1
+                            OR apex_hostname LIKE '%.' || $1
+                            OR $1 LIKE '%.' || apex_hostname))",
+        )
+        .bind(apex)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|error| store_error("check deploy_dns_zone conflicts", error))?;
+        if conflicts.0 {
+            return Err(DeployServiceError::conflict(
+                "apex hostname is already registered as a hostname",
+            ));
+        }
+        if conflicts.1 {
+            return Err(DeployServiceError::conflict(
+                "zone apex overlaps an existing domain zone",
+            ));
+        }
         let zone_id = next_id(self.id_generator())?;
         let zone_uuid = new_uuid();
         let hostname_id = next_id(self.id_generator())?;
@@ -193,20 +221,48 @@ impl DeployRepository {
         tenant_id: i64,
         zone_id: &str,
     ) -> DeployServiceResult<()> {
-        let child_count: i64 = sqlx::query_scalar(
+        // The apex hostname row belongs to the zone itself (created together
+        // with the zone), so only user-added hostnames block the deletion.
+        let hostname_count: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM deploy_domain d JOIN deploy_dns_zone z ON z.id = d.zone_id
-             WHERE z.tenant_id = $1 AND z.uuid = $2 AND z.deleted_at IS NULL AND d.deleted_at IS NULL",
+             WHERE z.tenant_id = $1 AND z.uuid = $2 AND z.deleted_at IS NULL
+               AND d.deleted_at IS NULL AND d.hostname_ascii <> z.apex_hostname",
         )
         .bind(tenant_id)
         .bind(zone_id)
         .fetch_one(&self.pool)
         .await
-        .map_err(|error| store_error("count deploy_dns_zone children", error))?;
-        if child_count > 0 {
+        .map_err(|error| store_error("count deploy_dns_zone hostnames", error))?;
+        if hostname_count > 0 {
             return Err(DeployServiceError::conflict(
                 "domain zone still contains hostnames",
             ));
         }
+        // Any hostname (including the apex) referenced by a site binding or a
+        // certificate identifier must be released before the zone is removed.
+        let reference_count: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM deploy_domain d JOIN deploy_dns_zone z ON z.id = d.zone_id
+             WHERE z.tenant_id = $1 AND z.uuid = $2 AND z.deleted_at IS NULL AND d.deleted_at IS NULL
+               AND ((SELECT COUNT(*) FROM deploy_site_binding b
+                     WHERE b.domain_id = d.id AND b.deleted_at IS NULL) > 0
+                 OR (SELECT COUNT(*) FROM deploy_certificate_identifier ci
+                     WHERE ci.domain_id = d.id) > 0)",
+        )
+        .bind(tenant_id)
+        .bind(zone_id)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|error| store_error("count deploy_dns_zone references", error))?;
+        if reference_count > 0 {
+            return Err(DeployServiceError::conflict(
+                "domain zone hostnames are still bound to an application or certificate",
+            ));
+        }
+        let mut transaction = self
+            .pool
+            .begin()
+            .await
+            .map_err(|error| store_error("begin delete deploy_dns_zone", error))?;
         let result = sqlx::query(
             "UPDATE deploy_dns_zone
              SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP, version = version + 1
@@ -214,12 +270,30 @@ impl DeployRepository {
         )
         .bind(tenant_id)
         .bind(zone_id)
-        .execute(&self.pool)
+        .execute(&mut *transaction)
         .await
         .map_err(|error| store_error("delete deploy_dns_zone", error))?;
         if result.rows_affected() != 1 {
             return Err(DeployServiceError::not_found("domain zone not found"));
         }
+        // The apex hostname row is removed together with its zone so it cannot
+        // linger as a dangling domain asset after the zone is gone.
+        sqlx::query(
+            "UPDATE deploy_domain d
+             SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP, version = d.version + 1
+             FROM deploy_dns_zone z
+             WHERE d.zone_id = z.id AND z.tenant_id = $1 AND z.uuid = $2
+               AND d.hostname_ascii = z.apex_hostname AND d.deleted_at IS NULL",
+        )
+        .bind(tenant_id)
+        .bind(zone_id)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| store_error("delete deploy_dns_zone apex hostname", error))?;
+        transaction
+            .commit()
+            .await
+            .map_err(|error| store_error("commit delete deploy_dns_zone", error))?;
         Ok(())
     }
 }
@@ -492,6 +566,37 @@ impl DeployRepository {
             DeployServiceError::Internal(format!("map deploy_dns_zone apex: {error}"))
         })?;
         let hostname = hostname_from_relative_name(&request.relative_name, &apex_hostname)?;
+        if request.relative_name == "@" {
+            // The apex hostname row is created together with the zone, so a
+            // relative name of "@" can never be added a second time.
+            return Err(DeployServiceError::conflict(
+                "the apex hostname already belongs to this zone",
+            ));
+        }
+        // The full hostname must not collide with an existing zone apex or an
+        // existing hostname; the global unique index backs this up for
+        // concurrent writers.
+        let conflicts: (bool, bool) = sqlx::query_as(
+            "SELECT
+                EXISTS (SELECT 1 FROM deploy_dns_zone
+                        WHERE deleted_at IS NULL AND apex_hostname = $1),
+                EXISTS (SELECT 1 FROM deploy_domain
+                        WHERE deleted_at IS NULL AND hostname_ascii = $1)",
+        )
+        .bind(&hostname)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|error| store_error("check deploy_domain hostname conflicts", error))?;
+        if conflicts.0 {
+            return Err(DeployServiceError::conflict(
+                "hostname is already registered as a domain zone apex",
+            ));
+        }
+        if conflicts.1 {
+            return Err(DeployServiceError::conflict(
+                "hostname already exists in a domain zone",
+            ));
+        }
         let hostname_type = if hostname.starts_with("*.") {
             "WILDCARD"
         } else {
@@ -550,10 +655,11 @@ impl DeployRepository {
         zone_id: &str,
         hostname_id: &str,
     ) -> DeployServiceResult<()> {
-        let references: i64 = sqlx::query_scalar(
+        let (references, is_apex): (i64, bool) = sqlx::query_as(
             "SELECT
                 (SELECT COUNT(*) FROM deploy_site_binding b WHERE b.domain_id = d.id AND b.deleted_at IS NULL)
-                + (SELECT COUNT(*) FROM deploy_certificate_identifier ci WHERE ci.domain_id = d.id)
+                + (SELECT COUNT(*) FROM deploy_certificate_identifier ci WHERE ci.domain_id = d.id),
+                d.hostname_ascii = z.apex_hostname
              FROM deploy_domain d JOIN deploy_dns_zone z ON z.id = d.zone_id
              WHERE z.tenant_id = $1 AND z.uuid = $2 AND d.uuid = $3
                AND z.deleted_at IS NULL AND d.deleted_at IS NULL",
@@ -565,6 +671,11 @@ impl DeployRepository {
         .await
         .map_err(|error| store_error("count deploy_domain references", error))?
         .ok_or_else(|| DeployServiceError::not_found("domain hostname not found"))?;
+        if is_apex {
+            return Err(DeployServiceError::conflict(
+                "the apex hostname belongs to the zone and cannot be deleted independently",
+            ));
+        }
         if references > 0 {
             return Err(DeployServiceError::conflict(
                 "domain hostname is still bound to an application or certificate",
@@ -601,16 +712,19 @@ fn hostname_from_relative_name(
     if relative_name.is_empty()
         || relative_name.ends_with('.')
         || relative_name.contains("..")
-        || relative_name.split('.').any(|label| {
+        || relative_name.split('.').enumerate().any(|(index, label)| {
+            if label == "*" {
+                // A wildcard label is permitted only as the leftmost label
+                // (e.g. *.a.example.com); it cannot appear deeper in the path.
+                return index != 0;
+            }
             label.is_empty()
                 || label.len() > 63
-                || (label == "*" && relative_name != "*")
-                || (label != "*"
-                    && (label.starts_with('-')
-                        || label.ends_with('-')
-                        || !label
-                            .bytes()
-                            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')))
+                || label.starts_with('-')
+                || label.ends_with('-')
+                || !label
+                    .bytes()
+                    .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
         })
     {
         return Err(DeployServiceError::validation(
@@ -683,11 +797,22 @@ mod tests {
             "docs.example.com"
         );
         assert_eq!(
+            hostname_from_relative_name("api.eu", "example.com").unwrap(),
+            "api.eu.example.com"
+        );
+        assert_eq!(
             hostname_from_relative_name("*", "example.com").unwrap(),
             "*.example.com"
         );
-        for name in ["", "foo..bar", "foo.*", "-bad", "bad-"] {
-            assert!(hostname_from_relative_name(name, "example.com").is_err());
+        assert_eq!(
+            hostname_from_relative_name("*.a", "example.com").unwrap(),
+            "*.a.example.com"
+        );
+        for name in ["", "foo..bar", "foo.*", "a.*.b", "*.", "-bad", "bad-", "*x"] {
+            assert!(
+                hostname_from_relative_name(name, "example.com").is_err(),
+                "{name}"
+            );
         }
     }
 }

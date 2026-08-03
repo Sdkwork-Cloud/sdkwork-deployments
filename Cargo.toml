@@ -75,8 +75,8 @@ sdkwork-drive-contract = { path = "../sdkwork-drive/crates/sdkwork-drive-contrac
 sdkwork_drive_app_sdk_generated_rust = { package = "sdkwork-drive-app-sdk-generated-rust", path = "../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-rust/generated/server-openapi" }
 sdkwork-drive-internal-sdk-generated-rust = { package = "sdkwork-drive-internal-sdk-generated-rust", path = "../sdkwork-drive/sdks/sdkwork-drive-internal-sdk/sdkwork-drive-internal-sdk-rust/generated/server-openapi" }
 sdkwork-knowledgebase-internal-sdk-generated-rust = { package = "sdkwork-knowledgebase-internal-sdk-generated-rust", path = "../sdkwork-knowledgebase/sdks/sdkwork-knowledgebase-internal-sdk/sdkwork-knowledgebase-internal-sdk-rust/generated/server-openapi" }
-sdkwork-web-internal-sdk = { path = "../sdkwork-web-server/sdks/sdkwork-web-internal-sdk/sdkwork-web-internal-sdk-rust/generated/server-openapi" }
-sdkwork-webserver-core = { path = "../sdkwork-web-server/crates/sdkwork-webserver-core" }
-sdkwork-webserver-contract = { path = "../sdkwork-web-server/crates/sdkwork-webserver-contract" }
-sdkwork-webserver-delivery-runtime = { path = "../sdkwork-web-server/crates/sdkwork-webserver-delivery-runtime" }
-sdkwork-webserver-knowledgebase-provider = { path = "../sdkwork-web-server/crates/sdkwork-webserver-knowledgebase-provider" }
+sdkwork-web-internal-sdk = { path = "../sdkwork-webserver/sdks/sdkwork-web-internal-sdk/sdkwork-web-internal-sdk-rust/generated/server-openapi" }
+sdkwork-webserver-core = { path = "../sdkwork-webserver/crates/sdkwork-webserver-core" }
+sdkwork-webserver-contract = { path = "../sdkwork-webserver/crates/sdkwork-webserver-contract" }
+sdkwork-webserver-delivery-runtime = { path = "../sdkwork-webserver/crates/sdkwork-webserver-delivery-runtime" }
+sdkwork-webserver-knowledgebase-provider = { path = "../sdkwork-webserver/crates/sdkwork-webserver-knowledgebase-provider" }

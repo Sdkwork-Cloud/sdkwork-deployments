@@ -4491,7 +4491,8 @@
           "apexHostname": {
             "type": "string",
             "minLength": 3,
-            "maxLength": 253
+            "maxLength": 253,
+            "description": "A registrable root domain (zone apex) such as example.com or example.co.uk. Wildcard names and subdomains are not accepted; Unicode (IDN) names are converted to punycode automatically. The apex must not already exist as a hostname and must not overlap an existing root domain.\n"
           },
           "displayName": {
             "type": "string",
@@ -4615,7 +4616,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 253,
-            "description": "Use @ for the apex, a relative label path such as www or api.eu, or * for a wildcard hostname."
+            "description": "Relative name within the zone: \"@\" addresses the apex (already part of the zone), a label path such as www or api.eu creates multi-level subdomains, and \"*\" or \"*.a\" creates wildcard hostnames (the \"*\" label is accepted only as the leftmost label). Names are ASCII-only after IDNA conversion; leading/trailing dots, empty labels, and hyphen-edged labels are rejected.\n"
           }
         }
       },

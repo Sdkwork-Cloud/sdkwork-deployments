@@ -1003,3 +1003,42 @@ mod upload_session_tests {
         assert!(DeployService::ensure_upload_session_mutable(&completed).is_err());
     }
 }
+
+#[cfg(test)]
+mod domain_zone_tests {
+    use super::normalize_relative_hostname;
+
+    #[test]
+    fn relative_names_support_apex_multi_level_and_wildcard() {
+        assert_eq!(
+            normalize_relative_hostname("@", "example.com").unwrap(),
+            "@"
+        );
+        assert_eq!(
+            normalize_relative_hostname("WWW", "example.com").unwrap(),
+            "www"
+        );
+        assert_eq!(
+            normalize_relative_hostname("api.eu", "example.com").unwrap(),
+            "api.eu"
+        );
+        assert_eq!(
+            normalize_relative_hostname("*", "example.com").unwrap(),
+            "*"
+        );
+        assert_eq!(
+            normalize_relative_hostname("*.a", "example.com").unwrap(),
+            "*.a"
+        );
+    }
+
+    #[test]
+    fn relative_names_stay_inside_the_zone() {
+        for name in ["", ".", "@.x", "a..b", "a.b.", "foo.*", "*x", "*.a.*", "*.x..y"] {
+            assert!(
+                normalize_relative_hostname(name, "example.com").is_err(),
+                "{name}"
+            );
+        }
+    }
+}
