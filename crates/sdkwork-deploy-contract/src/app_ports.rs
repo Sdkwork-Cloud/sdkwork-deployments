@@ -30,7 +30,7 @@ pub struct ListSitesQuery {
     #[serde(default = "crate::dto::default_page_size")]
     pub page_size: i32,
     pub status: Option<i32>,
-    #[serde(rename = "siteType")]
+    // PAGINATION_SPEC §3：query 参数使用 lower_snake_case 规范词汇。
     pub site_type: Option<i32>,
     pub keyword: Option<String>,
 }
@@ -213,6 +213,7 @@ pub trait DeployAppApi: Send + Sync {
         page: i32,
         page_size: i32,
         status: Option<i32>,
+        cursor: Option<&str>,
     ) -> DeployServiceResult<DeploymentPage>;
 
     async fn create_deployment(
@@ -462,5 +463,6 @@ pub trait DeployBackendApi: Send + Sync {
         &self,
         context: &DeployBackendRequestContext,
         query: &AuditLogQuery,
+        cursor: Option<&str>,
     ) -> DeployServiceResult<AuditLogPage>;
 }

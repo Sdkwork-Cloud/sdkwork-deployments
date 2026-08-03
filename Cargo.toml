@@ -25,6 +25,7 @@ version = "0.1.0"
 license = "AGPL-3.0-or-later"
 
 [workspace.dependencies]
+base64 = "0.22"
 async-trait = "0.1"
 axum = "0.8"
 dotenvy = "0.15"

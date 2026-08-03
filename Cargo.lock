@@ -2514,6 +2514,7 @@ name = "sdkwork-intelligence-deploy-repository-sqlx"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "base64",
  "chrono",
  "sdkwork-database-config",
  "sdkwork-database-drift",

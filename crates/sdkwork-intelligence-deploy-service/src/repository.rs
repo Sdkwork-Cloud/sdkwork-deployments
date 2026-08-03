@@ -160,6 +160,7 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         page: i32,
         page_size: i32,
         status: Option<i32>,
+        cursor: Option<&str>,
     ) -> DeployServiceResult<DeploymentPage>;
 
     async fn create_deployment(
@@ -392,6 +393,7 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         &self,
         tenant_id: Option<i64>,
         query: &sdkwork_deploy_contract::AuditLogQuery,
+        cursor: Option<&str>,
     ) -> DeployServiceResult<AuditLogPage>;
 
     async fn insert_audit_log(&self, command: InsertAuditLogCommand) -> DeployServiceResult<()>;

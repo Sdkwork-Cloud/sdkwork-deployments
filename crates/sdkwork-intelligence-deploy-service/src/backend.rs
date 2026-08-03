@@ -181,12 +181,13 @@ impl DeployBackendApi for DeployService {
         &self,
         context: &DeployBackendRequestContext,
         query: &sdkwork_deploy_contract::AuditLogQuery,
+        cursor: Option<&str>,
     ) -> DeployServiceResult<sdkwork_deploy_contract::AuditLogPage> {
         // 审计日志是租户私有数据：无租户上下文的令牌必须被拒绝，绝不回退为
         // 全库枚举（repository 层的 None 分支同时 fail-closed）。
         let tenant_id = Self::backend_write_tenant(context)?;
         self.repository
-            .list_audit_logs(Some(tenant_id), query)
+            .list_audit_logs(Some(tenant_id), query, cursor)
             .await
     }
 }

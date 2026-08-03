@@ -2,7 +2,7 @@ use sdkwork_deploy_contract::{
     AuditLogPage, AuditLogQuery, AuditLogResponse, DeployServiceError, DeployServiceResult,
 };
 use sdkwork_intelligence_deploy_service::repository::InsertAuditLogCommand;
-use sqlx::{postgres::PgRow, Row};
+use sqlx::{postgres::PgRow, AssertSqlSafe, Row};
 
 use crate::support::{datetime_from_row, new_uuid, next_id, now_rfc3339, pagination, store_error};
 use crate::DeployRepository;
@@ -26,30 +26,30 @@ impl DeployRepository {
         // 所有动态值经 bind 参数注入，WHERE 片段仅由固定子句拼接。
         let mut conditions = vec!["tenant_id = $1".to_string()];
         let mut bind_index = 2;
-        if let Some(target_type) = query.target_type.as_deref().filter(|v| !v.is_empty()) {
+        if query.target_type.as_deref().is_some_and(|v| !v.is_empty()) {
             conditions.push(format!("target_type = ${bind_index}"));
             bind_index += 1;
         }
-        if let Some(action) = query.action.as_deref().filter(|v| !v.is_empty()) {
+        if query.action.as_deref().is_some_and(|v| !v.is_empty()) {
             conditions.push(format!("action = ${bind_index}"));
             bind_index += 1;
         }
-        if let Some(operator_id) = query.operator_id {
+        if query.operator_id.is_some() {
             conditions.push(format!("operator_id = ${bind_index}"));
             bind_index += 1;
         }
-        if let Some(start_date) = query.start_date.as_deref().filter(|v| !v.is_empty()) {
+        if query.start_date.as_deref().is_some_and(|v| !v.is_empty()) {
             conditions.push(format!("created_at >= CAST(${bind_index} AS TIMESTAMPTZ)"));
             bind_index += 1;
         }
-        if let Some(end_date) = query.end_date.as_deref().filter(|v| !v.is_empty()) {
+        if query.end_date.as_deref().is_some_and(|v| !v.is_empty()) {
             conditions.push(format!("created_at <= CAST(${bind_index} AS TIMESTAMPTZ)"));
             bind_index += 1;
         }
         let where_clause = conditions.join(" AND ");
 
         let count_sql = format!("SELECT COUNT(*) AS total FROM deploy_audit_log WHERE {where_clause}");
-        let mut count_query = sqlx::query(&count_sql).bind(tenant_id);
+        let mut count_query = sqlx::query(AssertSqlSafe(count_sql.as_str())).bind(tenant_id);
         if let Some(target_type) = query.target_type.as_deref().filter(|v| !v.is_empty()) {
             count_query = count_query.bind(target_type);
         }
@@ -81,7 +81,7 @@ impl DeployRepository {
              WHERE {where_clause}
              ORDER BY created_at DESC, id DESC LIMIT ${limit_index} OFFSET ${offset_index}"
         );
-        let mut list_query = sqlx::query(&list_sql).bind(tenant_id);
+        let mut list_query = sqlx::query(AssertSqlSafe(list_sql.as_str())).bind(tenant_id);
         if let Some(target_type) = query.target_type.as_deref().filter(|v| !v.is_empty()) {
             list_query = list_query.bind(target_type);
         }

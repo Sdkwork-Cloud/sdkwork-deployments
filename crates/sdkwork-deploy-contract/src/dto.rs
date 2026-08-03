@@ -188,6 +188,13 @@ pub struct DeploymentPage {
     pub total: i64,
     pub page: i32,
     pub page_size: i32,
+    /// Opaque keyset continuation for cursor mode;  in offset mode or on
+    /// the last page (PAGINATION_SPEC §6).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub next_cursor: Option<String>,
+    /// Exact page continuation flag for cursor mode;  in offset mode.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub has_more: Option<bool>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -455,11 +462,12 @@ pub struct ListNginxConfigsQuery {
     pub page: i32,
     #[serde(default = "crate::dto::default_page_size")]
     pub page_size: i32,
-    #[serde(rename = "siteId", default)]
+    // PAGINATION_SPEC §3：query 参数使用 lower_snake_case 规范词汇。
+    #[serde(default)]
     pub site_id: Option<String>,
-    #[serde(rename = "configType", default)]
+    #[serde(default)]
     pub config_type: Option<i32>,
-    #[serde(rename = "isActive", default)]
+    #[serde(default)]
     pub is_active: Option<bool>,
 }
 
@@ -643,6 +651,13 @@ pub struct AuditLogPage {
     pub total: i64,
     pub page: i32,
     pub page_size: i32,
+    /// Opaque keyset continuation for cursor mode;  in offset mode or on
+    /// the last page (PAGINATION_SPEC §6).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub next_cursor: Option<String>,
+    /// Exact page continuation flag for cursor mode;  in offset mode.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub has_more: Option<bool>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

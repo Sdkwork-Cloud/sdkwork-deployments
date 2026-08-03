@@ -499,6 +499,7 @@ impl DeployAppApi for DeployService {
         page: i32,
         page_size: i32,
         status: Option<i32>,
+        cursor: Option<&str>,
     ) -> DeployServiceResult<sdkwork_deploy_contract::DeploymentPage> {
         let tenant_id = Self::require_tenant(context)?;
         self.repository

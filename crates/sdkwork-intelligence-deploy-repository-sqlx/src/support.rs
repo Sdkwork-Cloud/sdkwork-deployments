@@ -159,3 +159,41 @@ pub(crate) async fn resolve_node_cluster_internal_id(
     row.and_then(|row| row.try_get::<i64, _>("id").ok())
         .ok_or_else(|| DeployServiceError::not_found("cluster not found"))
 }
+
+/// Encodes an opaque keyset cursor for `(sort_instant, id)` ordered lists
+/// (PAGINATION_SPEC §6). The payload is base64 of `v1|<created_at>|<id>`;
+/// clients must never parse it.
+pub(crate) fn encode_keyset_cursor(created_at: &str, id: i64) -> String {
+    use base64::Engine as _;
+    let payload = format!("v1|{created_at}|{id}");
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(payload.as_bytes())
+}
+
+/// Decodes a keyset cursor produced by [`encode_keyset_cursor`]; returns
+/// `None` for malformed, oversized, or out-of-range tokens so callers fail
+/// closed.
+pub(crate) fn decode_keyset_cursor(token: &str) -> Option<(String, i64)> {
+    use base64::Engine as _;
+    if token.is_empty() || token.len() > 512 {
+        return None;
+    }
+    let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(token.as_bytes())
+        .ok()?;
+    let payload = std::str::from_utf8(&decoded).ok()?;
+    let mut parts = payload.splitn(3, '|');
+    let version = parts.next()?;
+    let created_at = parts.next()?;
+    let id = parts.next()?;
+    if version != "v1" || created_at.is_empty() || created_at.len() > 64 {
+        return None;
+    }
+    let id = id.parse::<i64>().ok()?;
+    if id <= 0 {
+        return None;
+    }
+    if chrono::DateTime::parse_from_rfc3339(created_at).is_err() {
+        return None;
+    }
+    Some((created_at.to_string(), id))
+}
