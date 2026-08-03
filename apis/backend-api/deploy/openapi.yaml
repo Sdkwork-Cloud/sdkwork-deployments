@@ -139,7 +139,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/NginxConfigResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     put:
       operationId: configs.update
       summary: 更新 Nginx 配置
@@ -174,7 +178,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/NginxConfigResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /backend/v3/api/nginx/configs/{configId}/validate:
     parameters:
       - name: configId
@@ -252,7 +260,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/NginxDeployResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: "请求参数错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /backend/v3/api/nginx/reload:
     post:
       operationId: runtime.reload
@@ -315,7 +327,7 @@ paths:
   /backend/v3/api/servers:
     get:
       operationId: servers.list
-      summary: "获取服务器列表"
+      summary: "获取服务器节点列表"
       tags:
         - server
       security:
@@ -324,6 +336,12 @@ paths:
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
+        - name: clusterId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: 按节点集群过滤
       responses:
         '200':
           description: 成功
@@ -351,7 +369,7 @@ paths:
                             $ref: '#/components/schemas/PageInfo'
     post:
       operationId: servers.create
-      summary: "注册服务器"
+      summary: "注册服务器节点"
       tags:
         - server
       security:
@@ -385,6 +403,161 @@ paths:
                         properties:
                           item:
                             $ref: '#/components/schemas/ServerResponse'
+  /backend/v3/api/servers/{serverId}:
+    put:
+      operationId: servers.update
+      summary: "更新服务器节点"
+      tags:
+        - server
+      security:
+        - AuthToken: []
+          AccessToken: []
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateServerRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required:
+                      - data
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - item
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/ServerResponse'
+  /backend/v3/api/node_clusters:
+    get:
+      operationId: clusters.list
+      summary: "获取节点集群列表"
+      tags:
+        - cluster
+      security:
+        - AuthToken: []
+          AccessToken: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required:
+                      - data
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties: false
+                        required:
+                          - items
+                          - pageInfo
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/NodeClusterResponse'
+                          pageInfo:
+                            $ref: '#/components/schemas/PageInfo'
+    post:
+      operationId: clusters.create
+      summary: "创建节点集群"
+      tags:
+        - cluster
+      security:
+        - AuthToken: []
+          AccessToken: []
+      x-sdkwork-idempotent: true
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNodeClusterRequest'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required:
+                      - data
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - item
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/NodeClusterResponse'
+  /backend/v3/api/node_clusters/{clusterId}:
+    put:
+      operationId: clusters.update
+      summary: "更新节点集群"
+      tags:
+        - cluster
+      security:
+        - AuthToken: []
+          AccessToken: []
+      parameters:
+        - name: clusterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNodeClusterRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required:
+                      - data
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - item
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/NodeClusterResponse'
   /backend/v3/api/audit_logs:
     get:
       operationId: auditLogs.list
@@ -672,6 +845,10 @@ components:
         sshPort:
           type: integer
           default: 22
+        clusterId:
+          type: string
+          format: uuid
+          description: 所属节点集群
         sshUser:
           type: string
           default: root
@@ -680,6 +857,31 @@ components:
         description:
           type: string
           maxLength: 500
+    UpdateServerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        sshPort:
+          type: integer
+        clusterId:
+          type: string
+          format: uuid
+          description: 所属节点集群
+        sshUser:
+          type: string
+        description:
+          type: string
+          maxLength: 500
+        status:
+          type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+            - 3
+          description: 状态：0=未连接，1=在线，2=离线，3=维护中
     ServerResponse:
       type: object
       properties:
@@ -692,8 +894,20 @@ components:
           type: string
         sshPort:
           type: integer
+        clusterId:
+          type: string
+          format: uuid
+        clusterName:
+          type: string
+        nodeRole:
+          type: integer
+          description: 节点角色：0=宿主节点，1=边缘节点
         status:
           type: integer
+        sshUser:
+          type: string
+        description:
+          type: string
         createdAt:
           type: string
           format: date-time
@@ -704,6 +918,65 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ServerResponse'
+        total:
+          type: integer
+          format: int64
+    CreateNodeClusterRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 500
+        region:
+          type: string
+          maxLength: 64
+    UpdateNodeClusterRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          maxLength: 500
+        region:
+          type: string
+          maxLength: 64
+        status:
+          type: integer
+          enum:
+            - 0
+            - 1
+          description: 状态：0=启用，1=停用
+    NodeClusterResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        region:
+          type: string
+        status:
+          type: integer
+        nodeCount:
+          type: integer
+          format: int64
+        createdAt:
+          type: string
+          format: date-time
+    NodeClusterPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NodeClusterResponse'
         total:
           type: integer
           format: int64

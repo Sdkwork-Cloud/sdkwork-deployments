@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use sdkwork_database_config::DatabaseConfig;
+use sdkwork_database_drift::DriftEngine;
 use sdkwork_database_lifecycle::{lifecycle_options_from_env, LifecycleOrchestrator};
 use sdkwork_database_spi::{DatabaseAssetProvider, DatabaseManifest, DefaultDatabaseModule};
 use sdkwork_database_sqlx::{create_pool_from_config, DatabasePool};
@@ -43,6 +44,28 @@ pub async fn bootstrap_deploy_database(pool: DatabasePool) -> Result<DeployDatab
             .migrate()
             .await
             .map_err(|error| format!("deploy database migrate failed: {error}"))?;
+    }
+
+    // DATABASE_SPEC §35: readiness must fail when required migrations are
+    // missing or the schema drifts from the contract. Drift is observation
+    // only (DATABASE_FRAMEWORK_SPEC §4.2); repair runs `db:migrate`.
+    let drift = DriftEngine::new(pool.clone(), module.clone())
+        .analyze()
+        .await
+        .map_err(|error| format!("deploy database drift check failed: {error}"))?;
+    if drift.summary.error > 0 {
+        let details = drift
+            .diffs
+            .iter()
+            .filter(|diff| diff.severity == "error")
+            .take(5)
+            .map(|diff| diff.message.as_str())
+            .collect::<Vec<_>>()
+            .join("; ");
+        return Err(format!(
+            "deploy database schema drift detected ({} error(s)): {details}. Run `pnpm db:migrate` and then `pnpm db:drift:check`",
+            drift.summary.error
+        ));
     }
 
     Ok(DeployDatabaseHost { pool, module })

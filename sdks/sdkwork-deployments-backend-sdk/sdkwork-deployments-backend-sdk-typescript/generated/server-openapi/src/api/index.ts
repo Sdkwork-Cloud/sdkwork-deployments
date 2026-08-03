@@ -2,4 +2,5 @@ export { BaseApi } from './base';
 export { backendApiPath } from './paths';
 export { NginxApi, createNginxApi } from './nginx';
 export { ServerApi, createServerApi } from './server';
+export { ClusterApi, createClusterApi } from './cluster';
 export { AuditApi, createAuditApi } from './audit';

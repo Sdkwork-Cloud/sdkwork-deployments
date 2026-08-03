@@ -2,7 +2,7 @@ use sdkwork_deploy_contract::{
     CreateDeploymentRequest, DeployServiceError, DeployServiceResult, DeploymentPage,
     DeploymentResponse,
 };
-use sqlx::{postgres::PgRow, PgPool, Row};
+use sqlx::{postgres::PgRow, AssertSqlSafe, Error as SqlxError, PgPool, Row};
 
 use crate::support::{
     datetime_from_row, new_uuid, next_id, now_rfc3339, pagination, resolve_release_internal_id,
@@ -42,9 +42,9 @@ impl DeployRepository {
                  FROM deploy_deployment d
                  LEFT JOIN deploy_release r ON r.id = d.release_id
                  WHERE d.tenant_id = $1 AND d.site_id = $2 AND d.status = $3
-                 ORDER BY d.created_at DESC LIMIT $4 OFFSET $5"
+                 ORDER BY d.created_at DESC, d.id DESC LIMIT $4 OFFSET $5"
             );
-            let rows = sqlx::query(&query)
+            let rows = sqlx::query(AssertSqlSafe(&*query))
                 .bind(tenant_id)
                 .bind(site_internal_id)
                 .bind(status)
@@ -71,9 +71,9 @@ impl DeployRepository {
                  FROM deploy_deployment d
                  LEFT JOIN deploy_release r ON r.id = d.release_id
                  WHERE d.tenant_id = $1 AND d.site_id = $2
-                 ORDER BY d.created_at DESC LIMIT $3 OFFSET $4"
+                 ORDER BY d.created_at DESC, d.id DESC LIMIT $3 OFFSET $4"
             );
-            let rows = sqlx::query(&query)
+            let rows = sqlx::query(AssertSqlSafe(&*query))
                 .bind(tenant_id)
                 .bind(site_internal_id)
                 .bind(page_size)
@@ -166,13 +166,13 @@ impl DeployRepository {
             (None, None, None, None)
         };
 
-        sqlx::query(
+        if let Err(error) = sqlx::query(
             "INSERT INTO deploy_deployment (
                 id, uuid, tenant_id, user_id, site_id, deploy_type, environment, status,
                 release_id, artifact_path, artifact_size, artifact_hash, idempotency_key,
                 metadata, created_at, updated_at, version
              ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, 0, $8, $9, $10, $11, $12, '{}', $13, $13, 0
+                $1, $2, $3, $4, $5, $6, $7, 0, $8, $9, $10, $11, $12, '{}', CAST($13 AS TIMESTAMPTZ), CAST($13 AS TIMESTAMPTZ), 0
              )",
         )
         .bind(id)
@@ -190,7 +190,29 @@ impl DeployRepository {
         .bind(&now)
         .execute(&self.pool)
         .await
-        .map_err(|error| store_error("insert deploy_deployment", error))?;
+        {
+            // 幂等重放：并发提交下唯一约束先到者胜，重复提交返回已存在的部署
+            // 记录而不是 409（对齐 Web repository 的 23505 兜底语义）。
+            if let Some(idempotency_key) = request
+                .idempotency_key
+                .as_deref()
+                .filter(|value| !value.trim().is_empty())
+            {
+                if matches!(&error, SqlxError::Database(db) if db.is_unique_violation()) {
+                    if let Some(existing) = self
+                        .find_deployment_by_idempotency_key_repo(
+                            tenant_id,
+                            site_id,
+                            idempotency_key,
+                        )
+                        .await?
+                    {
+                        return Ok(existing);
+                    }
+                }
+            }
+            return Err(store_error("insert deploy_deployment", error));
+        }
 
         self.retrieve_deployment_repo(tenant_id, site_id, &uuid)
             .await
@@ -209,7 +231,7 @@ impl DeployRepository {
              LEFT JOIN deploy_release r ON r.id = d.release_id
              WHERE d.tenant_id = $1 AND d.site_id = $2 AND d.idempotency_key = $3"
         );
-        let row = sqlx::query(&query)
+        let row = sqlx::query(AssertSqlSafe(&*query))
             .bind(tenant_id)
             .bind(site_internal_id)
             .bind(idempotency_key)
@@ -239,7 +261,7 @@ impl DeployRepository {
              LEFT JOIN deploy_release r ON r.id = d.release_id
              WHERE d.tenant_id = $1 AND d.site_id = $2 AND d.uuid = $3"
         );
-        let row = sqlx::query(&query)
+        let row = sqlx::query(AssertSqlSafe(&*query))
             .bind(tenant_id)
             .bind(site_internal_id)
             .bind(deployment_id)
@@ -290,16 +312,22 @@ impl DeployRepository {
         let artifact_hash: Option<String> = source.try_get("artifact_hash").ok();
         let now = now_rfc3339();
 
+        // 回滚记录与源记录的状态推进必须在同一事务内完成：INSERT 失败时源
+        // 记录不得停留在"已回滚"状态（对齐 Web repository 的单事务语义）。
+        let mut transaction = self.pool.begin().await.map_err(|error| {
+            store_error("begin rollback deploy_deployment transaction", error)
+        })?;
+
         sqlx::query(
             "UPDATE deploy_deployment
-             SET status = 5, updated_at = $4, version = version + 1
+             SET status = 5, updated_at = CAST($4 AS TIMESTAMPTZ), version = version + 1
              WHERE tenant_id = $1 AND site_id = $2 AND uuid = $3",
         )
         .bind(tenant_id)
         .bind(site_internal_id)
         .bind(deployment_id)
         .bind(&now)
-        .execute(&self.pool)
+        .execute(&mut *transaction)
         .await
         .map_err(|error| store_error("mark deploy_deployment rolled back", error))?;
 
@@ -311,7 +339,7 @@ impl DeployRepository {
                 release_id, artifact_path, artifact_size, artifact_hash,
                 rollback_from, metadata, created_at, updated_at, version
              ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, 0, $8, $9, $10, $11, $12, '{}', $13, $13, 0
+                $1, $2, $3, $4, $5, $6, $7, 0, $8, $9, $10, $11, $12, '{}', CAST($13 AS TIMESTAMPTZ), CAST($13 AS TIMESTAMPTZ), 0
              )",
         )
         .bind(id)
@@ -327,9 +355,13 @@ impl DeployRepository {
         .bind(artifact_hash.as_deref())
         .bind(source_id)
         .bind(&now)
-        .execute(&self.pool)
+        .execute(&mut *transaction)
         .await
         .map_err(|error| store_error("insert rollback deploy_deployment", error))?;
+
+        transaction.commit().await.map_err(|error| {
+            store_error("commit rollback deploy_deployment transaction", error)
+        })?;
 
         self.retrieve_deployment_repo(tenant_id, site_id, &uuid)
             .await

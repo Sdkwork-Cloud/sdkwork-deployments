@@ -509,7 +509,17 @@ pub struct ServerResponse {
     pub host: String,
     #[serde(rename = "sshPort")]
     pub ssh_port: i32,
+    #[serde(rename = "clusterId", skip_serializing_if = "Option::is_none")]
+    pub cluster_id: Option<String>,
+    #[serde(rename = "clusterName", skip_serializing_if = "Option::is_none")]
+    pub cluster_name: Option<String>,
+    #[serde(rename = "nodeRole")]
+    pub node_role: i32,
     pub status: i32,
+    #[serde(rename = "sshUser", skip_serializing_if = "Option::is_none")]
+    pub ssh_user: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     #[serde(rename = "createdAt")]
     pub created_at: String,
 }
@@ -526,10 +536,76 @@ pub struct CreateServerRequest {
     pub host: String,
     #[serde(rename = "sshPort", default = "default_ssh_port")]
     pub ssh_port: i32,
+    #[serde(rename = "clusterId", default)]
+    pub cluster_id: Option<String>,
+    #[serde(rename = "sshUser", default)]
+    pub ssh_user: Option<String>,
+    #[serde(rename = "sshKeyPath", default)]
+    pub ssh_key_path: Option<String>,
+    #[serde(default)]
+    pub description: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct UpdateServerRequest {
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(rename = "sshPort", default)]
+    pub ssh_port: Option<i32>,
+    #[serde(rename = "clusterId", default)]
+    pub cluster_id: Option<String>,
+    #[serde(rename = "sshUser", default)]
+    pub ssh_user: Option<String>,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub status: Option<i32>,
 }
 
 fn default_ssh_port() -> i32 {
     22
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct NodeClusterResponse {
+    pub id: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub region: Option<String>,
+    pub status: i32,
+    #[serde(rename = "nodeCount")]
+    pub node_count: i64,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct NodeClusterPage {
+    pub items: Vec<NodeClusterResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CreateNodeClusterRequest {
+    pub name: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub region: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct UpdateNodeClusterRequest {
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub region: Option<String>,
+    #[serde(default)]
+    pub status: Option<i32>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -539,6 +615,26 @@ pub struct AuditLogResponse {
     pub resource: String,
     #[serde(rename = "createdAt")]
     pub created_at: String,
+}
+
+/// 审计日志列表过滤（PAGINATION_SPEC §4：声明即实现；wire 参数使用
+/// lower_snake_case 规范词汇，禁止 camelCase 别名）。
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct AuditLogQuery {
+    #[serde(default = "crate::dto::default_page")]
+    pub page: i32,
+    #[serde(default = "crate::dto::default_page_size")]
+    pub page_size: i32,
+    #[serde(default)]
+    pub target_type: Option<String>,
+    #[serde(default)]
+    pub action: Option<String>,
+    #[serde(default)]
+    pub operator_id: Option<i64>,
+    #[serde(default)]
+    pub start_date: Option<String>,
+    #[serde(default)]
+    pub end_date: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

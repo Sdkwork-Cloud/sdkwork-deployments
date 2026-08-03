@@ -71,7 +71,7 @@ fn map_drive_error(error: SdkworkError) -> DeployServiceError {
     } else if message.contains("422") || message.contains("validation") {
         DeployServiceError::validation(message)
     } else if message.contains("403") || message.contains("forbidden") {
-        DeployServiceError::Forbidden
+        DeployServiceError::forbidden("drive access forbidden")
     } else {
         DeployServiceError::Internal(message)
     }

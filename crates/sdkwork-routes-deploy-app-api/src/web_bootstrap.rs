@@ -25,7 +25,7 @@ pub fn deploy_app_api_prefixes() -> Vec<String> {
 }
 
 #[derive(Clone, Default)]
-struct DeployAppContextInjector;
+pub struct DeployAppContextInjector;
 
 impl DomainContextInjector for DeployAppContextInjector {
     fn inject(&self, request: &mut axum::extract::Request, context: &WebRequestContext) {
@@ -33,6 +33,14 @@ impl DomainContextInjector for DeployAppContextInjector {
             request.extensions_mut().insert(app_context);
         }
     }
+}
+
+/// Domain context injectors registered by hosts that mount Deployments
+/// app-API blocks (for example the Web Server standalone gateway composing
+/// the domain/certificate blocks). The injector derives the Deployments
+/// request context from the host Web Framework principal.
+pub fn deploy_app_api_domain_context_injectors() -> Vec<std::sync::Arc<dyn DomainContextInjector>> {
+    vec![std::sync::Arc::new(DeployAppContextInjector)]
 }
 
 fn deploy_app_context_from_web_request(

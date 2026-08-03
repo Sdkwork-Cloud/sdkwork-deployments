@@ -65,10 +65,44 @@ async fn repository_from_env() -> Result<Arc<DeployRepository>, String> {
         .cloned()
         .ok_or_else(|| "Deploy authoritative database must use PostgreSQL".to_owned())?;
     let (id_generator, node_lease) = snowflake_from_env().await?;
+    let secret_key = secret_key_from_env()?;
     Ok(Arc::new(match node_lease {
-        Some(node_lease) => DeployRepository::new_with_node_lease(pool, id_generator, node_lease),
-        None => DeployRepository::new(pool, id_generator),
+        Some(node_lease) => DeployRepository::new_with_node_lease(
+            pool,
+            id_generator,
+            node_lease,
+            secret_key,
+        ),
+        None => DeployRepository::new(pool, id_generator, secret_key),
     }))
+}
+
+/// AES-256 key derivation for secrets at rest, aligned with the Web Server
+/// repository contract: production-like environments require
+/// `SDKWORK_DEPLOY_SECRET_ENCRYPTION_KEY`; development falls back to a
+/// derived constant with a warning so local runs stay functional.
+fn secret_key_from_env() -> Result<[u8; 32], String> {
+    let production_like = sdkwork_deploy_core::deploy_is_production_like_environment();
+    let raw = match std::env::var("SDKWORK_DEPLOY_SECRET_ENCRYPTION_KEY") {
+        Ok(value) => value,
+        Err(_) if !production_like => {
+            tracing::warn!(
+                "SDKWORK_DEPLOY_SECRET_ENCRYPTION_KEY missing; using development-only derived key"
+            );
+            "sdkwork-deploy-development-secret-key".to_string()
+        }
+        Err(_) => {
+            return Err(
+                "SDKWORK_DEPLOY_SECRET_ENCRYPTION_KEY is required in production-like environments"
+                    .to_string(),
+            );
+        }
+    };
+    Ok(sdkwork_utils_rust::crypto::derive_aes_256_key(
+        raw.as_bytes(),
+        b"sdkwork-deploy-env",
+        b"env-variable-encryption",
+    ))
 }
 
 fn web_runtime_from_env() -> Result<Arc<dyn DeployWebRuntimePort>, String> {

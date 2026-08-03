@@ -41,27 +41,60 @@ export function createDeploymentsAdminRegistry(client: SdkworkDeployBackendClien
           client.nginx.configs.deploy(selected(context, "id"), idempotencyParams()), { dangerous: true, selection: true }),
         action("reload", "Reload", {}, () => client.nginx.runtime.reload(idempotencyParams()), { dangerous: true }),
       ],
+      ["configName", "siteId", "configType"],
     ),
-    servers: source(
+    nodes: source(
       (query) => client.server.list({ page: query.page, pageSize: query.pageSize }),
-      [action("create", "Register server", { name: "", host: "", port: 443 }, (context) =>
-        client.server.create(
-          context.body as unknown as Parameters<typeof client.server.create>[0],
-          idempotencyParams(),
-        ))],
+      [
+        action("create", "Register node", { name: "", host: "", sshPort: 22, sshUser: "root", clusterId: "", description: "" }, (context) =>
+          client.server.create(
+            context.body as unknown as Parameters<typeof client.server.create>[0],
+            idempotencyParams(),
+          )),
+        action("update", "Update node", { status: 1, clusterId: "", description: "" }, (context) =>
+          client.server.update(
+            selected(context, "id"),
+            context.body as unknown as Parameters<typeof client.server.update>[1],
+          ), { selection: true }),
+      ],
+      ["name", "host", "clusterName"],
     ),
-    audit: source((query) => client.audit.auditLogs.list({ page: query.page, pageSize: query.pageSize }), []),
+    clusters: source(
+      (query) => client.cluster.list({ page: query.page, pageSize: query.pageSize }),
+      [
+        action("create", "Create cluster", { name: "", description: "", region: "" }, (context) =>
+          client.cluster.create(
+            context.body as unknown as Parameters<typeof client.cluster.create>[0],
+            idempotencyParams(),
+          )),
+        action("update", "Update cluster", { status: 1, description: "" }, (context) =>
+          client.cluster.update(
+            selected(context, "id"),
+            context.body as unknown as Parameters<typeof client.cluster.update>[1],
+          ), { selection: true }),
+      ],
+      ["name", "region", "description"],
+    ),
+    audit: source((query) => client.audit.auditLogs.list({ page: query.page, pageSize: query.pageSize }), [], ["action", "resource"]),
   };
 }
 
 function source(
   load: (query: Parameters<DeploymentsDataSource["load"]>[0]) => Promise<unknown>,
   actions: readonly DeploymentsAction[],
+  searchFields: readonly string[] = [],
 ): DeploymentsDataSource {
   return {
     actions,
     async load(query) {
-      return normalizeDeploymentsPage(await load(query));
+      const page = normalizeDeploymentsPage(await load(query));
+      const needle = query.search?.trim().toLowerCase();
+      if (!needle || searchFields.length === 0) return page;
+      return {
+        ...page,
+        items: page.items.filter((item) =>
+          searchFields.some((field) => String(item[field] ?? "").toLowerCase().includes(needle))),
+      };
     },
   };
 }

@@ -33,15 +33,6 @@ tables:
   - name: deploy_certificate_version
     lifecycle_status: active
     owner: deploy-platform
-  - name: deploy_acme_account
-    lifecycle_status: active
-    owner: deploy-platform
-  - name: deploy_certificate_order
-    lifecycle_status: active
-    owner: deploy-platform
-  - name: deploy_certificate_challenge
-    lifecycle_status: active
-    owner: deploy-platform
   - name: deploy_deployment
     lifecycle_status: active
     owner: deploy-platform
@@ -58,6 +49,9 @@ tables:
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_server
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_node_cluster
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_upload_session_ref
@@ -100,6 +94,15 @@ tables:
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_site_target_observation
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_acme_account
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_certificate_order
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_certificate_challenge
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_certificate_distribution

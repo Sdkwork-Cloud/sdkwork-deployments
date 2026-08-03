@@ -17,7 +17,9 @@ use crate::{repository::InsertAuditLogCommand, DeployService};
 impl DeployService {
     pub(crate) fn require_tenant(context: &DeployAppRequestContext) -> DeployServiceResult<i64> {
         if context.tenant_id <= 0 {
-            return Err(sdkwork_deploy_contract::DeployServiceError::Forbidden);
+            return Err(sdkwork_deploy_contract::DeployServiceError::forbidden(
+                "site operations require tenant authorization",
+            ));
         }
         Ok(context.tenant_id)
     }

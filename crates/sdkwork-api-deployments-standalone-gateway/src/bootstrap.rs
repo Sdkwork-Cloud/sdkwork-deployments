@@ -15,8 +15,7 @@ pub fn build_router(assembly: ApiAssembly) -> Router {
 }
 
 pub async fn run_database_migrate_only() -> Result<(), String> {
-    std::env::set_var("SDKWORK_DATABASE_AUTO_MIGRATE", "true");
-    sdkwork_deploy_database_host::bootstrap_deploy_database_from_env().await?;
+    sdkwork_api_deployments_assembly::migrate_database_from_env().await?;
     info!("deploy database migration completed");
     Ok(())
 }

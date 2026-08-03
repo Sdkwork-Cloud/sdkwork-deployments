@@ -140,3 +140,22 @@ pub(crate) async fn resolve_release_internal_id(
     row.and_then(|row| row.try_get::<i64, _>("id").ok())
         .ok_or_else(|| DeployServiceError::not_found("release not found"))
 }
+
+pub(crate) async fn resolve_node_cluster_internal_id(
+    pool: &PgPool,
+    tenant_id: i64,
+    cluster_uuid: &str,
+) -> Result<i64, DeployServiceError> {
+    let row = sqlx::query(
+        "SELECT id FROM deploy_node_cluster
+         WHERE tenant_id = $1 AND uuid = $2",
+    )
+    .bind(tenant_id)
+    .bind(cluster_uuid)
+    .fetch_optional(pool)
+    .await
+    .map_err(|error| store_error("resolve deploy_node_cluster id", error))?;
+
+    row.and_then(|row| row.try_get::<i64, _>("id").ok())
+        .ok_or_else(|| DeployServiceError::not_found("cluster not found"))
+}

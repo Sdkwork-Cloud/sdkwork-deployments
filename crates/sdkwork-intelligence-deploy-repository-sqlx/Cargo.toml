@@ -21,4 +21,9 @@ sdkwork-utils-rust.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
+sdkwork-database-config.workspace = true
+sdkwork-database-drift.workspace = true
+sdkwork-database-lifecycle.workspace = true
+sdkwork-database-spi.workspace = true
+sdkwork-database-sqlx.workspace = true
 tokio.workspace = true

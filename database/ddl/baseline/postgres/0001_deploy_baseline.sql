@@ -569,7 +569,12 @@ CREATE TABLE deploy_server (
     name            VARCHAR(200) NOT NULL,
     host            VARCHAR(255) NOT NULL,
     ssh_port        INTEGER      NOT NULL DEFAULT 22,
+    cluster_id      BIGINT       NULL,
+    node_role       INTEGER      NOT NULL DEFAULT 0,
     status          INTEGER      NOT NULL DEFAULT 0,
+    ssh_user        VARCHAR(64)  NULL,
+    ssh_key_path    VARCHAR(500) NULL,
+    description     VARCHAR(500) NULL,
     metadata        JSONB        NOT NULL DEFAULT '{}',
     created_at      TIMESTAMPTZ  NOT NULL,
     updated_at      TIMESTAMPTZ  NOT NULL,
@@ -579,11 +584,42 @@ CREATE TABLE deploy_server (
     CONSTRAINT uk_deploy_server_host UNIQUE (tenant_id, host)
 );
 
-COMMENT ON TABLE deploy_server IS '部署后端服务器表';
+COMMENT ON TABLE deploy_server IS '部署后端服务器表（宿主节点）';
+COMMENT ON COLUMN deploy_server.cluster_id IS '所属节点集群（deploy_node_cluster.id）';
+COMMENT ON COLUMN deploy_server.node_role IS '节点角色：0=宿主节点，1=边缘节点';
 COMMENT ON COLUMN deploy_server.status IS '状态：0=未连接，1=在线，2=离线，3=维护中';
+COMMENT ON COLUMN deploy_server.ssh_user IS 'SSH 登录用户';
+COMMENT ON COLUMN deploy_server.ssh_key_path IS 'SSH 密钥路径';
+COMMENT ON COLUMN deploy_server.description IS '节点描述';
 
 CREATE INDEX idx_deploy_server_tenant_status
     ON deploy_server (tenant_id, status, updated_at DESC);
+
+CREATE INDEX idx_deploy_server_cluster
+    ON deploy_server (tenant_id, cluster_id);
+
+CREATE TABLE deploy_node_cluster (
+    id          BIGINT       NOT NULL,
+    uuid        VARCHAR(64)  NOT NULL,
+    tenant_id   BIGINT       NOT NULL DEFAULT 0,
+    name        VARCHAR(200) NOT NULL,
+    description VARCHAR(500) NULL,
+    region      VARCHAR(64)  NULL,
+    status      INTEGER      NOT NULL DEFAULT 0,
+    metadata    JSONB        NOT NULL DEFAULT '{}',
+    created_at  TIMESTAMPTZ  NOT NULL,
+    updated_at  TIMESTAMPTZ  NOT NULL,
+    version     BIGINT       NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_deploy_node_cluster_uuid UNIQUE (uuid),
+    CONSTRAINT uk_deploy_node_cluster_name UNIQUE (tenant_id, name)
+);
+
+COMMENT ON TABLE deploy_node_cluster IS '部署节点集群表（宿主节点分组）';
+COMMENT ON COLUMN deploy_node_cluster.status IS '状态：0=启用，1=停用';
+
+CREATE INDEX idx_deploy_node_cluster_tenant_status
+    ON deploy_node_cluster (tenant_id, status, updated_at DESC);
 
 -- folded migration: migrations/postgres/0001_deploy_upload_session_ref.up.sql
 -- deploy upload session references (Drive-backed artifact lifecycle)

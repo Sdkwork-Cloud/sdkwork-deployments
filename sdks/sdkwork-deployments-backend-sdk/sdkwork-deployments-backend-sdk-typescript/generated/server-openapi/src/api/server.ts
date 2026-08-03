@@ -1,12 +1,13 @@
 import { backendApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { CreateServerRequest, PageInfo, ServerResponse } from '../types';
+import type { CreateServerRequest, PageInfo, ServerResponse, UpdateServerRequest } from '../types';
 
 
 export interface ServerListParams {
   page?: number;
   pageSize?: number;
+  clusterId?: string;
 }
 
 export interface ServerCreateParams {
@@ -21,16 +22,17 @@ export class ServerApi {
   }
 
 
-/** 获取服务器列表 */
+/** 获取服务器节点列表 */
   async list(params?: ServerListParams, requestOptions?: ApiRequestOptions): Promise<{ items: ServerResponse[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+      { name: 'clusterId', value: params?.clusterId, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<{ items: ServerResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/servers`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
-/** 注册服务器 */
+/** 注册服务器节点 */
   async create(body: CreateServerRequest, params: ServerCreateParams, requestOptions?: ApiRequestOptions): Promise<ServerResponse> {
     const requestHeaders = buildRequestHeaders(
       {
@@ -39,6 +41,11 @@ export class ServerApi {
       {}
     );
     return this.client.request<ServerResponse>(backendApiPath(`/servers`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** 更新服务器节点 */
+  async update(serverId: string, body: UpdateServerRequest, requestOptions?: ApiRequestOptions): Promise<ServerResponse> {
+    return this.client.request<ServerResponse>(backendApiPath(`/servers/${serializePathParameter(serverId, { name: 'serverId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PUT' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -54,7 +61,77 @@ function appendQueryString(path: string, rawQueryString: string): string {
   return path.includes('?') ? `${path}&${query}` : `${path}?${query}`;
 }
 
+interface PathParameterSpec {
+  name: string;
+  style: string;
+  explode: boolean;
+}
 
+function serializePathParameter(value: unknown, spec: PathParameterSpec): string {
+  if (value === undefined || value === null) {
+    return '';
+  }
+
+  const style = spec.style || 'simple';
+  if (Array.isArray(value)) {
+    return serializePathArray(spec.name, value, style, spec.explode);
+  }
+  if (typeof value === 'object') {
+    return serializePathObject(spec.name, value as Record<string, unknown>, style, spec.explode);
+  }
+  return pathPrefix(spec.name, style, false) + encodePathValue(serializePathPrimitive(value));
+}
+
+function serializePathArray(name: string, values: unknown[], style: string, explode: boolean): string {
+  const serialized = values
+    .filter((item) => item !== undefined && item !== null)
+    .map((item) => encodePathValue(serializePathPrimitive(item)));
+  if (serialized.length === 0) {
+    return pathPrefix(name, style, false);
+  }
+  if (style === 'matrix') {
+    return explode
+      ? serialized.map((item) => `;${name}=${item}`).join('')
+      : `;${name}=${serialized.join(',')}`;
+  }
+  return pathPrefix(name, style, false) + serialized.join(explode ? '.' : ',');
+}
+
+function serializePathObject(name: string, value: Record<string, unknown>, style: string, explode: boolean): string {
+  const entries = Object.entries(value).filter(([, entryValue]) => entryValue !== undefined && entryValue !== null);
+  if (entries.length === 0) {
+    return pathPrefix(name, style, true);
+  }
+  if (style === 'matrix') {
+    return explode
+      ? entries.map(([key, entryValue]) => `;${encodePathValue(key)}=${encodePathValue(serializePathPrimitive(entryValue))}`).join('')
+      : `;${name}=${entries.flatMap(([key, entryValue]) => [encodePathValue(key), encodePathValue(serializePathPrimitive(entryValue))]).join(',')}`;
+  }
+  const serialized = explode
+    ? entries.map(([key, entryValue]) => `${encodePathValue(key)}=${encodePathValue(serializePathPrimitive(entryValue))}`).join(style === 'label' ? '.' : ',')
+    : entries.flatMap(([key, entryValue]) => [encodePathValue(key), encodePathValue(serializePathPrimitive(entryValue))]).join(',');
+  return pathPrefix(name, style, true) + serialized;
+}
+
+function pathPrefix(name: string, style: string, _objectValue: boolean): string {
+  if (style === 'label') return '.';
+  if (style === 'matrix') return `;${name}`;
+  return '';
+}
+
+function encodePathValue(value: string): string {
+  return encodeURIComponent(value);
+}
+
+function serializePathPrimitive(value: unknown): string {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  return String(value);
+}
 interface QueryParameterSpec {
   name: string;
   value: unknown;

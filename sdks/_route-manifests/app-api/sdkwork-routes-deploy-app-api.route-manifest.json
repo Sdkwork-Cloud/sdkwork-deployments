@@ -36,7 +36,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.domainZones.read",
+      "permission": null,
       "idempotent": false
     },
     {
@@ -60,7 +60,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.domainZones.write",
+      "permission": null,
       "idempotent": true
     },
     {
@@ -84,7 +84,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.domainZones.read",
+      "permission": null,
       "idempotent": false
     },
     {
@@ -108,7 +108,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.domainZones.write",
+      "permission": null,
       "idempotent": false
     },
     {
@@ -132,7 +132,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.domainZones.write",
+      "permission": null,
       "idempotent": false
     },
     {
@@ -156,7 +156,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.domainZones.write",
+      "permission": null,
       "idempotent": false
     },
     {
@@ -180,7 +180,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.domainZones.write",
+      "permission": null,
       "idempotent": true
     },
     {
@@ -204,7 +204,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.domainZones.write",
+      "permission": null,
       "idempotent": false
     },
     {
@@ -228,7 +228,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.domainZones.write",
+      "permission": null,
       "idempotent": false
     },
     {
@@ -252,7 +252,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.domainZones.write",
+      "permission": null,
       "idempotent": true
     },
     {
@@ -684,7 +684,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.certificates.read",
+      "permission": null,
       "idempotent": false
     },
     {
@@ -708,7 +708,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.certificates.write",
+      "permission": null,
       "idempotent": true
     },
     {
@@ -732,7 +732,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.certificates.read",
+      "permission": null,
       "idempotent": false
     },
     {
@@ -756,7 +756,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.certificates.write",
+      "permission": null,
       "idempotent": false
     },
     {
@@ -780,7 +780,7 @@
       },
       "requestContext": "WebRequestContext",
       "apiSurface": "app-api",
-      "permission": "deploy.certificates.write",
+      "permission": null,
       "idempotent": true
     },
     {

@@ -64,6 +64,30 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "servers.create",
     ).with_required_permission("deploy.servers.write").with_idempotent(true),
     HttpRoute::dual_token(
+        HttpMethod::Put,
+        "/backend/v3/api/servers/{serverId}",
+        "server",
+        "servers.update",
+    ).with_required_permission("deploy.servers.write"),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/node_clusters",
+        "cluster",
+        "clusters.list",
+    ).with_required_permission("deploy.clusters.read"),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/node_clusters",
+        "cluster",
+        "clusters.create",
+    ).with_required_permission("deploy.clusters.write").with_idempotent(true),
+    HttpRoute::dual_token(
+        HttpMethod::Put,
+        "/backend/v3/api/node_clusters/{clusterId}",
+        "cluster",
+        "clusters.update",
+    ).with_required_permission("deploy.clusters.write"),
+    HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/audit_logs",
         "audit",

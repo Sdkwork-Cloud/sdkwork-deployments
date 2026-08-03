@@ -70,10 +70,7 @@
     },
     "events": [],
     "configKeys": [],
-    "permissions": [
-      "deploy.domains.read",
-      "deploy.certificates.read"
-    ]
+    "permissions": []
   },
   "integration": {
     "authority": "Root SDKWork specs remain authoritative.",

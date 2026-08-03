@@ -7,4 +7,7 @@ pub const NGINX_CONFIG_DEPLOY: &str = "/backend/v3/api/nginx/configs/{configId}/
 pub const NGINX_RELOAD: &str = "/backend/v3/api/nginx/reload";
 pub const NGINX_STATUS: &str = "/backend/v3/api/nginx/status";
 pub const SERVERS: &str = "/backend/v3/api/servers";
+pub const SERVER: &str = "/backend/v3/api/servers/{serverId}";
+pub const NODE_CLUSTERS: &str = "/backend/v3/api/node_clusters";
+pub const NODE_CLUSTER: &str = "/backend/v3/api/node_clusters/{clusterId}";
 pub const AUDIT_LOGS: &str = "/backend/v3/api/audit_logs";

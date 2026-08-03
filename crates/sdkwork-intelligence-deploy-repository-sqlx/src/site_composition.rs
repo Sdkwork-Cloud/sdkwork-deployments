@@ -20,7 +20,7 @@ use sdkwork_deploy_runtime_compiler::{
 use sdkwork_intelligence_deploy_service::{
     ReplaceSiteCompositionCommand, SiteCompositionRepositoryPort,
 };
-use sqlx::{PgPool, Postgres, Row, Transaction};
+use sqlx::{AssertSqlSafe, PgPool, Postgres, Row, Transaction};
 
 use crate::support::{new_uuid, next_id};
 use crate::DeployRepository;
@@ -416,7 +416,7 @@ async fn delete_current_composition(
         ("deploy_site_resource", "delete site resources"),
     ] {
         let query = format!("DELETE FROM {table} WHERE site_id = $1");
-        sqlx::query(&query)
+        sqlx::query(AssertSqlSafe(&*query))
             .bind(site_id)
             .execute(&mut **transaction)
             .await

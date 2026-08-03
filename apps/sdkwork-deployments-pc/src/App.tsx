@@ -1,6 +1,7 @@
 import { useSdkworkAuthControllerState } from "@sdkwork/auth-pc-react";
 import { deploymentsModule as adminAudit } from "@sdkwork/deployments-pc-admin-audit";
 import { deploymentsModule as infrastructure } from "@sdkwork/deployments-pc-admin-infrastructure";
+import { deploymentsModule as adminNodes } from "@sdkwork/deployments-pc-admin-nodes";
 import type { DeploymentsPcModuleDefinition } from "@sdkwork/deployments-pc-commons";
 import { createDeploymentsConsoleRegistry, DeploymentsConsoleProvider } from "@sdkwork/deployments-pc-console-core";
 import { deploymentsModule as delivery } from "@sdkwork/deployments-pc-console-delivery";
@@ -19,7 +20,7 @@ const consoleModules = [sites, configuration, delivery, publishing, monitoring] 
 const LazyDomainManagementPage = lazy(() => import("@sdkwork/deployments-pc-console-delivery/management").then((module) => ({ default: module.DomainManagementPage })));
 const LazyCertificateManagementPage = lazy(() => import("@sdkwork/deployments-pc-console-delivery/management").then((module) => ({ default: module.CertificateManagementPage })));
 const consoleResourcePages = { domains: LazyDomainManagementPage, certificates: LazyCertificateManagementPage } as const;
-const adminModules = [infrastructure, adminAudit] satisfies readonly DeploymentsPcModuleDefinition[];
+const adminModules = [infrastructure, adminNodes, adminAudit] satisfies readonly DeploymentsPcModuleDefinition[];
 const LazyAuth = lazy(() => import("./auth/DeploymentsAuthRoutes.tsx").then((module) => ({ default: module.DeploymentsAuthRoutes })));
 const LazyAdmin = lazy(() => import("./surfaces/DeploymentsAdminSurface.tsx").then((module) => ({ default: module.DeploymentsAdminSurface })));
 

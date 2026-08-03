@@ -3,7 +3,7 @@ use sdkwork_deploy_contract::{
     DeployServiceError, DeployServiceResult, ARTIFACT_STATUS_ACTIVE, ARTIFACT_STATUS_RETAINED,
     UPLOAD_SESSION_STATUS_COMPLETED,
 };
-use sqlx::{postgres::PgRow, PgPool, Row};
+use sqlx::{postgres::PgRow, AssertSqlSafe, PgPool, Row};
 
 use crate::support::{
     datetime_from_row, new_uuid, next_id, now_rfc3339, pagination, resolve_site_uuid, store_error,
@@ -39,9 +39,9 @@ impl DeployRepository {
              FROM deploy_artifact a
              JOIN deploy_upload_session_ref u ON u.id = a.upload_session_ref_id
              WHERE a.tenant_id = $1 AND a.status = $2
-             ORDER BY a.created_at DESC LIMIT $3 OFFSET $4"
+             ORDER BY a.created_at DESC, a.id DESC LIMIT $3 OFFSET $4"
         );
-        let rows = sqlx::query(&query)
+        let rows = sqlx::query(AssertSqlSafe(&*query))
             .bind(tenant_id)
             .bind(ARTIFACT_STATUS_ACTIVE)
             .bind(page_size)
@@ -75,7 +75,7 @@ impl DeployRepository {
              JOIN deploy_upload_session_ref u ON u.id = a.upload_session_ref_id
              WHERE a.tenant_id = $1 AND a.uuid = $2 AND a.status = $3"
         );
-        let row = sqlx::query(&query)
+        let row = sqlx::query(AssertSqlSafe(&*query))
             .bind(tenant_id)
             .bind(artifact_id)
             .bind(ARTIFACT_STATUS_ACTIVE)
@@ -123,7 +123,7 @@ impl DeployRepository {
              (id, uuid, tenant_id, site_id, drive_upload_session_id, drive_upload_item_id,
               drive_space_id, drive_node_id, package_type, file_name, content_type,
               content_length, checksum, status, idempotency_key, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $16)",
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CAST($16 AS TIMESTAMPTZ), CAST($16 AS TIMESTAMPTZ))",
         )
         .bind(reference_id)
         .bind(&reference_uuid)
@@ -161,7 +161,7 @@ impl DeployRepository {
         let now = now_rfc3339();
         let result = sqlx::query(
             "UPDATE deploy_artifact
-             SET status = $3, updated_at = $4, version = version + 1
+             SET status = $3, updated_at = CAST($4 AS TIMESTAMPTZ), version = version + 1
              WHERE tenant_id = $1 AND uuid = $2 AND status = $5",
         )
         .bind(tenant_id)
@@ -250,7 +250,7 @@ impl DeployRepository {
                 file_name, content_type, content_length, checksum_sha256, drive_node_id,
                 drive_space_id, drive_path, status, metadata, created_at, updated_at, version
              ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, '{}', $15, $15, 0
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, '{}', CAST($15 AS TIMESTAMPTZ), CAST($15 AS TIMESTAMPTZ), 0
              )",
         )
         .bind(id)

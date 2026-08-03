@@ -122,8 +122,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.domainZones.read"
+        "x-sdkwork-auth-mode": "dual-token"
       },
       "post": {
         "operationId": "domainZones.create",
@@ -212,8 +211,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.domainZones.write"
+        "x-sdkwork-auth-mode": "dual-token"
       }
     },
     "/app/v3/api/domain_zones/{zoneId}": {
@@ -283,8 +281,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.domainZones.read"
+        "x-sdkwork-auth-mode": "dual-token"
       },
       "patch": {
         "operationId": "domainZones.update",
@@ -367,8 +364,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.domainZones.write"
+        "x-sdkwork-auth-mode": "dual-token"
       },
       "delete": {
         "operationId": "domainZones.delete",
@@ -411,8 +407,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.domainZones.write"
+        "x-sdkwork-auth-mode": "dual-token"
       }
     },
     "/app/v3/api/domain_zones/{zoneId}/hostnames": {
@@ -498,8 +493,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.domainZones.write"
+        "x-sdkwork-auth-mode": "dual-token"
       },
       "post": {
         "operationId": "domainZones.hostnames.create",
@@ -598,8 +592,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.domainZones.write"
+        "x-sdkwork-auth-mode": "dual-token"
       }
     },
     "/app/v3/api/domain_zones/{zoneId}/hostnames/{hostnameId}": {
@@ -672,8 +665,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.domainZones.write"
+        "x-sdkwork-auth-mode": "dual-token"
       },
       "delete": {
         "operationId": "domainZones.hostnames.delete",
@@ -716,8 +708,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.domainZones.write"
+        "x-sdkwork-auth-mode": "dual-token"
       }
     },
     "/app/v3/api/domain_zones/{zoneId}/hostnames/{hostnameId}/verify": {
@@ -806,8 +797,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.domainZones.write"
+        "x-sdkwork-auth-mode": "dual-token"
       }
     },
     "/app/v3/api/sites": {
@@ -2406,8 +2396,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.certificates.read"
+        "x-sdkwork-auth-mode": "dual-token"
       },
       "post": {
         "operationId": "certificates.create",
@@ -2476,8 +2465,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.certificates.write"
+        "x-sdkwork-auth-mode": "dual-token"
       }
     },
     "/app/v3/api/certificates/{certificateId}": {
@@ -2557,8 +2545,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.certificates.read"
+        "x-sdkwork-auth-mode": "dual-token"
       },
       "delete": {
         "operationId": "certificates.delete",
@@ -2602,8 +2589,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.certificates.write"
+        "x-sdkwork-auth-mode": "dual-token"
       }
     },
     "/app/v3/api/certificates/{certificateId}/renew": {
@@ -2700,8 +2686,7 @@
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.certificates.write"
+        "x-sdkwork-auth-mode": "dual-token"
       }
     },
     "/app/v3/api/upload_sessions": {

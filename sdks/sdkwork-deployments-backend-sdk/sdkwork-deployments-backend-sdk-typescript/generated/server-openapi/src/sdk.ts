@@ -4,6 +4,7 @@ import type { AuthTokenManager } from '@sdkwork/sdk-common';
 
 import { NginxApi, createNginxApi } from './api/nginx';
 import { ServerApi, createServerApi } from './api/server';
+import { ClusterApi, createClusterApi } from './api/cluster';
 import { AuditApi, createAuditApi } from './api/audit';
 
 export class SdkworkDeployBackendClient {
@@ -11,6 +12,7 @@ export class SdkworkDeployBackendClient {
 
   public readonly nginx: NginxApi;
   public readonly server: ServerApi;
+  public readonly cluster: ClusterApi;
   public readonly audit: AuditApi;
 
   constructor(config: SdkworkBackendConfig) {
@@ -18,6 +20,8 @@ export class SdkworkDeployBackendClient {
     this.nginx = createNginxApi(this.httpClient);
 
     this.server = createServerApi(this.httpClient);
+
+    this.cluster = createClusterApi(this.httpClient);
 
     this.audit = createAuditApi(this.httpClient);
   }

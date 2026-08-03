@@ -6,15 +6,16 @@ use sdkwork_deploy_contract::{
     ArtifactPage, ArtifactResponse, AuditLogPage, CertificatePage, CertificateResponse,
     CreateArtifactRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
     CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
-    CreateEnvVariableRequest, CreateHealthCheckRequest,
-    CreateNginxConfigRequest, CreateReleaseRequest, CreateServerRequest, CreateSiteRequest,
+    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateNginxConfigRequest,
+    CreateNodeClusterRequest, CreateReleaseRequest, CreateServerRequest, CreateSiteRequest,
     DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
-    DomainHostnamePage, DomainHostnameResponse, DomainZonePage, DomainZoneResponse, EnvVariablePage,
-    EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
+    DomainHostnamePage, DomainHostnameResponse, DomainZonePage, DomainZoneResponse,
+    EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
     ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
     NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
-    ReleasePage, ReleaseResponse, ServerPage, ServerResponse, SitePage, SiteResponse,
-    UpdateDomainZoneRequest, UpdateNginxConfigRequest, UpdateSiteRequest,
+    NodeClusterPage, NodeClusterResponse, ReleasePage, ReleaseResponse, ServerPage, ServerResponse,
+    SitePage, SiteResponse, UpdateDomainZoneRequest, UpdateNginxConfigRequest,
+    UpdateNodeClusterRequest, UpdateServerRequest, UpdateSiteRequest,
 };
 
 use crate::DomainVerificationChallenge;
@@ -351,6 +352,7 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         tenant_id: i64,
         page: i32,
         page_size: i32,
+        cluster_id: Option<String>,
     ) -> DeployServiceResult<ServerPage>;
 
     async fn create_server(
@@ -359,11 +361,37 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         request: &CreateServerRequest,
     ) -> DeployServiceResult<ServerResponse>;
 
+    async fn update_server(
+        &self,
+        tenant_id: i64,
+        server_id: &str,
+        request: &UpdateServerRequest,
+    ) -> DeployServiceResult<ServerResponse>;
+
+    async fn list_node_clusters(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<NodeClusterPage>;
+
+    async fn create_node_cluster(
+        &self,
+        tenant_id: i64,
+        request: &CreateNodeClusterRequest,
+    ) -> DeployServiceResult<NodeClusterResponse>;
+
+    async fn update_node_cluster(
+        &self,
+        tenant_id: i64,
+        cluster_id: &str,
+        request: &UpdateNodeClusterRequest,
+    ) -> DeployServiceResult<NodeClusterResponse>;
+
     async fn list_audit_logs(
         &self,
         tenant_id: Option<i64>,
-        page: i32,
-        page_size: i32,
+        query: &sdkwork_deploy_contract::AuditLogQuery,
     ) -> DeployServiceResult<AuditLogPage>;
 
     async fn insert_audit_log(&self, command: InsertAuditLogCommand) -> DeployServiceResult<()>;

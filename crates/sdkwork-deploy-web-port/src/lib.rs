@@ -233,7 +233,7 @@ fn map_web_sdk_error(error: SdkworkError) -> DeployServiceError {
         }
         SdkworkError::HttpStatus {
             status: 401 | 403, ..
-        } => DeployServiceError::Forbidden,
+        } => DeployServiceError::forbidden("web runtime forbidden"),
         _ => DeployServiceError::Internal("Web runtime assignment publication failed".to_owned()),
     }
 }
@@ -248,7 +248,7 @@ fn map_web_observation_sdk_error(error: SdkworkError) -> DeployServiceError {
         }
         SdkworkError::HttpStatus {
             status: 401 | 403, ..
-        } => DeployServiceError::Forbidden,
+        } => DeployServiceError::forbidden("web runtime forbidden"),
         _ => DeployServiceError::Internal("Web runtime observation retrieval failed".to_owned()),
     }
 }
@@ -298,7 +298,7 @@ mod tests {
             status: 403,
             body: "opaque upstream response".to_owned(),
         });
-        assert!(matches!(forbidden, DeployServiceError::Forbidden));
+        assert!(matches!(forbidden, DeployServiceError::Forbidden(_)));
     }
 
     #[test]

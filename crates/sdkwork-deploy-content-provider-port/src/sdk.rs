@@ -338,7 +338,7 @@ pub(crate) fn map_provider_error(provider: &str, message: &str) -> DeployService
     if message.contains("404") || lowercase.contains("not found") {
         DeployServiceError::not_found(format!("{provider} publication resource was not found"))
     } else if message.contains("401") || message.contains("403") {
-        DeployServiceError::Forbidden
+        DeployServiceError::forbidden("provider content access forbidden")
     } else if message.contains("409") {
         DeployServiceError::conflict(format!("{provider} publication resource conflicts"))
     } else if message.contains("400") || message.contains("422") {

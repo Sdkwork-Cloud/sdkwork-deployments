@@ -15,5 +15,6 @@ sdkwork-web-axum.workspace = true
 sdkwork-web-core.workspace = true
 
 [dev-dependencies]
+http-body-util.workspace = true
 tokio.workspace = true
 tower.workspace = true

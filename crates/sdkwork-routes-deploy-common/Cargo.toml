@@ -15,6 +15,7 @@ sdkwork-utils-rust.workspace = true
 sdkwork-web-core.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+url.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros"] }

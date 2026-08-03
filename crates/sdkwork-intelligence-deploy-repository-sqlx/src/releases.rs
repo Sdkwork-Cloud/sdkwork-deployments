@@ -38,7 +38,7 @@ impl DeployRepository {
              FROM deploy_release r
              JOIN deploy_artifact a ON a.id = r.artifact_id
              WHERE r.tenant_id = $1 AND r.site_id = $2 AND r.status = $3
-             ORDER BY r.created_at DESC LIMIT $4 OFFSET $5",
+             ORDER BY r.created_at DESC, r.id DESC LIMIT $4 OFFSET $5",
         )
         .bind(tenant_id)
         .bind(site_internal_id)
@@ -154,7 +154,7 @@ impl DeployRepository {
                 id, uuid, tenant_id, site_id, artifact_id, version_tag, status,
                 idempotency_key, metadata, created_at, updated_at, version
              ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, '{}', $9, $9, 0
+                $1, $2, $3, $4, $5, $6, $7, $8, '{}', CAST($9 AS TIMESTAMPTZ), CAST($9 AS TIMESTAMPTZ), 0
              )",
         )
         .bind(id)

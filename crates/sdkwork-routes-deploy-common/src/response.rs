@@ -119,7 +119,7 @@ impl ApiProblem {
         }
     }
 
-    fn framework_error(&self) -> WebFrameworkError {
+    pub(crate) fn framework_error(&self) -> WebFrameworkError {
         let kind = match self.status {
             StatusCode::BAD_REQUEST => WebFrameworkErrorKind::BadRequest,
             StatusCode::UNAUTHORIZED => WebFrameworkErrorKind::MissingCredentials,

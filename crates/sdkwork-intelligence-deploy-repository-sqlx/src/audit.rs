@@ -1,5 +1,5 @@
 use sdkwork_deploy_contract::{
-    AuditLogPage, AuditLogResponse, DeployServiceError, DeployServiceResult,
+    AuditLogPage, AuditLogQuery, AuditLogResponse, DeployServiceError, DeployServiceResult,
 };
 use sdkwork_intelligence_deploy_service::repository::InsertAuditLogCommand;
 use sqlx::{postgres::PgRow, Row};
@@ -11,54 +11,99 @@ impl DeployRepository {
     pub(super) async fn list_audit_logs_repo(
         &self,
         tenant_id: Option<i64>,
-        page: i32,
-        page_size: i32,
+        query: &AuditLogQuery,
     ) -> DeployServiceResult<AuditLogPage> {
-        let (page, page_size, offset) = pagination(page, page_size);
+        let (page, page_size, offset) = pagination(query.page, query.page_size);
 
-        let (count_row, rows) = if let Some(tenant_id) = tenant_id {
-            let count_row =
-                sqlx::query("SELECT COUNT(*) AS total FROM deploy_audit_log WHERE tenant_id = $1")
-                    .bind(tenant_id)
-                    .fetch_one(&self.pool)
-                    .await
-                    .map_err(|error| store_error("count deploy_audit_log", error))?;
-
-            let rows = sqlx::query(
-                "SELECT uuid, action, target_type, created_at
-                 FROM deploy_audit_log
-                 WHERE tenant_id = $1
-                 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
-            )
-            .bind(tenant_id)
-            .bind(page_size)
-            .bind(offset)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|error| store_error("list deploy_audit_log", error))?;
-
-            (count_row, rows)
-        } else {
-            let count_row = sqlx::query("SELECT COUNT(*) AS total FROM deploy_audit_log")
-                .fetch_one(&self.pool)
-                .await
-                .map_err(|error| store_error("count deploy_audit_log", error))?;
-
-            let rows = sqlx::query(
-                "SELECT uuid, action, target_type, created_at
-                 FROM deploy_audit_log
-                 ORDER BY created_at DESC LIMIT $1 OFFSET $2",
-            )
-            .bind(page_size)
-            .bind(offset)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|error| store_error("list deploy_audit_log", error))?;
-
-            (count_row, rows)
+        let Some(tenant_id) = tenant_id else {
+            // 审计日志不允许无租户上下文的全库枚举：调用方必须先解析租户。
+            return Err(DeployServiceError::forbidden(
+                "tenant context is required for audit log listing",
+            ));
         };
 
-        let total: i64 = count_row.try_get("total").unwrap_or(0);
+        // OpenAPI 声明的过滤器逐项落地（PAGINATION_SPEC §4：声明即实现）。
+        // 所有动态值经 bind 参数注入，WHERE 片段仅由固定子句拼接。
+        let mut conditions = vec!["tenant_id = $1".to_string()];
+        let mut bind_index = 2;
+        if let Some(target_type) = query.target_type.as_deref().filter(|v| !v.is_empty()) {
+            conditions.push(format!("target_type = ${bind_index}"));
+            bind_index += 1;
+        }
+        if let Some(action) = query.action.as_deref().filter(|v| !v.is_empty()) {
+            conditions.push(format!("action = ${bind_index}"));
+            bind_index += 1;
+        }
+        if let Some(operator_id) = query.operator_id {
+            conditions.push(format!("operator_id = ${bind_index}"));
+            bind_index += 1;
+        }
+        if let Some(start_date) = query.start_date.as_deref().filter(|v| !v.is_empty()) {
+            conditions.push(format!("created_at >= CAST(${bind_index} AS TIMESTAMPTZ)"));
+            bind_index += 1;
+        }
+        if let Some(end_date) = query.end_date.as_deref().filter(|v| !v.is_empty()) {
+            conditions.push(format!("created_at <= CAST(${bind_index} AS TIMESTAMPTZ)"));
+            bind_index += 1;
+        }
+        let where_clause = conditions.join(" AND ");
+
+        let count_sql = format!("SELECT COUNT(*) AS total FROM deploy_audit_log WHERE {where_clause}");
+        let mut count_query = sqlx::query(&count_sql).bind(tenant_id);
+        if let Some(target_type) = query.target_type.as_deref().filter(|v| !v.is_empty()) {
+            count_query = count_query.bind(target_type);
+        }
+        if let Some(action) = query.action.as_deref().filter(|v| !v.is_empty()) {
+            count_query = count_query.bind(action);
+        }
+        if let Some(operator_id) = query.operator_id {
+            count_query = count_query.bind(operator_id);
+        }
+        if let Some(start_date) = query.start_date.as_deref().filter(|v| !v.is_empty()) {
+            count_query = count_query.bind(start_date);
+        }
+        if let Some(end_date) = query.end_date.as_deref().filter(|v| !v.is_empty()) {
+            count_query = count_query.bind(end_date);
+        }
+        let count_row = count_query
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|error| store_error("count deploy_audit_log", error))?;
+        let total: i64 = count_row
+            .try_get("total")
+            .map_err(|error| store_error("map deploy_audit_log count", error))?;
+
+        let limit_index = bind_index;
+        let offset_index = bind_index + 1;
+        let list_sql = format!(
+            "SELECT uuid, action, target_type, created_at
+             FROM deploy_audit_log
+             WHERE {where_clause}
+             ORDER BY created_at DESC, id DESC LIMIT ${limit_index} OFFSET ${offset_index}"
+        );
+        let mut list_query = sqlx::query(&list_sql).bind(tenant_id);
+        if let Some(target_type) = query.target_type.as_deref().filter(|v| !v.is_empty()) {
+            list_query = list_query.bind(target_type);
+        }
+        if let Some(action) = query.action.as_deref().filter(|v| !v.is_empty()) {
+            list_query = list_query.bind(action);
+        }
+        if let Some(operator_id) = query.operator_id {
+            list_query = list_query.bind(operator_id);
+        }
+        if let Some(start_date) = query.start_date.as_deref().filter(|v| !v.is_empty()) {
+            list_query = list_query.bind(start_date);
+        }
+        if let Some(end_date) = query.end_date.as_deref().filter(|v| !v.is_empty()) {
+            list_query = list_query.bind(end_date);
+        }
+        let rows = list_query
+            .bind(page_size)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|error| store_error("list deploy_audit_log", error))?;
+
         let mut items = Vec::with_capacity(rows.len());
         for row in &rows {
             items.push(map_audit_log_row(row).map_err(|error| {
@@ -87,7 +132,7 @@ impl DeployRepository {
                 id, uuid, tenant_id, organization_id, operator_id, action, target_type,
                 target_id, target_uuid, metadata, created_at
              ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, '{}', $10
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, '{}', CAST($10 AS TIMESTAMPTZ)
              )",
         )
         .bind(id)

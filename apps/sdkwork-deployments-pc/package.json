@@ -24,6 +24,7 @@
     "@sdkwork/deployments-pc-admin-audit": "workspace:*",
     "@sdkwork/deployments-pc-admin-core": "workspace:*",
     "@sdkwork/deployments-pc-admin-infrastructure": "workspace:*",
+    "@sdkwork/deployments-pc-admin-nodes": "workspace:*",
     "@sdkwork/deployments-pc-admin-shell": "workspace:*",
     "@sdkwork/deployments-pc-commons": "workspace:*",
     "@sdkwork/deployments-pc-console-core": "workspace:*",

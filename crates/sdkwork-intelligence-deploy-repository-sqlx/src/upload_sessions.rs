@@ -32,7 +32,7 @@ impl DeployRepository {
              (id, uuid, tenant_id, site_id, drive_upload_session_id, drive_upload_item_id,
               drive_space_id, drive_node_id, package_type, file_name, content_type,
               content_length, checksum, status, idempotency_key, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)",
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CAST($16 AS TIMESTAMPTZ), CAST($17 AS TIMESTAMPTZ))",
         )
         .bind(id)
         .bind(&uuid)
@@ -153,7 +153,7 @@ impl DeployRepository {
             "UPDATE deploy_upload_session_ref
              SET status = $1,
                  drive_node_id = COALESCE($2, drive_node_id),
-                 updated_at = $3
+                 updated_at = CAST($3 AS TIMESTAMPTZ)
              WHERE tenant_id = $4 AND uuid = $5 AND deleted_at IS NULL",
         )
         .bind(status)

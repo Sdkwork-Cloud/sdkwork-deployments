@@ -1,4 +1,4 @@
-import { Activity, AppWindow, Boxes, ChevronLeft, ChevronRight, FileKey2, Globe2, LogOut, Package, RefreshCw, Rocket, ScrollText, Search, Server, ServerCog, Settings2, Shield, Tags, Upload, X } from "lucide-react";
+import { Activity, AppWindow, Boxes, ChevronLeft, ChevronRight, FileKey2, Globe2, LogOut, Network, Package, RefreshCw, Rocket, ScrollText, Search, Server, ServerCog, Settings2, Shield, Tags, Upload, X } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 
@@ -18,7 +18,7 @@ export interface DeploymentsWorkspaceProps {
 
 export function DeploymentsWorkspace({ locale, modules, onSignOut, permissionScope, registry, resourcePages, surface, userLabel }: DeploymentsWorkspaceProps) {
   const t = translator(locale);
-  const entries = useMemo(() => modules.flatMap((module) => module.entries).filter((entry) => permissionScope.length === 0 || permissionScope.includes(entry.permission)).sort((a, b) => a.order - b.order), [modules, permissionScope]);
+  const entries = useMemo(() => modules.flatMap((module) => module.entries).filter((entry) => permissionScope.length === 0 || !entry.permission || permissionScope.includes(entry.permission)).sort((a, b) => a.order - b.order), [modules, permissionScope]);
   const base = surface === "backend-admin" ? "/admin" : "/console";
   if (entries.length === 0) return <main className="empty-access" role="alert"><Shield size={22} /><h1>{t("access.title")}</h1><p>{t("access.description")}</p></main>;
   return <div className="app-layout">
@@ -109,7 +109,8 @@ function resourceIcon(resource: DeploymentsResourceKey): ReactNode {
     deployments: Rocket,
     monitoring: Activity,
     nginx: ServerCog,
-    servers: Server,
+    clusters: Network,
+    nodes: Server,
     audit: ScrollText,
   } satisfies Record<DeploymentsResourceKey, typeof AppWindow>;
   const Icon = icons[resource];

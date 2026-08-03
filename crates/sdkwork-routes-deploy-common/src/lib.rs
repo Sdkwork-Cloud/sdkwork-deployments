@@ -2,6 +2,7 @@
 
 pub mod correlation;
 pub mod envelope;
+pub mod pagination;
 pub mod problem;
 pub mod response;
 

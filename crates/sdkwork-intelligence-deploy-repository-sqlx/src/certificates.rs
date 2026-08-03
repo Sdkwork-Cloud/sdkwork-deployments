@@ -5,7 +5,7 @@ use sdkwork_deploy_contract::{
     DeployServiceResult, CERTIFICATE_RENEWAL_STATUS_PLANNED, CERTIFICATE_SOURCE_MANAGED,
     CERTIFICATE_STATUS_REVOKED,
 };
-use sqlx::{postgres::PgRow, Row};
+use sqlx::{postgres::PgRow, AssertSqlSafe, Row};
 
 use crate::support::{
     datetime_from_row, json_from_row, new_uuid, next_id, optional_datetime_from_row, pagination,
@@ -40,13 +40,13 @@ impl DeployRepository {
         .fetch_one(&self.pool)
         .await
         .map_err(|error| store_error("count deploy_certificate", error))?;
-        let rows = sqlx::query(&format!(
+        let rows = sqlx::query(AssertSqlSafe(format!(
             "SELECT {CERTIFICATE_SELECT}
              FROM deploy_certificate c
              LEFT JOIN deploy_certificate_version v ON v.id = c.current_version_id
              WHERE c.tenant_id = $1 AND c.status <> $2 AND c.deleted_at IS NULL
              ORDER BY c.updated_at DESC, c.id DESC LIMIT $3 OFFSET $4"
-        ))
+        )))
         .bind(tenant_id)
         .bind(CERTIFICATE_STATUS_REVOKED)
         .bind(page_size)
@@ -74,13 +74,13 @@ impl DeployRepository {
         tenant_id: i64,
         certificate_id: &str,
     ) -> DeployServiceResult<CertificateResponse> {
-        let row = sqlx::query(&format!(
+        let row = sqlx::query(AssertSqlSafe(format!(
             "SELECT {CERTIFICATE_SELECT}
              FROM deploy_certificate c
              LEFT JOIN deploy_certificate_version v ON v.id = c.current_version_id
              WHERE c.tenant_id = $1 AND c.uuid = $2
                AND c.status <> $3 AND c.deleted_at IS NULL"
-        ))
+        )))
         .bind(tenant_id)
         .bind(certificate_id)
         .bind(CERTIFICATE_STATUS_REVOKED)

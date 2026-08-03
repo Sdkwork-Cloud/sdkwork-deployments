@@ -3,7 +3,7 @@ use sdkwork_deploy_contract::{
     SiteResponse, UpdateSiteRequest,
 };
 use sdkwork_utils_rust::slugify;
-use sqlx::{postgres::PgRow, Row};
+use sqlx::{postgres::PgRow, AssertSqlSafe, Row};
 
 use crate::support::{
     datetime_from_row, json_from_row, new_uuid, next_id, now_rfc3339, pagination, store_error,
@@ -58,15 +58,16 @@ impl DeployRepository {
             let pattern = format!("%{}%", keyword.trim());
             extra_binds.push(pattern.clone());
             extra_binds.push(pattern);
+            bind_index += 2;
         }
 
         list_sql.push_str(&format!(
-            " ORDER BY updated_at DESC LIMIT ${bind_index} OFFSET ${}",
+            " ORDER BY updated_at DESC, id DESC LIMIT ${bind_index} OFFSET ${}",
             bind_index + 1
         ));
 
-        let mut count_query = sqlx::query(&count_sql).bind(tenant_id);
-        let mut list_query = sqlx::query(&list_sql).bind(tenant_id);
+        let mut count_query = sqlx::query(AssertSqlSafe(&*count_sql)).bind(tenant_id);
+        let mut list_query = sqlx::query(AssertSqlSafe(&*list_sql)).bind(tenant_id);
         for value in &extra_binds {
             count_query = count_query.bind(value);
             list_query = list_query.bind(value);
@@ -131,7 +132,7 @@ impl DeployRepository {
                 id, uuid, tenant_id, organization_id, user_id, name, slug, description,
                 site_type, status, runtime_config, metadata, created_at, updated_at, version
              ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, 0, $10, '{}', $11, $11, 0
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, 0, $10::jsonb, '{}', CAST($11 AS TIMESTAMPTZ), CAST($11 AS TIMESTAMPTZ), 0
              )",
         )
         .bind(id)
@@ -179,6 +180,12 @@ impl DeployRepository {
         request: &UpdateSiteRequest,
     ) -> DeployServiceResult<SiteResponse> {
         let existing = self.retrieve_site_repo(tenant_id, site_id).await?;
+        // 乐观并发：以读取到的版本作为更新前提，并发修改时 0 行更新并按
+        // 存在性区分为 conflict / not_found（对齐 Web repository 语义）。
+        let current_version: i64 = existing
+            .version
+            .parse()
+            .map_err(|error| DeployServiceError::Internal(format!("invalid site version: {error}")))?;
         let name = request.name.as_ref().unwrap_or(&existing.name);
         let description = request
             .description
@@ -194,8 +201,8 @@ impl DeployRepository {
 
         let updated = sqlx::query(
             "UPDATE deploy_site
-             SET name = $3, description = $4, runtime_config = $5, updated_at = $6, version = version + 1
-             WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL",
+             SET name = $3, description = $4, runtime_config = $5::jsonb, updated_at = CAST($6 AS TIMESTAMPTZ), version = version + 1
+             WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL AND version = $7",
         )
         .bind(tenant_id)
         .bind(site_id)
@@ -203,12 +210,13 @@ impl DeployRepository {
         .bind(description)
         .bind(&runtime_config_text)
         .bind(&now)
+        .bind(current_version)
         .execute(&self.pool)
         .await
         .map_err(|error| store_error("update deploy_site", error))?;
 
         if updated.rows_affected() == 0 {
-            return Err(DeployServiceError::not_found("site not found"));
+            return self.conflict_or_missing_site(tenant_id, site_id).await;
         }
 
         self.retrieve_site_repo(tenant_id, site_id).await
@@ -223,7 +231,7 @@ impl DeployRepository {
         let now = now_rfc3339();
         let result = sqlx::query(
             "UPDATE deploy_site
-             SET deleted_at = $3, deleted_by = $4, updated_at = $3, version = version + 1
+             SET deleted_at = CAST($3 AS TIMESTAMPTZ), deleted_by = $4, updated_at = CAST($3 AS TIMESTAMPTZ), version = version + 1
              WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL",
         )
         .bind(tenant_id)
@@ -246,25 +254,45 @@ impl DeployRepository {
         site_id: &str,
         status: i32,
     ) -> DeployServiceResult<SiteResponse> {
+        let existing = self.retrieve_site_repo(tenant_id, site_id).await?;
+        let current_version: i64 = existing
+            .version
+            .parse()
+            .map_err(|error| DeployServiceError::Internal(format!("invalid site version: {error}")))?;
         let now = now_rfc3339();
         let result = sqlx::query(
             "UPDATE deploy_site
-             SET status = $3, updated_at = $4, version = version + 1
-             WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL",
+             SET status = $3, updated_at = CAST($4 AS TIMESTAMPTZ), version = version + 1
+             WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL AND version = $5",
         )
         .bind(tenant_id)
         .bind(site_id)
         .bind(status)
         .bind(&now)
+        .bind(current_version)
         .execute(&self.pool)
         .await
         .map_err(|error| store_error("update deploy_site status", error))?;
 
         if result.rows_affected() == 0 {
-            return Err(DeployServiceError::not_found("site not found"));
+            return self.conflict_or_missing_site(tenant_id, site_id).await;
         }
 
         self.retrieve_site_repo(tenant_id, site_id).await
+    }
+
+    /// 0 行更新时按存在性区分并发冲突与资源缺失（对齐 Web repository）。
+    async fn conflict_or_missing_site(
+        &self,
+        tenant_id: i64,
+        site_id: &str,
+    ) -> DeployServiceResult<SiteResponse> {
+        if self.retrieve_site_repo(tenant_id, site_id).await.is_ok() {
+            return Err(DeployServiceError::conflict(
+                "site was modified concurrently; reload and retry",
+            ));
+        }
+        Err(DeployServiceError::not_found("site not found"))
     }
 }
 

@@ -56,6 +56,7 @@ const client = new SdkworkDeployBackendClient({
 
 - `client.nginx` - nginx API
 - `client.server` - server API
+- `client.cluster` - cluster API
 - `client.audit` - audit API
 
 ## Usage Examples
@@ -70,12 +71,24 @@ const result = await client.nginx.runtime.retrieve();
 ### server
 
 ```typescript
-// 获取服务器列表
+// 获取服务器节点列表
+const params = {
+  page: 1,
+  page_size: 2,
+  clusterId: 'clusterId',
+};
+const result = await client.server.list(params);
+```
+
+### cluster
+
+```typescript
+// 获取节点集群列表
 const params = {
   page: 1,
   page_size: 2,
 };
-const result = await client.server.list(params);
+const result = await client.cluster.list(params);
 ```
 
 ### audit

@@ -18,8 +18,8 @@ pub enum DeployServiceError {
     Conflict(String),
     #[error("validation: {0}")]
     Validation(String),
-    #[error("forbidden")]
-    Forbidden,
+    #[error("forbidden: {0}")]
+    Forbidden(String),
     #[error("database unavailable")]
     DatabaseUnavailable,
     #[error("internal error: {0}")]
@@ -32,7 +32,7 @@ impl DeployServiceError {
             Self::NotFound(_) => DeployServiceErrorKind::NotFound,
             Self::Conflict(_) => DeployServiceErrorKind::Conflict,
             Self::Validation(_) => DeployServiceErrorKind::Validation,
-            Self::Forbidden => DeployServiceErrorKind::Forbidden,
+            Self::Forbidden(_) => DeployServiceErrorKind::Forbidden,
             Self::DatabaseUnavailable => DeployServiceErrorKind::DatabaseUnavailable,
             Self::Internal(_) => DeployServiceErrorKind::Internal,
         }
@@ -48,6 +48,10 @@ impl DeployServiceError {
 
     pub fn validation(detail: impl Into<String>) -> Self {
         Self::Validation(detail.into())
+    }
+
+    pub fn forbidden(detail: impl Into<String>) -> Self {
+        Self::Forbidden(detail.into())
     }
 }
 

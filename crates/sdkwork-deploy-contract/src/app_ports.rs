@@ -422,6 +422,7 @@ pub trait DeployBackendApi: Send + Sync {
         context: &DeployBackendRequestContext,
         page: i32,
         page_size: i32,
+        cluster_id: Option<String>,
     ) -> DeployServiceResult<ServerPage>;
 
     async fn create_server(
@@ -430,10 +431,36 @@ pub trait DeployBackendApi: Send + Sync {
         request: &CreateServerRequest,
     ) -> DeployServiceResult<ServerResponse>;
 
-    async fn list_audit_logs(
+    async fn update_server(
+        &self,
+        context: &DeployBackendRequestContext,
+        server_id: &str,
+        request: &UpdateServerRequest,
+    ) -> DeployServiceResult<ServerResponse>;
+
+    async fn list_node_clusters(
         &self,
         context: &DeployBackendRequestContext,
         page: i32,
         page_size: i32,
+    ) -> DeployServiceResult<NodeClusterPage>;
+
+    async fn create_node_cluster(
+        &self,
+        context: &DeployBackendRequestContext,
+        request: &CreateNodeClusterRequest,
+    ) -> DeployServiceResult<NodeClusterResponse>;
+
+    async fn update_node_cluster(
+        &self,
+        context: &DeployBackendRequestContext,
+        cluster_id: &str,
+        request: &UpdateNodeClusterRequest,
+    ) -> DeployServiceResult<NodeClusterResponse>;
+
+    async fn list_audit_logs(
+        &self,
+        context: &DeployBackendRequestContext,
+        query: &AuditLogQuery,
     ) -> DeployServiceResult<AuditLogPage>;
 }

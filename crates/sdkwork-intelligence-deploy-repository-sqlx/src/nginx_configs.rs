@@ -3,7 +3,7 @@ use sdkwork_deploy_contract::{
     NginxConfigPage, NginxConfigResponse, NginxReloadResponse, NginxStatusResponse,
     NginxValidateResponse, UpdateNginxConfigRequest,
 };
-use sqlx::{postgres::PgArguments, postgres::PgRow, PgPool, Postgres, Row};
+use sqlx::{postgres::PgArguments, postgres::PgRow, AssertSqlSafe, PgPool, Postgres, Row};
 
 use crate::nginx_orchestrator::{parse_sdkwork_deploy_binding, publish_nginx_config};
 use crate::nginx_security::{
@@ -66,16 +66,16 @@ impl DeployRepository {
         let limit_index = binds.len() + 1;
         let offset_index = binds.len() + 2;
         list_sql.push_str(&format!(
-            " ORDER BY updated_at DESC LIMIT ${limit_index} OFFSET ${offset_index}"
+            " ORDER BY updated_at DESC, id DESC LIMIT ${limit_index} OFFSET ${offset_index}"
         ));
 
-        let count_row = apply_binds(sqlx::query(&count_sql), &binds)
+        let count_row = apply_binds(sqlx::query(AssertSqlSafe(&*count_sql)), &binds)
             .fetch_one(&self.pool)
             .await
             .map_err(|error| store_error("count deploy_nginx_config", error))?;
         let total: i64 = count_row.try_get("total").unwrap_or(0);
 
-        let mut list_query = apply_binds(sqlx::query(&list_sql), &binds);
+        let mut list_query = apply_binds(sqlx::query(AssertSqlSafe(&*list_sql)), &binds);
         list_query = list_query.bind(page_size).bind(offset);
         let rows = list_query
             .fetch_all(&self.pool)
@@ -120,7 +120,7 @@ impl DeployRepository {
                 id, uuid, tenant_id, site_id, config_type, config_name, config_content, config_hash,
                 is_active, status, metadata, created_at, updated_at, version
              ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, 0, 0, '{}', $9, $9, 0
+                $1, $2, $3, $4, $5, $6, $7, $8, 0, 0, '{}', CAST($9 AS TIMESTAMPTZ), CAST($9 AS TIMESTAMPTZ), 0
              )",
         )
         .bind(id)
@@ -223,7 +223,7 @@ impl DeployRepository {
         let result = if let Some(tenant_id) = tenant_id {
             sqlx::query(
                 "UPDATE deploy_nginx_config
-                 SET config_name = $3, config_content = $4, config_hash = $5, updated_at = $6, version = version + 1
+                 SET config_name = $3, config_content = $4, config_hash = $5, updated_at = CAST($6 AS TIMESTAMPTZ), version = version + 1
                  WHERE tenant_id = $1 AND uuid = $2",
             )
             .bind(tenant_id)
@@ -238,7 +238,7 @@ impl DeployRepository {
         } else {
             sqlx::query(
                 "UPDATE deploy_nginx_config
-                 SET config_name = $2, config_content = $3, config_hash = $4, updated_at = $5, version = version + 1
+                 SET config_name = $2, config_content = $3, config_hash = $4, updated_at = CAST($5 AS TIMESTAMPTZ), version = version + 1
                  WHERE uuid = $1",
             )
             .bind(config_id)
@@ -316,7 +316,7 @@ impl DeployRepository {
         let now = now_rfc3339();
 
         sqlx::query(
-            "UPDATE deploy_nginx_config SET is_active = 0, updated_at = $2, version = version + 1
+            "UPDATE deploy_nginx_config SET is_active = 0, updated_at = CAST($2 AS TIMESTAMPTZ), version = version + 1
              WHERE site_id = $1 AND is_active = 1",
         )
         .bind(site_internal_id)
@@ -328,7 +328,7 @@ impl DeployRepository {
         let result = if let Some(tenant_id) = tenant_id {
             sqlx::query(
                 "UPDATE deploy_nginx_config
-                 SET is_active = 1, status = 1, deployed_at = $3, updated_at = $3, version = version + 1
+                 SET is_active = 1, status = 1, deployed_at = CAST($3 AS TIMESTAMPTZ), updated_at = CAST($3 AS TIMESTAMPTZ), version = version + 1
                  WHERE tenant_id = $1 AND uuid = $2",
             )
             .bind(tenant_id)
@@ -340,7 +340,7 @@ impl DeployRepository {
         } else {
             sqlx::query(
                 "UPDATE deploy_nginx_config
-                 SET is_active = 1, status = 1, deployed_at = $2, updated_at = $2, version = version + 1
+                 SET is_active = 1, status = 1, deployed_at = CAST($2 AS TIMESTAMPTZ), updated_at = CAST($2 AS TIMESTAMPTZ), version = version + 1
                  WHERE uuid = $1",
             )
             .bind(config_id)

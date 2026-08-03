@@ -12,6 +12,7 @@ async fn domain_activation_requires_external_evidence_for_the_current_attempt() 
     let repository = DeployRepository::new(
         pool,
         SnowflakeIdGenerator::new(3).expect("Snowflake generator"),
+    common::test_secret_key(),
     );
     let apex = format!(
         "verify{}.dev",

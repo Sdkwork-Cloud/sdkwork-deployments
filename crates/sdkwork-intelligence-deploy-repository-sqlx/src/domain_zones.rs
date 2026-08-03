@@ -5,7 +5,7 @@ use sdkwork_deploy_contract::{
 };
 use sdkwork_intelligence_deploy_service::{dns_txt_record_name, DomainVerificationChallenge};
 use sdkwork_utils_rust::crypto::sha256_hash;
-use sqlx::{postgres::PgRow, Row};
+use sqlx::{postgres::PgRow, AssertSqlSafe, Row};
 
 use crate::support::{
     datetime_from_row, new_uuid, next_id, optional_datetime_from_row, pagination, store_error,
@@ -43,19 +43,19 @@ impl DeployRepository {
         let predicate = "z.tenant_id = $1 AND z.deleted_at IS NULL
             AND ($2 = '' OR z.status = $2)
             AND ($3 = '' OR LOWER(z.apex_hostname) LIKE $3 OR LOWER(COALESCE(z.display_name, '')) LIKE $3)";
-        let total: i64 = sqlx::query_scalar(&format!(
+        let total: i64 = sqlx::query_scalar(AssertSqlSafe(format!(
             "SELECT COUNT(*) FROM deploy_dns_zone z WHERE {predicate}"
-        ))
+        )))
         .bind(tenant_id)
         .bind(status)
         .bind(&keyword)
         .fetch_one(&self.pool)
         .await
         .map_err(|error| store_error("count deploy_dns_zone", error))?;
-        let rows = sqlx::query(&format!(
+        let rows = sqlx::query(AssertSqlSafe(format!(
             "SELECT {ZONE_SELECT} FROM deploy_dns_zone z WHERE {predicate}
              ORDER BY z.updated_at DESC, z.id DESC LIMIT $4 OFFSET $5"
-        ))
+        )))
         .bind(tenant_id)
         .bind(status)
         .bind(keyword)
@@ -170,10 +170,10 @@ impl DeployRepository {
         tenant_id: i64,
         zone_id: &str,
     ) -> DeployServiceResult<DomainZoneResponse> {
-        let row = sqlx::query(&format!(
+        let row = sqlx::query(AssertSqlSafe(format!(
             "SELECT {ZONE_SELECT} FROM deploy_dns_zone z
              WHERE z.tenant_id = $1 AND z.uuid = $2 AND z.deleted_at IS NULL"
-        ))
+        )))
         .bind(tenant_id)
         .bind(zone_id)
         .fetch_optional(&self.pool)
@@ -512,13 +512,13 @@ impl DeployRepository {
         .fetch_one(&self.pool)
         .await
         .map_err(|error| store_error("count deploy_domain by zone", error))?;
-        let rows = sqlx::query(&format!(
+        let rows = sqlx::query(AssertSqlSafe(format!(
             "SELECT {HOSTNAME_SELECT} FROM deploy_domain d
              JOIN deploy_dns_zone z ON z.id = d.zone_id
              WHERE z.tenant_id = $1 AND z.uuid = $2 AND z.deleted_at IS NULL AND d.deleted_at IS NULL
              ORDER BY CASE WHEN d.hostname_ascii = z.apex_hostname THEN 0 ELSE 1 END,
                       d.hostname_ascii, d.id LIMIT $3 OFFSET $4"
-        ))
+        )))
         .bind(tenant_id)
         .bind(zone_id)
         .bind(page_size)
@@ -631,11 +631,11 @@ impl DeployRepository {
         zone_id: &str,
         hostname_id: &str,
     ) -> DeployServiceResult<DomainHostnameResponse> {
-        let row = sqlx::query(&format!(
+        let row = sqlx::query(AssertSqlSafe(format!(
             "SELECT {HOSTNAME_SELECT} FROM deploy_domain d JOIN deploy_dns_zone z ON z.id = d.zone_id
              WHERE z.tenant_id = $1 AND z.uuid = $2 AND d.uuid = $3
                AND z.deleted_at IS NULL AND d.deleted_at IS NULL"
-        ))
+        )))
         .bind(tenant_id)
         .bind(zone_id)
         .bind(hostname_id)

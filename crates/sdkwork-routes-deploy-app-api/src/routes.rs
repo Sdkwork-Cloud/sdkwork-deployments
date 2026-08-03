@@ -23,8 +23,8 @@ use std::sync::Arc;
 use crate::{auth::require_app_context, paths};
 
 #[derive(Clone)]
-struct AppState {
-    api: Arc<dyn DeployAppApi>,
+pub struct AppState {
+    pub api: Arc<dyn DeployAppApi>,
 }
 
 pub fn build_router_with_app_api<A>(api: A) -> Router
@@ -34,8 +34,12 @@ where
     build_router_with_shared_app_api(Arc::new(api))
 }
 
-pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
-    Router::new()
+/// Composable domain management block: root-zone and hostname routes. The
+/// block is mounted by the Deployments standalone gateway as part of the full
+/// app API and by consuming hosts (for example the Web Server standalone
+/// gateway) as an independent same-origin dependency contribution.
+pub fn build_domain_management_router() -> Router<AppState> {
+    Router::<AppState>::new()
         .route(
             paths::DOMAIN_ZONES,
             get(list_domain_zones).post(create_domain_zone),
@@ -58,6 +62,32 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
             paths::DOMAIN_ZONE_HOSTNAME_VERIFY,
             post(verify_domain_hostname),
         )
+        .layer(axum::middleware::from_fn(
+            sdkwork_routes_deploy_common::pagination::validate_pagination_query,
+        ))
+}
+
+/// Composable certificate management block: certificate and renewal routes.
+pub fn build_certificate_management_router() -> Router<AppState> {
+    Router::<AppState>::new()
+        .route(
+            paths::CERTIFICATES,
+            get(list_certificates).post(create_certificate),
+        )
+        .route(
+            paths::CERTIFICATE,
+            get(retrieve_certificate).delete(delete_certificate),
+        )
+        .route(paths::CERTIFICATE_RENEW, post(renew_certificate))
+        .layer(axum::middleware::from_fn(
+            sdkwork_routes_deploy_common::pagination::validate_pagination_query,
+        ))
+}
+
+pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
+    Router::<AppState>::new()
+        .merge(build_domain_management_router())
+        .merge(build_certificate_management_router())
         .route(paths::SITES, get(list_sites).post(create_site))
         .route(
             paths::SITE,
@@ -81,15 +111,6 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
             paths::SITE_ENV_VARIABLES,
             get(list_env_variables).post(create_env_variable),
         )
-        .route(
-            paths::CERTIFICATES,
-            get(list_certificates).post(create_certificate),
-        )
-        .route(
-            paths::CERTIFICATE,
-            get(retrieve_certificate).delete(delete_certificate),
-        )
-        .route(paths::CERTIFICATE_RENEW, post(renew_certificate))
         .route(paths::UPLOAD_SESSIONS, post(create_upload_session))
         .route(paths::UPLOAD_SESSION, get(retrieve_upload_session))
         .route(
@@ -106,6 +127,9 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
             paths::SITE_HEALTH_CHECKS,
             get(list_health_checks).post(create_health_check),
         )
+        .layer(axum::middleware::from_fn(
+            sdkwork_routes_deploy_common::pagination::validate_pagination_query,
+        ))
         .with_state(AppState { api })
 }
 

@@ -1,8 +1,8 @@
 import type { ComponentType } from "react";
 
 export type DeploymentsSurface = "app-console" | "backend-admin";
-export type DeploymentsResourceKey = "sites" | "configuration" | "domains" | "certificates" | "artifacts" | "releases" | "deployments" | "monitoring" | "nginx" | "servers" | "audit";
-export interface DeploymentsModuleEntry { description: string; label: string; order: number; permission: string; resource: DeploymentsResourceKey; }
+export type DeploymentsResourceKey = "sites" | "configuration" | "domains" | "certificates" | "artifacts" | "releases" | "deployments" | "monitoring" | "nginx" | "clusters" | "nodes" | "audit";
+export interface DeploymentsModuleEntry { description: string; label: string; order: number; permission?: string; resource: DeploymentsResourceKey; }
 export interface DeploymentsPcModuleDefinition { entries: readonly DeploymentsModuleEntry[]; id: string; label: string; surface: DeploymentsSurface; }
 export interface DeploymentsQuery { page: number; pageSize: number; scopeId?: string; search?: string; }
 export interface DeploymentsPage { items: readonly Record<string, unknown>[]; pageInfo: { page: number; pageSize: number; hasMore: boolean; total?: number }; }

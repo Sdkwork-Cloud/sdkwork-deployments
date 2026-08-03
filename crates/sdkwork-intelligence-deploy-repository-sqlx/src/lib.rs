@@ -11,6 +11,7 @@ mod health_checks;
 mod nginx_configs;
 mod nginx_orchestrator;
 mod nginx_security;
+mod node_clusters;
 mod port;
 mod releases;
 mod runtime_assignments;
@@ -24,14 +25,16 @@ mod upload_sessions;
 pub struct DeployRepository {
     pool: PgPool,
     id_generator: SnowflakeIdGenerator,
+    secret_key: [u8; 32],
     _node_lease: Option<NodeLease>,
 }
 
 impl DeployRepository {
-    pub fn new(pool: PgPool, id_generator: SnowflakeIdGenerator) -> Self {
+    pub fn new(pool: PgPool, id_generator: SnowflakeIdGenerator, secret_key: [u8; 32]) -> Self {
         Self {
             pool,
             id_generator,
+            secret_key,
             _node_lease: None,
         }
     }
@@ -40,10 +43,12 @@ impl DeployRepository {
         pool: PgPool,
         id_generator: SnowflakeIdGenerator,
         node_lease: NodeLease,
+        secret_key: [u8; 32],
     ) -> Self {
         Self {
             pool,
             id_generator,
+            secret_key,
             _node_lease: Some(node_lease),
         }
     }
@@ -54,5 +59,11 @@ impl DeployRepository {
 
     pub fn id_generator(&self) -> &SnowflakeIdGenerator {
         &self.id_generator
+    }
+
+    /// AES-256 key used to protect environment-variable secrets at rest
+    /// (derived from `SDKWORK_DEPLOY_SECRET_ENCRYPTION_KEY` at bootstrap).
+    pub fn secret_key(&self) -> &[u8; 32] {
+        &self.secret_key
     }
 }

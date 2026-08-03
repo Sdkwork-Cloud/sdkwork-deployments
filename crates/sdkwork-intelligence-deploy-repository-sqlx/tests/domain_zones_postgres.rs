@@ -14,6 +14,7 @@ async fn postgres_domain_zone_lifecycle_enforces_resource_boundaries() {
     let repository = DeployRepository::new(
         pool,
         SnowflakeIdGenerator::new(4).expect("Snowflake generator"),
+    common::test_secret_key(),
     );
     let apex = format!(
         "zone{}.dev",

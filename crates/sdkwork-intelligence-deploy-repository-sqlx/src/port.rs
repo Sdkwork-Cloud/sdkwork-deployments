@@ -6,14 +6,15 @@ use sdkwork_deploy_contract::{
     CreateArtifactRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
     CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
     CreateEnvVariableRequest, CreateHealthCheckRequest, CreateNginxConfigRequest,
-    CreateReleaseRequest, CreateServerRequest, CreateSiteRequest, DeployAppRequestContext,
-    DeployUploadSessionResponse, DeploymentPage, DeploymentResponse, DomainHostnamePage,
-    DomainHostnameResponse, DomainZonePage, DomainZoneResponse, EnvVariablePage,
-    EnvVariableResponse, HealthCheckPage, HealthCheckResponse, ListDomainZonesQuery,
-    ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage, NginxConfigResponse,
-    NginxReloadResponse, NginxStatusResponse, NginxValidateResponse, ReleasePage, ReleaseResponse,
-    ServerPage, ServerResponse, SitePage, SiteResponse, UpdateDomainZoneRequest,
-    UpdateNginxConfigRequest, UpdateSiteRequest,
+    CreateNodeClusterRequest, CreateReleaseRequest, CreateServerRequest, CreateSiteRequest,
+    DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
+    DomainHostnamePage, DomainHostnameResponse, DomainZonePage, DomainZoneResponse,
+    EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
+    ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
+    NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
+    NodeClusterPage, NodeClusterResponse, ReleasePage, ReleaseResponse, ServerPage, ServerResponse,
+    SitePage, SiteResponse, UpdateDomainZoneRequest, UpdateNginxConfigRequest,
+    UpdateNodeClusterRequest, UpdateServerRequest, UpdateSiteRequest,
 };
 use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
 use sdkwork_deploy_web_port::RuntimeAssignmentReceipt;
@@ -486,8 +487,10 @@ impl DeployRepositoryPort for DeployRepository {
         tenant_id: i64,
         page: i32,
         page_size: i32,
+        cluster_id: Option<String>,
     ) -> DeployServiceResult<ServerPage> {
-        self.list_servers_repo(tenant_id, page, page_size).await
+        self.list_servers_repo(tenant_id, page, page_size, cluster_id)
+            .await
     }
 
     async fn create_server(
@@ -498,13 +501,49 @@ impl DeployRepositoryPort for DeployRepository {
         self.create_server_repo(tenant_id, request).await
     }
 
+    async fn update_server(
+        &self,
+        tenant_id: i64,
+        server_id: &str,
+        request: &UpdateServerRequest,
+    ) -> DeployServiceResult<ServerResponse> {
+        self.update_server_repo(tenant_id, server_id, request).await
+    }
+
+    async fn list_node_clusters(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<NodeClusterPage> {
+        self.list_node_clusters_repo(tenant_id, page, page_size)
+            .await
+    }
+
+    async fn create_node_cluster(
+        &self,
+        tenant_id: i64,
+        request: &CreateNodeClusterRequest,
+    ) -> DeployServiceResult<NodeClusterResponse> {
+        self.create_node_cluster_repo(tenant_id, request).await
+    }
+
+    async fn update_node_cluster(
+        &self,
+        tenant_id: i64,
+        cluster_id: &str,
+        request: &UpdateNodeClusterRequest,
+    ) -> DeployServiceResult<NodeClusterResponse> {
+        self.update_node_cluster_repo(tenant_id, cluster_id, request)
+            .await
+    }
+
     async fn list_audit_logs(
         &self,
         tenant_id: Option<i64>,
-        page: i32,
-        page_size: i32,
+        query: &sdkwork_deploy_contract::AuditLogQuery,
     ) -> DeployServiceResult<AuditLogPage> {
-        self.list_audit_logs_repo(tenant_id, page, page_size).await
+        self.list_audit_logs_repo(tenant_id, query).await
     }
 
     async fn insert_audit_log(&self, command: InsertAuditLogCommand) -> DeployServiceResult<()> {

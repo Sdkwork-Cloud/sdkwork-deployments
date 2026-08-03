@@ -3,11 +3,11 @@
 use sdkwork_deploy_contract::{
     ArtifactPage, ArtifactResponse, AuditLogPage, AuditLogResponse, CertificatePage,
     CertificateResponse, DeploymentPage, DeploymentResponse, DomainHostnamePage,
-    DomainHostnameResponse, DomainVerifyResponse, DomainZonePage,
-    DomainZoneResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
-    NginxConfigPage, NginxConfigResponse, NginxReloadResponse, NginxStatusResponse,
-    NginxValidateResponse, ReleasePage, ReleaseResponse, ServerPage, ServerResponse, SitePage,
-    SiteResponse,
+    DomainHostnameResponse, DomainVerifyResponse, DomainZonePage, DomainZoneResponse,
+    EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse, NginxConfigPage,
+    NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
+    NodeClusterPage, NodeClusterResponse, ReleasePage, ReleaseResponse, ServerPage, ServerResponse,
+    SitePage, SiteResponse,
 };
 use sdkwork_deploy_core::normalize_pagination;
 use sdkwork_utils_rust::{PageInfo, PageMode, SdkWorkPageData, SdkWorkResourceData};
@@ -74,6 +74,14 @@ pub fn server_page(
     offset_page(page.items, page_num, page_size, page.total)
 }
 
+pub fn node_cluster_page(
+    page: NodeClusterPage,
+    page_num: i32,
+    page_size: i32,
+) -> SdkWorkPageData<NodeClusterResponse> {
+    offset_page(page.items, page_num, page_size, page.total)
+}
+
 pub fn audit_log_page(page: AuditLogPage) -> SdkWorkPageData<AuditLogResponse> {
     offset_page(page.items, page.page, page.page_size, page.total)
 }
@@ -110,7 +118,8 @@ fn offset_page<T>(items: Vec<T>, page: i32, page_size: i32, total: i64) -> SdkWo
             total_items: Some(total.to_string()),
             total_pages,
             next_cursor: None,
-            has_more: None,
+            // PAGINATION_SPEC §8: UI 依赖 hasMore 渲染"加载更多"。
+            has_more: Some(total > (page as i64) * page_size as i64),
         },
     }
 }
