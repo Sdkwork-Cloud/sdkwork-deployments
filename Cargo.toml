@@ -18,6 +18,7 @@ members = [
   "crates/sdkwork-routes-deploy-backend-api",
   "crates/sdkwork-api-deployments-standalone-gateway",
   "crates/sdkwork-deploy-build-runner",
+  "crates/sdkwork-deploy-package-validator",
 ]
 
 [workspace.package]
@@ -46,6 +47,9 @@ idna = "1"
 psl = "2.1.184"
 url = "2"
 uuid = { version = "1", features = ["v4"] }
+flate2 = "1"
+tar = "0.4"
+zip = "2"
 zeroize = "1"
 
 sdkwork-deploy-contract = { path = "crates/sdkwork-deploy-contract" }
@@ -64,6 +68,7 @@ sdkwork-routes-deploy-common = { path = "crates/sdkwork-routes-deploy-common" }
 sdkwork-api-deployments-standalone-gateway = { path = "crates/sdkwork-api-deployments-standalone-gateway" }
 sdkwork-api-deployments-assembly = { path = "crates/sdkwork-api-deployments-assembly" }
 sdkwork-deploy-build-runner = { path = "crates/sdkwork-deploy-build-runner" }
+sdkwork-deploy-package-validator = { path = "crates/sdkwork-deploy-package-validator" }
 
 sdkwork-iam-web-adapter = { path = "../sdkwork-iam/crates/sdkwork-iam-web-adapter" }
 sdkwork-web-core = { path = "../sdkwork-web-framework/crates/sdkwork-web-core" }

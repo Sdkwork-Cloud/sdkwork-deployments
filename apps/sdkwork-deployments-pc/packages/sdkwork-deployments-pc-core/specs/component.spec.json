@@ -49,6 +49,7 @@
     }
   ],
   "contracts": {
+    "layerRole": "frontend-core",
     "publicExports": [
       "src/index.ts"
     ],
@@ -56,15 +57,14 @@
     "routeManifest": null,
     "sdkClients": [],
     "sdkDependencies": [],
+    "providedPorts": [],
+    "requiredPorts": [],
     "permissionComposition": {
-      "inheritanceMode": "openapi-with-explicit-ui-hints",
-      "routePermissionHints": {
-        "inheritFromOpenApi": true,
-        "overrides": []
-      },
+      "inheritanceMode": "module-catalog-with-overrides",
+      "moduleCatalogRefs": [],
       "consumerPolicy": {
         "forbidLocalPermissionCatalogForDependencyDomains": true,
-        "allowFrontendHintsWithoutServerDuplication": true
+        "allowExplicitOverridesOnly": true
       }
     },
     "events": [],

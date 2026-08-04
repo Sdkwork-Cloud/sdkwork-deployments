@@ -70,7 +70,7 @@ pub fn validate_package_manifest(manifest: &Value) -> Result<PackageManifestVali
         .map_err(|error| format!("semanticVersion: {error}"))?;
 
     let artifact_hash = required_string(object, "artifactHashSha256")?;
-    validate_sha256(artifact_hash, "artifactHashSha256")?;
+    validate_sha256_hex(artifact_hash, "artifactHashSha256")?;
     let build_number = object
         .get("buildNumber")
         .and_then(Value::as_u64)
@@ -88,7 +88,7 @@ pub fn validate_package_manifest(manifest: &Value) -> Result<PackageManifestVali
 
     // Optional embedded digest must agree with the canonical hash when present.
     if let Some(embedded) = object.get(MANIFEST_HASH_FIELD).and_then(Value::as_str) {
-        validate_sha256(embedded, MANIFEST_HASH_FIELD)?;
+        validate_sha256_hex(embedded, MANIFEST_HASH_FIELD)?;
         let computed = canonical_manifest_sha256(manifest)?;
         if embedded != computed {
             return Err(
@@ -147,7 +147,9 @@ fn validate_opaque_id(value: &str, field: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn validate_sha256(value: &str, field: &str) -> Result<(), String> {
+/// Validates a lowercase SHA-256 digest string (shared by manifest and
+/// registration validation).
+pub fn validate_sha256_hex(value: &str, field: &str) -> Result<(), String> {
     if value.len() != 64
         || !value
             .bytes()

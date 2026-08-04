@@ -16,7 +16,8 @@ use sdkwork_deploy_contract::{
 };
 use sdkwork_deploy_core::{
     required_identity_field, validate_app_kind_platform, validate_package_format_for_platform,
-    validate_package_size, validate_platform_identity, RequiredIdentityField, SemanticVersion,
+    validate_package_size, validate_platform_identity, validate_sha256_hex, RequiredIdentityField,
+    SemanticVersion,
 };
 
 use crate::{repository::InsertAuditLogCommand, DeployService};
@@ -765,16 +766,7 @@ fn validate_repo_url(url: &str) -> DeployServiceResult<()> {
 }
 
 fn validate_sha256(value: &str, field: &str) -> DeployServiceResult<()> {
-    if value.len() != 64
-        || !value
-            .bytes()
-            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
-    {
-        return Err(DeployServiceError::validation(format!(
-            "{field} must be a lowercase SHA-256 digest"
-        )));
-    }
-    Ok(())
+    validate_sha256_hex(value, field).map_err(DeployServiceError::validation)
 }
 
 fn validate_deployment_pair(request: &CreateAppDeploymentRequest) -> DeployServiceResult<()> {

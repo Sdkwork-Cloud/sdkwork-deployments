@@ -8,6 +8,16 @@
 //! upload commands are constructed only when the corresponding secret files
 //! are present.
 
+pub mod ota_manifest;
+pub mod review_observer;
+
+pub use ota_manifest::{
+    generate_android_ota_json, generate_ios_ota_plist, OtaManifestError, OtaManifestInput,
+};
+pub use review_observer::{
+    validate_review_transition, NoOpReviewObserver, ReviewObservation, ReviewObserver,
+};
+
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 

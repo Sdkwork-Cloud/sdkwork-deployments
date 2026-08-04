@@ -295,6 +295,42 @@ impl DeployRepository {
         map_app_deployment_row(&row)
     }
 
+    /// Lists deployments currently in platform review states, newest first,
+    /// for review-observation polling (bounded scan; review state is observed,
+    /// never inferred).
+    pub(super) async fn list_review_pending_deployments_repo(
+        &self,
+        tenant_id: i64,
+        limit: i64,
+    ) -> DeployServiceResult<Vec<AppDeploymentResponse>> {
+        let bounded_limit = limit.clamp(1, 100);
+        let query = format!(
+            "SELECT {APP_DEPLOYMENT_SELECT}, a.uuid AS app_uuid, t.uuid AS target_uuid,
+                    s.uuid AS site_uuid, r.uuid AS release_uuid,
+                    d.rollback_from_deployment_id, rd.uuid AS rollback_from_uuid
+             FROM deploy_deployment d
+             JOIN deploy_app a ON a.id = d.app_id
+             LEFT JOIN deploy_app_platform_target t ON t.id = d.platform_target_id
+             LEFT JOIN deploy_site s ON s.id = d.site_id
+             LEFT JOIN deploy_release r ON r.id = d.release_id
+             LEFT JOIN deploy_deployment rd ON rd.id = d.rollback_from_deployment_id
+             WHERE d.tenant_id = $1
+               AND d.deployment_status IN ('SUBMITTING', 'PENDING_REVIEW', 'IN_REVIEW')
+             ORDER BY d.created_at ASC, d.id ASC LIMIT $2"
+        );
+        let rows = sqlx::query(AssertSqlSafe(&*query))
+            .bind(tenant_id)
+            .bind(bounded_limit)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|error| store_error("list review pending deploy_deployment", error))?;
+        let items = rows
+            .iter()
+            .map(map_app_deployment_row)
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(items)
+    }
+
     /// Records a platform review observation (submission reference, review
     /// state) and completes the deployment on terminal states.
     pub(super) async fn update_app_deployment_state_repo(

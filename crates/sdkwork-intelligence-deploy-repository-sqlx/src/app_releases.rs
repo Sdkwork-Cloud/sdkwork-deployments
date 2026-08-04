@@ -151,11 +151,19 @@ impl DeployRepository {
         .bind(actor_id)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|error| store_error("insert deploy_release", error))?;
+        .map_err(|error| {
+            if crate::support::is_unique_violation(&error) {
+                // The unique (app, target, semantic_version) index rejected
+                // the version; report a conflict with the stable vocabulary.
+                DeployServiceError::conflict(format!(
+                    "semantic version {semantic_version} already exists for this app platform target"
+                ))
+            } else {
+                store_error("insert deploy_release", error)
+            }
+        })?;
 
         let Some(row) = result else {
-            // The unique (app, target, semantic_version) index rejected the
-            // version; report a conflict with the stable vocabulary.
             return Err(DeployServiceError::conflict(format!(
                 "semantic version {semantic_version} already exists for this app platform target"
             )));

@@ -1,4 +1,4 @@
-# ADR-2026-08-04 Unified App Delivery Platform
+# ADR-20260804 Unified App Delivery Platform
 
 Status: accepted
 Requirement: REQ-2026-0002

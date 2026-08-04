@@ -1,18 +1,120 @@
 {
   "schemaVersion": 1,
   "kind": "sdkwork.component.spec",
-  "component": { "name": "@sdkwork/deployments-pc", "displayName": "SDKWork Deployments PC", "version": "0.1.0", "type": "pc-application", "root": "sdkwork-deployments/apps/sdkwork-deployments-pc", "domain": "deployment", "capability": "publishing-control-plane", "surface": "pc", "languages": ["typescript"], "generated": false, "private": true, "status": "active", "manifests": ["package.json", "sdkwork.app.config.json", "specs/component.spec.json"] },
+  "component": {
+    "name": "@sdkwork/deployments-pc",
+    "displayName": "SDKWork Deployments PC",
+    "version": "0.1.0",
+    "type": "pc-application",
+    "root": "sdkwork-deployments/apps/sdkwork-deployments-pc",
+    "domain": "deployment",
+    "capability": "publishing-control-plane",
+    "surface": "pc",
+    "languages": [
+      "typescript"
+    ],
+    "generated": false,
+    "private": true,
+    "status": "active",
+    "manifests": [
+      "package.json",
+      "sdkwork.app.config.json",
+      "specs/component.spec.json"
+    ]
+  },
   "canonicalSpecs": [
-    { "file": "APP_PC_ARCHITECTURE_SPEC.md", "path": "../../../sdkwork-specs/APP_PC_ARCHITECTURE_SPEC.md", "purpose": "PC package taxonomy." },
-    { "file": "APP_PC_REACT_UI_SPEC.md", "path": "../../../sdkwork-specs/APP_PC_REACT_UI_SPEC.md", "purpose": "React PC architecture." },
-    { "file": "APP_SDK_INTEGRATION_SPEC.md", "path": "../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md", "purpose": "SDK and IAM composition." },
-    { "file": "DRIVE_SPEC.md", "path": "../../../sdkwork-specs/DRIVE_SPEC.md", "purpose": "Drive upload authority." },
-    { "file": "BACKEND_UI_SPEC.md", "path": "../../../sdkwork-specs/BACKEND_UI_SPEC.md", "purpose": "Backend-admin isolation." },
-    { "file": "TEST_SPEC.md", "path": "../../../sdkwork-specs/TEST_SPEC.md", "purpose": "Verification." }
+    {
+      "file": "APP_PC_ARCHITECTURE_SPEC.md",
+      "path": "../../../sdkwork-specs/APP_PC_ARCHITECTURE_SPEC.md",
+      "purpose": "PC package taxonomy."
+    },
+    {
+      "file": "APP_PC_REACT_UI_SPEC.md",
+      "path": "../../../sdkwork-specs/APP_PC_REACT_UI_SPEC.md",
+      "purpose": "React PC architecture."
+    },
+    {
+      "file": "APP_SDK_INTEGRATION_SPEC.md",
+      "path": "../../../sdkwork-specs/APP_SDK_INTEGRATION_SPEC.md",
+      "purpose": "SDK and IAM composition."
+    },
+    {
+      "file": "DRIVE_SPEC.md",
+      "path": "../../../sdkwork-specs/DRIVE_SPEC.md",
+      "purpose": "Drive upload authority."
+    },
+    {
+      "file": "BACKEND_UI_SPEC.md",
+      "path": "../../../sdkwork-specs/BACKEND_UI_SPEC.md",
+      "purpose": "Backend-admin isolation."
+    },
+    {
+      "file": "TEST_SPEC.md",
+      "path": "../../../sdkwork-specs/TEST_SPEC.md",
+      "purpose": "Verification."
+    }
   ],
-  "contracts": { "publicExports": [], "runtimeEntrypoints": ["src/main.tsx"], "routeManifest": null, "sdkClients": ["SdkworkDeployAppClient", "SdkworkDriveAppClient", "SdkworkDeployBackendClient"], "sdkDependencies": [{ "workspace": "sdkwork-deployments-app-sdk", "surface": "app-api", "credentialMode": "authenticated-app-api" }, { "workspace": "sdkwork-drive-app-sdk", "surface": "app-api", "credentialMode": "authenticated-app-api" }, { "workspace": "sdkwork-deployments-backend-sdk", "surface": "backend-api", "credentialMode": "authenticated-backend-admin" }, { "workspace": "sdkwork-iam-app-sdk", "surface": "app-api", "credentialMode": "authenticated-app-api" }], "events": [], "configKeys": ["appApiBaseUrl", "backendApiBaseUrl", "driveAppApiBaseUrl", "appbaseAppApiBaseUrl", "environment", "deploymentProfile"] },
-  "integration": { "authority": "Root SDKWork specs remain authoritative.", "sdkPolicy": "Bootstrap creates one TokenManager and injects composed SDK clients through surface core providers.", "uploadPolicy": "Browser bytes flow through Drive uploader; Deploy receives stable Drive references only.", "surfacePolicy": "Console and backend-admin SDKs, routes, permissions, and bundles remain isolated." },
-  "verification": { "commands": ["pnpm --dir apps/sdkwork-deployments-pc check", "node ../sdkwork-specs/tools/check-app-sdk-consumer-imports.mjs --workspace .", "node ../sdkwork-specs/tools/check-pagination.mjs --workspace ."] },
-  "metadata": { "managedBy": "sdkwork-deployments", "standardVersion": "2026-07-24" }
+  "contracts": {
+    "publicExports": [],
+    "runtimeEntrypoints": [
+      "src/main.tsx"
+    ],
+    "routeManifest": null,
+    "sdkClients": [
+      "SdkworkDeployAppClient",
+      "SdkworkDriveAppClient",
+      "SdkworkDeployBackendClient"
+    ],
+    "sdkDependencies": [
+      {
+        "workspace": "sdkwork-deployments-app-sdk",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      },
+      {
+        "workspace": "sdkwork-drive-app-sdk",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      },
+      {
+        "workspace": "sdkwork-deployments-backend-sdk",
+        "surface": "backend-api",
+        "credentialMode": "authenticated-backend-admin"
+      },
+      {
+        "workspace": "sdkwork-iam-app-sdk",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      }
+    ],
+    "events": [],
+    "configKeys": [
+      "appApiBaseUrl",
+      "backendApiBaseUrl",
+      "driveAppApiBaseUrl",
+      "appbaseAppApiBaseUrl",
+      "environment",
+      "deploymentProfile"
+    ],
+    "layerRole": "frontend-host",
+    "providedPorts": [],
+    "requiredPorts": []
+  },
+  "integration": {
+    "authority": "Root SDKWork specs remain authoritative.",
+    "sdkPolicy": "Bootstrap creates one TokenManager and injects composed SDK clients through surface core providers.",
+    "uploadPolicy": "Browser bytes flow through Drive uploader; Deploy receives stable Drive references only.",
+    "surfacePolicy": "Console and backend-admin SDKs, routes, permissions, and bundles remain isolated."
+  },
+  "verification": {
+    "commands": [
+      "pnpm --dir apps/sdkwork-deployments-pc check",
+      "node ../sdkwork-specs/tools/check-app-sdk-consumer-imports.mjs --workspace .",
+      "node ../sdkwork-specs/tools/check-pagination.mjs --workspace ."
+    ]
+  },
+  "metadata": {
+    "managedBy": "sdkwork-deployments",
+    "standardVersion": "2026-07-24"
+  }
 }
-

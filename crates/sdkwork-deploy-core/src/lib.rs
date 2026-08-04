@@ -14,8 +14,8 @@ pub use app_kind_rules::{
     WECHAT_MINIPROGRAM_MAIN_PACKAGE_BYTES, WECHAT_MINIPROGRAM_TOTAL_PACKAGE_BYTES,
 };
 pub use package_manifest::{
-    canonical_manifest_sha256, validate_package_manifest, PackageManifestValidation,
-    PACKAGE_MANIFEST_KIND, PACKAGE_MANIFEST_SCHEMA_VERSION,
+    canonical_manifest_sha256, validate_package_manifest, validate_sha256_hex,
+    PackageManifestValidation, PACKAGE_MANIFEST_KIND, PACKAGE_MANIFEST_SCHEMA_VERSION,
 };
 pub use runtime_env::{
     deploy_dev_auth_bypass_enabled, deploy_environment_name, deploy_is_production_like_environment,

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "kind": "sdkwork.iam.module",
+  "moduleId": "deployments",
+  "domain": "deployment",
+  "owner": "sdkwork-deployments",
+  "permissions": {
+    "catalog": [
+      {
+        "code": "deploy.sites.read",
+        "description": "Read application (site) lifecycle and availability state"
+      },
+      {
+        "code": "deploy.artifacts.read",
+        "description": "Read deployment package artifacts"
+      },
+      {
+        "code": "deploy.releases.read",
+        "description": "Read immutable release versions"
+      },
+      {
+        "code": "deploy.deployments.read",
+        "description": "Read rollout history and deployment state"
+      },
+      {
+        "code": "deploy.healthChecks.read",
+        "description": "Read health check policy and status"
+      },
+      {
+        "code": "deploy.nginx.write",
+        "description": "Write Nginx publishing gateway configuration"
+      },
+      {
+        "code": "deploy.clusters.read",
+        "description": "Read node cluster inventory"
+      },
+      {
+        "code": "deploy.servers.read",
+        "description": "Read host node inventory"
+      },
+      {
+        "code": "deploy.auditLogs.read",
+        "description": "Read publishing operator audit evidence"
+      }
+    ]
+  }
+}

@@ -8,6 +8,14 @@ pub(crate) fn now_rfc3339() -> String {
     Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true)
 }
 
+pub(crate) fn is_unique_violation(error: &SqlxError) -> bool {
+    error
+        .as_database_error()
+        .and_then(|database_error| database_error.code())
+        .map(|code| code == "23505")
+        .unwrap_or(false)
+}
+
 pub(crate) fn store_error(context: &str, error: SqlxError) -> DeployServiceError {
     tracing::error!("{context}: {error}");
     match error {

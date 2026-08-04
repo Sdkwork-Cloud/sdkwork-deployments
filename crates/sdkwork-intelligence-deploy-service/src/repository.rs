@@ -688,6 +688,14 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         deployment_id: &str,
     ) -> DeployServiceResult<AppDeploymentResponse>;
 
+    /// Lists deployments currently in platform review states for
+    /// review-observation polling.
+    async fn list_review_pending_deployments(
+        &self,
+        tenant_id: i64,
+        limit: i64,
+    ) -> DeployServiceResult<Vec<AppDeploymentResponse>>;
+
     async fn update_app_deployment_state(
         &self,
         tenant_id: i64,

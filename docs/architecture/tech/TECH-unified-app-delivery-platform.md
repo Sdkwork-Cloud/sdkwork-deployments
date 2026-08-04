@@ -4,7 +4,7 @@ Status: implementation in progress
 Owner: SDKWork Deploy maintainers
 Updated: 2026-08-04
 Requirement: REQ-2026-0002
-Decisions: ADR-2026-08-04-unified-app-delivery-platform
+Decisions: ADR-20260804-unified-app-delivery-platform
 Specs: ARCHITECTURE_DECISION_SPEC.md, DOMAIN_SPEC.md, DATABASE_SPEC.md, DRIVE_SPEC.md,
 API_SPEC.md, SDK_SPEC.md, APP_SDK_INTEGRATION_SPEC.md, CONFIG_SPEC.md, DEPLOYMENT_SPEC.md,
 SECURITY_SPEC.md, PRIVACY_SPEC.md, PERFORMANCE_SPEC.md, OBSERVABILITY_SPEC.md, TEST_SPEC.md,
@@ -371,6 +371,14 @@ Release may reference it.
 Validation is executed by the package validator on the byte store boundary (through Drive);
 Deploy persists only the bounded report and the manifest digest.
 
+The `sdkwork-deploy-package-validator` crate implements the byte boundary:
+ZIP and TAR_GZ archives and bounded `DIST_DIR` trees are scanned with entry
+count/size limits, traversal/absolute-path/symlink/`.git` rejection, and
+WeChat/Douyin main-package (directory of the platform manifest) and total
+size ceilings. The embedded `sdkwork.deploy-package.v1` manifest is parsed
+and canonically hashed, and its platform, semantic version, and artifact
+hash must agree with the registration before a package is accepted.
+
 ## 6. Build Pipeline
 
 ### 6.1 State Machine
@@ -407,6 +415,19 @@ pub trait BuildExecutor {
   constructors with environment checks; signing/upload commands are constructed only when the
   corresponding signing identity secret file is present and valid;
 - runner node identity, version, and bounded resource limits are recorded on every build.
+
+The runner binary (`sdkwork-deploy-build-runner`) claims QUEUED builds through
+the repository port, plans bounded template commands (JSON array via
+`SDKWORK_DEPLOY_BUILD_TEMPLATE_COMMANDS`), executes them with the command
+executor under a bounded timeout, and reports terminal states with
+Drive-bound log references. Platform command constructors (flutter, gradle,
+xcodebuild, hvigor, miniprogram-ci) and the OTA manifest generators
+(iOS `itms-services` plist, Android update JSON with HTTPS-only URLs) are
+implemented and tested; real signing and platform uploads remain gated on
+credential integration. The review observer boundary
+(`ReviewObserver`/`NoOpReviewObserver`) polls review-pending deployments and
+reports observed state transitions; WeChat/Douyin/App Store adapters replace
+the no-op once platform credentials are integrated.
 
 ### 6.3 Retry, Claim, And Recovery
 
@@ -517,11 +538,15 @@ storage, release/channel volume, and platform submission rate.
    types and validators (semver, package manifest, app-kind rules), repository/service/routes,
    app/backend OpenAPI and materialization, build runner crate with executor boundary and
    command executors, unit and contract tests.
-2. Web/API delivery: web-kind App-Site linking, artifact/site-config deployment kinds reuse.
-3. Mini-program delivery: platform targets, package validation ceilings, review submission
+2. Phase 1.5 (completed): `sdkwork-deploy-package-validator` byte-boundary validator
+   (ZIP/TAR_GZ/DIST_DIR scanning, traversal/symlink/size ceilings, embedded manifest agreement),
+   OTA manifest generators, and the review-observation boundary with no-op observer and
+   review-pending deployment query.
+3. Web/API delivery: web-kind App-Site linking, artifact/site-config deployment kinds reuse.
+4. Mini-program delivery: platform targets, package validation ceilings, review submission
    executor after credential integration.
-4. Mobile/HarmonyOS delivery: signing identity enforcement, TestFlight/store/OTA executors.
-5. Commercial GA: entitlement/usage reconciliation, retention enforcement, SLO dashboards,
+5. Mobile/HarmonyOS delivery: signing identity enforcement, TestFlight/store/OTA executors.
+6. Commercial GA: entitlement/usage reconciliation, retention enforcement, SLO dashboards,
    staged rollout, external review.
 
 ## 14. Verification Matrix

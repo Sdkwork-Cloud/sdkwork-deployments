@@ -174,10 +174,18 @@ impl DeployRepository {
         .bind(actor_id)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|error| store_error("insert deploy_build", error))?;
+        .map_err(|error| {
+            if crate::support::is_unique_violation(&error) {
+                DeployServiceError::conflict(
+                    "build number reservation or idempotency conflict; retry the request",
+                )
+            } else {
+                store_error("insert deploy_build", error)
+            }
+        })?;
 
         let Some(row) = result else {
-            // A concurrent reservation won the number; retry once.
+            // A concurrent reservation won the number; the caller retries.
             return Err(DeployServiceError::conflict(
                 "build number reservation conflict; retry the request",
             ));

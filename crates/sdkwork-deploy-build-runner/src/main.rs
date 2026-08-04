@@ -10,7 +10,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use sdkwork_deploy_build_runner::{
-    bounded_wait_timeout, BuildExecutor, CommandExecutor, ExecutionContext,
+    bounded_wait_timeout, BuildExecutor, CommandExecutor, ExecutionContext, NoOpReviewObserver,
+    ReviewObserver,
 };
 use sdkwork_deploy_contract::{BuildStatus, DeployServiceResult, UpdateBuildStateRequest};
 use sdkwork_deploy_service_host::bootstrap_deploy_repository_from_env;
@@ -247,6 +248,37 @@ async fn report_terminal(
         .map(|_| ())
 }
 
+async fn run_review_cycle(
+    repository: &Arc<dyn DeployRepositoryPort>,
+    config: &RunnerConfig,
+    observer: &dyn ReviewObserver,
+) -> DeployServiceResult<()> {
+    let deployments = repository
+        .list_review_pending_deployments(config.tenant_id, 50)
+        .await?;
+    for deployment in deployments {
+        let observation = observer.observe(&deployment).await?;
+        if observation.status.as_str() != deployment.deployment_status.as_str() {
+            tracing::info!(
+                deployment = %deployment.id,
+                from = %deployment.deployment_status,
+                to = %observation.status.as_str(),
+                "review state observed"
+            );
+            repository
+                .update_app_deployment_state(
+                    config.tenant_id,
+                    &deployment.app_id,
+                    &deployment.id,
+                    observation.status,
+                    observation.platform_review_ref.as_deref(),
+                )
+                .await?;
+        }
+    }
+    Ok(())
+}
+
 async fn shutdown_signal() {
     let ctrl_c = async {
         tokio::signal::ctrl_c()
@@ -293,6 +325,7 @@ async fn main() {
     };
     let repository_port: Arc<dyn DeployRepositoryPort> = repository;
     let executor = CommandExecutor::new(config.workspace_root.clone());
+    let review_observer = NoOpReviewObserver;
 
     tracing::info!(
         runner = %config.runner_node_uuid,
@@ -312,6 +345,11 @@ async fn main() {
                 ticker.tick().await;
                 if let Err(error) = run_one_cycle(&repository_port, &config, &executor).await {
                     tracing::warn!(error = %error, "build runner cycle failed");
+                }
+                if let Err(error) =
+                    run_review_cycle(&repository_port, &config, &review_observer).await
+                {
+                    tracing::warn!(error = %error, "review observation cycle failed");
                 }
             }
         } => {}

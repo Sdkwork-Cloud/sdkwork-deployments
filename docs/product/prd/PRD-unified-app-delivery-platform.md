@@ -319,6 +319,6 @@ backup/restore drills, staged rollout, external security/load review.
 ## 14. Linked Documents
 
 - [REQ-2026-0002 Unified App Delivery Platform](../../product/requirements/REQ-2026-0002-unified-app-delivery-platform.md)
-- [ADR-2026-08-04 Unified App Delivery Platform](../../architecture/decisions/ADR-2026-08-04-unified-app-delivery-platform.md)
+- [ADR-20260804 Unified App Delivery Platform](../../architecture/decisions/ADR-20260804-unified-app-delivery-platform.md)
 - [Unified app delivery architecture](../../architecture/tech/TECH-unified-app-delivery-platform.md)
 - [Cloud site publishing platform PRD](PRD-cloud-site-publishing-platform.md)

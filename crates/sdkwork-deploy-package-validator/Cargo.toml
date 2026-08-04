@@ -1,0 +1,18 @@
+[package]
+name = "sdkwork-deploy-package-validator"
+version.workspace = true
+edition.workspace = true
+description = "Byte-boundary validator for the sdkwork.deploy-package.v1 deployment package standard"
+
+[dependencies]
+chrono.workspace = true
+flate2.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tar.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+zip.workspace = true
+sdkwork-deploy-core.workspace = true
+
+[dev-dependencies]

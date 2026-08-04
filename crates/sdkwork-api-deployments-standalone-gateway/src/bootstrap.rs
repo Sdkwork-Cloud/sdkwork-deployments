@@ -11,7 +11,7 @@ pub fn build_router(assembly: ApiAssembly) -> Router {
     let service_router_config = ServiceRouterConfig::default()
         .with_readiness_check(Arc::new(DeployServiceReadinessCheck::new(assembly.service)));
 
-    service_router(assembly.router, service_router_config)
+    service_router(assembly.contribution.router, service_router_config)
 }
 
 pub async fn run_database_migrate_only() -> Result<(), String> {

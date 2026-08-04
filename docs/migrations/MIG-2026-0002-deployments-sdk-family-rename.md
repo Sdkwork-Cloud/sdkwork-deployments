@@ -57,7 +57,7 @@ alias, compatibility facade, dual package publication, or generated transport fo
    family stems.
 3. Regenerate OpenAPI-derived inputs, route manifests, family manifests, and TypeScript transports.
 4. Update Deployments PC, BirdCoder, and cloud-gateway component contracts and imports.
-5. Regenerate pnpm lockfiles after all workspace paths and package names resolve.
+5. Regenerate lockfiles after all workspace paths and package names resolve.
 6. Verify no legacy family or npm package name remains in source, generated evidence, or lockfiles.
 
 ## 5. Rollback

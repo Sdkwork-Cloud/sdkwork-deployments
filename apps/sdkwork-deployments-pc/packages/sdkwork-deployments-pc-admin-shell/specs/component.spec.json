@@ -49,6 +49,7 @@
     }
   ],
   "contracts": {
+    "layerRole": "frontend-shell",
     "publicExports": [
       "src/index.ts"
     ],
@@ -56,6 +57,8 @@
     "routeManifest": null,
     "sdkClients": [],
     "sdkDependencies": [],
+    "providedPorts": [],
+    "requiredPorts": [],
     "permissionComposition": {
       "inheritanceMode": "openapi-with-explicit-ui-hints",
       "routePermissionHints": {

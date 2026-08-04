@@ -6,17 +6,26 @@ use sdkwork_intelligence_deploy_service::DeployService;
 use sdkwork_routes_deploy_app_api::{
     build_certificate_management_router, build_domain_management_router,
     deploy_app_api_domain_context_injectors, domain_certificate_route_manifest,
-    gateway_mount as mount_app, wrap_router_with_web_framework_from_env as wrap_app, AppState,
+    gateway_mount as mount_app, gateway_route_manifest as app_route_manifest,
+    wrap_router_with_web_framework_from_env as wrap_app, AppState,
 };
 use sdkwork_routes_deploy_backend_api::{
-    gateway_mount as mount_backend, wrap_router_with_web_framework_from_env as wrap_backend,
+    gateway_mount as mount_backend, gateway_route_manifest as backend_route_manifest,
+    wrap_router_with_web_framework_from_env as wrap_backend,
 };
-use sdkwork_web_bootstrap::{ReadinessCheck, ReadinessFuture};
+use sdkwork_web_bootstrap::{ApiAssemblyContribution, ReadinessCheck, ReadinessFuture};
 use sdkwork_web_core::{DomainContextInjector, HttpRouteManifest};
 use std::sync::Arc;
 
+const APP_OPENAPI_JSON: &str =
+    include_str!("../../../apis/app-api/deploy/deploy-app-api.openapi.json");
+const BACKEND_OPENAPI_JSON: &str =
+    include_str!("../../../apis/backend-api/deploy/deploy-backend-api.openapi.json");
+
+/// Indivisible gateway assembly: the complete host-neutral API contribution
+/// plus the resolved Deploy service for gateway-local wiring.
 pub struct ApiAssembly {
-    pub router: Router,
+    pub contribution: ApiAssemblyContribution,
     pub service: Arc<DeployService>,
 }
 
@@ -24,11 +33,36 @@ pub async fn assemble_business_routes() -> Result<ApiAssembly, String> {
     let service = bootstrap_deploy_service_host_from_env().await?.service;
     let app = wrap_app(mount_app(service.clone())).await;
     let backend = wrap_backend(mount_backend(service.clone())).await;
+    let router = Router::new()
+        .merge(app)
+        .merge(backend)
+        .layer(Extension(service.clone()));
+
+    let mut routes = app_route_manifest().routes().to_vec();
+    routes.extend(backend_route_manifest().routes().iter().cloned());
+    let route_manifest = HttpRouteManifest::from_owned_routes(routes);
+
+    let domain_context_injectors = deploy_app_api_domain_context_injectors();
+    let readiness_check: Arc<dyn ReadinessCheck> = Arc::new(DeployServiceReadinessCheck {
+        service: service.clone(),
+    });
+
+    let app_openapi: serde_json::Value = serde_json::from_str(APP_OPENAPI_JSON)
+        .map_err(|error| format!("parse deploy app OpenAPI: {error}"))?;
+    let backend_openapi: serde_json::Value = serde_json::from_str(BACKEND_OPENAPI_JSON)
+        .map_err(|error| format!("parse deploy backend OpenAPI: {error}"))?;
+
+    let contribution = ApiAssemblyContribution::from_openapi_documents(
+        "sdkwork-deployments",
+        "SDKWork Deploy API",
+        router,
+        route_manifest,
+        vec![app_openapi, backend_openapi],
+        domain_context_injectors,
+        readiness_check,
+    )?;
     Ok(ApiAssembly {
-        router: Router::new()
-            .merge(app)
-            .merge(backend)
-            .layer(Extension(service.clone())),
+        contribution,
         service,
     })
 }

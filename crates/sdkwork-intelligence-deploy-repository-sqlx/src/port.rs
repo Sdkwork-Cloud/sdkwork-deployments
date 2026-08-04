@@ -952,6 +952,15 @@ impl DeployRepositoryPort for DeployRepository {
             .await
     }
 
+    async fn list_review_pending_deployments(
+        &self,
+        tenant_id: i64,
+        limit: i64,
+    ) -> DeployServiceResult<Vec<AppDeploymentResponse>> {
+        self.list_review_pending_deployments_repo(tenant_id, limit)
+            .await
+    }
+
     async fn update_app_deployment_state(
         &self,
         tenant_id: i64,

@@ -73,6 +73,30 @@ WebsiteRoot or WikiPublication. Certificate and private-key upload sessions are 
 Drive artifact pipeline. Certificate material is represented only by immutable Secret Manager/KMS
 bundle references and is never accepted through a Drive node reference.
 
+## Unified App Delivery Platform
+
+The unified application delivery model (REQ-2026-0002, ADR-20260804) is implemented on the
+control plane:
+
+- `deploy_app` is the tenant application aggregate (STATIC_WEB, SPA_WEB, API_SERVICE,
+  WECHAT_MINIPROGRAM, DOUYIN_MINIPROGRAM, IOS_APP, ANDROID_APP, HARMONYOS_APP) with
+  `deploy_app_platform_target`, `deploy_source_repository`, `deploy_build_template`,
+  `deploy_build`, `deploy_package`, `deploy_release` (semver unique), `deploy_release_channel`,
+  `deploy_channel_rollout`, and `deploy_signing_identity` tables from migration 0007.
+- Semantic versioning (SemVer 2.0.0), monotonic `build_number` per (App, platform target),
+  (app, target, version) uniqueness, channel promotion with immutable rollout history, and the
+  deployment kinds for mini-program review, store submission, OTA/enterprise distribution, and
+  container rollout are implemented with typed validation in `sdkwork-deploy-core`.
+- The `sdkwork-deploy-package-validator` crate enforces the `sdkwork.deploy-package.v1` byte
+  boundary: ZIP/TAR_GZ/DIST_DIR scanning with traversal/symlink/size rejection and platform
+  ceilings (WeChat/Douyin main and total packages).
+- The `sdkwork-deploy-build-runner` crate owns the executor boundary: claim loop, bounded command
+  execution, platform command constructors, OTA manifest generators, and the review-observation
+  boundary (`ReviewObserver`). Real signing and platform upload adapters remain gated on
+  credential integration.
+- The Deployments PC core packages expose the standard `./sdk`, `./modules`, `./host`,
+  `./session`, and `./composition` surface with module-catalog permission inheritance.
+
 ## Verification
 
 ```powershell
@@ -105,4 +129,9 @@ production-shaped evidence remains required:
 - tenant console, platform admin console, metering, entitlement, abuse, and incident workflows;
 - continuous topology evidence that cloud Web workloads cannot activate standalone management authority;
 - production PostgreSQL backup/restore, multi-node rollout, load, security, and recovery evidence;
-- governed publication of the already generated App/Backend SDK packages.
+- governed publication of the already generated App/Backend SDK packages;
+- credential integration for real platform executors: WeChat/Douyin review observation, App Store
+  Connect/TestFlight submission, iOS/Android/HarmonyOS signing, and OTA/enterprise distribution
+  adapters that replace the no-op review observer and command executors;
+- Drive-backed build log and package byte registration in the runner (currently bounded
+  local log references).

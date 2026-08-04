@@ -49,6 +49,7 @@
     }
   ],
   "contracts": {
+    "layerRole": "frontend-core",
     "publicExports": [
       "src/index.ts"
     ],
@@ -62,15 +63,21 @@
         "credentialMode": "authenticated-app-api"
       }
     ],
+    "providedPorts": [],
+    "requiredPorts": [],
     "permissionComposition": {
-      "inheritanceMode": "openapi-with-explicit-ui-hints",
-      "routePermissionHints": {
-        "inheritFromOpenApi": true,
-        "overrides": []
-      },
+      "inheritanceMode": "module-catalog-with-overrides",
+      "moduleCatalogRefs": [
+        {
+          "moduleId": "deployments",
+          "manifestRef": "../../../../specs/iam.module.manifest.json",
+          "inheritPermissions": true,
+          "inheritRoles": true
+        }
+      ],
       "consumerPolicy": {
         "forbidLocalPermissionCatalogForDependencyDomains": true,
-        "allowFrontendHintsWithoutServerDuplication": true
+        "allowExplicitOverridesOnly": true
       }
     },
     "events": [],

@@ -376,6 +376,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_release_app_target_version
     ON deploy_release (app_id, platform_target_id, semantic_version)
     WHERE app_id IS NOT NULL AND platform_target_id IS NOT NULL AND semantic_version IS NOT NULL;
 
+-- Idempotency index required by the release creation ON CONFLICT inference.
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_release_app_idempotency
+    ON deploy_release (tenant_id, app_id, idempotency_key)
+    WHERE idempotency_key IS NOT NULL;
+
 ALTER TABLE deploy_deployment
     ADD COLUMN IF NOT EXISTS app_id BIGINT NULL,
     ADD COLUMN IF NOT EXISTS platform_target_id BIGINT NULL,
