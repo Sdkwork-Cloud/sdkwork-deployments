@@ -60,6 +60,11 @@
         "id": "runtime-assignment-worker",
         "crate": "sdkwork-deploy-runtime-assignment-worker",
         "binary": "sdkwork-deploy-runtime-assignment-worker"
+      },
+      {
+        "id": "build-runner",
+        "crate": "sdkwork-deploy-build-runner",
+        "binary": "sdkwork-deploy-build-runner"
       }
     ],
     "providedPorts": [

@@ -23,6 +23,7 @@ Current inventory:
 | 0004 | `deploy_domain_certificate_tls` | `deploy_dns_zone`, domain_verification, ACME account/order/challenge/distribution, certificate_identifier/version, TLS policy/binding/runtime tables |
 | 0005 | `deploy_node_cluster` | node cluster grouping table |
 | 0006 | `deploy_legacy_schema_convergence` | converge pre-2026-07-31 `deploy_domain` / `deploy_certificate` shapes and `deploy_site` / `deploy_server` columns; fails loudly on unmappable legacy rows |
+| 0007 | `deploy_app_delivery` | unified application delivery: `deploy_app`, `deploy_app_platform_target`, `deploy_source_repository`, `deploy_build_template`, `deploy_build`, `deploy_package`, `deploy_release_channel`, `deploy_channel_rollout`, `deploy_signing_identity`, plus additive `app_id`/new-model columns on `deploy_site`, `deploy_release`, `deploy_deployment` |
 
 Migrations are idempotent (`IF NOT EXISTS` / guarded `DO` blocks) so they apply
 cleanly to both fresh (baseline-applied) and older databases. They are

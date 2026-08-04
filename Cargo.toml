@@ -17,6 +17,7 @@ members = [
   "crates/sdkwork-routes-deploy-app-api",
   "crates/sdkwork-routes-deploy-backend-api",
   "crates/sdkwork-api-deployments-standalone-gateway",
+  "crates/sdkwork-deploy-build-runner",
 ]
 
 [workspace.package]
@@ -62,6 +63,7 @@ sdkwork-routes-deploy-backend-api = { path = "crates/sdkwork-routes-deploy-backe
 sdkwork-routes-deploy-common = { path = "crates/sdkwork-routes-deploy-common" }
 sdkwork-api-deployments-standalone-gateway = { path = "crates/sdkwork-api-deployments-standalone-gateway" }
 sdkwork-api-deployments-assembly = { path = "crates/sdkwork-api-deployments-assembly" }
+sdkwork-deploy-build-runner = { path = "crates/sdkwork-deploy-build-runner" }
 
 sdkwork-iam-web-adapter = { path = "../sdkwork-iam/crates/sdkwork-iam-web-adapter" }
 sdkwork-web-core = { path = "../sdkwork-web-framework/crates/sdkwork-web-core" }

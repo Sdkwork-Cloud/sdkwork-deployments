@@ -1,11 +1,13 @@
 //! Deploy service and HTTP port contracts.
 
+pub mod app_delivery;
 pub mod app_ports;
 pub mod dto;
 pub mod problem;
 pub mod runtime_env;
 pub mod site_composition;
 
+pub use app_delivery::*;
 pub use app_ports::{
     DeployAppApi, DeployAppRequestContext, DeployBackendApi, DeployBackendRequestContext,
     ListDomainZonesQuery, ListSitesQuery,

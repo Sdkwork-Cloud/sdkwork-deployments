@@ -90,6 +90,7 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
     Router::<AppState>::new()
         .merge(build_domain_management_router())
         .merge(build_certificate_management_router())
+        .merge(crate::app_delivery_routes::build_app_delivery_router())
         .route(paths::SITES, get(list_sites).post(create_site))
         .route(
             paths::SITE,

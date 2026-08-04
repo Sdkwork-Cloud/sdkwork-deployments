@@ -143,3 +143,9 @@ pub async fn bootstrap_deploy_service_host_from_env() -> Result<DeployServiceHos
         )),
     })
 }
+
+/// Bootstraps the Deploy repository for executor-style workers (build runner)
+/// that need direct repository port access without the full service host.
+pub async fn bootstrap_deploy_repository_from_env() -> Result<Arc<DeployRepository>, String> {
+    repository_from_env().await
+}

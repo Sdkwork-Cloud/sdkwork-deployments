@@ -55,6 +55,19 @@ pub(crate) fn datetime_from_row(row: &PgRow, column: &str) -> Result<String, Sql
         .map(|value| value.to_rfc3339_opts(SecondsFormat::Millis, true))
 }
 
+pub(crate) fn required_datetime(row: &PgRow, column: &str) -> Result<String, DeployServiceError> {
+    datetime_from_row(row, column)
+        .map_err(|error| DeployServiceError::Internal(format!("read {column}: {error}")))
+}
+
+pub(crate) fn optional_datetime(
+    row: &PgRow,
+    column: &str,
+) -> Result<Option<String>, DeployServiceError> {
+    optional_datetime_from_row(row, column)
+        .map_err(|error| DeployServiceError::Internal(format!("read {column}: {error}")))
+}
+
 pub(crate) fn optional_datetime_from_row(
     row: &PgRow,
     column: &str,
@@ -158,6 +171,130 @@ pub(crate) async fn resolve_node_cluster_internal_id(
 
     row.and_then(|row| row.try_get::<i64, _>("id").ok())
         .ok_or_else(|| DeployServiceError::not_found("cluster not found"))
+}
+
+pub(crate) async fn resolve_app_internal_id(
+    pool: &PgPool,
+    tenant_id: i64,
+    app_uuid: &str,
+) -> Result<i64, DeployServiceError> {
+    let row = sqlx::query(
+        "SELECT id FROM deploy_app
+         WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL",
+    )
+    .bind(tenant_id)
+    .bind(app_uuid)
+    .fetch_optional(pool)
+    .await
+    .map_err(|error| store_error("resolve deploy_app id", error))?;
+
+    row.and_then(|row| row.try_get::<i64, _>("id").ok())
+        .ok_or_else(|| DeployServiceError::not_found("app not found"))
+}
+
+pub(crate) async fn resolve_platform_target_internal_id(
+    pool: &PgPool,
+    tenant_id: i64,
+    app_internal_id: i64,
+    target_uuid: &str,
+) -> Result<i64, DeployServiceError> {
+    let row = sqlx::query(
+        "SELECT id FROM deploy_app_platform_target
+         WHERE tenant_id = $1 AND app_id = $2 AND uuid = $3 AND deleted_at IS NULL",
+    )
+    .bind(tenant_id)
+    .bind(app_internal_id)
+    .bind(target_uuid)
+    .fetch_optional(pool)
+    .await
+    .map_err(|error| store_error("resolve deploy_app_platform_target id", error))?;
+
+    row.and_then(|row| row.try_get::<i64, _>("id").ok())
+        .ok_or_else(|| DeployServiceError::not_found("platform target not found"))
+}
+
+pub(crate) async fn resolve_build_internal_id(
+    pool: &PgPool,
+    tenant_id: i64,
+    app_internal_id: i64,
+    build_uuid: &str,
+) -> Result<i64, DeployServiceError> {
+    let row = sqlx::query(
+        "SELECT id FROM deploy_build
+         WHERE tenant_id = $1 AND app_id = $2 AND uuid = $3 AND deleted_at IS NULL",
+    )
+    .bind(tenant_id)
+    .bind(app_internal_id)
+    .bind(build_uuid)
+    .fetch_optional(pool)
+    .await
+    .map_err(|error| store_error("resolve deploy_build id", error))?;
+
+    row.and_then(|row| row.try_get::<i64, _>("id").ok())
+        .ok_or_else(|| DeployServiceError::not_found("build not found"))
+}
+
+pub(crate) async fn resolve_package_internal_id(
+    pool: &PgPool,
+    tenant_id: i64,
+    app_internal_id: i64,
+    package_uuid: &str,
+) -> Result<i64, DeployServiceError> {
+    let row = sqlx::query(
+        "SELECT id FROM deploy_package
+         WHERE tenant_id = $1 AND app_id = $2 AND uuid = $3 AND deleted_at IS NULL",
+    )
+    .bind(tenant_id)
+    .bind(app_internal_id)
+    .bind(package_uuid)
+    .fetch_optional(pool)
+    .await
+    .map_err(|error| store_error("resolve deploy_package id", error))?;
+
+    row.and_then(|row| row.try_get::<i64, _>("id").ok())
+        .ok_or_else(|| DeployServiceError::not_found("package not found"))
+}
+
+pub(crate) async fn resolve_app_release_internal_id(
+    pool: &PgPool,
+    tenant_id: i64,
+    app_internal_id: i64,
+    release_uuid: &str,
+) -> Result<i64, DeployServiceError> {
+    let row = sqlx::query(
+        "SELECT id FROM deploy_release
+         WHERE tenant_id = $1 AND app_id = $2 AND uuid = $3 AND release_status IS NOT NULL",
+    )
+    .bind(tenant_id)
+    .bind(app_internal_id)
+    .bind(release_uuid)
+    .fetch_optional(pool)
+    .await
+    .map_err(|error| store_error("resolve deploy_release app id", error))?;
+
+    row.and_then(|row| row.try_get::<i64, _>("id").ok())
+        .ok_or_else(|| DeployServiceError::not_found("release not found"))
+}
+
+pub(crate) async fn resolve_channel_internal_id(
+    pool: &PgPool,
+    tenant_id: i64,
+    app_internal_id: i64,
+    channel_uuid: &str,
+) -> Result<i64, DeployServiceError> {
+    let row = sqlx::query(
+        "SELECT id FROM deploy_release_channel
+         WHERE tenant_id = $1 AND app_id = $2 AND uuid = $3 AND deleted_at IS NULL",
+    )
+    .bind(tenant_id)
+    .bind(app_internal_id)
+    .bind(channel_uuid)
+    .fetch_optional(pool)
+    .await
+    .map_err(|error| store_error("resolve deploy_release_channel id", error))?;
+
+    row.and_then(|row| row.try_get::<i64, _>("id").ok())
+        .ok_or_else(|| DeployServiceError::not_found("channel not found"))
 }
 
 /// Encodes an opaque keyset cursor for `(sort_instant, id)` ordered lists

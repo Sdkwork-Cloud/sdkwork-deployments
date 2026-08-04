@@ -12,6 +12,10 @@ Specs: REQUIREMENTS_SPEC.md, DOCUMENTATION_SPEC.md
   Drive Space-root/folder directory and every-Knowledgebase Wiki publishing product, user console,
   admin console, frozen artifact/release workflows, domains, client Variants, TLS, metering, and
   launch gates.
+- [PRD-unified-app-delivery-platform.md](PRD-unified-app-delivery-platform.md) - unified tenant App
+  delivery for static web, API services, WeChat/Douyin mini-programs, iOS/Android (Flutter and
+  native), and HarmonyOS: source repositories, governed builds, the deployment package standard,
+  semantic version channels, and typed deployment targets.
 - [Standards alignment](../../standards-alignment.md)
 - [Technical standards alignment](../../architecture/tech/TECH-standards-alignment.md)
 

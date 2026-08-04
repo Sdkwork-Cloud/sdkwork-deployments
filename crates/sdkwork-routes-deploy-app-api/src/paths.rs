@@ -28,3 +28,29 @@ pub const ARTIFACT: &str = "/app/v3/api/artifacts/{artifactId}";
 pub const SITE_RELEASES: &str = "/app/v3/api/sites/{siteId}/releases";
 pub const SITE_RELEASE: &str = "/app/v3/api/sites/{siteId}/releases/{releaseId}";
 pub const SITE_HEALTH_CHECKS: &str = "/app/v3/api/sites/{siteId}/health_checks";
+
+pub const APPS: &str = "/app/v3/api/apps";
+pub const APP: &str = "/app/v3/api/apps/{appId}";
+pub const APP_PLATFORM_TARGETS: &str = "/app/v3/api/apps/{appId}/platform_targets";
+pub const APP_PLATFORM_TARGET: &str =
+    "/app/v3/api/apps/{appId}/platform_targets/{platformTargetId}";
+pub const APP_SOURCE_REPOSITORIES: &str = "/app/v3/api/apps/{appId}/source_repositories";
+pub const APP_SOURCE_REPOSITORY: &str =
+    "/app/v3/api/apps/{appId}/source_repositories/{sourceRepositoryId}";
+pub const BUILD_TEMPLATES: &str = "/app/v3/api/build_templates";
+pub const BUILD_TEMPLATE: &str = "/app/v3/api/build_templates/{buildTemplateId}";
+pub const APP_BUILDS: &str = "/app/v3/api/apps/{appId}/builds";
+pub const APP_BUILD: &str = "/app/v3/api/apps/{appId}/builds/{buildId}";
+pub const APP_BUILD_STATE: &str = "/app/v3/api/apps/{appId}/builds/{buildId}/state";
+pub const APP_PACKAGES: &str = "/app/v3/api/apps/{appId}/packages";
+pub const APP_PACKAGE: &str = "/app/v3/api/apps/{appId}/packages/{packageId}";
+pub const APP_RELEASES: &str = "/app/v3/api/apps/{appId}/releases";
+pub const APP_RELEASE: &str = "/app/v3/api/apps/{appId}/releases/{releaseId}";
+pub const APP_CHANNELS: &str = "/app/v3/api/apps/{appId}/channels";
+pub const APP_CHANNEL: &str = "/app/v3/api/apps/{appId}/channels/{channelId}";
+pub const APP_CHANNEL_PROMOTIONS: &str = "/app/v3/api/apps/{appId}/channels/{channelId}/promotions";
+pub const APP_CHANNEL_ROLLOUTS: &str = "/app/v3/api/apps/{appId}/channels/{channelId}/rollouts";
+pub const APP_DEPLOYMENTS: &str = "/app/v3/api/apps/{appId}/deployments";
+pub const APP_DEPLOYMENT: &str = "/app/v3/api/apps/{appId}/deployments/{deploymentId}";
+pub const SIGNING_IDENTITIES: &str = "/app/v3/api/signing_identities";
+pub const SIGNING_IDENTITY: &str = "/app/v3/api/signing_identities/{signingIdentityId}";

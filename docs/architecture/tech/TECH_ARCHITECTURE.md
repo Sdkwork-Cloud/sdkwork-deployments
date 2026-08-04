@@ -12,6 +12,10 @@ DEPLOYMENT_SPEC.md, SECURITY_SPEC.md
 - [TECH-cloud-site-publishing-control-plane.md](TECH-cloud-site-publishing-control-plane.md) - active
   cloud publishing ownership, implemented composition/SDK/runtime-assignment foundation, target TLS
   lifecycle, remaining production gates, and verification matrix.
+- [TECH-unified-app-delivery-platform.md](TECH-unified-app-delivery-platform.md) - active unified
+  tenant App delivery model: application types, source repositories, governed builds, the
+  `sdkwork.deploy-package.v1` deployment package standard, semantic version management with
+  channels, and typed deployment targets.
 
 ## 1. Architecture Overview
 

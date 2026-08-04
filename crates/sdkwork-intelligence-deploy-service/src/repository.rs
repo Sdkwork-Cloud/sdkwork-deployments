@@ -3,18 +3,27 @@
 use async_trait::async_trait;
 use sdkwork_deploy_contract::DeployServiceResult;
 use sdkwork_deploy_contract::{
-    ArtifactPage, ArtifactResponse, AuditLogPage, CertificatePage, CertificateResponse,
-    CreateArtifactRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
+    AppDeploymentPage, AppDeploymentResponse, AppPage, AppReleasePage, AppReleaseResponse,
+    AppResponse, ArtifactPage, ArtifactResponse, AuditLogPage, BuildPage, BuildResponse,
+    BuildTemplatePage, BuildTemplateResponse, CertificatePage, CertificateResponse, ChannelPage,
+    ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse, CreateAppDeploymentRequest,
+    CreateAppReleaseRequest, CreateAppRequest, CreateArtifactRequest, CreateBuildRequest,
+    CreateBuildTemplateRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
     CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
     CreateEnvVariableRequest, CreateHealthCheckRequest, CreateNginxConfigRequest,
-    CreateNodeClusterRequest, CreateReleaseRequest, CreateServerRequest, CreateSiteRequest,
-    DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
-    DomainHostnamePage, DomainHostnameResponse, DomainZonePage, DomainZoneResponse,
-    EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
-    ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
-    NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
-    NodeClusterPage, NodeClusterResponse, ReleasePage, ReleaseResponse, ServerPage, ServerResponse,
-    SitePage, SiteResponse, UpdateDomainZoneRequest, UpdateNginxConfigRequest,
+    CreateNodeClusterRequest, CreatePlatformTargetRequest, CreateReleaseRequest,
+    CreateServerRequest, CreateSigningIdentityRequest, CreateSiteRequest,
+    CreateSourceRepositoryRequest, DeployAppRequestContext, DeployUploadSessionResponse,
+    DeploymentPage, DeploymentResponse, DeploymentStatus, DomainHostnamePage,
+    DomainHostnameResponse, DomainZonePage, DomainZoneResponse, EnvVariablePage,
+    EnvVariableResponse, HealthCheckPage, HealthCheckResponse, ListDomainZonesQuery,
+    ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage, NginxConfigResponse,
+    NginxReloadResponse, NginxStatusResponse, NginxValidateResponse, NodeClusterPage,
+    NodeClusterResponse, PackagePage, PackageResponse, PlatformTargetPage, PlatformTargetResponse,
+    PromoteChannelRequest, RegisterPackageRequest, ReleasePage, ReleaseResponse, ReleaseStatus,
+    ServerPage, ServerResponse, SigningIdentityPage, SigningIdentityResponse, SitePage,
+    SiteResponse, SourceRepositoryPage, SourceRepositoryResponse, UpdateAppRequest,
+    UpdateBuildStateRequest, UpdateDomainZoneRequest, UpdateNginxConfigRequest,
     UpdateNodeClusterRequest, UpdateServerRequest, UpdateSiteRequest,
 };
 
@@ -434,4 +443,277 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         status: i32,
         drive_node_id: Option<&str>,
     ) -> DeployServiceResult<DeployUploadSessionResponse>;
+
+    // -- unified app delivery (REQ-2026-0002) --------------------------------
+
+    async fn create_app(
+        &self,
+        tenant_id: i64,
+        organization_id: Option<i64>,
+        actor_id: Option<i64>,
+        request: &CreateAppRequest,
+    ) -> DeployServiceResult<AppResponse>;
+
+    async fn list_apps(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppPage>;
+
+    async fn retrieve_app(&self, tenant_id: i64, app_id: &str) -> DeployServiceResult<AppResponse>;
+
+    async fn update_app(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        app_id: &str,
+        request: &UpdateAppRequest,
+    ) -> DeployServiceResult<AppResponse>;
+
+    async fn create_platform_target(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        actor_id: Option<i64>,
+        request: &CreatePlatformTargetRequest,
+    ) -> DeployServiceResult<PlatformTargetResponse>;
+
+    async fn list_platform_targets(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+    ) -> DeployServiceResult<PlatformTargetPage>;
+
+    async fn retrieve_platform_target(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        target_id: &str,
+    ) -> DeployServiceResult<PlatformTargetResponse>;
+
+    async fn create_source_repository(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        actor_id: Option<i64>,
+        request: &CreateSourceRepositoryRequest,
+    ) -> DeployServiceResult<SourceRepositoryResponse>;
+
+    async fn list_source_repositories(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+    ) -> DeployServiceResult<SourceRepositoryPage>;
+
+    async fn retrieve_source_repository(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        repo_id: &str,
+    ) -> DeployServiceResult<SourceRepositoryResponse>;
+
+    async fn create_build_template(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        request: &CreateBuildTemplateRequest,
+    ) -> DeployServiceResult<BuildTemplateResponse>;
+
+    async fn list_build_templates(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<BuildTemplatePage>;
+
+    async fn retrieve_build_template(
+        &self,
+        tenant_id: i64,
+        template_id: &str,
+    ) -> DeployServiceResult<BuildTemplateResponse>;
+
+    async fn create_build(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        request: &CreateBuildRequest,
+    ) -> DeployServiceResult<BuildResponse>;
+
+    async fn list_builds(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<BuildPage>;
+
+    async fn retrieve_build(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        build_id: &str,
+    ) -> DeployServiceResult<BuildResponse>;
+
+    async fn update_build_state(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        build_id: &str,
+        request: &UpdateBuildStateRequest,
+    ) -> DeployServiceResult<BuildResponse>;
+
+    async fn claim_next_build(
+        &self,
+        tenant_id: i64,
+        runner_node_uuid: &str,
+        runner_version: &str,
+    ) -> DeployServiceResult<Option<BuildResponse>>;
+
+    /// Resolves (app uuid, platform target uuid, platform) for a build so
+    /// package registration can enforce platform/format rules.
+    async fn resolve_build_platform(
+        &self,
+        tenant_id: i64,
+        build_id: &str,
+    ) -> DeployServiceResult<(String, String, String)>;
+
+    async fn register_package(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        request: &RegisterPackageRequest,
+    ) -> DeployServiceResult<PackageResponse>;
+
+    async fn list_packages(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<PackagePage>;
+
+    async fn retrieve_package(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        package_id: &str,
+    ) -> DeployServiceResult<PackageResponse>;
+
+    async fn create_app_release(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        request: &CreateAppReleaseRequest,
+    ) -> DeployServiceResult<AppReleaseResponse>;
+
+    async fn list_app_releases(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppReleasePage>;
+
+    async fn retrieve_app_release(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        release_id: &str,
+    ) -> DeployServiceResult<AppReleaseResponse>;
+
+    async fn update_app_release_status(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        release_id: &str,
+        release_status: ReleaseStatus,
+    ) -> DeployServiceResult<AppReleaseResponse>;
+
+    async fn ensure_release_channel(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        target_id: &str,
+        channel_key: &str,
+    ) -> DeployServiceResult<ChannelResponse>;
+
+    async fn retrieve_channel(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        channel_id: &str,
+    ) -> DeployServiceResult<ChannelResponse>;
+
+    async fn list_channels(&self, tenant_id: i64, app_id: &str)
+        -> DeployServiceResult<ChannelPage>;
+
+    async fn promote_channel(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        channel_id: &str,
+        actor_id: Option<i64>,
+        request: &PromoteChannelRequest,
+    ) -> DeployServiceResult<ChannelRolloutResponse>;
+
+    async fn list_channel_rollouts(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        channel_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<ChannelRolloutPage>;
+
+    async fn create_app_deployment(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        request: &CreateAppDeploymentRequest,
+    ) -> DeployServiceResult<AppDeploymentResponse>;
+
+    async fn list_app_deployments(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppDeploymentPage>;
+
+    async fn retrieve_app_deployment(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        deployment_id: &str,
+    ) -> DeployServiceResult<AppDeploymentResponse>;
+
+    async fn update_app_deployment_state(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        deployment_id: &str,
+        deployment_status: DeploymentStatus,
+        platform_review_ref: Option<&str>,
+    ) -> DeployServiceResult<AppDeploymentResponse>;
+
+    async fn create_signing_identity(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        request: &CreateSigningIdentityRequest,
+    ) -> DeployServiceResult<SigningIdentityResponse>;
+
+    async fn list_signing_identities(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<SigningIdentityPage>;
+
+    async fn retrieve_signing_identity(
+        &self,
+        tenant_id: i64,
+        identity_id: &str,
+    ) -> DeployServiceResult<SigningIdentityResponse>;
 }

@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
+use crate::app_delivery::*;
 use crate::dto::*;
 use crate::problem::DeployServiceResult;
 use crate::site_composition::{SiteCompositionResponse, UpdateSiteCompositionRequest};
@@ -379,6 +380,376 @@ pub trait DeployAppApi: Send + Sync {
         context: &DeployAppRequestContext,
         upload_session_id: &str,
     ) -> DeployServiceResult<DeployUploadSessionResponse>;
+
+    async fn list_apps(
+        &self,
+        _context: &DeployAppRequestContext,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<AppPage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_apps API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn create_app(
+        &self,
+        _context: &DeployAppRequestContext,
+        _request: &CreateAppRequest,
+    ) -> DeployServiceResult<AppResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "create_app API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_app(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+    ) -> DeployServiceResult<AppResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "retrieve_app API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn update_app(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _request: &UpdateAppRequest,
+    ) -> DeployServiceResult<AppResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "update_app API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn create_platform_target(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _request: &CreatePlatformTargetRequest,
+    ) -> DeployServiceResult<PlatformTargetResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "create_platform_target API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_platform_targets(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+    ) -> DeployServiceResult<PlatformTargetPage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_platform_targets API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_platform_target(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _target_id: &str,
+    ) -> DeployServiceResult<PlatformTargetResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "retrieve_platform_target API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn create_source_repository(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _request: &CreateSourceRepositoryRequest,
+    ) -> DeployServiceResult<SourceRepositoryResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "create_source_repository API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_source_repositories(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+    ) -> DeployServiceResult<SourceRepositoryPage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_source_repositories API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_source_repository(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _repo_id: &str,
+    ) -> DeployServiceResult<SourceRepositoryResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "retrieve_source_repository API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn create_build_template(
+        &self,
+        _context: &DeployAppRequestContext,
+        _request: &CreateBuildTemplateRequest,
+    ) -> DeployServiceResult<BuildTemplateResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "create_build_template API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_build_templates(
+        &self,
+        _context: &DeployAppRequestContext,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<BuildTemplatePage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_build_templates API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_build_template(
+        &self,
+        _context: &DeployAppRequestContext,
+        _template_id: &str,
+    ) -> DeployServiceResult<BuildTemplateResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "retrieve_build_template API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn create_build(
+        &self,
+        _context: &DeployAppRequestContext,
+        _request: &CreateBuildRequest,
+    ) -> DeployServiceResult<BuildResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "create_build API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_builds(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<BuildPage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_builds API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_build(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _build_id: &str,
+    ) -> DeployServiceResult<BuildResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "retrieve_build API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn update_build_state(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _build_id: &str,
+        _request: &UpdateBuildStateRequest,
+    ) -> DeployServiceResult<BuildResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "update_build_state API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn register_package(
+        &self,
+        _context: &DeployAppRequestContext,
+        _request: &RegisterPackageRequest,
+    ) -> DeployServiceResult<PackageResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "register_package API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_packages(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<PackagePage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_packages API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_package(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _package_id: &str,
+    ) -> DeployServiceResult<PackageResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "retrieve_package API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn create_app_release(
+        &self,
+        _context: &DeployAppRequestContext,
+        _request: &CreateAppReleaseRequest,
+    ) -> DeployServiceResult<AppReleaseResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "create_app_release API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_app_releases(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<AppReleasePage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_app_releases API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_app_release(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _release_id: &str,
+    ) -> DeployServiceResult<AppReleaseResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "retrieve_app_release API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn update_app_release_status(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _release_id: &str,
+        _release_status: ReleaseStatus,
+    ) -> DeployServiceResult<AppReleaseResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "update_app_release_status API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_channels(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+    ) -> DeployServiceResult<ChannelPage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_channels API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_channel(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _channel_id: &str,
+    ) -> DeployServiceResult<ChannelResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "retrieve_channel API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn promote_channel(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _channel_id: &str,
+        _request: &PromoteChannelRequest,
+    ) -> DeployServiceResult<ChannelRolloutResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "promote_channel API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_channel_rollouts(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _channel_id: &str,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<ChannelRolloutPage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_channel_rollouts API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn create_app_deployment(
+        &self,
+        _context: &DeployAppRequestContext,
+        _request: &CreateAppDeploymentRequest,
+    ) -> DeployServiceResult<AppDeploymentResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "create_app_deployment API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_app_deployments(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<AppDeploymentPage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_app_deployments API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_app_deployment(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _deployment_id: &str,
+    ) -> DeployServiceResult<AppDeploymentResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "retrieve_app_deployment API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn create_signing_identity(
+        &self,
+        _context: &DeployAppRequestContext,
+        _request: &CreateSigningIdentityRequest,
+    ) -> DeployServiceResult<SigningIdentityResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "create_signing_identity API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_signing_identities(
+        &self,
+        _context: &DeployAppRequestContext,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<SigningIdentityPage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_signing_identities API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_signing_identity(
+        &self,
+        _context: &DeployAppRequestContext,
+        _identity_id: &str,
+    ) -> DeployServiceResult<SigningIdentityResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "retrieve_signing_identity API is not implemented".to_owned(),
+        ))
+    }
 }
 
 #[async_trait]

@@ -6,3 +6,4 @@ Requirement records in this directory follow `REQUIREMENTS_SPEC.md` and
 ## Active Requirements
 
 - [REQ-2026-0001 Cloud Site Publishing Platform](REQ-2026-0001-cloud-site-publishing-platform.md)
+- [REQ-2026-0002 Unified App Delivery Platform](REQ-2026-0002-unified-app-delivery-platform.md)

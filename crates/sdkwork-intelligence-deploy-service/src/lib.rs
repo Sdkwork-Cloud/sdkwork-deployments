@@ -1,6 +1,7 @@
 //! Deploy business service orchestrating repository ports and HTTP API traits.
 
 pub mod app;
+pub mod app_delivery;
 pub mod backend;
 pub mod domain_verification;
 pub mod repository;

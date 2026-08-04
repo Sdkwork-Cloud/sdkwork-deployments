@@ -2,13 +2,22 @@
 
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
-    is_deploy_package_artifact_type, CompleteDeployUploadSessionRequest, CreateArtifactRequest,
-    CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDeploymentRequest,
-    CreateDomainHostnameRequest, CreateDomainZoneRequest, CreateEnvVariableRequest,
-    CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest, DeployAppApi,
-    DeployAppRequestContext, DeployServiceResult, DeployUploadSessionResponse,
-    ListDomainZonesQuery, ListSitesQuery, UpdateDomainHostnameRequest, UpdateDomainZoneRequest,
-    UpdateSiteRequest, UPLOAD_SESSION_STATUS_CANCELLED, UPLOAD_SESSION_STATUS_COMPLETED,
+    is_deploy_package_artifact_type, AppDeploymentPage, AppDeploymentResponse, AppPage,
+    AppReleasePage, AppReleaseResponse, AppResponse, BuildPage, BuildResponse, BuildTemplatePage,
+    BuildTemplateResponse, ChannelPage, ChannelResponse, ChannelRolloutPage,
+    ChannelRolloutResponse, CompleteDeployUploadSessionRequest, CreateAppDeploymentRequest,
+    CreateAppReleaseRequest, CreateAppRequest, CreateArtifactRequest, CreateBuildRequest,
+    CreateBuildTemplateRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
+    CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
+    CreateEnvVariableRequest, CreateHealthCheckRequest, CreatePlatformTargetRequest,
+    CreateReleaseRequest, CreateSigningIdentityRequest, CreateSiteRequest,
+    CreateSourceRepositoryRequest, DeployAppApi, DeployAppRequestContext, DeployServiceResult,
+    DeployUploadSessionResponse, ListDomainZonesQuery, ListSitesQuery, PackagePage,
+    PackageResponse, PlatformTargetPage, PlatformTargetResponse, PromoteChannelRequest,
+    RegisterPackageRequest, ReleaseStatus, SigningIdentityPage, SigningIdentityResponse,
+    SourceRepositoryPage, SourceRepositoryResponse, UpdateAppRequest, UpdateBuildStateRequest,
+    UpdateDomainHostnameRequest, UpdateDomainZoneRequest, UpdateSiteRequest,
+    UPLOAD_SESSION_STATUS_CANCELLED, UPLOAD_SESSION_STATUS_COMPLETED,
 };
 use sdkwork_deploy_drive_port::{DriveRequestCredentials, PrepareDeployUploadCommand};
 
@@ -960,6 +969,320 @@ impl DeployAppApi for DeployService {
             )
             .await
     }
+
+    // -- unified app delivery (REQ-2026-0002) ------------------------------------
+
+    async fn list_apps(
+        &self,
+        context: &DeployAppRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppPage> {
+        self.list_apps(context, page, page_size).await
+    }
+
+    async fn create_app(
+        &self,
+        context: &DeployAppRequestContext,
+        request: &CreateAppRequest,
+    ) -> DeployServiceResult<AppResponse> {
+        self.create_app(context, request).await
+    }
+
+    async fn retrieve_app(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+    ) -> DeployServiceResult<AppResponse> {
+        self.retrieve_app(context, app_id).await
+    }
+
+    async fn update_app(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        request: &UpdateAppRequest,
+    ) -> DeployServiceResult<AppResponse> {
+        self.update_app(context, app_id, request).await
+    }
+
+    async fn create_platform_target(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        request: &CreatePlatformTargetRequest,
+    ) -> DeployServiceResult<PlatformTargetResponse> {
+        self.create_platform_target(context, app_id, request).await
+    }
+
+    async fn list_platform_targets(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+    ) -> DeployServiceResult<PlatformTargetPage> {
+        self.list_platform_targets(context, app_id).await
+    }
+
+    async fn retrieve_platform_target(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        target_id: &str,
+    ) -> DeployServiceResult<PlatformTargetResponse> {
+        self.retrieve_platform_target(context, app_id, target_id)
+            .await
+    }
+
+    async fn create_source_repository(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        request: &CreateSourceRepositoryRequest,
+    ) -> DeployServiceResult<SourceRepositoryResponse> {
+        self.create_source_repository(context, app_id, request)
+            .await
+    }
+
+    async fn list_source_repositories(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+    ) -> DeployServiceResult<SourceRepositoryPage> {
+        self.list_source_repositories(context, app_id).await
+    }
+
+    async fn retrieve_source_repository(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        repo_id: &str,
+    ) -> DeployServiceResult<SourceRepositoryResponse> {
+        self.retrieve_source_repository(context, app_id, repo_id)
+            .await
+    }
+
+    async fn create_build_template(
+        &self,
+        context: &DeployAppRequestContext,
+        request: &CreateBuildTemplateRequest,
+    ) -> DeployServiceResult<BuildTemplateResponse> {
+        self.create_build_template(context, request).await
+    }
+
+    async fn list_build_templates(
+        &self,
+        context: &DeployAppRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<BuildTemplatePage> {
+        self.list_build_templates(context, page, page_size).await
+    }
+
+    async fn retrieve_build_template(
+        &self,
+        context: &DeployAppRequestContext,
+        template_id: &str,
+    ) -> DeployServiceResult<BuildTemplateResponse> {
+        self.retrieve_build_template(context, template_id).await
+    }
+
+    async fn create_build(
+        &self,
+        context: &DeployAppRequestContext,
+        request: &CreateBuildRequest,
+    ) -> DeployServiceResult<BuildResponse> {
+        self.create_build(context, request).await
+    }
+
+    async fn list_builds(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<BuildPage> {
+        self.list_builds(context, app_id, page, page_size).await
+    }
+
+    async fn retrieve_build(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        build_id: &str,
+    ) -> DeployServiceResult<BuildResponse> {
+        self.retrieve_build(context, app_id, build_id).await
+    }
+
+    async fn update_build_state(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        build_id: &str,
+        request: &UpdateBuildStateRequest,
+    ) -> DeployServiceResult<BuildResponse> {
+        self.update_build_state(context, app_id, build_id, request)
+            .await
+    }
+
+    async fn register_package(
+        &self,
+        context: &DeployAppRequestContext,
+        request: &RegisterPackageRequest,
+    ) -> DeployServiceResult<PackageResponse> {
+        self.register_package(context, request).await
+    }
+
+    async fn list_packages(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<PackagePage> {
+        self.list_packages(context, app_id, page, page_size).await
+    }
+
+    async fn retrieve_package(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        package_id: &str,
+    ) -> DeployServiceResult<PackageResponse> {
+        self.retrieve_package(context, app_id, package_id).await
+    }
+
+    async fn create_app_release(
+        &self,
+        context: &DeployAppRequestContext,
+        request: &CreateAppReleaseRequest,
+    ) -> DeployServiceResult<AppReleaseResponse> {
+        self.create_app_release(context, request).await
+    }
+
+    async fn list_app_releases(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppReleasePage> {
+        self.list_app_releases(context, app_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_app_release(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        release_id: &str,
+    ) -> DeployServiceResult<AppReleaseResponse> {
+        self.retrieve_app_release(context, app_id, release_id).await
+    }
+
+    async fn update_app_release_status(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        release_id: &str,
+        release_status: ReleaseStatus,
+    ) -> DeployServiceResult<AppReleaseResponse> {
+        self.update_app_release_status(context, app_id, release_id, release_status)
+            .await
+    }
+
+    async fn list_channels(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+    ) -> DeployServiceResult<ChannelPage> {
+        self.list_channels(context, app_id).await
+    }
+
+    async fn retrieve_channel(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        channel_id: &str,
+    ) -> DeployServiceResult<ChannelResponse> {
+        self.retrieve_channel(context, app_id, channel_id).await
+    }
+
+    async fn promote_channel(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        channel_id: &str,
+        request: &PromoteChannelRequest,
+    ) -> DeployServiceResult<ChannelRolloutResponse> {
+        self.promote_channel(context, app_id, channel_id, request)
+            .await
+    }
+
+    async fn list_channel_rollouts(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        channel_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<ChannelRolloutPage> {
+        self.list_channel_rollouts(context, app_id, channel_id, page, page_size)
+            .await
+    }
+
+    async fn create_app_deployment(
+        &self,
+        context: &DeployAppRequestContext,
+        request: &CreateAppDeploymentRequest,
+    ) -> DeployServiceResult<AppDeploymentResponse> {
+        self.create_app_deployment(context, request).await
+    }
+
+    async fn list_app_deployments(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppDeploymentPage> {
+        self.list_app_deployments(context, app_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_app_deployment(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        deployment_id: &str,
+    ) -> DeployServiceResult<AppDeploymentResponse> {
+        self.retrieve_app_deployment(context, app_id, deployment_id)
+            .await
+    }
+
+    async fn create_signing_identity(
+        &self,
+        context: &DeployAppRequestContext,
+        request: &CreateSigningIdentityRequest,
+    ) -> DeployServiceResult<SigningIdentityResponse> {
+        self.create_signing_identity(context, request).await
+    }
+
+    async fn list_signing_identities(
+        &self,
+        context: &DeployAppRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<SigningIdentityPage> {
+        self.list_signing_identities(context, page, page_size).await
+    }
+
+    async fn retrieve_signing_identity(
+        &self,
+        context: &DeployAppRequestContext,
+        identity_id: &str,
+    ) -> DeployServiceResult<SigningIdentityResponse> {
+        self.retrieve_signing_identity(context, identity_id).await
+    }
 }
 
 #[cfg(test)]
@@ -1070,5 +1393,18 @@ mod domain_zone_tests {
                 "{name}"
             );
         }
+    }
+}
+
+// -- unified app delivery (REQ-2026-0002) ------------------------------------
+
+impl DeployService {
+    pub async fn list_apps_api(
+        &self,
+        context: &DeployAppRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppPage> {
+        self.list_apps(context, page, page_size).await
     }
 }

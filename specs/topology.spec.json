@@ -95,6 +95,10 @@
     "runtimeAssignmentWorker": {
       "crate": "sdkwork-deploy-runtime-assignment-worker",
       "binary": "sdkwork-deploy-runtime-assignment-worker"
+    },
+    "buildRunner": {
+      "crate": "sdkwork-deploy-build-runner",
+      "binary": "sdkwork-deploy-build-runner"
     }
   },
   "orchestration": {
@@ -113,6 +117,13 @@
             "crate": "sdkwork-deploy-runtime-assignment-worker",
             "binary": "sdkwork-deploy-runtime-assignment-worker",
             "required": true,
+            "role": "worker"
+          },
+          {
+            "id": "build-runner",
+            "crate": "sdkwork-deploy-build-runner",
+            "binary": "sdkwork-deploy-build-runner",
+            "required": false,
             "role": "worker"
           }
         ],

@@ -1,5 +1,6 @@
 //! App API route boundary for SDKWork Deploy.
 
+pub mod app_delivery_routes;
 pub mod auth;
 pub mod domain_certificate_manifest;
 pub mod http_route_manifest;

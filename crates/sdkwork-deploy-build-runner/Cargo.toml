@@ -1,0 +1,28 @@
+[package]
+name = "sdkwork-deploy-build-runner"
+version.workspace = true
+edition.workspace = true
+description = "Governed build executor boundary and runner for the unified app delivery platform"
+
+[lib]
+name = "sdkwork_deploy_build_runner"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sdkwork-deploy-build-runner"
+path = "src/main.rs"
+
+[dependencies]
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+sdkwork-deploy-contract.workspace = true
+sdkwork-deploy-core.workspace = true
+sdkwork-deploy-service-host.workspace = true
+sdkwork-intelligence-deploy-service.workspace = true
+
+[dev-dependencies]

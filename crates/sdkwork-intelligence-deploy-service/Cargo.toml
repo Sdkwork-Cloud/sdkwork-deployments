@@ -6,6 +6,7 @@ edition.workspace = true
 [dependencies]
 async-trait.workspace = true
 sdkwork-deploy-contract.workspace = true
+sdkwork-deploy-core.workspace = true
 sdkwork-deploy-content-provider-port.workspace = true
 sdkwork-deploy-drive-port.workspace = true
 sdkwork-deploy-runtime-compiler.workspace = true

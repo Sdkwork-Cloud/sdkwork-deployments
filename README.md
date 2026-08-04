@@ -55,6 +55,7 @@ pnpm db:plan
 - Product Canon: [docs/product/prd/PRD.md](docs/product/prd/PRD.md)
 - Technical architecture Canon: [docs/architecture/tech/TECH_ARCHITECTURE.md](docs/architecture/tech/TECH_ARCHITECTURE.md)
 - Cloud publishing architecture: [docs/architecture/tech/TECH-cloud-site-publishing-control-plane.md](docs/architecture/tech/TECH-cloud-site-publishing-control-plane.md)
+- Unified app delivery architecture: [docs/architecture/tech/TECH-unified-app-delivery-platform.md](docs/architecture/tech/TECH-unified-app-delivery-platform.md)
 - Standards alignment: [docs/standards-alignment.md](docs/standards-alignment.md)
 - Standards entry: `../sdkwork-specs/README.md`
 

@@ -2,18 +2,27 @@
 
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
-    ArtifactPage, ArtifactResponse, AuditLogPage, CertificatePage, CertificateResponse,
-    CreateArtifactRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
+    AppDeploymentPage, AppDeploymentResponse, AppPage, AppReleasePage, AppReleaseResponse,
+    AppResponse, ArtifactPage, ArtifactResponse, AuditLogPage, BuildPage, BuildResponse,
+    BuildTemplatePage, BuildTemplateResponse, CertificatePage, CertificateResponse, ChannelPage,
+    ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse, CreateAppDeploymentRequest,
+    CreateAppReleaseRequest, CreateAppRequest, CreateArtifactRequest, CreateBuildRequest,
+    CreateBuildTemplateRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
     CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
     CreateEnvVariableRequest, CreateHealthCheckRequest, CreateNginxConfigRequest,
-    CreateNodeClusterRequest, CreateReleaseRequest, CreateServerRequest, CreateSiteRequest,
-    DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
-    DomainHostnamePage, DomainHostnameResponse, DomainZonePage, DomainZoneResponse,
-    EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
-    ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
-    NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
-    NodeClusterPage, NodeClusterResponse, ReleasePage, ReleaseResponse, ServerPage, ServerResponse,
-    SitePage, SiteResponse, UpdateDomainHostnameRequest, UpdateDomainZoneRequest,
+    CreateNodeClusterRequest, CreatePlatformTargetRequest, CreateReleaseRequest,
+    CreateServerRequest, CreateSigningIdentityRequest, CreateSiteRequest,
+    CreateSourceRepositoryRequest, DeployAppRequestContext, DeployUploadSessionResponse,
+    DeploymentPage, DeploymentResponse, DeploymentStatus, DomainHostnamePage,
+    DomainHostnameResponse, DomainZonePage, DomainZoneResponse, EnvVariablePage,
+    EnvVariableResponse, HealthCheckPage, HealthCheckResponse, ListDomainZonesQuery,
+    ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage, NginxConfigResponse,
+    NginxReloadResponse, NginxStatusResponse, NginxValidateResponse, NodeClusterPage,
+    NodeClusterResponse, PackagePage, PackageResponse, PlatformTargetPage, PlatformTargetResponse,
+    PromoteChannelRequest, RegisterPackageRequest, ReleasePage, ReleaseResponse, ReleaseStatus,
+    ServerPage, ServerResponse, SigningIdentityPage, SigningIdentityResponse, SitePage,
+    SiteResponse, SourceRepositoryPage, SourceRepositoryResponse, UpdateAppRequest,
+    UpdateBuildStateRequest, UpdateDomainHostnameRequest, UpdateDomainZoneRequest,
     UpdateNginxConfigRequest, UpdateNodeClusterRequest, UpdateServerRequest, UpdateSiteRequest,
 };
 use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
@@ -601,6 +610,392 @@ impl DeployRepositoryPort for DeployRepository {
         drive_node_id: Option<&str>,
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         self.update_upload_session_status_repo(tenant_id, upload_session_id, status, drive_node_id)
+            .await
+    }
+
+    // -- unified app delivery (REQ-2026-0002) --------------------------------
+
+    async fn create_app(
+        &self,
+        tenant_id: i64,
+        organization_id: Option<i64>,
+        actor_id: Option<i64>,
+        request: &CreateAppRequest,
+    ) -> DeployServiceResult<AppResponse> {
+        self.create_app_repo(tenant_id, organization_id, actor_id, request)
+            .await
+    }
+
+    async fn list_apps(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppPage> {
+        self.list_apps_repo(tenant_id, page, page_size).await
+    }
+
+    async fn retrieve_app(&self, tenant_id: i64, app_id: &str) -> DeployServiceResult<AppResponse> {
+        self.retrieve_app_repo(tenant_id, app_id).await
+    }
+
+    async fn update_app(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        app_id: &str,
+        request: &UpdateAppRequest,
+    ) -> DeployServiceResult<AppResponse> {
+        self.update_app_repo(tenant_id, actor_id, app_id, request)
+            .await
+    }
+
+    async fn create_platform_target(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        actor_id: Option<i64>,
+        request: &CreatePlatformTargetRequest,
+    ) -> DeployServiceResult<PlatformTargetResponse> {
+        self.create_platform_target_repo(tenant_id, app_id, actor_id, request)
+            .await
+    }
+
+    async fn list_platform_targets(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+    ) -> DeployServiceResult<PlatformTargetPage> {
+        self.list_platform_targets_repo(tenant_id, app_id).await
+    }
+
+    async fn retrieve_platform_target(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        target_id: &str,
+    ) -> DeployServiceResult<PlatformTargetResponse> {
+        self.retrieve_platform_target_repo(tenant_id, app_id, target_id)
+            .await
+    }
+
+    async fn create_source_repository(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        actor_id: Option<i64>,
+        request: &CreateSourceRepositoryRequest,
+    ) -> DeployServiceResult<SourceRepositoryResponse> {
+        self.create_source_repository_repo(tenant_id, app_id, actor_id, request)
+            .await
+    }
+
+    async fn list_source_repositories(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+    ) -> DeployServiceResult<SourceRepositoryPage> {
+        self.list_source_repositories_repo(tenant_id, app_id).await
+    }
+
+    async fn retrieve_source_repository(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        repo_id: &str,
+    ) -> DeployServiceResult<SourceRepositoryResponse> {
+        self.retrieve_source_repository_repo(tenant_id, app_id, repo_id)
+            .await
+    }
+
+    async fn create_build_template(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        request: &CreateBuildTemplateRequest,
+    ) -> DeployServiceResult<BuildTemplateResponse> {
+        self.create_build_template_repo(tenant_id, actor_id, request)
+            .await
+    }
+
+    async fn list_build_templates(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<BuildTemplatePage> {
+        self.list_build_templates_repo(tenant_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_build_template(
+        &self,
+        tenant_id: i64,
+        template_id: &str,
+    ) -> DeployServiceResult<BuildTemplateResponse> {
+        self.retrieve_build_template_repo(tenant_id, template_id)
+            .await
+    }
+
+    async fn create_build(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        request: &CreateBuildRequest,
+    ) -> DeployServiceResult<BuildResponse> {
+        self.create_build_repo(tenant_id, actor_id, request).await
+    }
+
+    async fn list_builds(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<BuildPage> {
+        self.list_builds_repo(tenant_id, app_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_build(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        build_id: &str,
+    ) -> DeployServiceResult<BuildResponse> {
+        self.retrieve_build_repo(tenant_id, app_id, build_id).await
+    }
+
+    async fn update_build_state(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        build_id: &str,
+        request: &UpdateBuildStateRequest,
+    ) -> DeployServiceResult<BuildResponse> {
+        self.update_build_state_repo(tenant_id, app_id, build_id, request)
+            .await
+    }
+
+    async fn claim_next_build(
+        &self,
+        tenant_id: i64,
+        runner_node_uuid: &str,
+        runner_version: &str,
+    ) -> DeployServiceResult<Option<BuildResponse>> {
+        self.claim_next_build_repo(tenant_id, runner_node_uuid, runner_version)
+            .await
+    }
+
+    async fn resolve_build_platform(
+        &self,
+        tenant_id: i64,
+        build_id: &str,
+    ) -> DeployServiceResult<(String, String, String)> {
+        self.resolve_build_platform_repo(tenant_id, build_id).await
+    }
+
+    async fn register_package(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        request: &RegisterPackageRequest,
+    ) -> DeployServiceResult<PackageResponse> {
+        self.register_package_repo(tenant_id, actor_id, request)
+            .await
+    }
+
+    async fn list_packages(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<PackagePage> {
+        self.list_packages_repo(tenant_id, app_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_package(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        package_id: &str,
+    ) -> DeployServiceResult<PackageResponse> {
+        self.retrieve_package_repo(tenant_id, app_id, package_id)
+            .await
+    }
+
+    async fn create_app_release(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        request: &CreateAppReleaseRequest,
+    ) -> DeployServiceResult<AppReleaseResponse> {
+        self.create_app_release_repo(tenant_id, actor_id, request)
+            .await
+    }
+
+    async fn list_app_releases(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppReleasePage> {
+        self.list_app_releases_repo(tenant_id, app_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_app_release(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        release_id: &str,
+    ) -> DeployServiceResult<AppReleaseResponse> {
+        self.retrieve_app_release_repo(tenant_id, app_id, release_id)
+            .await
+    }
+
+    async fn update_app_release_status(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        release_id: &str,
+        release_status: ReleaseStatus,
+    ) -> DeployServiceResult<AppReleaseResponse> {
+        self.update_app_release_status_repo(tenant_id, app_id, release_id, release_status)
+            .await
+    }
+
+    async fn ensure_release_channel(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        target_id: &str,
+        channel_key: &str,
+    ) -> DeployServiceResult<ChannelResponse> {
+        self.ensure_release_channel_repo(tenant_id, app_id, target_id, channel_key)
+            .await
+    }
+
+    async fn retrieve_channel(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        channel_id: &str,
+    ) -> DeployServiceResult<ChannelResponse> {
+        self.retrieve_channel_repo(tenant_id, app_id, channel_id)
+            .await
+    }
+
+    async fn list_channels(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+    ) -> DeployServiceResult<ChannelPage> {
+        self.list_channels_repo(tenant_id, app_id).await
+    }
+
+    async fn promote_channel(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        channel_id: &str,
+        actor_id: Option<i64>,
+        request: &PromoteChannelRequest,
+    ) -> DeployServiceResult<ChannelRolloutResponse> {
+        self.promote_channel_repo(tenant_id, app_id, channel_id, actor_id, request)
+            .await
+    }
+
+    async fn list_channel_rollouts(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        channel_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<ChannelRolloutPage> {
+        self.list_channel_rollouts_repo(tenant_id, app_id, channel_id, page, page_size)
+            .await
+    }
+
+    async fn create_app_deployment(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        request: &CreateAppDeploymentRequest,
+    ) -> DeployServiceResult<AppDeploymentResponse> {
+        self.create_app_deployment_repo(tenant_id, actor_id, request)
+            .await
+    }
+
+    async fn list_app_deployments(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppDeploymentPage> {
+        self.list_app_deployments_repo(tenant_id, app_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_app_deployment(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        deployment_id: &str,
+    ) -> DeployServiceResult<AppDeploymentResponse> {
+        self.retrieve_app_deployment_repo(tenant_id, app_id, deployment_id)
+            .await
+    }
+
+    async fn update_app_deployment_state(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        deployment_id: &str,
+        deployment_status: DeploymentStatus,
+        platform_review_ref: Option<&str>,
+    ) -> DeployServiceResult<AppDeploymentResponse> {
+        self.update_app_deployment_state_repo(
+            tenant_id,
+            app_id,
+            deployment_id,
+            deployment_status,
+            platform_review_ref,
+        )
+        .await
+    }
+
+    async fn create_signing_identity(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        request: &CreateSigningIdentityRequest,
+    ) -> DeployServiceResult<SigningIdentityResponse> {
+        self.create_signing_identity_repo(tenant_id, actor_id, request)
+            .await
+    }
+
+    async fn list_signing_identities(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<SigningIdentityPage> {
+        self.list_signing_identities_repo(tenant_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_signing_identity(
+        &self,
+        tenant_id: i64,
+        identity_id: &str,
+    ) -> DeployServiceResult<SigningIdentityResponse> {
+        self.retrieve_signing_identity_repo(tenant_id, identity_id)
             .await
     }
 }
