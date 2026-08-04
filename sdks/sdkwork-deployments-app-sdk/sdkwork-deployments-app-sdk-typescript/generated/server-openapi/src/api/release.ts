@@ -1,8 +1,67 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { CreateReleaseRequest, PageInfo, ReleaseResponse } from '../types';
+import type { AppReleaseResponse, ChannelResponse, ChannelRolloutResponse, CreateAppReleaseRequest, CreateReleaseRequest, PageInfo, PromoteChannelRequest, ReleaseResponse } from '../types';
 
+
+export interface ReleaseChannelsRolloutsListParams {
+  page?: number;
+  pageSize?: number;
+}
+
+export class ReleaseChannelsRolloutsApi {
+  private client: HttpClient;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+  }
+
+
+/** List immutable rollout history of a channel */
+  async list(appId: string, channelId: string, params?: ReleaseChannelsRolloutsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: ChannelRolloutResponse[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: ChannelRolloutResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/channels/${serializePathParameter(channelId, { name: 'channelId', style: 'simple', explode: false })}/rollouts`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+}
+
+export interface ReleaseChannelsPromoteParams {
+  idempotencyKey: string;
+}
+
+export class ReleaseChannelsApi {
+  private client: HttpClient;
+  public readonly rollouts: ReleaseChannelsRolloutsApi;
+
+  constructor(client: HttpClient) {
+    this.client = client;
+    this.rollouts = new ReleaseChannelsRolloutsApi(client);
+  }
+
+
+/** List release channels of an app */
+  async list(appId: string, requestOptions?: ApiRequestOptions): Promise<{ items: ChannelResponse[]; pageInfo: PageInfo; }> {
+    return this.client.request<{ items: ChannelResponse[]; pageInfo: PageInfo; }>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/channels`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+
+/** Retrieve a release channel */
+  async retrieve(appId: string, channelId: string, requestOptions?: ApiRequestOptions): Promise<ChannelResponse> {
+    return this.client.request<ChannelResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/channels/${serializePathParameter(channelId, { name: 'channelId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+
+/** Promote a release into a channel with immutable rollout history */
+  async promote(appId: string, channelId: string, body: PromoteChannelRequest, params: ReleaseChannelsPromoteParams, requestOptions?: ApiRequestOptions): Promise<ChannelRolloutResponse> {
+    const requestHeaders = buildRequestHeaders(
+      {
+        'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
+      },
+      {}
+    );
+    return this.client.request<ChannelRolloutResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/channels/${serializePathParameter(channelId, { name: 'channelId', style: 'simple', explode: false })}/promotions`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+}
 
 export interface ReleaseSitesReleasesListParams {
   page?: number;
@@ -58,15 +117,51 @@ export class ReleaseSitesApi {
 
 }
 
+export interface ReleaseListParams {
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ReleaseCreateParams {
+  idempotencyKey: string;
+}
+
 export class ReleaseApi {
   private client: HttpClient;
   public readonly sites: ReleaseSitesApi;
+  public readonly channels: ReleaseChannelsApi;
 
   constructor(client: HttpClient) {
     this.client = client;
     this.sites = new ReleaseSitesApi(client);
+    this.channels = new ReleaseChannelsApi(client);
   }
 
+
+/** List app releases */
+  async list(appId: string, params?: ReleaseListParams, requestOptions?: ApiRequestOptions): Promise<{ items: AppReleaseResponse[]; pageInfo: PageInfo; }> {
+    const query = buildQueryString([
+      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
+      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
+    ]);
+    return this.client.request<{ items: AppReleaseResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/releases`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+
+/** Create an immutable semantic version release */
+  async create(appId: string, body: CreateAppReleaseRequest, params: ReleaseCreateParams, requestOptions?: ApiRequestOptions): Promise<AppReleaseResponse> {
+    const requestHeaders = buildRequestHeaders(
+      {
+        'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
+      },
+      {}
+    );
+    return this.client.request<AppReleaseResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/releases`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Retrieve an app release */
+  async retrieve(appId: string, releaseId: string, requestOptions?: ApiRequestOptions): Promise<AppReleaseResponse> {
+    return this.client.request<AppReleaseResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/releases/${serializePathParameter(releaseId, { name: 'releaseId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
 }
 
 export function createReleaseApi(client: HttpClient): ReleaseApi {

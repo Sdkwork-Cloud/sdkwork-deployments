@@ -9,3 +9,7 @@ export { CertificateApi, createCertificateApi } from './certificate';
 export { UploadSessionApi, createUploadSessionApi } from './upload-session';
 export { ArtifactApi, createArtifactApi } from './artifact';
 export { MonitorApi, createMonitorApi } from './monitor';
+export { AppApi, createAppApi } from './app';
+export { BuildApi, createBuildApi } from './build';
+export { PackageApi, createPackageApi } from './package';
+export { SigningApi, createSigningApi } from './signing';

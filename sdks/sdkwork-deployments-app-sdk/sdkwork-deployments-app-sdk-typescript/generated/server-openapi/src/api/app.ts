@@ -1,25 +1,14 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AppDeploymentResponse, CreateAppDeploymentRequest, CreateDeploymentRequest, DeploymentResponse, PageInfo } from '../types';
+import type { AppResponse, CreateAppRequest, CreatePlatformTargetRequest, CreateSourceRepositoryRequest, PageInfo, PlatformTargetResponse, SourceRepositoryResponse, UpdateAppRequest } from '../types';
 
 
-export interface DeploymentSitesDeploymentsListParams {
-  page?: number;
-  pageSize?: number;
-  status?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  cursor?: string;
-}
-
-export interface DeploymentSitesDeploymentsCreateParams {
+export interface AppSourceRepositoriesCreateParams {
   idempotencyKey: string;
 }
 
-export interface DeploymentSitesDeploymentsRollbackParams {
-  idempotencyKey: string;
-}
-
-export class DeploymentSitesDeploymentsApi {
+export class AppSourceRepositoriesApi {
   private client: HttpClient;
 
   constructor(client: HttpClient) {
@@ -27,103 +16,116 @@ export class DeploymentSitesDeploymentsApi {
   }
 
 
-/** 获取部署历史 */
-  async list(siteId: string, params?: DeploymentSitesDeploymentsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: DeploymentResponse[]; pageInfo: PageInfo; }> {
-    const query = buildQueryString([
-      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
-      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
-      { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
-      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
-    ]);
-    return this.client.request<{ items: DeploymentResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+/** List source repositories of an app */
+  async list(appId: string, requestOptions?: ApiRequestOptions): Promise<{ items: SourceRepositoryResponse[]; pageInfo: PageInfo; }> {
+    return this.client.request<{ items: SourceRepositoryResponse[]; pageInfo: PageInfo; }>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/source_repositories`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
-/** 发起部署 */
-  async create(siteId: string, body: CreateDeploymentRequest, params: DeploymentSitesDeploymentsCreateParams, requestOptions?: ApiRequestOptions): Promise<DeploymentResponse> {
+/** Bind a Git source repository to an app */
+  async create(appId: string, body: CreateSourceRepositoryRequest, params: AppSourceRepositoriesCreateParams, requestOptions?: ApiRequestOptions): Promise<SourceRepositoryResponse> {
     const requestHeaders = buildRequestHeaders(
       {
         'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
       },
       {}
     );
-    return this.client.request<DeploymentResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<SourceRepositoryResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/source_repositories`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
-/** 获取部署详情 */
-  async retrieve(siteId: string, deploymentId: string, requestOptions?: ApiRequestOptions): Promise<DeploymentResponse> {
-    return this.client.request<DeploymentResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments/${serializePathParameter(deploymentId, { name: 'deploymentId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
-  }
-
-/** 回滚部署 */
-  async rollback(siteId: string, deploymentId: string, params: DeploymentSitesDeploymentsRollbackParams, requestOptions?: ApiRequestOptions): Promise<DeploymentResponse> {
-    const requestHeaders = buildRequestHeaders(
-      {
-        'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
-      },
-      {}
-    );
-    return this.client.request<DeploymentResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments/${serializePathParameter(deploymentId, { name: 'deploymentId', style: 'simple', explode: false })}/rollback`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, headers: requestHeaders, sdkworkUnwrapKind: 'item' });
+/** Retrieve a source repository */
+  async retrieve(appId: string, sourceRepositoryId: string, requestOptions?: ApiRequestOptions): Promise<SourceRepositoryResponse> {
+    return this.client.request<SourceRepositoryResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/source_repositories/${serializePathParameter(sourceRepositoryId, { name: 'sourceRepositoryId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
-export class DeploymentSitesApi {
+export interface AppPlatformTargetsCreateParams {
+  idempotencyKey: string;
+}
+
+export class AppPlatformTargetsApi {
   private client: HttpClient;
-  public readonly deployments: DeploymentSitesDeploymentsApi;
 
   constructor(client: HttpClient) {
     this.client = client;
-    this.deployments = new DeploymentSitesDeploymentsApi(client);
   }
 
+
+/** List platform targets of an app */
+  async list(appId: string, requestOptions?: ApiRequestOptions): Promise<{ items: PlatformTargetResponse[]; pageInfo: PageInfo; }> {
+    return this.client.request<{ items: PlatformTargetResponse[]; pageInfo: PageInfo; }>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/platform_targets`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+  }
+
+/** Create a platform target */
+  async create(appId: string, body: CreatePlatformTargetRequest, params: AppPlatformTargetsCreateParams, requestOptions?: ApiRequestOptions): Promise<PlatformTargetResponse> {
+    const requestHeaders = buildRequestHeaders(
+      {
+        'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
+      },
+      {}
+    );
+    return this.client.request<PlatformTargetResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/platform_targets`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+  }
+
+/** Retrieve a platform target */
+  async retrieve(appId: string, platformTargetId: string, requestOptions?: ApiRequestOptions): Promise<PlatformTargetResponse> {
+    return this.client.request<PlatformTargetResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/platform_targets/${serializePathParameter(platformTargetId, { name: 'platformTargetId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
 }
 
-export interface DeploymentListParams {
+export interface AppListParams {
   page?: number;
   pageSize?: number;
 }
 
-export interface DeploymentCreateParams {
+export interface AppCreateParams {
   idempotencyKey: string;
 }
 
-export class DeploymentApi {
+export class AppApi {
   private client: HttpClient;
-  public readonly sites: DeploymentSitesApi;
+  public readonly platformTargets: AppPlatformTargetsApi;
+  public readonly sourceRepositories: AppSourceRepositoriesApi;
 
   constructor(client: HttpClient) {
     this.client = client;
-    this.sites = new DeploymentSitesApi(client);
+    this.platformTargets = new AppPlatformTargetsApi(client);
+    this.sourceRepositories = new AppSourceRepositoriesApi(client);
   }
 
 
-/** List deployments of an app */
-  async list(appId: string, params?: DeploymentListParams, requestOptions?: ApiRequestOptions): Promise<{ items: AppDeploymentResponse[]; pageInfo: PageInfo; }> {
+/** List tenant apps */
+  async list(params?: AppListParams, requestOptions?: ApiRequestOptions): Promise<{ items: AppResponse[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: AppDeploymentResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/deployments`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: AppResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/apps`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
-/** Create a deployment against a typed target */
-  async create(appId: string, body: CreateAppDeploymentRequest, params: DeploymentCreateParams, requestOptions?: ApiRequestOptions): Promise<AppDeploymentResponse> {
+/** Create a tenant app */
+  async create(body: CreateAppRequest, params: AppCreateParams, requestOptions?: ApiRequestOptions): Promise<AppResponse> {
     const requestHeaders = buildRequestHeaders(
       {
         'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
       },
       {}
     );
-    return this.client.request<AppDeploymentResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/deployments`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<AppResponse>(appApiPath(`/apps`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
-/** Retrieve a deployment */
-  async retrieve(appId: string, deploymentId: string, requestOptions?: ApiRequestOptions): Promise<AppDeploymentResponse> {
-    return this.client.request<AppDeploymentResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/deployments/${serializePathParameter(deploymentId, { name: 'deploymentId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+/** Retrieve a tenant app */
+  async retrieve(appId: string, requestOptions?: ApiRequestOptions): Promise<AppResponse> {
+    return this.client.request<AppResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+
+/** Update a tenant app */
+  async update(appId: string, body: UpdateAppRequest, requestOptions?: ApiRequestOptions): Promise<AppResponse> {
+    return this.client.request<AppResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PATCH' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
-export function createDeploymentApi(client: HttpClient): DeploymentApi {
-  return new DeploymentApi(client);
+export function createAppApi(client: HttpClient): AppApi {
+  return new AppApi(client);
 }
 
 function appendQueryString(path: string, rawQueryString: string): string {

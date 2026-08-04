@@ -1,0 +1,1 @@
+export type BuildStatus = 'QUEUED' | 'PREPARING' | 'COMPILING' | 'TESTING' | 'PACKAGING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED' | 'TIMED_OUT';

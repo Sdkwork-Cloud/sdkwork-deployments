@@ -31,8 +31,8 @@ This repository follows `../sdkwork-specs/SDKWORK_WORKSPACE_SPEC.md`. Applicatio
 | `scripts/` | active | Dev orchestration and verification entrypoints |
 | `docs/` | active | PRD, architecture, standards alignment |
 | `tests/` | active | Cross-package contract tests |
-| `tools/` | active | OpenAPI materialization (`materialize_deploy_phase1_contracts.mjs`) |
-| `apps/` | reserved | Future PC/admin client roots |
+| `tools/` | active | OpenAPI and PC package materialization (`materialize_deploy_phase1_contracts.mjs`, `materialize_deployments_pc.mjs`) |
+| `apps/` | active | `sdkwork-deployments-pc` Console and backend-admin publishing control plane |
 | `jobs/`, `plugins/`, `examples/` | reserved | Future capability directories |
 
 ## Development

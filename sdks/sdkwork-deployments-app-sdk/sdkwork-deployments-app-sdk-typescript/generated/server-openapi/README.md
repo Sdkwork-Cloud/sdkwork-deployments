@@ -31,7 +31,7 @@ const params = {
   page: 1,
   page_size: 2,
 };
-const result = await client.artifact.list(params);
+const result = await client.app.list(params);
 ```
 
 ## Authentication
@@ -67,6 +67,10 @@ const client = new SdkworkDeployAppClient({
 - `client.uploadSession` - upload_session API
 - `client.artifact` - artifact API
 - `client.monitor` - monitor API
+- `client.app` - app API
+- `client.build` - build API
+- `client.package` - package API
+- `client.signing` - signing API
 
 ## Usage Examples
 
@@ -100,27 +104,21 @@ const result = await client.site.list(params);
 ### deployment
 
 ```typescript
-// 获取部署历史
-const siteId = '1';
+// List deployments of an app
+const appId = '1';
 const params = {
   page: 1,
   page_size: 2,
-  status: 0,
-  cursor: 'cursor',
 };
-const result = await client.deployment.sites.deployments.list(siteId, params);
+const result = await client.deployment.list(appId, params);
 ```
 
 ### release
 
 ```typescript
-// 获取站点发布版本列表
-const siteId = '1';
-const params = {
-  page: 1,
-  page_size: 2,
-};
-const result = await client.release.sites.releases.list(siteId, params);
+// List release channels of an app
+const appId = '1';
+const result = await client.release.channels.list(appId);
 ```
 
 ### env_variable
@@ -172,6 +170,51 @@ const siteId = '1';
 const result = await client.monitor.sites.healthChecks.list(siteId);
 ```
 
+### app
+
+```typescript
+// List tenant apps
+const params = {
+  page: 1,
+  page_size: 2,
+};
+const result = await client.app.list(params);
+```
+
+### build
+
+```typescript
+// List tenant build templates
+const params = {
+  page: 1,
+  page_size: 2,
+};
+const result = await client.build.buildTemplates.list(params);
+```
+
+### package
+
+```typescript
+// List deployment packages of an app
+const appId = '1';
+const params = {
+  page: 1,
+  page_size: 2,
+};
+const result = await client.package.list(appId, params);
+```
+
+### signing
+
+```typescript
+// List tenant signing identities
+const params = {
+  page: 1,
+  page_size: 2,
+};
+const result = await client.signing.signingIdentities.list(params);
+```
+
 ## Error Handling
 
 ```typescript
@@ -182,7 +225,7 @@ try {
     page: 1,
     page_size: 2,
   };
-  const result = await client.artifact.list(params);
+  const result = await client.app.list(params);
 } catch (error) {
   if (error instanceof AuthenticationError) {
     console.error('Authentication failed:', error.message);

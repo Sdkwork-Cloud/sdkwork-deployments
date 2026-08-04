@@ -8,112 +8,91 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "/backend/v3/api/nginx/configs",
         "nginx",
         "configs.list",
-    )
-    .with_required_permission("deploy.configs.read"),
+    ).with_required_permission("deploy.configs.read"),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/nginx/configs",
         "nginx",
         "configs.create",
-    )
-    .with_required_permission("deploy.configs.write")
-    .with_idempotent(true),
+    ).with_required_permission("deploy.configs.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/nginx/configs/{configId}",
         "nginx",
         "configs.retrieve",
-    )
-    .with_required_permission("deploy.configs.read"),
+    ).with_required_permission("deploy.configs.read"),
     HttpRoute::dual_token(
         HttpMethod::Put,
         "/backend/v3/api/nginx/configs/{configId}",
         "nginx",
         "configs.update",
-    )
-    .with_required_permission("deploy.configs.write"),
+    ).with_required_permission("deploy.configs.write"),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/nginx/configs/{configId}/validate",
         "nginx",
         "configs.validate",
-    )
-    .with_required_permission("deploy.configs.write")
-    .with_idempotent(true),
+    ).with_required_permission("deploy.configs.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/nginx/configs/{configId}/deploy",
         "nginx",
         "configs.deploy",
-    )
-    .with_required_permission("deploy.configs.write")
-    .with_idempotent(true),
+    ).with_required_permission("deploy.configs.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/nginx/reload",
         "nginx",
         "runtime.reload",
-    )
-    .with_required_permission("deploy.runtime.write")
-    .with_idempotent(true),
+    ).with_required_permission("deploy.runtime.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/nginx/status",
         "nginx",
         "runtime.retrieve",
-    )
-    .with_required_permission("deploy.runtime.read"),
+    ).with_required_permission("deploy.runtime.read"),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/servers",
         "server",
         "servers.list",
-    )
-    .with_required_permission("deploy.servers.read"),
+    ).with_required_permission("deploy.servers.read"),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/servers",
         "server",
         "servers.create",
-    )
-    .with_required_permission("deploy.servers.write")
-    .with_idempotent(true),
+    ).with_required_permission("deploy.servers.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Put,
         "/backend/v3/api/servers/{serverId}",
         "server",
         "servers.update",
-    )
-    .with_required_permission("deploy.servers.write"),
+    ).with_required_permission("deploy.servers.write"),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/node_clusters",
         "cluster",
         "clusters.list",
-    )
-    .with_required_permission("deploy.clusters.read"),
+    ).with_required_permission("deploy.clusters.read"),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/node_clusters",
         "cluster",
         "clusters.create",
-    )
-    .with_required_permission("deploy.clusters.write")
-    .with_idempotent(true),
+    ).with_required_permission("deploy.clusters.write").with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Put,
         "/backend/v3/api/node_clusters/{clusterId}",
         "cluster",
         "clusters.update",
-    )
-    .with_required_permission("deploy.clusters.write"),
+    ).with_required_permission("deploy.clusters.write"),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/audit_logs",
         "audit",
         "auditLogs.list",
-    )
-    .with_required_permission("deploy.auditLogs.read"),
+    ).with_required_permission("deploy.auditLogs.read"),
 ];
 
 pub fn backend_route_manifest() -> HttpRouteManifest {

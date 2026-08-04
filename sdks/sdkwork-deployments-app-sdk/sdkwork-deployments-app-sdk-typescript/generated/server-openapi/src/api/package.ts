@@ -1,129 +1,54 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { AppDeploymentResponse, CreateAppDeploymentRequest, CreateDeploymentRequest, DeploymentResponse, PageInfo } from '../types';
+import type { PackageResponse, PageInfo, RegisterPackageRequest } from '../types';
 
 
-export interface DeploymentSitesDeploymentsListParams {
-  page?: number;
-  pageSize?: number;
-  status?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  cursor?: string;
-}
-
-export interface DeploymentSitesDeploymentsCreateParams {
-  idempotencyKey: string;
-}
-
-export interface DeploymentSitesDeploymentsRollbackParams {
-  idempotencyKey: string;
-}
-
-export class DeploymentSitesDeploymentsApi {
-  private client: HttpClient;
-
-  constructor(client: HttpClient) {
-    this.client = client;
-  }
-
-
-/** 获取部署历史 */
-  async list(siteId: string, params?: DeploymentSitesDeploymentsListParams, requestOptions?: ApiRequestOptions): Promise<{ items: DeploymentResponse[]; pageInfo: PageInfo; }> {
-    const query = buildQueryString([
-      { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
-      { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
-      { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
-      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
-    ]);
-    return this.client.request<{ items: DeploymentResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
-  }
-
-/** 发起部署 */
-  async create(siteId: string, body: CreateDeploymentRequest, params: DeploymentSitesDeploymentsCreateParams, requestOptions?: ApiRequestOptions): Promise<DeploymentResponse> {
-    const requestHeaders = buildRequestHeaders(
-      {
-        'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
-      },
-      {}
-    );
-    return this.client.request<DeploymentResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
-  }
-
-/** 获取部署详情 */
-  async retrieve(siteId: string, deploymentId: string, requestOptions?: ApiRequestOptions): Promise<DeploymentResponse> {
-    return this.client.request<DeploymentResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments/${serializePathParameter(deploymentId, { name: 'deploymentId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
-  }
-
-/** 回滚部署 */
-  async rollback(siteId: string, deploymentId: string, params: DeploymentSitesDeploymentsRollbackParams, requestOptions?: ApiRequestOptions): Promise<DeploymentResponse> {
-    const requestHeaders = buildRequestHeaders(
-      {
-        'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
-      },
-      {}
-    );
-    return this.client.request<DeploymentResponse>(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments/${serializePathParameter(deploymentId, { name: 'deploymentId', style: 'simple', explode: false })}/rollback`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, headers: requestHeaders, sdkworkUnwrapKind: 'item' });
-  }
-}
-
-export class DeploymentSitesApi {
-  private client: HttpClient;
-  public readonly deployments: DeploymentSitesDeploymentsApi;
-
-  constructor(client: HttpClient) {
-    this.client = client;
-    this.deployments = new DeploymentSitesDeploymentsApi(client);
-  }
-
-}
-
-export interface DeploymentListParams {
+export interface PackageListParams {
   page?: number;
   pageSize?: number;
 }
 
-export interface DeploymentCreateParams {
+export interface PackageRegisterParams {
   idempotencyKey: string;
 }
 
-export class DeploymentApi {
+export class PackageApi {
   private client: HttpClient;
-  public readonly sites: DeploymentSitesApi;
 
   constructor(client: HttpClient) {
     this.client = client;
-    this.sites = new DeploymentSitesApi(client);
   }
 
 
-/** List deployments of an app */
-  async list(appId: string, params?: DeploymentListParams, requestOptions?: ApiRequestOptions): Promise<{ items: AppDeploymentResponse[]; pageInfo: PageInfo; }> {
+/** List deployment packages of an app */
+  async list(appId: string, params?: PackageListParams, requestOptions?: ApiRequestOptions): Promise<{ items: PackageResponse[]; pageInfo: PageInfo; }> {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: AppDeploymentResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/deployments`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: PackageResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/packages`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
-/** Create a deployment against a typed target */
-  async create(appId: string, body: CreateAppDeploymentRequest, params: DeploymentCreateParams, requestOptions?: ApiRequestOptions): Promise<AppDeploymentResponse> {
+/** Register an immutable deployment package */
+  async register(appId: string, body: RegisterPackageRequest, params: PackageRegisterParams, requestOptions?: ApiRequestOptions): Promise<PackageResponse> {
     const requestHeaders = buildRequestHeaders(
       {
         'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },
       },
       {}
     );
-    return this.client.request<AppDeploymentResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/deployments`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<PackageResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/packages`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
-/** Retrieve a deployment */
-  async retrieve(appId: string, deploymentId: string, requestOptions?: ApiRequestOptions): Promise<AppDeploymentResponse> {
-    return this.client.request<AppDeploymentResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/deployments/${serializePathParameter(deploymentId, { name: 'deploymentId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+/** Retrieve a deployment package */
+  async retrieve(appId: string, packageId: string, requestOptions?: ApiRequestOptions): Promise<PackageResponse> {
+    return this.client.request<PackageResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/packages/${serializePathParameter(packageId, { name: 'packageId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
-export function createDeploymentApi(client: HttpClient): DeploymentApi {
-  return new DeploymentApi(client);
+export function createPackageApi(client: HttpClient): PackageApi {
+  return new PackageApi(client);
 }
 
 function appendQueryString(path: string, rawQueryString: string): string {

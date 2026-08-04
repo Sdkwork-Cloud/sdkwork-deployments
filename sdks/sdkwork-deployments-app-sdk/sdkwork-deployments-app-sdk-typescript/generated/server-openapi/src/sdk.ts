@@ -11,6 +11,10 @@ import { CertificateApi, createCertificateApi } from './api/certificate';
 import { UploadSessionApi, createUploadSessionApi } from './api/upload-session';
 import { ArtifactApi, createArtifactApi } from './api/artifact';
 import { MonitorApi, createMonitorApi } from './api/monitor';
+import { AppApi, createAppApi } from './api/app';
+import { BuildApi, createBuildApi } from './api/build';
+import { PackageApi, createPackageApi } from './api/package';
+import { SigningApi, createSigningApi } from './api/signing';
 
 export class SdkworkDeployAppClient {
   private httpClient: HttpClient;
@@ -24,6 +28,10 @@ export class SdkworkDeployAppClient {
   public readonly uploadSession: UploadSessionApi;
   public readonly artifact: ArtifactApi;
   public readonly monitor: MonitorApi;
+  public readonly app: AppApi;
+  public readonly build: BuildApi;
+  public readonly package: PackageApi;
+  public readonly signing: SigningApi;
 
   constructor(config: SdkworkAppConfig) {
     this.httpClient = createHttpClient(config);
@@ -44,6 +52,14 @@ export class SdkworkDeployAppClient {
     this.artifact = createArtifactApi(this.httpClient);
 
     this.monitor = createMonitorApi(this.httpClient);
+
+    this.app = createAppApi(this.httpClient);
+
+    this.build = createBuildApi(this.httpClient);
+
+    this.package = createPackageApi(this.httpClient);
+
+    this.signing = createSigningApi(this.httpClient);
   }
   setAuthToken(token: string): this {
     this.httpClient.setAuthToken(token);

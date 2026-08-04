@@ -1,0 +1,1 @@
+export type DeploymentStatus = 'PENDING' | 'SUBMITTING' | 'PENDING_REVIEW' | 'IN_REVIEW' | 'REJECTED' | 'APPROVED' | 'LIVE' | 'ACTIVE' | 'DEGRADED' | 'FAILED' | 'ROLLED_BACK' | 'CANCELLED';
