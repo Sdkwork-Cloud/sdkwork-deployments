@@ -345,4 +345,16 @@ for (const profile of surfaces) {
   writeJson(`sdks/${profile.sdkFamily}/sdk-manifest.json`, sdkManifest(profile, openapi));
 }
 
-console.log("deploy phase-1 contracts materialized");
+// The route-manifest Rust sources are materialized with hand formatting;
+// normalize them with rustfmt so `cargo fmt --check` stays green.
+const { spawnSync } = await import("node:child_process");
+const format = spawnSync("cargo", ["fmt", "--", "--check"], { encoding: "utf8" });
+if (format.status !== 0) {
+  const apply = spawnSync("cargo", ["fmt"], { encoding: "utf8" });
+  if (apply.status !== 0) {
+    throw new Error(`cargo fmt after materialization failed: ${apply.stderr}`);
+  }
+  console.log("deploy phase-1 contracts materialized (formatted)");
+} else {
+  console.log("deploy phase-1 contracts materialized");
+}
