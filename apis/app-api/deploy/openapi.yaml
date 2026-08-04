@@ -1912,7 +1912,11 @@ paths:
                           pageInfo:
                             $ref: '#/components/schemas/PageInfo'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: "未认证"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     post:
       operationId: apps.create
       summary: Create a tenant app
@@ -1949,9 +1953,17 @@ paths:
                           item:
                             $ref: '#/components/schemas/AppResponse'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: "资源冲突"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}:
     parameters:
       - name: appId
@@ -1987,7 +1999,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/AppResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     patch:
       operationId: apps.update
       summary: Update a tenant app
@@ -2021,7 +2037,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/AppResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/platform_targets:
     parameters:
       - name: appId
@@ -2062,7 +2082,11 @@ paths:
                           pageInfo:
                             $ref: '#/components/schemas/PageInfo'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: "未认证"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     post:
       operationId: platformTargets.create
       summary: Create a platform target
@@ -2099,7 +2123,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/PlatformTargetResponse'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/platform_targets/{platformTargetId}:
     parameters:
       - name: appId
@@ -2141,7 +2169,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/PlatformTargetResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/source_repositories:
     parameters:
       - name: appId
@@ -2182,7 +2214,11 @@ paths:
                           pageInfo:
                             $ref: '#/components/schemas/PageInfo'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: "未认证"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     post:
       operationId: sourceRepositories.create
       summary: Bind a Git source repository to an app
@@ -2219,7 +2255,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/SourceRepositoryResponse'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/source_repositories/{sourceRepositoryId}:
     parameters:
       - name: appId
@@ -2261,7 +2301,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/SourceRepositoryResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/build_templates:
     get:
       operationId: buildTemplates.list
@@ -2298,7 +2342,11 @@ paths:
                           pageInfo:
                             $ref: '#/components/schemas/PageInfo'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: "未认证"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     post:
       operationId: buildTemplates.create
       summary: Create a governed build template
@@ -2335,7 +2383,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/BuildTemplateResponse'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/build_templates/{buildTemplateId}:
     parameters:
       - name: buildTemplateId
@@ -2371,7 +2423,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/BuildTemplateResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/builds:
     parameters:
       - name: appId
@@ -2415,7 +2471,11 @@ paths:
                           pageInfo:
                             $ref: '#/components/schemas/PageInfo'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: "未认证"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     post:
       operationId: builds.create
       summary: Trigger a governed build
@@ -2452,7 +2512,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/BuildResponse'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/builds/{buildId}:
     parameters:
       - name: appId
@@ -2494,7 +2558,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/BuildResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/builds/{buildId}/state:
     parameters:
       - name: appId
@@ -2542,7 +2610,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/BuildResponse'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: "资源冲突"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/packages:
     parameters:
       - name: appId
@@ -2586,7 +2658,11 @@ paths:
                           pageInfo:
                             $ref: '#/components/schemas/PageInfo'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: "未认证"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     post:
       operationId: packages.register
       summary: Register an immutable deployment package
@@ -2623,7 +2699,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/PackageResponse'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/packages/{packageId}:
     parameters:
       - name: appId
@@ -2665,7 +2745,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/PackageResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/releases:
     parameters:
       - name: appId
@@ -2709,7 +2793,11 @@ paths:
                           pageInfo:
                             $ref: '#/components/schemas/PageInfo'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: "未认证"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     post:
       operationId: releases.create
       summary: Create an immutable semantic version release
@@ -2746,9 +2834,17 @@ paths:
                           item:
                             $ref: '#/components/schemas/AppReleaseResponse'
         '409':
-          $ref: '#/components/responses/Conflict'
+          description: "资源冲突"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/releases/{releaseId}:
     parameters:
       - name: appId
@@ -2790,7 +2886,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/AppReleaseResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/channels:
     parameters:
       - name: appId
@@ -2831,7 +2931,11 @@ paths:
                           pageInfo:
                             $ref: '#/components/schemas/PageInfo'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: "未认证"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/channels/{channelId}:
     parameters:
       - name: appId
@@ -2873,7 +2977,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/ChannelResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/channels/{channelId}/promotions:
     parameters:
       - name: appId
@@ -2924,7 +3032,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/ChannelRolloutResponse'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/channels/{channelId}/rollouts:
     parameters:
       - name: appId
@@ -2974,7 +3086,11 @@ paths:
                           pageInfo:
                             $ref: '#/components/schemas/PageInfo'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: "未认证"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/deployments:
     parameters:
       - name: appId
@@ -3018,7 +3134,11 @@ paths:
                           pageInfo:
                             $ref: '#/components/schemas/PageInfo'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: "未认证"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     post:
       operationId: deployments.create
       summary: Create a deployment against a typed target
@@ -3055,7 +3175,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/AppDeploymentResponse'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/apps/{appId}/deployments/{deploymentId}:
     parameters:
       - name: appId
@@ -3097,7 +3221,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/AppDeploymentResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/signing_identities:
     get:
       operationId: signingIdentities.list
@@ -3134,7 +3262,11 @@ paths:
                           pageInfo:
                             $ref: '#/components/schemas/PageInfo'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: "未认证"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     post:
       operationId: signingIdentities.create
       summary: Create a signing identity (secret reference only)
@@ -3171,7 +3303,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/SigningIdentityResponse'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /app/v3/api/signing_identities/{signingIdentityId}:
     parameters:
       - name: signingIdentityId
@@ -3207,7 +3343,11 @@ paths:
                           item:
                             $ref: '#/components/schemas/SigningIdentityResponse'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
 
 components:
   securitySchemes:
