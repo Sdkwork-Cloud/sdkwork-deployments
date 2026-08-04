@@ -123,9 +123,10 @@ impl DeployRepository {
             request.value.clone()
         };
 
-        let mut transaction = self.pool.begin().await.map_err(|error| {
-            store_error("begin create deploy_env_variable transaction", error)
-        })?;
+        let mut transaction =
+            self.pool.begin().await.map_err(|error| {
+                store_error("begin create deploy_env_variable transaction", error)
+            })?;
         let locked = sqlx::query(
             "UPDATE deploy_site SET version = version
              WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL",
@@ -181,9 +182,10 @@ impl DeployRepository {
         .await
         .map_err(|error| store_error("insert deploy_env_variable", error))?;
 
-        transaction.commit().await.map_err(|error| {
-            store_error("commit create deploy_env_variable transaction", error)
-        })?;
+        transaction
+            .commit()
+            .await
+            .map_err(|error| store_error("commit create deploy_env_variable transaction", error))?;
 
         // 响应中机密值返回掩码，不回传明文/密文，避免泄漏。
         Ok(EnvVariableResponse {

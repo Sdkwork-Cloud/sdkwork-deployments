@@ -146,6 +146,12 @@ pub struct CreateDomainHostnameRequest {
     pub relative_name: String,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UpdateDomainHostnameRequest {
+    #[serde(rename = "relativeName")]
+    pub relative_name: String,
+}
+
 pub(crate) fn default_page() -> i32 {
     1
 }
@@ -643,6 +649,10 @@ pub struct AuditLogQuery {
     pub start_date: Option<String>,
     #[serde(default)]
     pub end_date: Option<String>,
+    /// Opaque keyset continuation token（PAGINATION_SPEC §6）；提供时走
+    /// cursor 模式（过滤参数不适用于 cursor 模式）。
+    #[serde(default)]
+    pub cursor: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

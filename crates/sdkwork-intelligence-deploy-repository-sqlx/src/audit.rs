@@ -12,15 +12,75 @@ impl DeployRepository {
         &self,
         tenant_id: Option<i64>,
         query: &AuditLogQuery,
+        cursor: Option<&str>,
     ) -> DeployServiceResult<AuditLogPage> {
-        let (page, page_size, offset) = pagination(query.page, query.page_size);
-
         let Some(tenant_id) = tenant_id else {
             // 审计日志不允许无租户上下文的全库枚举：调用方必须先解析租户。
             return Err(DeployServiceError::forbidden(
                 "tenant context is required for audit log listing",
             ));
         };
+
+        // keyset 模式（PAGINATION_SPEC §6）：审计日志是典型 growing 表，游标
+        // 分页 O(page size) 内存、无深 OFFSET、无全表 COUNT。
+        if let Some(cursor) = cursor {
+            if !(1..=200).contains(&query.page_size) {
+                return Err(DeployServiceError::validation(
+                    "page_size must be between 1 and 200",
+                ));
+            }
+            let (cursor_created_at, cursor_id) = crate::support::decode_keyset_cursor(cursor)
+                .ok_or_else(|| DeployServiceError::validation("cursor is invalid"))?;
+            let rows = sqlx::query(
+                "SELECT id, uuid, action, target_type, created_at
+                 FROM deploy_audit_log
+                 WHERE tenant_id = $1 AND (created_at, id) < ($2, $3)
+                 ORDER BY created_at DESC, id DESC LIMIT $4",
+            )
+            .bind(tenant_id)
+            .bind(&cursor_created_at)
+            .bind(cursor_id)
+            .bind(i64::from(query.page_size) + 1)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|error| store_error("list deploy_audit_log cursor", error))?;
+            let has_more = rows.len() > query.page_size as usize;
+            let page_rows = rows
+                .into_iter()
+                .take(query.page_size as usize)
+                .collect::<Vec<_>>();
+            let mut items = Vec::with_capacity(page_rows.len());
+            for row in &page_rows {
+                items.push(map_audit_log_row(row).map_err(|error| {
+                    DeployServiceError::Internal(format!("map deploy_audit_log row: {error}"))
+                })?);
+            }
+            let next_cursor = has_more
+                .then(|| {
+                    let last = page_rows.last().expect("non-empty page when has_more");
+                    let created_at: String = last.try_get("created_at").map_err(|error| {
+                        store_error("map deploy_audit_log cursor instant", error)
+                    })?;
+                    let id: i64 = last
+                        .try_get("id")
+                        .map_err(|error| store_error("map deploy_audit_log cursor id", error))?;
+                    Ok::<_, DeployServiceError>(crate::support::encode_keyset_cursor(
+                        &created_at,
+                        id,
+                    ))
+                })
+                .transpose()?;
+            return Ok(AuditLogPage {
+                items,
+                total: 0,
+                page: 0,
+                page_size: query.page_size,
+                next_cursor,
+                has_more: Some(has_more),
+            });
+        }
+
+        let (page, page_size, offset) = pagination(query.page, query.page_size);
 
         // OpenAPI 声明的过滤器逐项落地（PAGINATION_SPEC §4：声明即实现）。
         // 所有动态值经 bind 参数注入，WHERE 片段仅由固定子句拼接。
@@ -48,7 +108,8 @@ impl DeployRepository {
         }
         let where_clause = conditions.join(" AND ");
 
-        let count_sql = format!("SELECT COUNT(*) AS total FROM deploy_audit_log WHERE {where_clause}");
+        let count_sql =
+            format!("SELECT COUNT(*) AS total FROM deploy_audit_log WHERE {where_clause}");
         let mut count_query = sqlx::query(AssertSqlSafe(count_sql.as_str())).bind(tenant_id);
         if let Some(target_type) = query.target_type.as_deref().filter(|v| !v.is_empty()) {
             count_query = count_query.bind(target_type);
@@ -116,6 +177,8 @@ impl DeployRepository {
             total,
             page,
             page_size,
+            next_cursor: None,
+            has_more: None,
         })
     }
 

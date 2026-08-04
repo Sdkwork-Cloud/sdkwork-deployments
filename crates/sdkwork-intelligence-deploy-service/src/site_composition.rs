@@ -254,7 +254,9 @@ mod tests {
             _credentials: &ProviderRequestCredentials,
             _command: ValidateContentProviderResourceCommand,
         ) -> DeployServiceResult<ValidatedContentProviderResource> {
-            Err(DeployServiceError::Forbidden)
+            Err(DeployServiceError::forbidden(
+                "site composition update is forbidden for this tenant",
+            ))
         }
     }
 
@@ -348,7 +350,7 @@ mod tests {
         )
         .await
         .expect_err("provider rejection must abort before persistence");
-        assert!(matches!(error, DeployServiceError::Forbidden));
+        assert!(matches!(error, DeployServiceError::Forbidden(_)));
         assert_eq!(repository.calls.load(Ordering::SeqCst), 0);
     }
 }

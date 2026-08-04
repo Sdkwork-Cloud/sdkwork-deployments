@@ -143,6 +143,18 @@ pub trait DeployAppApi: Send + Sync {
         ))
     }
 
+    async fn update_domain_hostname(
+        &self,
+        _context: &DeployAppRequestContext,
+        _zone_id: &str,
+        _hostname_id: &str,
+        _request: &UpdateDomainHostnameRequest,
+    ) -> DeployServiceResult<DomainHostnameResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "domain hostname API is not implemented".to_owned(),
+        ))
+    }
+
     async fn verify_domain_hostname(
         &self,
         _context: &DeployAppRequestContext,

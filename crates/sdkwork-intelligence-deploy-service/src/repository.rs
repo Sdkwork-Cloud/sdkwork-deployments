@@ -88,6 +88,15 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         hostname_id: &str,
     ) -> DeployServiceResult<DomainHostnameResponse>;
 
+    async fn update_domain_hostname(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        zone_id: &str,
+        hostname_id: &str,
+        request: &sdkwork_deploy_contract::UpdateDomainHostnameRequest,
+    ) -> DeployServiceResult<DomainHostnameResponse>;
+
     async fn delete_domain_hostname(
         &self,
         tenant_id: i64,

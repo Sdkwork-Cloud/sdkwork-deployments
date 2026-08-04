@@ -4,11 +4,11 @@ use async_trait::async_trait;
 use sdkwork_deploy_contract::{
     is_deploy_package_artifact_type, CompleteDeployUploadSessionRequest, CreateArtifactRequest,
     CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDeploymentRequest,
-    CreateDomainHostnameRequest, CreateDomainZoneRequest,
-    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest,
-    DeployAppApi, DeployAppRequestContext, DeployServiceResult, DeployUploadSessionResponse,
-    ListDomainZonesQuery, ListSitesQuery, UpdateDomainZoneRequest, UpdateSiteRequest,
-    UPLOAD_SESSION_STATUS_CANCELLED, UPLOAD_SESSION_STATUS_COMPLETED,
+    CreateDomainHostnameRequest, CreateDomainZoneRequest, CreateEnvVariableRequest,
+    CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest, DeployAppApi,
+    DeployAppRequestContext, DeployServiceResult, DeployUploadSessionResponse,
+    ListDomainZonesQuery, ListSitesQuery, UpdateDomainHostnameRequest, UpdateDomainZoneRequest,
+    UpdateSiteRequest, UPLOAD_SESSION_STATUS_CANCELLED, UPLOAD_SESSION_STATUS_COMPLETED,
 };
 use sdkwork_deploy_drive_port::{DriveRequestCredentials, PrepareDeployUploadCommand};
 
@@ -301,6 +301,31 @@ impl DeployAppApi for DeployService {
             .await
     }
 
+    async fn update_domain_hostname(
+        &self,
+        context: &DeployAppRequestContext,
+        zone_id: &str,
+        hostname_id: &str,
+        request: &UpdateDomainHostnameRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::DomainHostnameResponse> {
+        let tenant_id = Self::require_tenant(context)?;
+        let zone = self
+            .repository
+            .retrieve_domain_zone(tenant_id, zone_id)
+            .await?;
+        let relative_name =
+            normalize_relative_hostname(&request.relative_name, &zone.apex_hostname)?;
+        self.repository
+            .update_domain_hostname(
+                tenant_id,
+                context.actor_id,
+                zone_id,
+                hostname_id,
+                &UpdateDomainHostnameRequest { relative_name },
+            )
+            .await
+    }
+
     async fn verify_domain_hostname(
         &self,
         context: &DeployAppRequestContext,
@@ -503,7 +528,7 @@ impl DeployAppApi for DeployService {
     ) -> DeployServiceResult<sdkwork_deploy_contract::DeploymentPage> {
         let tenant_id = Self::require_tenant(context)?;
         self.repository
-            .list_deployments(tenant_id, site_id, page, page_size, status)
+            .list_deployments(tenant_id, site_id, page, page_size, status, cursor)
             .await
     }
 
@@ -1037,7 +1062,9 @@ mod domain_zone_tests {
 
     #[test]
     fn relative_names_stay_inside_the_zone() {
-        for name in ["", ".", "@.x", "a..b", "a.b.", "foo.*", "*x", "*.a.*", "*.x..y"] {
+        for name in [
+            "", ".", "@.x", "a..b", "a.b.", "foo.*", "*x", "*.a.*", "*.x..y",
+        ] {
             assert!(
                 normalize_relative_hostname(name, "example.com").is_err(),
                 "{name}"

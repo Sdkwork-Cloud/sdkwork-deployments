@@ -13,8 +13,8 @@ use sdkwork_deploy_contract::{
     ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
     NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
     NodeClusterPage, NodeClusterResponse, ReleasePage, ReleaseResponse, ServerPage, ServerResponse,
-    SitePage, SiteResponse, UpdateDomainZoneRequest, UpdateNginxConfigRequest,
-    UpdateNodeClusterRequest, UpdateServerRequest, UpdateSiteRequest,
+    SitePage, SiteResponse, UpdateDomainHostnameRequest, UpdateDomainZoneRequest,
+    UpdateNginxConfigRequest, UpdateNodeClusterRequest, UpdateServerRequest, UpdateSiteRequest,
 };
 use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
 use sdkwork_deploy_web_port::RuntimeAssignmentReceipt;
@@ -121,6 +121,18 @@ impl DeployRepositoryPort for DeployRepository {
             .await
     }
 
+    async fn update_domain_hostname(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        zone_id: &str,
+        hostname_id: &str,
+        request: &UpdateDomainHostnameRequest,
+    ) -> DeployServiceResult<DomainHostnameResponse> {
+        self.update_domain_hostname_repo(tenant_id, actor_id, zone_id, hostname_id, request)
+            .await
+    }
+
     async fn domain_hostname_verification_challenge(
         &self,
         tenant_id: i64,
@@ -212,8 +224,9 @@ impl DeployRepositoryPort for DeployRepository {
         page: i32,
         page_size: i32,
         status: Option<i32>,
+        cursor: Option<&str>,
     ) -> DeployServiceResult<DeploymentPage> {
-        self.list_deployments_repo(tenant_id, site_id, page, page_size, status)
+        self.list_deployments_repo(tenant_id, site_id, page, page_size, status, cursor)
             .await
     }
 
@@ -542,8 +555,9 @@ impl DeployRepositoryPort for DeployRepository {
         &self,
         tenant_id: Option<i64>,
         query: &sdkwork_deploy_contract::AuditLogQuery,
+        cursor: Option<&str>,
     ) -> DeployServiceResult<AuditLogPage> {
-        self.list_audit_logs_repo(tenant_id, query).await
+        self.list_audit_logs_repo(tenant_id, query, cursor).await
     }
 
     async fn insert_audit_log(&self, command: InsertAuditLogCommand) -> DeployServiceResult<()> {

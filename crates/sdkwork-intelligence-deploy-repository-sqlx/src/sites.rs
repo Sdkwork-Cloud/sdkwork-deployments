@@ -182,10 +182,9 @@ impl DeployRepository {
         let existing = self.retrieve_site_repo(tenant_id, site_id).await?;
         // 乐观并发：以读取到的版本作为更新前提，并发修改时 0 行更新并按
         // 存在性区分为 conflict / not_found（对齐 Web repository 语义）。
-        let current_version: i64 = existing
-            .version
-            .parse()
-            .map_err(|error| DeployServiceError::Internal(format!("invalid site version: {error}")))?;
+        let current_version: i64 = existing.version.parse().map_err(|error| {
+            DeployServiceError::Internal(format!("invalid site version: {error}"))
+        })?;
         let name = request.name.as_ref().unwrap_or(&existing.name);
         let description = request
             .description
@@ -255,10 +254,9 @@ impl DeployRepository {
         status: i32,
     ) -> DeployServiceResult<SiteResponse> {
         let existing = self.retrieve_site_repo(tenant_id, site_id).await?;
-        let current_version: i64 = existing
-            .version
-            .parse()
-            .map_err(|error| DeployServiceError::Internal(format!("invalid site version: {error}")))?;
+        let current_version: i64 = existing.version.parse().map_err(|error| {
+            DeployServiceError::Internal(format!("invalid site version: {error}"))
+        })?;
         let now = now_rfc3339();
         let result = sqlx::query(
             "UPDATE deploy_site

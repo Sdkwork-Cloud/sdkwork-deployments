@@ -1,7 +1,7 @@
 use sdkwork_deploy_contract::{
     CreateDomainHostnameRequest, CreateDomainZoneRequest, DeployServiceError, DeployServiceResult,
     DomainHostnamePage, DomainHostnameResponse, DomainZonePage, DomainZoneResponse,
-    ListDomainZonesQuery, UpdateDomainZoneRequest,
+    ListDomainZonesQuery, UpdateDomainHostnameRequest, UpdateDomainZoneRequest,
 };
 use sdkwork_intelligence_deploy_service::{dns_txt_record_name, DomainVerificationChallenge};
 use sdkwork_utils_rust::crypto::sha256_hash;
@@ -340,6 +340,27 @@ impl DeployRepository {
         }
 
         let now = chrono::Utc::now();
+
+        // 并发防重：同一 domain 的 challenge 创建必须串行化。事务内先对
+        // domain 行加 `FOR UPDATE` 锁，再检查/创建 challenge，避免并发
+        // 请求同时通过 check-then-insert 产生多个活跃 challenge（对齐
+        // Web repository 的 domains.rs 行锁语义）。
+        let mut transaction = self.pool.begin().await.map_err(|error| {
+            store_error(
+                "begin deploy_domain_verification challenge transaction",
+                error,
+            )
+        })?;
+        sqlx::query(
+            "SELECT id FROM deploy_domain
+             WHERE id = $1 AND tenant_id = $2 FOR UPDATE",
+        )
+        .bind(domain_id)
+        .bind(tenant_id)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| store_error("lock deploy_domain for verification", error))?;
+
         let active = sqlx::query(
             "SELECT uuid, record_name, proof_sha256, expires_at
              FROM deploy_domain_verification
@@ -348,7 +369,7 @@ impl DeployRepository {
         )
         .bind(tenant_id)
         .bind(domain_id)
-        .fetch_optional(&self.pool)
+        .fetch_optional(&mut *transaction)
         .await
         .map_err(|error| store_error("load active deploy_domain_verification", error))?;
         if let Some(active) = active {
@@ -357,7 +378,7 @@ impl DeployRepository {
                     DeployServiceError::Internal(format!("map verification expiry: {error}"))
                 })?;
             if expires_at > now {
-                return Ok(DomainVerificationChallenge {
+                let result = DomainVerificationChallenge {
                     verification_id: Some(active.try_get("uuid").map_err(|error| {
                         DeployServiceError::Internal(format!("map verification uuid: {error}"))
                     })?),
@@ -371,7 +392,11 @@ impl DeployRepository {
                     })?),
                     token: None,
                     expires_at: Some(expires_at.to_rfc3339()),
-                });
+                };
+                transaction.commit().await.map_err(|error| {
+                    store_error("commit deploy_domain_verification challenge", error)
+                })?;
+                return Ok(result);
             }
             sqlx::query(
                 "UPDATE deploy_domain_verification
@@ -381,7 +406,7 @@ impl DeployRepository {
             .bind(tenant_id)
             .bind(domain_id)
             .bind(now)
-            .execute(&self.pool)
+            .execute(&mut *transaction)
             .await
             .map_err(|error| store_error("expire deploy_domain_verification", error))?;
         }
@@ -405,9 +430,13 @@ impl DeployRepository {
         .bind(&proof_sha256)
         .bind(now)
         .bind(expires_at)
-        .execute(&self.pool)
+        .execute(&mut *transaction)
         .await
         .map_err(|error| store_error("insert deploy_domain_verification", error))?;
+        transaction
+            .commit()
+            .await
+            .map_err(|error| store_error("commit deploy_domain_verification challenge", error))?;
         Ok(DomainVerificationChallenge {
             verification_id: Some(verification_id),
             hostname,
@@ -698,6 +727,134 @@ impl DeployRepository {
             return Err(DeployServiceError::not_found("domain hostname not found"));
         }
         Ok(())
+    }
+
+    pub(super) async fn update_domain_hostname_repo(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        zone_id: &str,
+        hostname_id: &str,
+        request: &UpdateDomainHostnameRequest,
+    ) -> DeployServiceResult<DomainHostnameResponse> {
+        // The apex hostname is owned by the zone itself and cannot be
+        // renamed; referenced hostnames keep their name so certificate
+        // coverage and application bindings stay valid.
+        let (apex_hostname, is_apex, references): (String, bool, i64) = sqlx::query_as(
+            "SELECT
+                z.apex_hostname,
+                d.hostname_ascii = z.apex_hostname,
+                (SELECT COUNT(*) FROM deploy_site_binding b WHERE b.domain_id = d.id AND b.deleted_at IS NULL)
+                + (SELECT COUNT(*) FROM deploy_certificate_identifier ci WHERE ci.domain_id = d.id)
+             FROM deploy_domain d JOIN deploy_dns_zone z ON z.id = d.zone_id
+             WHERE z.tenant_id = $1 AND z.uuid = $2 AND d.uuid = $3
+               AND z.deleted_at IS NULL AND d.deleted_at IS NULL",
+        )
+        .bind(tenant_id)
+        .bind(zone_id)
+        .bind(hostname_id)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|error| store_error("resolve deploy_domain for rename", error))?
+        .ok_or_else(|| DeployServiceError::not_found("domain hostname not found"))?;
+        if is_apex {
+            return Err(DeployServiceError::conflict(
+                "the apex hostname belongs to the zone and cannot be renamed",
+            ));
+        }
+        if references > 0 {
+            return Err(DeployServiceError::conflict(
+                "domain hostname is still bound to an application or certificate",
+            ));
+        }
+        let hostname = hostname_from_relative_name(&request.relative_name, &apex_hostname)?;
+        if hostname == apex_hostname {
+            return Err(DeployServiceError::conflict(
+                "the apex hostname belongs to the zone and cannot be recreated",
+            ));
+        }
+        // The renamed hostname must not collide with another zone apex or an
+        // existing hostname; the global unique index backs this up for
+        // concurrent writers.
+        let conflicts: (bool, bool) = sqlx::query_as(
+            "SELECT
+                EXISTS (SELECT 1 FROM deploy_dns_zone
+                        WHERE deleted_at IS NULL AND apex_hostname = $1),
+                EXISTS (SELECT 1 FROM deploy_domain
+                        WHERE deleted_at IS NULL AND hostname_ascii = $1)",
+        )
+        .bind(&hostname)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|error| store_error("check deploy_domain hostname conflicts", error))?;
+        if conflicts.0 {
+            return Err(DeployServiceError::conflict(
+                "hostname is already registered as a domain zone apex",
+            ));
+        }
+        if conflicts.1 {
+            return Err(DeployServiceError::conflict(
+                "hostname already exists in a domain zone",
+            ));
+        }
+        let hostname_type = if hostname.starts_with("*.") {
+            "WILDCARD"
+        } else {
+            "EXACT"
+        };
+        // Renaming changes the DNS name: the ownership proof for the old
+        // name is invalidated (verification resets to PENDING and any active
+        // challenge expires), so the new name must be verified again.
+        let mut transaction = self
+            .pool
+            .begin()
+            .await
+            .map_err(|error| store_error("begin rename deploy_domain transaction", error))?;
+        let result = sqlx::query(
+            "UPDATE deploy_domain d SET
+                hostname_ascii = $4, hostname_type = $5,
+                verification_status = 'PENDING', verified_at = NULL,
+                updated_by = $6, updated_at = CURRENT_TIMESTAMP, version = d.version + 1
+             FROM deploy_dns_zone z
+             WHERE d.zone_id = z.id AND z.tenant_id = $1 AND z.uuid = $2 AND d.uuid = $3
+               AND z.deleted_at IS NULL AND d.deleted_at IS NULL",
+        )
+        .bind(tenant_id)
+        .bind(zone_id)
+        .bind(hostname_id)
+        .bind(&hostname)
+        .bind(hostname_type)
+        .bind(actor_id)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| store_error("rename deploy_domain hostname", error))?;
+        if result.rows_affected() != 1 {
+            transaction
+                .rollback()
+                .await
+                .map_err(|error| store_error("rollback rename deploy_domain", error))?;
+            return Err(DeployServiceError::not_found("domain hostname not found"));
+        }
+        sqlx::query(
+            "UPDATE deploy_domain_verification v SET
+                status = 'EXPIRED', updated_at = CURRENT_TIMESTAMP, version = v.version + 1
+             FROM deploy_domain d JOIN deploy_dns_zone z ON z.id = d.zone_id
+             WHERE v.domain_id = d.id AND v.status IN ('PENDING', 'CHECKING')
+               AND z.tenant_id = $1 AND z.uuid = $2 AND d.uuid = $3
+               AND z.deleted_at IS NULL AND d.deleted_at IS NULL",
+        )
+        .bind(tenant_id)
+        .bind(zone_id)
+        .bind(hostname_id)
+        .execute(&mut *transaction)
+        .await
+        .map_err(|error| store_error("expire deploy_domain_verification on rename", error))?;
+        transaction
+            .commit()
+            .await
+            .map_err(|error| store_error("commit rename deploy_domain", error))?;
+        self.retrieve_domain_hostname_repo(tenant_id, zone_id, hostname_id)
+            .await
     }
 }
 

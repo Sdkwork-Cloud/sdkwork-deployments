@@ -7,6 +7,7 @@ use sqlx::{AssertSqlSafe, PgPool};
 /// derives the key from `SDKWORK_DEPLOY_SECRET_ENCRYPTION_KEY`; tests only
 /// exercise encryption round-trips and response masking, so a fixed key is
 /// sufficient and keeps assertions stable.
+#[allow(dead_code)]
 pub fn test_secret_key() -> [u8; 32] {
     *b"sdkwork-deploy-test-secret-00000"
 }

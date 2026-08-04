@@ -10,8 +10,14 @@ use crate::support::{
 };
 use crate::DeployRepository;
 
-const DEPLOYMENT_SELECT: &str = "d.uuid, d.site_id, d.status, d.deploy_type, d.created_at,
+const DEPLOYMENT_SELECT: &str = "d.id, d.uuid, d.site_id, d.status, d.deploy_type, d.created_at,
     r.uuid AS release_uuid";
+
+/// 幂等键以 SHA-256 哈希落库（对齐 Web repository：raw keys are never
+/// stored），客户端原始值仅在请求内存中短暂存在。
+fn idempotency_key_hash(key: &str) -> String {
+    crate::support::sha256_hex(key.trim())
+}
 
 impl DeployRepository {
     pub(super) async fn list_deployments_repo(
@@ -21,8 +27,82 @@ impl DeployRepository {
         page: i32,
         page_size: i32,
         status: Option<i32>,
+        cursor: Option<&str>,
     ) -> DeployServiceResult<DeploymentPage> {
         let site_internal_id = resolve_site_internal_id(&self.pool, tenant_id, site_id).await?;
+
+        // keyset 模式（PAGINATION_SPEC §6）：growing 表走 (created_at, id)
+        // 元组游标，O(page size) 内存、无深 OFFSET、无 COUNT。
+        if let Some(cursor) = cursor {
+            if !(1..=200).contains(&page_size) {
+                return Err(DeployServiceError::validation(
+                    "page_size must be between 1 and 200",
+                ));
+            }
+            let (cursor_created_at, cursor_id) = crate::support::decode_keyset_cursor(cursor)
+                .ok_or_else(|| DeployServiceError::validation("cursor is invalid"))?;
+            let query = format!(
+                "SELECT {DEPLOYMENT_SELECT}
+                 FROM deploy_deployment d
+                 LEFT JOIN deploy_release r ON r.id = d.release_id
+                 WHERE d.tenant_id = $1 AND d.site_id = $2
+                   AND ($3 IS NULL OR d.status = $3)
+                   AND (d.created_at, d.id) < ($4, $5)
+                 ORDER BY d.created_at DESC, d.id DESC LIMIT $6"
+            );
+            let fetch_size = i64::from(page_size) + 1;
+            let rows = sqlx::query(AssertSqlSafe(&*query))
+                .bind(tenant_id)
+                .bind(site_internal_id)
+                .bind(status)
+                .bind(&cursor_created_at)
+                .bind(cursor_id)
+                .bind(fetch_size)
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|error| store_error("list deploy_deployment cursor", error))?;
+            let has_more = rows.len() > page_size as usize;
+            let page_rows = rows
+                .into_iter()
+                .take(page_size as usize)
+                .collect::<Vec<_>>();
+            let mut items = Vec::with_capacity(page_rows.len());
+            for row in &page_rows {
+                items.push(
+                    map_deployment_row(&self.pool, tenant_id, row)
+                        .await
+                        .map_err(|error| {
+                            DeployServiceError::Internal(format!(
+                                "map deploy_deployment row: {error}"
+                            ))
+                        })?,
+                );
+            }
+            let next_cursor = has_more
+                .then(|| {
+                    let last = page_rows.last().expect("non-empty page when has_more");
+                    let created_at: String = last.try_get("created_at").map_err(|error| {
+                        store_error("map deploy_deployment cursor instant", error)
+                    })?;
+                    let id: i64 = last
+                        .try_get("id")
+                        .map_err(|error| store_error("map deploy_deployment cursor id", error))?;
+                    Ok::<_, DeployServiceError>(crate::support::encode_keyset_cursor(
+                        &created_at,
+                        id,
+                    ))
+                })
+                .transpose()?;
+            return Ok(DeploymentPage {
+                items,
+                total: 0,
+                page: 0,
+                page_size,
+                next_cursor,
+                has_more: Some(has_more),
+            });
+        }
+
         let (page, page_size, offset) = pagination(page, page_size);
 
         let (count_row, rows) = if let Some(status) = status {
@@ -102,6 +182,8 @@ impl DeployRepository {
             total,
             page,
             page_size,
+            next_cursor: None,
+            has_more: None,
         })
     }
 
@@ -112,14 +194,17 @@ impl DeployRepository {
         actor_id: Option<i64>,
         request: &CreateDeploymentRequest,
     ) -> DeployServiceResult<DeploymentResponse> {
-        if let Some(idempotency_key) = request.idempotency_key.as_deref() {
-            if !idempotency_key.trim().is_empty() {
-                if let Some(existing) = self
-                    .find_deployment_by_idempotency_key_repo(tenant_id, site_id, idempotency_key)
-                    .await?
-                {
-                    return Ok(existing);
-                }
+        let idempotency_key = request
+            .idempotency_key
+            .as_deref()
+            .filter(|value| !value.trim().is_empty())
+            .map(idempotency_key_hash);
+        if let Some(idempotency_key) = idempotency_key.as_deref() {
+            if let Some(existing) = self
+                .find_deployment_by_idempotency_key_repo(tenant_id, site_id, idempotency_key)
+                .await?
+            {
+                return Ok(existing);
             }
         }
 
@@ -186,18 +271,14 @@ impl DeployRepository {
         .bind(artifact_path.as_deref())
         .bind(artifact_size)
         .bind(artifact_hash.as_deref())
-        .bind(request.idempotency_key.as_deref())
+        .bind(idempotency_key.as_deref())
         .bind(&now)
         .execute(&self.pool)
         .await
         {
             // 幂等重放：并发提交下唯一约束先到者胜，重复提交返回已存在的部署
             // 记录而不是 409（对齐 Web repository 的 23505 兜底语义）。
-            if let Some(idempotency_key) = request
-                .idempotency_key
-                .as_deref()
-                .filter(|value| !value.trim().is_empty())
-            {
+            if let Some(idempotency_key) = idempotency_key.as_deref() {
                 if matches!(&error, SqlxError::Database(db) if db.is_unique_violation()) {
                     if let Some(existing) = self
                         .find_deployment_by_idempotency_key_repo(
@@ -225,6 +306,7 @@ impl DeployRepository {
         idempotency_key: &str,
     ) -> DeployServiceResult<Option<DeploymentResponse>> {
         let site_internal_id = resolve_site_internal_id(&self.pool, tenant_id, site_id).await?;
+        // 入参为已哈希的存储值（create 路径传入）；直接比较哈希列。
         let query = format!(
             "SELECT {DEPLOYMENT_SELECT}
              FROM deploy_deployment d
@@ -314,9 +396,10 @@ impl DeployRepository {
 
         // 回滚记录与源记录的状态推进必须在同一事务内完成：INSERT 失败时源
         // 记录不得停留在"已回滚"状态（对齐 Web repository 的单事务语义）。
-        let mut transaction = self.pool.begin().await.map_err(|error| {
-            store_error("begin rollback deploy_deployment transaction", error)
-        })?;
+        let mut transaction =
+            self.pool.begin().await.map_err(|error| {
+                store_error("begin rollback deploy_deployment transaction", error)
+            })?;
 
         sqlx::query(
             "UPDATE deploy_deployment
@@ -359,9 +442,10 @@ impl DeployRepository {
         .await
         .map_err(|error| store_error("insert rollback deploy_deployment", error))?;
 
-        transaction.commit().await.map_err(|error| {
-            store_error("commit rollback deploy_deployment transaction", error)
-        })?;
+        transaction
+            .commit()
+            .await
+            .map_err(|error| store_error("commit rollback deploy_deployment transaction", error))?;
 
         self.retrieve_deployment_repo(tenant_id, site_id, &uuid)
             .await

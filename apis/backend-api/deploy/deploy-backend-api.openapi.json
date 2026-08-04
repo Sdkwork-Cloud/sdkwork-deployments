@@ -43,7 +43,7 @@
             "$ref": "#/components/parameters/PageSizeParam"
           },
           {
-            "name": "siteId",
+            "name": "site_id",
             "in": "query",
             "schema": {
               "type": "string",
@@ -51,7 +51,7 @@
             }
           },
           {
-            "name": "configType",
+            "name": "config_type",
             "in": "query",
             "schema": {
               "type": "integer",
@@ -64,7 +64,7 @@
             }
           },
           {
-            "name": "isActive",
+            "name": "is_active",
             "in": "query",
             "schema": {
               "type": "boolean"
@@ -638,7 +638,7 @@
             "$ref": "#/components/parameters/PageSizeParam"
           },
           {
-            "name": "clusterId",
+            "name": "cluster_id",
             "in": "query",
             "schema": {
               "type": "string",
@@ -1085,7 +1085,7 @@
             "$ref": "#/components/parameters/PageSizeParam"
           },
           {
-            "name": "targetType",
+            "name": "target_type",
             "in": "query",
             "schema": {
               "type": "string"
@@ -1099,7 +1099,7 @@
             }
           },
           {
-            "name": "operatorId",
+            "name": "operator_id",
             "in": "query",
             "schema": {
               "type": "integer",
@@ -1107,7 +1107,7 @@
             }
           },
           {
-            "name": "startDate",
+            "name": "start_date",
             "in": "query",
             "schema": {
               "type": "string",
@@ -1115,11 +1115,20 @@
             }
           },
           {
-            "name": "endDate",
+            "name": "end_date",
             "in": "query",
             "schema": {
               "type": "string",
               "format": "date-time"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "不透明 keyset 续页令牌（PAGINATION_SPEC §6），提供时走 cursor 模式且过滤器不适用",
+            "schema": {
+              "type": "string",
+              "maxLength": 512
             }
           }
         ],

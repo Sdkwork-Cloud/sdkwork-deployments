@@ -56,7 +56,9 @@ pub async fn assemble_domain_certificate_blocks() -> Result<DomainCertificateBlo
     let router = Router::new()
         .merge(build_domain_management_router())
         .merge(build_certificate_management_router())
-        .with_state(AppState { api: service.clone() });
+        .with_state(AppState {
+            api: service.clone(),
+        });
     let route_manifest = domain_certificate_route_manifest();
     let domain_context_injectors = deploy_app_api_domain_context_injectors();
     let readiness_check: Arc<dyn ReadinessCheck> =

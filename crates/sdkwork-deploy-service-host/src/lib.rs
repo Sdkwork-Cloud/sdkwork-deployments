@@ -67,12 +67,9 @@ async fn repository_from_env() -> Result<Arc<DeployRepository>, String> {
     let (id_generator, node_lease) = snowflake_from_env().await?;
     let secret_key = secret_key_from_env()?;
     Ok(Arc::new(match node_lease {
-        Some(node_lease) => DeployRepository::new_with_node_lease(
-            pool,
-            id_generator,
-            node_lease,
-            secret_key,
-        ),
+        Some(node_lease) => {
+            DeployRepository::new_with_node_lease(pool, id_generator, node_lease, secret_key)
+        }
         None => DeployRepository::new(pool, id_generator, secret_key),
     }))
 }

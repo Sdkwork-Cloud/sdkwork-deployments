@@ -91,7 +91,7 @@ const params = {
   page: 1,
   page_size: 2,
   status: 0,
-  siteType: 1,
+  site_type: 1,
   keyword: 'keyword',
 };
 const result = await client.site.list(params);
@@ -106,6 +106,7 @@ const params = {
   page: 1,
   page_size: 2,
   status: 0,
+  cursor: 'cursor',
 };
 const result = await client.deployment.sites.deployments.list(siteId, params);
 ```

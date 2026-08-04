@@ -22,8 +22,7 @@ use sqlx::PgPool;
 /// legacy site-bound `deploy_domain` / path-based `deploy_certificate`
 /// shapes). Databases initialized from it (or any later pre-2026-07-31
 /// snapshot) are exactly the upgrade path the forward migrations serve.
-const LEGACY_BASELINE: &str =
-    include_str!("fixtures/legacy_deploy_baseline.sql");
+const LEGACY_BASELINE: &str = include_str!("fixtures/legacy_deploy_baseline.sql");
 
 /// Every table of the current deploy contract (contract/schema.yaml).
 const CONTRACT_TABLES: &[&str] = &[
@@ -68,16 +67,16 @@ const CONTRACT_TABLES: &[&str] = &[
 /// The deploy module lives at the sdkwork-deployments repository root.
 fn deploy_module() -> Arc<DefaultDatabaseModule> {
     let app_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-    Arc::new(
-        DefaultDatabaseModule::from_app_root(&app_root)
-            .expect("load deploy database module"),
-    )
+    Arc::new(DefaultDatabaseModule::from_app_root(&app_root).expect("load deploy database module"))
 }
 
 fn database_pool(pool: PgPool) -> DatabasePool {
-    DatabasePool::Postgres(pool, sdkwork_database_sqlx::PoolContext {
-        config: DatabaseConfig::default(),
-    })
+    DatabasePool::Postgres(
+        pool,
+        sdkwork_database_sqlx::PoolContext {
+            config: DatabaseConfig::default(),
+        },
+    )
 }
 
 async fn assert_contract_tables_present(pool: &PgPool) {
@@ -149,7 +148,8 @@ async fn fresh_database_init_and_migrate_converge_to_contract() {
         .await
         .expect("drift analyze");
     assert_eq!(
-        drift.summary.error, 0,
+        drift.summary.error,
+        0,
         "fresh schema must be drift-clean: {}",
         drift
             .diffs
@@ -209,7 +209,8 @@ async fn legacy_database_upgrades_through_forward_migrations() {
         .await
         .expect("drift analyze");
     assert_eq!(
-        drift.summary.error, 0,
+        drift.summary.error,
+        0,
         "upgraded legacy schema must be drift-clean: {}",
         drift
             .diffs
@@ -230,14 +231,8 @@ async fn convergence_is_idempotent_on_current_schema() {
     let orchestrator = LifecycleOrchestrator::new(database_pool(pool.clone()), module.clone())
         .with_applied_by("sdkwork-deploy-test");
 
-    orchestrator
-        .init()
-        .await
-        .expect("first init");
-    orchestrator
-        .migrate()
-        .await
-        .expect("first migrate");
+    orchestrator.init().await.expect("first init");
+    orchestrator.migrate().await.expect("first migrate");
     orchestrator
         .init()
         .await
@@ -251,7 +246,10 @@ async fn convergence_is_idempotent_on_current_schema() {
         .analyze()
         .await
         .expect("drift analyze");
-    assert_eq!(drift.summary.error, 0, "re-init schema must stay drift-clean");
+    assert_eq!(
+        drift.summary.error, 0,
+        "re-init schema must stay drift-clean"
+    );
 }
 
 async fn assert_column_absent(pool: &PgPool, table: &str, column: &str) {

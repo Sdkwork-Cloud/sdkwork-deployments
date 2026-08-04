@@ -66,7 +66,7 @@ export class SiteApi {
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
-      { name: 'siteType', value: params?.siteType, style: 'form', explode: true, allowReserved: false },
+      { name: 'site_type', value: params?.siteType, style: 'form', explode: true, allowReserved: false },
       { name: 'keyword', value: params?.keyword, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<{ items: SiteResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });

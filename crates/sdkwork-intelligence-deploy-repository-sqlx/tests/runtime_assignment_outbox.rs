@@ -306,7 +306,7 @@ async fn site_revision_activates_only_after_all_frozen_targets_are_active() {
     let repository = Arc::new(DeployRepository::new(
         pool.clone(),
         SnowflakeIdGenerator::new(1).expect("Snowflake generator"),
-    common::test_secret_key(),
+        common::test_secret_key(),
     ));
     let web_runtime = Arc::new(SelectiveActiveWebRuntime::new(7, ["snapshot-a".to_owned()]));
     let publisher = RuntimePublicationService::new(repository, web_runtime.clone());
@@ -394,7 +394,7 @@ async fn postgres_outbox_is_durable_idempotent_and_publishable() {
     let repository = Arc::new(DeployRepository::new(
         pool,
         SnowflakeIdGenerator::new(1).expect("Snowflake generator"),
-    common::test_secret_key(),
+        common::test_secret_key(),
     ));
     let publisher = RuntimePublicationService::new(
         repository.clone() as Arc<dyn DeployRuntimeAssignmentRepositoryPort>,
@@ -471,7 +471,7 @@ async fn provider_event_delivery_failure_prevents_web_publication() {
     let repository = Arc::new(DeployRepository::new(
         pool.clone(),
         SnowflakeIdGenerator::new(1).expect("Snowflake generator"),
-    common::test_secret_key(),
+        common::test_secret_key(),
     ));
     let web_runtime = Arc::new(CountingWebRuntime::default());
     let publisher = RuntimePublicationService::new_with_provider_event_delivery(
@@ -553,7 +553,7 @@ async fn active_assignment_renewal_is_cursor_bounded_and_failure_isolated() {
     let repository = Arc::new(DeployRepository::new(
         pool,
         SnowflakeIdGenerator::new(1).expect("Snowflake generator"),
-    common::test_secret_key(),
+        common::test_secret_key(),
     ));
     let web_runtime = Arc::new(SelectiveActiveWebRuntime::new(
         7,
@@ -690,7 +690,7 @@ async fn postgres_outbox_reuses_assignment_when_descriptor_order_changes() {
     let repository = Arc::new(DeployRepository::new(
         pool,
         SnowflakeIdGenerator::new(1).expect("Snowflake generator"),
-    common::test_secret_key(),
+        common::test_secret_key(),
     ));
     let publisher = RuntimePublicationService::new(
         repository as Arc<dyn DeployRuntimeAssignmentRepositoryPort>,
@@ -749,7 +749,7 @@ async fn postgres_concurrent_mutations_are_serialized_and_idempotent() {
     let repository = Arc::new(DeployRepository::new(
         pool.clone(),
         SnowflakeIdGenerator::new(1).expect("Snowflake generator"),
-    common::test_secret_key(),
+        common::test_secret_key(),
     ));
     let publisher = Arc::new(RuntimePublicationService::new(
         repository.clone() as Arc<dyn DeployRuntimeAssignmentRepositoryPort>,
@@ -839,7 +839,7 @@ async fn postgres_claim_lease_fences_stale_workers_and_stops_at_attempt_limit() 
     let repository = Arc::new(DeployRepository::new(
         pool.clone(),
         SnowflakeIdGenerator::new(1).expect("Snowflake generator"),
-    common::test_secret_key(),
+        common::test_secret_key(),
     ));
     let publisher = RuntimePublicationService::new(
         repository.clone() as Arc<dyn DeployRuntimeAssignmentRepositoryPort>,
@@ -966,7 +966,7 @@ async fn postgres_serializes_mutations_and_fences_assignment_leases() {
     let repository = Arc::new(DeployRepository::new(
         pool.clone(),
         SnowflakeIdGenerator::new(1).expect("Snowflake generator"),
-    common::test_secret_key(),
+        common::test_secret_key(),
     ));
     let publisher = Arc::new(RuntimePublicationService::new(
         repository.clone() as Arc<dyn DeployRuntimeAssignmentRepositoryPort>,

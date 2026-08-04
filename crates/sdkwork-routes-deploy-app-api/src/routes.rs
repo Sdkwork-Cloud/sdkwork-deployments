@@ -8,9 +8,9 @@ use axum::{
 use sdkwork_deploy_contract::{
     CompleteDeployUploadSessionRequest, CreateArtifactRequest, CreateCertificateRequest,
     CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainHostnameRequest,
-    CreateDomainZoneRequest, CreateEnvVariableRequest,
-    CreateHealthCheckRequest, CreateReleaseRequest, CreateSiteRequest, DeployAppApi,
-    DeployAppRequestContext, ListDomainZonesQuery, ListSitesQuery, UpdateDomainZoneRequest,
+    CreateDomainZoneRequest, CreateEnvVariableRequest, CreateHealthCheckRequest,
+    CreateReleaseRequest, CreateSiteRequest, DeployAppApi, DeployAppRequestContext,
+    ListDomainZonesQuery, ListSitesQuery, UpdateDomainHostnameRequest, UpdateDomainZoneRequest,
     UpdateSiteCompositionRequest, UpdateSiteRequest,
 };
 use sdkwork_routes_deploy_common::{
@@ -56,7 +56,9 @@ pub fn build_domain_management_router() -> Router<AppState> {
         )
         .route(
             paths::DOMAIN_ZONE_HOSTNAME,
-            get(retrieve_domain_hostname).delete(delete_domain_hostname),
+            get(retrieve_domain_hostname)
+                .patch(update_domain_hostname)
+                .delete(delete_domain_hostname),
         )
         .route(
             paths::DOMAIN_ZONE_HOSTNAME_VERIFY,
@@ -148,6 +150,8 @@ struct DeploymentListQuery {
     #[serde(default = "default_page_size")]
     page_size: i32,
     status: Option<i32>,
+    #[serde(default)]
+    cursor: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -306,6 +310,27 @@ async fn retrieve_domain_hostname(
             let item = state
                 .api
                 .retrieve_domain_hostname(&context, &zone_id, &hostname_id)
+                .await?;
+            ok_json(envelope::resource(item))
+        }
+        .await,
+    )
+}
+
+async fn update_domain_hostname(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((zone_id, hostname_id)): Path<(String, String)>,
+    Json(request): Json<UpdateDomainHostnameRequest>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let item = state
+                .api
+                .update_domain_hostname(&context, &zone_id, &hostname_id, &request)
                 .await?;
             ok_json(envelope::resource(item))
         }
@@ -567,9 +592,19 @@ async fn list_deployments(
                     query.page,
                     query.page_size,
                     query.status,
+                    query.cursor.as_deref(),
                 )
                 .await?;
-            ok_json(envelope::deployment_page(page))
+            if page.next_cursor.is_some() || page.has_more.is_some() {
+                ok_json(envelope::cursor_page(
+                    page.items,
+                    page.page_size,
+                    page.next_cursor,
+                    page.has_more,
+                ))
+            } else {
+                ok_json(envelope::deployment_page(page))
+            }
         }
         .await,
     )

@@ -9,6 +9,7 @@ import {
   type DomainZoneResponse,
   type PageInfo,
   type SdkworkDeployAppClient,
+  type UpdateDomainHostnameRequest,
   type UpdateDomainZoneRequest,
 } from "@sdkwork/deployments-app-sdk";
 import { createDriveAppClient, type SdkworkDriveAppClient } from "@sdkwork/drive-app-sdk";
@@ -31,6 +32,7 @@ export type {
   DomainVerifyResponse,
   DomainZoneResponse,
   PageInfo,
+  UpdateDomainHostnameRequest,
   UpdateDomainZoneRequest,
 };
 
@@ -47,6 +49,7 @@ export interface DeploymentsDeliveryService {
   deleteDomainZone(zoneId: string): Promise<void>;
   listDomainHostnames(zoneId: string, params?: { page?: number; pageSize?: number }): Promise<{ items: DomainHostnameResponse[]; pageInfo: PageInfo }>;
   createDomainHostname(zoneId: string, body: CreateDomainHostnameRequest): Promise<DomainHostnameResponse>;
+  updateDomainHostname(zoneId: string, hostnameId: string, body: UpdateDomainHostnameRequest): Promise<DomainHostnameResponse>;
   verifyDomainHostname(zoneId: string, hostnameId: string): Promise<DomainVerifyResponse>;
   deleteDomainHostname(zoneId: string, hostnameId: string): Promise<void>;
   listCertificates(params?: { page?: number; pageSize?: number }): Promise<{ items: CertificateResponse[]; pageInfo: PageInfo }>;
@@ -93,6 +96,7 @@ export function createDeploymentsDeliveryService(client: SdkworkDeployAppClient)
     deleteDomainZone: (zoneId) => zones.delete(zoneId),
     listDomainHostnames: (zoneId, params) => zones.hostnames.list(zoneId, params),
     createDomainHostname: (zoneId, body) => zones.hostnames.create(zoneId, body, idempotencyParams()),
+    updateDomainHostname: (zoneId, hostnameId, body) => zones.hostnames.update(zoneId, hostnameId, body),
     verifyDomainHostname: (zoneId, hostnameId) => zones.hostnames.verify(zoneId, hostnameId, idempotencyParams()),
     deleteDomainHostname: (zoneId, hostnameId) => zones.hostnames.delete(zoneId, hostnameId),
     listCertificates: (params) => client.certificate.list(params),

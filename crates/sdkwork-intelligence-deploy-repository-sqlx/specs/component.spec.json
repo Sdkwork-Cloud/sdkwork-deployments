@@ -48,7 +48,6 @@
     "commands": [
       "cargo test -p sdkwork-intelligence-deploy-repository-sqlx",
       "cargo test -p sdkwork-intelligence-deploy-repository-sqlx --test site_composition composition_is_atomic_idempotent_and_does_not_create_releases -- --exact",
-      "cargo test -p sdkwork-intelligence-deploy-repository-sqlx --test site_composition postgres_composition_matches_sqlite_transaction_semantics -- --ignored --exact",
       "cargo test -p sdkwork-intelligence-deploy-repository-sqlx postgres_serializes_mutations_and_fences_assignment_leases -- --ignored --exact"
     ]
   }

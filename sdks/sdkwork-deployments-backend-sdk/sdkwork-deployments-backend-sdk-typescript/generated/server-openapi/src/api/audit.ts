@@ -12,6 +12,7 @@ export interface AuditAuditLogsListParams {
   operatorId?: string;
   startDate?: string;
   endDate?: string;
+  cursor?: string;
 }
 
 export class AuditAuditLogsApi {
@@ -27,11 +28,12 @@ export class AuditAuditLogsApi {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
-      { name: 'targetType', value: params?.targetType, style: 'form', explode: true, allowReserved: false },
+      { name: 'target_type', value: params?.targetType, style: 'form', explode: true, allowReserved: false },
       { name: 'action', value: params?.action, style: 'form', explode: true, allowReserved: false },
-      { name: 'operatorId', value: params?.operatorId, style: 'form', explode: true, allowReserved: false },
-      { name: 'startDate', value: params?.startDate, style: 'form', explode: true, allowReserved: false },
-      { name: 'endDate', value: params?.endDate, style: 'form', explode: true, allowReserved: false },
+      { name: 'operator_id', value: params?.operatorId, style: 'form', explode: true, allowReserved: false },
+      { name: 'start_date', value: params?.startDate, style: 'form', explode: true, allowReserved: false },
+      { name: 'end_date', value: params?.endDate, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<{ items: AuditLogResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/audit_logs`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }

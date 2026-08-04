@@ -23,7 +23,7 @@ async fn test_repository() -> (DeployRepository, PgPool) {
         DeployRepository::new(
             pool.clone(),
             SnowflakeIdGenerator::new(2).expect("Snowflake generator"),
-        common::test_secret_key(),
+            common::test_secret_key(),
         ),
         pool,
     )
@@ -416,7 +416,7 @@ async fn postgres_composition_is_atomic_and_idempotent() {
     let repository = DeployRepository::new(
         pool.clone(),
         SnowflakeIdGenerator::new(3).expect("Snowflake generator"),
-    common::test_secret_key(),
+        common::test_secret_key(),
     );
 
     let first = repository

@@ -48,7 +48,7 @@ impl DeployRepository {
         .bind(request.content_length)
         .bind(request.checksum.as_deref())
         .bind(drive.status)
-        .bind(&request.idempotency_key)
+        .bind(&crate::support::sha256_hex(request.idempotency_key.trim()))
         .bind(&now)
         .bind(&now)
         .execute(&self.pool)
@@ -118,7 +118,7 @@ impl DeployRepository {
              WHERE tenant_id = $1 AND idempotency_key = $2 AND deleted_at IS NULL",
         )
         .bind(tenant_id)
-        .bind(idempotency_key)
+        .bind(crate::support::sha256_hex(idempotency_key.trim()))
         .fetch_optional(&self.pool)
         .await
         .map_err(|error| store_error("find deploy upload session ref", error))?;

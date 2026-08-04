@@ -102,6 +102,28 @@ pub fn nginx_status(item: NginxStatusResponse) -> SdkWorkResourceData<NginxStatu
     resource(item)
 }
 
+/// Cursor（keyset）模式 pageInfo（PAGINATION_SPEC §3/§6）：growing 集合
+/// （审计日志、部署记录）使用不透明 cursor 延续，避免深 OFFSET 与全表 COUNT。
+pub fn cursor_page<T>(
+    items: Vec<T>,
+    page_size: i32,
+    next_cursor: Option<String>,
+    has_more: Option<bool>,
+) -> SdkWorkPageData<T> {
+    SdkWorkPageData {
+        items,
+        page_info: PageInfo {
+            mode: PageMode::Cursor,
+            page: None,
+            page_size: Some(page_size),
+            total_items: None,
+            total_pages: None,
+            next_cursor,
+            has_more,
+        },
+    }
+}
+
 fn offset_page<T>(items: Vec<T>, page: i32, page_size: i32, total: i64) -> SdkWorkPageData<T> {
     let (page, page_size) = normalize_pagination(page, page_size);
     let total_pages = if page_size > 0 {

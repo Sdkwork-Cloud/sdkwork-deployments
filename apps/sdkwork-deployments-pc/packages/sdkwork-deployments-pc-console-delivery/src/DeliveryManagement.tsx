@@ -92,18 +92,20 @@ function DomainZoneList({ locale }: { locale: DeploymentsLocale }) {
   const closeAndReload = () => { setDialog(undefined); reload(); };
 
   return <section className="resource-page domain-page">
-    <header className="page-header">
-      <div><span className="eyebrow">DNS</span><h1>{t("domainsTitle")}</h1><p>{t("domainsSubtitle")}</p></div>
-      <button className="icon-button" type="button" disabled={busy} title={t("refresh")} onClick={reload}><RefreshCw size={18} /></button>
-    </header>
-    <div className="toolbar domain-toolbar">
-      <form className="search-box" onSubmit={(event) => { event.preventDefault(); setPage(1); setKeyword(searchDraft.trim()); }}>
-        <Search size={16} /><input aria-label={t("search")} value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder={t("search")} />
-      </form>
-      <div className="segmented-control" aria-label={t("status")}>
-        {(["ALL", "ACTIVE", "PAUSED"] as const).map((value) => <button key={value} type="button" aria-pressed={status === value} onClick={() => { setPage(1); setStatus(value); }}>{value === "ALL" ? t("all") : value === "ACTIVE" ? t("active") : t("paused")}</button>)}
+    <div className="resource-commandbar">
+      <div className="resource-identity"><h1>{t("domainsTitle")}</h1></div>
+      <div className="resource-query">
+        <form className="search-box" onSubmit={(event) => { event.preventDefault(); setPage(1); setKeyword(searchDraft.trim()); }}>
+          <Search size={16} /><input aria-label={t("search")} value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder={t("search")} />
+        </form>
+        <div className="segmented-control" aria-label={t("status")}>
+          {(["ALL", "ACTIVE", "PAUSED"] as const).map((value) => <button key={value} type="button" aria-pressed={status === value} onClick={() => { setPage(1); setStatus(value); }}>{value === "ALL" ? t("all") : value === "ACTIVE" ? t("active") : t("paused")}</button>)}
+        </div>
       </div>
-      <button className="command-button domain-primary-action" type="button" onClick={() => setDialog({ kind: "create" })}><Plus size={16} />{t("defineRoot")}</button>
+      <div className="actions">
+        <button className="icon-button" type="button" disabled={busy} title={t("refresh")} onClick={reload}><RefreshCw size={17} /></button>
+        <button className="command-button" type="button" onClick={() => setDialog({ kind: "create" })}><Plus size={16} />{t("defineRoot")}</button>
+      </div>
     </div>
     {error && <ErrorBanner message={error} t={t} />}
     <div className="table-frame domain-table-frame" aria-busy={busy}>
@@ -196,6 +198,7 @@ function DomainHostnameList({ locale }: { locale: DeploymentsLocale }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const [createOpen, setCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<DomainHostnameResponse>();
   const [deleteTarget, setDeleteTarget] = useState<DomainHostnameResponse>();
   const [verification, setVerification] = useState<DomainVerifyResponse>();
 
@@ -219,10 +222,10 @@ function DomainHostnameList({ locale }: { locale: DeploymentsLocale }) {
 
   return <section className="resource-page domain-page">
     <Link className="back-link" to="/console/domains"><ArrowLeft size={16} />{t("backDomains")}</Link>
-    <header className="page-header domain-detail-header">
-      <div><span className="eyebrow">DNS ZONE</span><h1>{zone?.apexHostname ?? "-"}</h1><p>{t("subdomainsSubtitle", { domain: zone?.apexHostname ?? "-" })}</p></div>
-      <div className="header-actions"><button className="icon-button" type="button" disabled={busy} title={t("refresh")} onClick={reload}><RefreshCw size={18} /></button><button className="command-button" type="button" onClick={() => setCreateOpen(true)}><Plus size={16} />{t("addHostname")}</button></div>
-    </header>
+    <div className="resource-commandbar">
+      <div className="resource-identity"><h1>{zone?.apexHostname ?? "-"}</h1></div>
+      <div className="actions"><button className="icon-button" type="button" disabled={busy} title={t("refresh")} onClick={reload}><RefreshCw size={17} /></button><button className="command-button" type="button" onClick={() => setCreateOpen(true)}><Plus size={16} />{t("addHostname")}</button></div>
+    </div>
     {zone && <div className="metric-strip">
       <Metric label={t("verification")} value={t("verifiedSummary", { verified: zone.verifiedHostnameCount, total: zone.hostnameCount })} />
       <Metric label={t("certificates")} value={zone.certificateCount} />
@@ -234,9 +237,12 @@ function DomainHostnameList({ locale }: { locale: DeploymentsLocale }) {
       <th>{t("hostname")}</th><th>{t("type")}</th><th>{t("verification")}</th><th>{t("certificateCoverage")}</th><th>{t("appBindings")}</th><th>{t("updated")}</th><th className="operations-column">{t("operations")}</th>
     </tr></thead><tbody>{hostnames.map((hostname) => {
       // The apex hostname row is owned by the zone itself and can only be
-      // removed together with the whole zone.
+      // removed together with the whole zone; hostnames with active
+      // certificate coverage or application bindings keep their name and
+      // cannot be renamed or deleted independently.
       const isApex = hostname.hostname === zone?.apexHostname;
-      const deleteBlocked = hasRelations(hostname.certificateCount, hostname.bindingCount);
+      const related = Number(hostname.certificateCount) > 0 || Number(hostname.bindingCount) > 0;
+      const renameBlocked = related || isApex;
       return <tr key={hostname.id}>
         <td><span className="hostname-cell"><Globe2 size={16} /><strong>{hostname.hostname}</strong></span></td>
         <td>{hostname.hostnameType === "WILDCARD" ? t("wildcard") : t("exact")}</td>
@@ -244,20 +250,22 @@ function DomainHostnameList({ locale }: { locale: DeploymentsLocale }) {
         <td>{hostname.certificateCount}</td><td>{hostname.bindingCount}</td><td>{formatDate(hostname.updatedAt, locale)}</td>
         <td><div className="row-actions">
           <button className="table-action" type="button" disabled={hostname.verificationStatus === "VERIFIED"} title={t("verify")} aria-label={`${t("verify")} ${hostname.hostname}`} onClick={() => { setBusy(true); void service.verifyDomainHostname(zoneId, hostname.id).then((result) => { setVerification(result); reload(); }).catch((cause) => setError(errorText(cause))).finally(() => setBusy(false)); }}><ShieldCheck size={16} /></button>
-          {hostname.verificationStatus === "VERIFIED" ? <Link className="table-action" to={`/console/certificates?zoneId=${encodeURIComponent(zoneId)}&domainId=${encodeURIComponent(hostname.id)}&hostname=${encodeURIComponent(hostname.hostname)}`} title={t("requestCertificate")} aria-label={`${t("requestCertificate")} ${hostname.hostname}`}><FileKey2 size={16} /></Link> : <button className="table-action" type="button" disabled title={t("requestCertificate")}><FileKey2 size={16} /></button>}
-          <button className="table-action danger-action" type="button" disabled={deleteBlocked || isApex} title={isApex ? t("apexDeleteBlocked") : deleteBlocked ? t("hostnameBlocked") : t("delete")} aria-label={`${t("delete")} ${hostname.hostname}`} onClick={() => setDeleteTarget(hostname)}><Trash2 size={16} /></button>
+          {hostname.verificationStatus === "VERIFIED" ? <Link className="table-action" to={`/console/certificates?zoneId=${encodeURIComponent(zoneId)}&domainId=${encodeURIComponent(hostname.id)}&hostname=${encodeURIComponent(hostname.hostname)}`} title={t("requestCertificate")} aria-label={`${t("requestCertificate")} ${hostname.hostname}`}><FileKey2 size={16} /></Link> : <button className="table-action" type="button" disabled title={t("requestCertificate")} aria-label={`${t("requestCertificate")} ${hostname.hostname}`}><FileKey2 size={16} /></button>}
+          <button className="table-action" type="button" disabled={renameBlocked} title={isApex ? t("apexEditBlocked") : related ? t("renameBlocked") : t("editHostname")} aria-label={`${t("editHostname")} ${hostname.hostname}`} onClick={() => setEditTarget(hostname)}><Pencil size={16} /></button>
+          <button className="table-action danger-action" type="button" disabled={related || isApex} title={isApex ? t("apexDeleteBlocked") : related ? t("hostnameBlocked") : t("delete")} aria-label={`${t("delete")} ${hostname.hostname}`} onClick={() => setDeleteTarget(hostname)}><Trash2 size={16} /></button>
         </div></td>
       </tr>;
     })}</tbody></table>{!busy && hostnames.length === 0 && <div className="empty-state"><Globe2 size={24} />{t("noHostnames")}</div>}</div>
     <Pagination page={page} pageInfo={pageInfo} busy={busy} setPage={setPage} t={t} />
     {createOpen && <HostnameFormDialog t={t} close={() => setCreateOpen(false)} submit={async (relativeName) => { await service.createDomainHostname(zoneId, { relativeName }); setCreateOpen(false); reload(); }} />}
+    {editTarget && <HostnameFormDialog hostname={editTarget} t={t} close={() => setEditTarget(undefined)} submit={async (relativeName) => { await service.updateDomainHostname(zoneId, editTarget.id, { relativeName }); setEditTarget(undefined); reload(); }} />}
     {deleteTarget && <ConfirmDialog title={t("deleteHostnameTitle")} message={t("deleteHostnameConfirm")} dangerous t={t} close={() => setDeleteTarget(undefined)} submit={async () => { await service.deleteDomainHostname(zoneId, deleteTarget.id); setDeleteTarget(undefined); reload(); }} />}
     {verification && <VerificationDialog result={verification} t={t} close={() => setVerification(undefined)} />}
   </section>;
 }
 
-function HostnameFormDialog({ close, submit, t }: { close(): void; submit(relativeName: string): Promise<void>; t: Translator }) {
-  const [relativeName, setRelativeName] = useState("");
+function HostnameFormDialog({ close, hostname, submit, t }: { close(): void; hostname?: DomainHostnameResponse; submit(relativeName: string): Promise<void>; t: Translator }) {
+  const [relativeName, setRelativeName] = useState(hostname?.relativeName ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   async function onSubmit(event: FormEvent) {
@@ -266,9 +274,9 @@ function HostnameFormDialog({ close, submit, t }: { close(): void; submit(relati
     setBusy(true); setError(undefined);
     try { await submit(relativeName.trim().toLowerCase()); } catch (cause) { setError(errorText(cause)); setBusy(false); }
   }
-  return <Modal close={close} closeLabel={t("close")} title={t("addHostnameTitle")}><form onSubmit={(event) => void onSubmit(event)}>
-    <div className="form-grid single-column"><label><span>{t("relativeName")}</span><input autoFocus required value={relativeName} onChange={(event) => setRelativeName(event.target.value)} placeholder="@ / www / api.eu / *" autoComplete="off" /><small className="form-hint">{t("relativeNameHint")}</small></label></div>
-    {error && <ErrorBanner message={error} t={t} />}<DialogFooter busy={busy} close={close} submitLabel={t("create")} t={t} />
+  return <Modal close={close} closeLabel={t("close")} title={hostname ? t("editHostnameTitle") : t("addHostnameTitle")}><form onSubmit={(event) => void onSubmit(event)}>
+    <div className="form-grid single-column"><label><span>{t("relativeName")}</span><input autoFocus required value={relativeName} onChange={(event) => setRelativeName(event.target.value)} placeholder="@ / www / api.eu / *" autoComplete="off" /><small className="form-hint">{hostname ? t("renameHint") : t("relativeNameHint")}</small></label></div>
+    {error && <ErrorBanner message={error} t={t} />}<DialogFooter busy={busy} close={close} submitLabel={hostname ? t("save") : t("create")} t={t} />
   </form></Modal>;
 }
 
@@ -324,7 +332,10 @@ export function CertificateManagementPage({ locale }: DeploymentsResourcePagePro
   const reload = () => setRefreshVersion((value) => value + 1);
   const closeCreate = () => { setCreateOpen(false); setSearchParams({}, { replace: true }); };
   return <section className="resource-page domain-page">
-    <header className="page-header"><div><span className="eyebrow">TLS</span><h1>{t("certificatesTitle")}</h1><p>{t("certificatesSubtitle")}</p></div><div className="header-actions"><button className="icon-button" type="button" disabled={busy} title={t("refresh")} onClick={reload}><RefreshCw size={18} /></button><button className="command-button" type="button" onClick={() => setCreateOpen(true)}><Plus size={16} />{t("requestCertificate")}</button></div></header>
+    <div className="resource-commandbar">
+      <div className="resource-identity"><h1>{t("certificatesTitle")}</h1></div>
+      <div className="actions"><button className="icon-button" type="button" disabled={busy} title={t("refresh")} onClick={reload}><RefreshCw size={17} /></button><button className="command-button" type="button" onClick={() => setCreateOpen(true)}><Plus size={16} />{t("requestCertificate")}</button></div>
+    </div>
     {error && <ErrorBanner message={error} t={t} />}
     <div className="table-frame domain-table-frame certificate-table-frame" aria-busy={busy}><table className="domain-table"><thead><tr>
       <th>{t("certificates")}</th><th>{t("identifiers")}</th><th>{t("status")}</th><th>{t("keyAlgorithm")}</th><th>{t("caProfile")}</th><th>{t("expiration")}</th><th>{t("renewal")}</th><th className="operations-column">{t("operations")}</th>
@@ -465,8 +476,4 @@ function formatDate(value: string, locale: DeploymentsLocale): string {
 
 function optionalText(value: string): string | undefined {
   return value.trim() || undefined;
-}
-
-function hasRelations(...values: string[]): boolean {
-  return values.some((value) => value !== "0");
 }

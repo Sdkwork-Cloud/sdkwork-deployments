@@ -3,6 +3,7 @@ mod common;
 use sdkwork_database_id::SnowflakeIdGenerator;
 use sdkwork_deploy_contract::{
     CreateDomainHostnameRequest, CreateDomainZoneRequest, ListDomainZonesQuery,
+    UpdateDomainHostnameRequest,
 };
 use sdkwork_intelligence_deploy_repository_sqlx::DeployRepository;
 use sdkwork_intelligence_deploy_service::DeployRepositoryPort;
@@ -14,7 +15,7 @@ async fn postgres_domain_zone_lifecycle_enforces_resource_boundaries() {
     let repository = DeployRepository::new(
         pool,
         SnowflakeIdGenerator::new(4).expect("Snowflake generator"),
-    common::test_secret_key(),
+        common::test_secret_key(),
     );
     let apex = format!(
         "zone{}.dev",
@@ -80,6 +81,82 @@ async fn postgres_domain_zone_lifecycle_enforces_resource_boundaries() {
         first_challenge.verification_id
     );
 
+    // Renaming keeps the hostname in the zone but resets ownership
+    // verification and expires the previous challenge (the TXT record
+    // changes with the DNS name).
+    let renamed = repository
+        .update_domain_hostname(
+            7,
+            Some(11),
+            &zone.id,
+            &hostname.id,
+            &UpdateDomainHostnameRequest {
+                relative_name: "docs2".to_owned(),
+            },
+        )
+        .await
+        .expect("rename child hostname");
+    assert_eq!(renamed.hostname, format!("docs2.{apex}"));
+    assert_eq!(renamed.hostname_type, "EXACT");
+    assert_eq!(renamed.verification_status, "PENDING");
+    assert!(renamed.verified_at.is_none());
+    let renamed_challenge = repository
+        .domain_hostname_verification_challenge(7, &zone.id, &hostname.id)
+        .await
+        .expect("challenge after rename");
+    assert_ne!(
+        renamed_challenge.verification_id, first_challenge.verification_id,
+        "rename must expire the old verification challenge"
+    );
+    assert!(
+        renamed_challenge
+            .record_name
+            .as_deref()
+            .is_some_and(|record| record.contains("docs2")),
+        "challenge record must target the renamed hostname"
+    );
+
+    // The apex hostname is owned by the zone and cannot be renamed, and a
+    // hostname cannot be renamed back onto the apex.
+    let apex_hostname = repository
+        .list_domain_hostnames(7, &zone.id, 1, 20)
+        .await
+        .expect("list apex hostname")
+        .items
+        .into_iter()
+        .find(|item| item.relative_name == "@")
+        .expect("apex hostname");
+    assert!(
+        repository
+            .update_domain_hostname(
+                7,
+                Some(11),
+                &zone.id,
+                &apex_hostname.id,
+                &UpdateDomainHostnameRequest {
+                    relative_name: "renamed-apex".to_owned(),
+                },
+            )
+            .await
+            .is_err(),
+        "apex hostname must not be renamed"
+    );
+    assert!(
+        repository
+            .update_domain_hostname(
+                7,
+                Some(11),
+                &zone.id,
+                &hostname.id,
+                &UpdateDomainHostnameRequest {
+                    relative_name: "@".to_owned(),
+                },
+            )
+            .await
+            .is_err(),
+        "hostname must not be renamed onto the zone apex"
+    );
+
     assert!(repository.delete_domain_zone(7, &zone.id).await.is_err());
     repository
         .delete_domain_hostname(7, &zone.id, &hostname.id)
@@ -93,14 +170,17 @@ async fn postgres_domain_zone_lifecycle_enforces_resource_boundaries() {
         .into_iter()
         .find(|item| item.relative_name == "@")
         .expect("apex hostname");
-    repository
-        .delete_domain_hostname(7, &zone.id, &apex_hostname.id)
-        .await
-        .expect("delete unbound apex hostname");
+    assert!(
+        repository
+            .delete_domain_hostname(7, &zone.id, &apex_hostname.id)
+            .await
+            .is_err(),
+        "the apex hostname belongs to the zone and cannot be deleted independently"
+    );
     repository
         .delete_domain_zone(7, &zone.id)
         .await
-        .expect("delete empty root domain zone");
+        .expect("delete root domain zone with its apex hostname");
 
     let recreated = repository
         .create_domain_zone(
@@ -124,10 +204,13 @@ async fn postgres_domain_zone_lifecycle_enforces_resource_boundaries() {
         .into_iter()
         .next()
         .expect("recreated apex hostname");
-    repository
-        .delete_domain_hostname(7, &recreated.id, &recreated_apex.id)
-        .await
-        .expect("delete recreated apex hostname");
+    assert!(
+        repository
+            .delete_domain_hostname(7, &recreated.id, &recreated_apex.id)
+            .await
+            .is_err(),
+        "the recreated apex hostname belongs to the zone and cannot be deleted independently"
+    );
     repository
         .delete_domain_zone(7, &recreated.id)
         .await

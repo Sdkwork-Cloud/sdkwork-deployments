@@ -197,3 +197,31 @@ pub(crate) fn decode_keyset_cursor(token: &str) -> Option<(String, i64)> {
     }
     Some((created_at.to_string(), id))
 }
+
+#[cfg(test)]
+mod cursor_tests {
+    use super::{decode_keyset_cursor, encode_keyset_cursor};
+
+    #[test]
+    fn keyset_cursor_round_trips() {
+        let token = encode_keyset_cursor("2026-08-03T10:00:00.123Z", 42);
+        let decoded = decode_keyset_cursor(&token).expect("valid cursor decodes");
+        assert_eq!(decoded, ("2026-08-03T10:00:00.123Z".to_string(), 42));
+    }
+
+    #[test]
+    fn keyset_cursor_is_opaque_and_fails_closed() {
+        assert!(decode_keyset_cursor("").is_none());
+        assert!(decode_keyset_cursor("not-base64!").is_none());
+        assert!(decode_keyset_cursor("v1|2026-08-03T10:00:00Z|not-a-number").is_none());
+        assert!(decode_keyset_cursor("v1|2026-08-03T10:00:00Z|0").is_none());
+        assert!(decode_keyset_cursor("v1|2026-08-03T10:00:00Z|-5").is_none());
+        assert!(decode_keyset_cursor("v1|not-a-date|1").is_none());
+        assert!(decode_keyset_cursor("v2|2026-08-03T10:00:00Z|1").is_none());
+        assert!(decode_keyset_cursor(&"x".repeat(600)).is_none());
+        // 编码结果不得包含客户端可解析的明文分隔结构（opaque）。
+        let token = encode_keyset_cursor("2026-08-03T10:00:00Z", 7);
+        assert!(!token.contains('|'));
+        assert!(!token.contains("2026-08-03"));
+    }
+}

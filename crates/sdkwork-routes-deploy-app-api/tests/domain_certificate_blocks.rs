@@ -19,6 +19,7 @@ fn block_paths() -> Vec<(HttpMethod, &'static str)> {
         (HttpMethod::Get, paths::DOMAIN_ZONE_HOSTNAMES),
         (HttpMethod::Post, paths::DOMAIN_ZONE_HOSTNAMES),
         (HttpMethod::Get, paths::DOMAIN_ZONE_HOSTNAME),
+        (HttpMethod::Patch, paths::DOMAIN_ZONE_HOSTNAME),
         (HttpMethod::Delete, paths::DOMAIN_ZONE_HOSTNAME),
         (HttpMethod::Post, paths::DOMAIN_ZONE_HOSTNAME_VERIFY),
         (HttpMethod::Get, paths::CERTIFICATES),
@@ -41,7 +42,10 @@ fn domain_certificate_manifest_covers_exactly_the_block_route_registrations() {
         .collect();
     actual.sort_unstable_by(|left, right| (left.1, left.0 as u8).cmp(&(right.1, right.0 as u8)));
 
-    assert_eq!(actual, expected, "executable block routes and manifest inventory diverged");
+    assert_eq!(
+        actual, expected,
+        "executable block routes and manifest inventory diverged"
+    );
 }
 
 #[test]

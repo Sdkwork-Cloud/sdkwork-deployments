@@ -347,6 +347,56 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+    patch:
+      operationId: domainZones.hostnames.update
+      summary: Rename a domain hostname
+      tags:
+        - domain
+      security:
+        - AuthToken: []
+          AccessToken: []
+      x-sdkwork-permission: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDomainHostnameRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        required: [item]
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/DomainHostnameResponse'
+        '404':
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: "资源冲突"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     delete:
       operationId: domainZones.hostnames.delete
       summary: Delete an unbound domain hostname
@@ -437,7 +487,7 @@ paths:
               - 1
               - 2
               - 3
-        - name: siteType
+        - name: site_type
           in: query
           schema:
             type: integer
@@ -862,6 +912,13 @@ paths:
               - 3
               - 4
               - 5
+              - 6
+        - name: cursor
+          in: query
+          description: "不透明 keyset 续页令牌（PAGINATION_SPEC §6），提供时走 cursor 模式"
+          schema:
+            type: string
+            maxLength: 512
       responses:
         '200':
           description: "成功"
@@ -2520,6 +2577,20 @@ components:
             (the "*" label is accepted only as the leftmost label). Names are
             ASCII-only after IDNA conversion; leading/trailing dots, empty
             labels, and hyphen-edged labels are rejected.
+    UpdateDomainHostnameRequest:
+      type: object
+      additionalProperties: false
+      required: [relativeName]
+      properties:
+        relativeName:
+          type: string
+          minLength: 1
+          maxLength: 253
+          description: >
+            New relative name for the hostname, with the same syntax as create.
+            Renaming invalidates the ownership proof (verification returns to
+            PENDING) and is rejected while the hostname is bound to an
+            application or a certificate, or when it targets the zone apex.
     DomainHostnameResponse:
       type: object
       additionalProperties: false

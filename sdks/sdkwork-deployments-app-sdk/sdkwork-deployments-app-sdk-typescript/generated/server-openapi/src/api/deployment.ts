@@ -7,7 +7,8 @@ import type { CreateDeploymentRequest, DeploymentResponse, PageInfo } from '../t
 export interface DeploymentSitesDeploymentsListParams {
   page?: number;
   pageSize?: number;
-  status?: 0 | 1 | 2 | 3 | 4 | 5;
+  status?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  cursor?: string;
 }
 
 export interface DeploymentSitesDeploymentsCreateParams {
@@ -32,6 +33,7 @@ export class DeploymentSitesDeploymentsApi {
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'status', value: params?.status, style: 'form', explode: true, allowReserved: false },
+      { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<{ items: DeploymentResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/sites/${serializePathParameter(siteId, { name: 'siteId', style: 'simple', explode: false })}/deployments`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }

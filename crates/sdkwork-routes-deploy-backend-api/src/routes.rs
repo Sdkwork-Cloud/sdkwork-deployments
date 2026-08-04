@@ -6,8 +6,8 @@ use axum::{
 };
 use sdkwork_deploy_contract::{
     AuditLogQuery, CreateNginxConfigRequest, CreateNodeClusterRequest, CreateServerRequest,
-    DeployBackendApi, DeployBackendRequestContext, ListNginxConfigsQuery,
-    UpdateNginxConfigRequest, UpdateNodeClusterRequest, UpdateServerRequest,
+    DeployBackendApi, DeployBackendRequestContext, ListNginxConfigsQuery, UpdateNginxConfigRequest,
+    UpdateNodeClusterRequest, UpdateServerRequest,
 };
 use sdkwork_routes_deploy_common::{envelope, finish_api_json, finish_created_api_json, ok_json};
 use sdkwork_web_core::WebRequestContext;
@@ -349,8 +349,20 @@ async fn list_audit_logs(
         &ctx,
         async {
             let context = require_backend_context(context)?;
-            let page = state.api.list_audit_logs(&context, &query).await?;
-            ok_json(envelope::audit_log_page(page))
+            let page = state
+                .api
+                .list_audit_logs(&context, &query, query.cursor.as_deref())
+                .await?;
+            if page.next_cursor.is_some() || page.has_more.is_some() {
+                ok_json(envelope::cursor_page(
+                    page.items,
+                    page.page_size,
+                    page.next_cursor,
+                    page.has_more,
+                ))
+            } else {
+                ok_json(envelope::audit_log_page(page))
+            }
         }
         .await,
     )

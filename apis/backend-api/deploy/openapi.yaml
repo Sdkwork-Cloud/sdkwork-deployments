@@ -24,12 +24,12 @@ paths:
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
-        - name: siteId
+        - name: site_id
           in: query
           schema:
             type: string
             format: uuid
-        - name: configType
+        - name: config_type
           in: query
           schema:
             type: integer
@@ -38,7 +38,7 @@ paths:
               - 2
               - 3
               - 4
-        - name: isActive
+        - name: is_active
           in: query
           schema:
             type: boolean
@@ -336,7 +336,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
-        - name: clusterId
+        - name: cluster_id
           in: query
           schema:
             type: string
@@ -570,7 +570,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
-        - name: targetType
+        - name: target_type
           in: query
           schema:
             type: string
@@ -578,21 +578,27 @@ paths:
           in: query
           schema:
             type: string
-        - name: operatorId
+        - name: operator_id
           in: query
           schema:
             type: integer
             format: int64
-        - name: startDate
+        - name: start_date
           in: query
           schema:
             type: string
             format: date-time
-        - name: endDate
+        - name: end_date
           in: query
           schema:
             type: string
             format: date-time
+        - name: cursor
+          in: query
+          description: "不透明 keyset 续页令牌（PAGINATION_SPEC §6），提供时走 cursor 模式且过滤器不适用"
+          schema:
+            type: string
+            maxLength: 512
       responses:
         '200':
           description: 成功

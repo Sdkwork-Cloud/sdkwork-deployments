@@ -75,7 +75,7 @@ const result = await client.nginx.runtime.retrieve();
 const params = {
   page: 1,
   page_size: 2,
-  clusterId: 'clusterId',
+  cluster_id: 'cluster_id',
 };
 const result = await client.server.list(params);
 ```
@@ -98,11 +98,12 @@ const result = await client.cluster.list(params);
 const params = {
   page: 1,
   page_size: 2,
-  targetType: 'targetType',
+  target_type: 'target_type',
   action: 'action',
-  operatorId: 5,
-  startDate: 'startDate',
-  endDate: 'endDate',
+  operator_id: 5,
+  start_date: 'start_date',
+  end_date: 'end_date',
+  cursor: 'cursor',
 };
 const result = await client.audit.auditLogs.list(params);
 ```

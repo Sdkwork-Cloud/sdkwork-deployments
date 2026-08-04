@@ -20,15 +20,15 @@ fn authorized_request(path: &str, permission: &str) -> Request<Body> {
         .uri(path)
         .header(
             header::AUTHORIZATION,
-            format!("Bearer {}", auth_token_jwt_with_permissions(
-                "42",
-                "7",
-                "session-1",
-                "web",
-                permission,
-            )),
+            format!(
+                "Bearer {}",
+                auth_token_jwt_with_permissions("42", "7", "session-1", "web", permission,)
+            ),
         )
-        .header("access-token", access_token_jwt("42", "7", "session-1", "web"))
+        .header(
+            "access-token",
+            access_token_jwt("42", "7", "session-1", "web"),
+        )
         .body(Body::empty())
         .unwrap()
 }
@@ -47,7 +47,10 @@ async fn matched_dependency_error_preserves_operation_identity() {
     );
 
     let response = app
-        .oneshot(authorized_request("/app/v3/api/domain_zones", "deploy.domainZones.read"))
+        .oneshot(authorized_request(
+            "/app/v3/api/domain_zones",
+            "deploy.domainZones.read",
+        ))
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
@@ -181,6 +184,7 @@ impl DeployAppApi for StubAppApi {
         _page: i32,
         _page_size: i32,
         _status: Option<i32>,
+        _cursor: Option<&str>,
     ) -> DeployServiceResult<sdkwork_deploy_contract::DeploymentPage> {
         Err(sdkwork_deploy_contract::DeployServiceError::Internal(
             "not implemented".into(),

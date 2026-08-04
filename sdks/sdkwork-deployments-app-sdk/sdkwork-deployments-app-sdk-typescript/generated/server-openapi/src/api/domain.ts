@@ -1,7 +1,7 @@
 import { appApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { CreateDomainHostnameRequest, CreateDomainZoneRequest, DomainHostnameResponse, DomainVerifyResponse, DomainZoneResponse, PageInfo, UpdateDomainZoneRequest } from '../types';
+import type { CreateDomainHostnameRequest, CreateDomainZoneRequest, DomainHostnameResponse, DomainVerifyResponse, DomainZoneResponse, PageInfo, UpdateDomainHostnameRequest, UpdateDomainZoneRequest } from '../types';
 
 
 export interface DomainDomainZonesHostnamesListParams {
@@ -48,6 +48,11 @@ export class DomainDomainZonesHostnamesApi {
 /** Retrieve a domain hostname */
   async retrieve(zoneId: string, hostnameId: string, requestOptions?: ApiRequestOptions): Promise<DomainHostnameResponse> {
     return this.client.request<DomainHostnameResponse>(appApiPath(`/domain_zones/${serializePathParameter(zoneId, { name: 'zoneId', style: 'simple', explode: false })}/hostnames/${serializePathParameter(hostnameId, { name: 'hostnameId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+  }
+
+/** Rename a domain hostname */
+  async update(zoneId: string, hostnameId: string, body: UpdateDomainHostnameRequest, requestOptions?: ApiRequestOptions): Promise<DomainHostnameResponse> {
+    return this.client.request<DomainHostnameResponse>(appApiPath(`/domain_zones/${serializePathParameter(zoneId, { name: 'zoneId', style: 'simple', explode: false })}/hostnames/${serializePathParameter(hostnameId, { name: 'hostnameId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PATCH' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Delete an unbound domain hostname */

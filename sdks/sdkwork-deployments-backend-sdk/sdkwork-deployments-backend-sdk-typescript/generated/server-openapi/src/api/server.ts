@@ -27,7 +27,7 @@ export class ServerApi {
     const query = buildQueryString([
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
-      { name: 'clusterId', value: params?.clusterId, style: 'form', explode: true, allowReserved: false },
+      { name: 'cluster_id', value: params?.clusterId, style: 'form', explode: true, allowReserved: false },
     ]);
     return this.client.request<{ items: ServerResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/servers`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }

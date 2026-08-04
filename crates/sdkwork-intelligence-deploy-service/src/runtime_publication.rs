@@ -823,7 +823,9 @@ fn validate_observation_reason(
 
 fn validate_target_scope(target: &RuntimeTarget, descriptors: &[Value]) -> DeployServiceResult<()> {
     if target.tenant_id <= 0 {
-        return Err(DeployServiceError::forbidden("assignment publication forbidden"));
+        return Err(DeployServiceError::forbidden(
+            "assignment publication forbidden",
+        ));
     }
     if target.tenant_scope_hash.len() != 64
         || !target
@@ -843,7 +845,9 @@ fn validate_target_scope(target: &RuntimeTarget, descriptors: &[Value]) -> Deplo
                 DeployServiceError::validation("descriptor tenantScopeHash is required")
             })?;
         if scope != target.tenant_scope_hash {
-            return Err(DeployServiceError::forbidden("assignment publication forbidden"));
+            return Err(DeployServiceError::forbidden(
+                "assignment publication forbidden",
+            ));
         }
     }
     Ok(())
@@ -916,7 +920,7 @@ mod tests {
         let descriptor = serde_json::json!({"tenantScopeHash": "2".repeat(64)});
         assert!(matches!(
             validate_target_scope(&target, &[descriptor]),
-            Err(DeployServiceError::forbidden("assignment publication forbidden"))
+            Err(DeployServiceError::Forbidden(_))
         ));
     }
 

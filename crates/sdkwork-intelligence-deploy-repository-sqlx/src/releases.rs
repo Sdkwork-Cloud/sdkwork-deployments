@@ -112,7 +112,7 @@ impl DeployRepository {
         )
         .bind(tenant_id)
         .bind(site_internal_id)
-        .bind(idempotency_key)
+        .bind(crate::support::sha256_hex(idempotency_key.trim()))
         .fetch_optional(&self.pool)
         .await
         .map_err(|error| store_error("find deploy_release by idempotency", error))?;
@@ -164,7 +164,7 @@ impl DeployRepository {
         .bind(artifact_internal_id)
         .bind(request.version_tag.as_deref())
         .bind(RELEASE_STATUS_ACTIVE)
-        .bind(&request.idempotency_key)
+        .bind(&crate::support::sha256_hex(request.idempotency_key.trim()))
         .bind(&now)
         .execute(&self.pool)
         .await

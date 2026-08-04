@@ -43,7 +43,7 @@ async fn certificates_support_many_to_many_hostnames_and_strict_creation_boundar
     let repository = DeployRepository::new(
         pool.clone(),
         SnowflakeIdGenerator::new(5).expect("Snowflake generator"),
-    common::test_secret_key(),
+        common::test_secret_key(),
     );
 
     let multi_hostname_request = request("Primary ECDSA", &["domain-apex", "domain-docs"]);
