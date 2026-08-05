@@ -7,8 +7,10 @@ use sdkwork_deploy_contract::{
     CreateNginxConfigRequest, CreateNodeClusterRequest, CreateServerRequest, DeployBackendApi,
     DeployBackendRequestContext, DeployServiceError, DeployServiceResult,
     EntitlementProjectionPage, ListNginxConfigsQuery, RequestCertificateOrderRequest,
-    RunnerHealthPage, StoreCertificateVersionRequest, UpdateNginxConfigRequest,
-    UpdateNodeClusterRequest, UpdateServerRequest,
+    RetentionRunRequest, RetentionRunResponse, RunnerHealthPage, SigningIdentityHealthPage,
+    SourceEventIngestResponse, SourceEventPage, StoreCertificateVersionRequest,
+    UpdateNginxConfigRequest, UpdateNodeClusterRequest, UpdateServerRequest,
+    UsageReconciliationRequest, UsageReconciliationResponse,
 };
 
 use crate::DeployService;
@@ -448,4 +450,219 @@ impl DeployBackendApi for DeployService {
             .list_certificate_challenges(tenant_id, order_id, page, page_size)
             .await
     }
+
+    async fn run_retention(
+        &self,
+        context: &DeployBackendRequestContext,
+        request: &RetentionRunRequest,
+    ) -> DeployServiceResult<RetentionRunResponse> {
+        // Retention windows come from platform configuration; zero/absent
+        // windows disable that dimension. Dry runs are the safe default.
+        let package_days = retention_days("SDKWORK_DEPLOY_RETENTION_PACKAGE_DAYS");
+        let release_days = retention_days("SDKWORK_DEPLOY_RETENTION_RELEASE_DAYS");
+        let log_days = retention_days("SDKWORK_DEPLOY_RETENTION_BUILD_LOG_DAYS");
+        if package_days == 0 && release_days == 0 && log_days == 0 {
+            return Err(DeployServiceError::validation(
+                "no retention windows configured (SDKWORK_DEPLOY_RETENTION_*_DAYS)",
+            ));
+        }
+        let _ = context;
+        self.repository
+            .run_retention(request.dry_run, package_days, release_days, log_days)
+            .await
+    }
+
+    async fn rebuild_usage_daily(
+        &self,
+        _context: &DeployBackendRequestContext,
+        request: &UsageReconciliationRequest,
+    ) -> DeployServiceResult<UsageReconciliationResponse> {
+        self.repository
+            .rebuild_usage_daily(
+                request.window_start.as_deref(),
+                request.window_end.as_deref(),
+            )
+            .await
+    }
+
+    async fn list_signing_identity_health(
+        &self,
+        context: &DeployBackendRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<SigningIdentityHealthPage> {
+        self.repository
+            .list_signing_identity_health(context.tenant_id, page, page_size)
+            .await
+    }
+    async fn ingest_source_event(
+        &self,
+        _context: &DeployBackendRequestContext,
+        payload: &[u8],
+        signature: Option<&str>,
+    ) -> DeployServiceResult<SourceEventIngestResponse> {
+        // Signature verification: GitHub sends X-Hub-Signature-256 as
+        // "sha256=<hex hmac-sha256(secret, raw body)>". The platform secret is
+        // required; without it the endpoint fails closed (an unauthenticated
+        // webhook would allow anyone to burn build capacity).
+        let secret = std::env::var("SDKWORK_DEPLOY_WEBHOOK_SECRET").unwrap_or_default();
+        if secret.is_empty() {
+            return Err(DeployServiceError::forbidden(
+                "SDKWORK_DEPLOY_WEBHOOK_SECRET is not configured; webhook ingestion is disabled",
+            ));
+        }
+        let Some(signature) = signature else {
+            return Err(DeployServiceError::forbidden(
+                "missing X-Hub-Signature-256 header",
+            ));
+        };
+        let expected = signature
+            .strip_prefix("sha256=")
+            .ok_or_else(|| DeployServiceError::forbidden("X-Hub-Signature-256 must use sha256="))?;
+        let actual = sdkwork_utils_rust::hmac_sha256(payload, secret.as_bytes());
+        if !sdkwork_utils_rust::secure_compare(expected, &actual) {
+            return Err(DeployServiceError::forbidden(
+                "webhook signature mismatch; payload rejected",
+            ));
+        }
+
+        // Parse the GitHub push payload subset.
+        let parsed: serde_json::Value = serde_json::from_slice(payload).map_err(|error| {
+            DeployServiceError::validation(format!("invalid webhook payload: {error}"))
+        })?;
+        let source_ref = parsed
+            .get("ref")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| DeployServiceError::validation("payload is missing ref"))?;
+        let clone_url = parsed
+            .pointer("/repository/clone_url")
+            .or_else(|| parsed.pointer("/repository/html_url"))
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| DeployServiceError::validation("payload is missing repository url"))?;
+        let source_commit = parsed
+            .pointer("/head_commit/id")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| DeployServiceError::validation("payload is missing head_commit.id"))?;
+        if source_commit.len() < 7
+            || source_commit.len() > 64
+            || !source_commit.bytes().all(|byte| byte.is_ascii_hexdigit())
+        {
+            return Err(DeployServiceError::validation(
+                "head_commit.id must be a hex commit SHA",
+            ));
+        }
+        let commit_message = parsed
+            .pointer("/head_commit/message")
+            .and_then(serde_json::Value::as_str)
+            .map(|value| value.chars().take(2000).collect::<String>());
+        let sender = parsed
+            .pointer("/pusher/name")
+            .and_then(serde_json::Value::as_str)
+            .map(|value| value.chars().take(512).collect::<String>());
+
+        // Match the repository, then ingest (deduplicated per commit).
+        let Some(matched) = self.repository.match_repository_by_url(clone_url).await? else {
+            return Err(DeployServiceError::not_found(
+                "no bound source repository matches the webhook payload",
+            ));
+        };
+        let payload_sha256 = sdkwork_utils_rust::sha256_hash(payload);
+        let (event, fresh) = self
+            .repository
+            .ingest_source_event(
+                &matched,
+                "PUSH",
+                source_ref,
+                source_commit,
+                commit_message.as_deref(),
+                sender.as_deref(),
+                &payload_sha256,
+            )
+            .await?;
+        if !fresh {
+            // Redelivered webhook: report the existing outcome.
+            return Ok(SourceEventIngestResponse {
+                event_id: event.id,
+                event_status: event.event_status,
+                builds_triggered: event.builds_triggered,
+                duplicate: true,
+            });
+        }
+
+        // Trigger builds only for the default branch (feature branches are
+        // recorded as SKIPPED for traceability).
+        let expected_ref = format!("refs/heads/{}", matched.default_branch);
+        if source_ref != expected_ref {
+            self.repository
+                .update_source_event_result(matched.tenant_id, &event.id, false, 0, None)
+                .await?;
+            return Ok(SourceEventIngestResponse {
+                event_id: event.id,
+                event_status: "SKIPPED".to_owned(),
+                builds_triggered: 0,
+                duplicate: false,
+            });
+        }
+
+        // Trigger one build per active target with a governed template.
+        let mut triggered = 0_i32;
+        let targets = self
+            .repository
+            .list_trigger_targets(&matched.app_id)
+            .await?;
+        for target in &targets {
+            let request = sdkwork_deploy_contract::CreateBuildRequest {
+                platform_target_id: target.platform_target_id.clone(),
+                source_repository_id: Some(matched.repository_id.clone()),
+                source_ref: Some(source_ref.to_owned()),
+                template_id: Some(target.template_id.clone()),
+                semantic_version: None,
+                idempotency_key: format!("event:{}:{}", event.id, target.platform_target_id),
+            };
+            match self
+                .repository
+                .create_build(matched.tenant_id, None, &request)
+                .await
+            {
+                Ok(_) => triggered += 1,
+                Err(error) => {
+                    tracing::warn!(
+                        "build trigger skipped for event {} target {}: {error}",
+                        event.id,
+                        target.platform_target_id
+                    );
+                }
+            }
+        }
+        self.repository
+            .update_source_event_result(matched.tenant_id, &event.id, true, triggered, None)
+            .await?;
+        Ok(SourceEventIngestResponse {
+            event_id: event.id,
+            event_status: "PROCESSED".to_owned(),
+            builds_triggered: triggered,
+            duplicate: false,
+        })
+    }
+
+    async fn list_source_events(
+        &self,
+        context: &DeployBackendRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<SourceEventPage> {
+        self.repository
+            .list_source_events(context.tenant_id, page, page_size)
+            .await
+    }
+}
+
+/// Reads a retention window from platform configuration; absent or invalid
+/// values disable the dimension (0 = no retention).
+fn retention_days(key: &str) -> i64 {
+    std::env::var(key)
+        .ok()
+        .and_then(|value| value.trim().parse::<i64>().ok())
+        .filter(|days| *days > 0)
+        .unwrap_or(0)
 }

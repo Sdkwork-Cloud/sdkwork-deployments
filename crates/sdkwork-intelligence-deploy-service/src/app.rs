@@ -4,20 +4,23 @@ use async_trait::async_trait;
 use sdkwork_deploy_contract::{
     is_deploy_package_artifact_type, AppDatabaseMigrationPage, AppDatabaseMigrationResponse,
     AppDatabaseProfilePage, AppDatabaseProfileResponse, AppDeploymentPage, AppDeploymentResponse,
-    AppPage, AppReleasePage, AppReleaseResponse, AppResponse, BuildPage, BuildResponse,
-    BuildTemplatePage, BuildTemplateResponse, ChannelPage, ChannelResponse, ChannelRolloutPage,
-    ChannelRolloutResponse, CompleteDeployUploadSessionRequest, CreateAppDatabaseMigrationRequest,
-    CreateAppDatabaseProfileRequest, CreateAppDeploymentRequest, CreateAppReleaseRequest,
-    CreateAppRequest, CreateArtifactRequest, CreateBuildRequest, CreateBuildTemplateRequest,
-    CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDeploymentRequest,
-    CreateDomainHostnameRequest, CreateDomainZoneRequest, CreateEnvVariableRequest,
-    CreateHealthCheckRequest, CreatePlatformTargetRequest, CreateReleaseRequest,
-    CreateSigningIdentityRequest, CreateSiteRequest, CreateSourceRepositoryRequest, DeployAppApi,
-    DeployAppRequestContext, DeployServiceResult, DeployUploadSessionResponse,
+    AppEnvironmentPage, AppEnvironmentResponse, AppPage, AppReleasePage, AppReleaseResponse,
+    AppResponse, BuildPage, BuildResponse, BuildTemplatePage, BuildTemplateResponse, ChannelPage,
+    ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse,
+    CompleteDeployUploadSessionRequest, CreateAppDatabaseMigrationRequest,
+    CreateAppDatabaseProfileRequest, CreateAppDeploymentRequest, CreateAppEnvironmentRequest,
+    CreateAppReleaseRequest, CreateAppRequest, CreateArtifactRequest, CreateBuildRequest,
+    CreateBuildTemplateRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
+    CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
+    CreateEnvVariableRequest, CreateHealthCheckRequest, CreatePlatformTargetRequest,
+    CreateReleaseRequest, CreateSigningIdentityRequest, CreateSiteRequest,
+    CreateSourceRepositoryRequest, DeployAppApi, DeployAppRequestContext, DeployServiceResult,
+    DeployUploadSessionResponse, EnvironmentPromotionPage, EnvironmentPromotionResponse,
     ListDomainZonesQuery, ListSitesQuery, PackagePage, PackageResponse, PlatformTargetPage,
-    PlatformTargetResponse, PromoteChannelRequest, RegisterPackageRequest, ReleaseStatus,
-    SigningIdentityPage, SigningIdentityResponse, SourceRepositoryPage, SourceRepositoryResponse,
-    UpdateAppDatabaseProfileRequest, UpdateAppRequest, UpdateBuildStateRequest,
+    PlatformTargetResponse, PromoteChannelRequest, PromoteEnvironmentRequest,
+    RegisterPackageRequest, ReleaseStatus, SigningIdentityPage, SigningIdentityResponse,
+    SourceRepositoryPage, SourceRepositoryResponse, UpdateAppDatabaseProfileRequest,
+    UpdateAppEnvironmentRequest, UpdateAppRequest, UpdateBuildStateRequest,
     UpdateDomainHostnameRequest, UpdateDomainZoneRequest, UpdateSiteRequest, UsageEventPage,
     UPLOAD_SESSION_STATUS_CANCELLED, UPLOAD_SESSION_STATUS_COMPLETED,
 };
@@ -1368,6 +1371,70 @@ impl DeployAppApi for DeployService {
         migration_id: &str,
     ) -> DeployServiceResult<AppDatabaseMigrationResponse> {
         self.retrieve_app_database_migration(context, app_id, profile_id, migration_id)
+            .await
+    }
+
+    async fn create_app_environment(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        request: &CreateAppEnvironmentRequest,
+    ) -> DeployServiceResult<AppEnvironmentResponse> {
+        self.create_app_environment(context, app_id, request).await
+    }
+
+    async fn list_app_environments(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppEnvironmentPage> {
+        self.list_app_environments(context, app_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_app_environment(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        environment_id: &str,
+    ) -> DeployServiceResult<AppEnvironmentResponse> {
+        self.retrieve_app_environment(context, app_id, environment_id)
+            .await
+    }
+
+    async fn update_app_environment(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        environment_id: &str,
+        request: &UpdateAppEnvironmentRequest,
+    ) -> DeployServiceResult<AppEnvironmentResponse> {
+        self.update_app_environment(context, app_id, environment_id, request)
+            .await
+    }
+
+    async fn promote_environment(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        environment_id: &str,
+        request: &PromoteEnvironmentRequest,
+    ) -> DeployServiceResult<EnvironmentPromotionResponse> {
+        self.promote_environment(context, app_id, environment_id, request)
+            .await
+    }
+
+    async fn list_environment_promotions(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        environment_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<EnvironmentPromotionPage> {
+        self.list_environment_promotions(context, app_id, environment_id, page, page_size)
             .await
     }
 }

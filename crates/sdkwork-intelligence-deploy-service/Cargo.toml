@@ -12,6 +12,7 @@ sdkwork-deploy-drive-port.workspace = true
 sdkwork-deploy-runtime-compiler.workspace = true
 sdkwork-deploy-web-port.workspace = true
 sdkwork-database-id.workspace = true
+sdkwork-utils-rust.workspace = true
 chrono.workspace = true
 idna.workspace = true
 psl.workspace = true

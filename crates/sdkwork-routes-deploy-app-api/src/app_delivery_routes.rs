@@ -10,10 +10,11 @@ use axum::{
 };
 use sdkwork_deploy_contract::{
     CreateAppDatabaseMigrationRequest, CreateAppDatabaseProfileRequest, CreateAppDeploymentRequest,
-    CreateAppReleaseRequest, CreateAppRequest, CreateBuildRequest, CreateBuildTemplateRequest,
-    CreatePlatformTargetRequest, CreateSigningIdentityRequest, CreateSourceRepositoryRequest,
-    DeployAppRequestContext, PromoteChannelRequest, RegisterPackageRequest,
-    UpdateAppDatabaseProfileRequest, UpdateAppRequest, UpdateBuildStateRequest,
+    CreateAppEnvironmentRequest, CreateAppReleaseRequest, CreateAppRequest, CreateBuildRequest,
+    CreateBuildTemplateRequest, CreatePlatformTargetRequest, CreateSigningIdentityRequest,
+    CreateSourceRepositoryRequest, DeployAppRequestContext, PromoteChannelRequest,
+    PromoteEnvironmentRequest, RegisterPackageRequest, UpdateAppDatabaseProfileRequest,
+    UpdateAppEnvironmentRequest, UpdateAppRequest, UpdateBuildStateRequest,
 };
 use sdkwork_routes_deploy_common::{envelope, finish_api_json, finish_created_api_json, ok_json};
 use sdkwork_web_core::WebRequestContext;
@@ -97,6 +98,18 @@ pub fn build_app_delivery_router() -> Router<AppState> {
         .route(
             paths::APP_DATABASE_MIGRATION,
             get(retrieve_app_database_migration),
+        )
+        .route(
+            paths::APP_ENVIRONMENTS,
+            get(list_app_environments).post(create_app_environment),
+        )
+        .route(
+            paths::APP_ENVIRONMENT,
+            get(retrieve_app_environment).patch(update_app_environment),
+        )
+        .route(
+            paths::APP_ENVIRONMENT_PROMOTIONS,
+            get(list_environment_promotions).post(promote_environment),
         )
 }
 
@@ -932,6 +945,135 @@ async fn retrieve_app_database_migration(
                 .retrieve_app_database_migration(&context, &app_id, &profile_id, &migration_id)
                 .await?;
             ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+// -- application environments and promotion chain ------------------------------
+
+async fn create_app_environment(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(app_id): Path<String>,
+    Json(request): Json<CreateAppEnvironmentRequest>,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let result = state
+                .api
+                .create_app_environment(&context, &app_id, &request)
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn list_app_environments(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(app_id): Path<String>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let (page, page_size) = page_values(&query);
+            let result = state
+                .api
+                .list_app_environments(&context, &app_id, page, page_size)
+                .await?;
+            ok_json(envelope::app_environment_page(result))
+        }
+        .await,
+    )
+}
+
+async fn retrieve_app_environment(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((app_id, environment_id)): Path<(String, String)>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let result = state
+                .api
+                .retrieve_app_environment(&context, &app_id, &environment_id)
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn update_app_environment(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((app_id, environment_id)): Path<(String, String)>,
+    Json(request): Json<UpdateAppEnvironmentRequest>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let result = state
+                .api
+                .update_app_environment(&context, &app_id, &environment_id, &request)
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn promote_environment(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((app_id, environment_id)): Path<(String, String)>,
+    Json(request): Json<PromoteEnvironmentRequest>,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let result = state
+                .api
+                .promote_environment(&context, &app_id, &environment_id, &request)
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn list_environment_promotions(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((app_id, environment_id)): Path<(String, String)>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let (page, page_size) = page_values(&query);
+            let result = state
+                .api
+                .list_environment_promotions(&context, &app_id, &environment_id, page, page_size)
+                .await?;
+            ok_json(envelope::environment_promotion_page(result))
         }
         .await,
     )

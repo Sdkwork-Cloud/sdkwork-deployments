@@ -1739,3 +1739,249 @@ pub struct ChallengeResultRequest {
     pub challenge_id: Option<String>,
     pub valid: bool,
 }
+
+// ---------------------------------------------------------------------------
+// Retention, reconciliation, and signing identity health (TECH §8, PRD §5.8)
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RetentionRunRequest {
+    #[serde(rename = "dryRun", default = "default_true")]
+    pub dry_run: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RetentionRunResponse {
+    #[serde(rename = "dryRun")]
+    pub dry_run: bool,
+    #[serde(rename = "packagesRetired")]
+    pub packages_retired: i64,
+    #[serde(rename = "releasesRetired")]
+    pub releases_retired: i64,
+    #[serde(rename = "buildLogsPurged")]
+    pub build_logs_purged: i64,
+    #[serde(rename = "packageRetentionDays")]
+    pub package_retention_days: i64,
+    #[serde(rename = "releaseRetentionDays")]
+    pub release_retention_days: i64,
+    #[serde(rename = "buildLogRetentionDays")]
+    pub build_log_retention_days: i64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SigningIdentityHealthResponse {
+    pub id: String,
+    #[serde(rename = "tenantId")]
+    pub tenant_id: i64,
+    #[serde(rename = "identityName")]
+    pub identity_name: String,
+    #[serde(rename = "signingKind")]
+    pub signing_kind: String,
+    #[serde(rename = "expiresAt", skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<String>,
+    #[serde(rename = "daysUntilExpiry", skip_serializing_if = "Option::is_none")]
+    pub days_until_expiry: Option<i64>,
+    #[serde(rename = "identityStatus")]
+    pub identity_status: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct SigningIdentityHealthPage {
+    pub items: Vec<SigningIdentityHealthResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UsageReconciliationRequest {
+    #[serde(rename = "windowStart", skip_serializing_if = "Option::is_none")]
+    pub window_start: Option<String>,
+    #[serde(rename = "windowEnd", skip_serializing_if = "Option::is_none")]
+    pub window_end: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UsageReconciliationResponse {
+    #[serde(rename = "rebuiltRows")]
+    pub rebuilt_rows: i64,
+    #[serde(rename = "windowStart")]
+    pub window_start: String,
+    #[serde(rename = "windowEnd")]
+    pub window_end: String,
+}
+
+// ---------------------------------------------------------------------------
+// Application environments and promotion chain (P0 product gap)
+// ---------------------------------------------------------------------------
+
+pub const ENVIRONMENT_LEVEL_DEVELOPMENT: &str = "DEVELOPMENT";
+pub const ENVIRONMENT_LEVEL_STAGING: &str = "STAGING";
+pub const ENVIRONMENT_LEVEL_PRODUCTION: &str = "PRODUCTION";
+pub const ENVIRONMENT_STATUS_ACTIVE: &str = "ACTIVE";
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CreateAppEnvironmentRequest {
+    #[serde(rename = "envKey")]
+    pub env_key: String,
+    #[serde(rename = "envName")]
+    pub env_name: String,
+    #[serde(rename = "envLevel")]
+    pub env_level: String,
+    #[serde(rename = "approvalRequired", default)]
+    pub approval_required: bool,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct UpdateAppEnvironmentRequest {
+    #[serde(rename = "envName", skip_serializing_if = "Option::is_none")]
+    pub env_name: Option<String>,
+    #[serde(rename = "approvalRequired", skip_serializing_if = "Option::is_none")]
+    pub approval_required: Option<bool>,
+    #[serde(rename = "envStatus", skip_serializing_if = "Option::is_none")]
+    pub env_status: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AppEnvironmentResponse {
+    pub id: String,
+    #[serde(rename = "appId")]
+    pub app_id: String,
+    #[serde(rename = "envKey")]
+    pub env_key: String,
+    #[serde(rename = "envName")]
+    pub env_name: String,
+    #[serde(rename = "envLevel")]
+    pub env_level: String,
+    #[serde(rename = "approvalRequired")]
+    pub approval_required: bool,
+    #[serde(rename = "currentReleaseId", skip_serializing_if = "Option::is_none")]
+    pub current_release_id: Option<String>,
+    #[serde(
+        rename = "currentReleaseVersion",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub current_release_version: Option<String>,
+    #[serde(rename = "envStatus")]
+    pub env_status: String,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+    pub version: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct AppEnvironmentPage {
+    pub items: Vec<AppEnvironmentResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PromoteEnvironmentRequest {
+    #[serde(rename = "releaseId")]
+    pub release_id: String,
+    #[serde(rename = "fromEnvironmentId", skip_serializing_if = "Option::is_none")]
+    pub from_environment_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct EnvironmentPromotionResponse {
+    pub id: String,
+    #[serde(rename = "appId")]
+    pub app_id: String,
+    #[serde(rename = "environmentId")]
+    pub environment_id: String,
+    #[serde(rename = "environmentKey")]
+    pub environment_key: String,
+    #[serde(rename = "releaseId")]
+    pub release_id: String,
+    #[serde(rename = "releaseVersion")]
+    pub release_version: String,
+    #[serde(rename = "fromEnvironmentId", skip_serializing_if = "Option::is_none")]
+    pub from_environment_id: Option<String>,
+    #[serde(rename = "fromEnvironmentKey", skip_serializing_if = "Option::is_none")]
+    pub from_environment_key: Option<String>,
+    #[serde(rename = "promotedBy", skip_serializing_if = "Option::is_none")]
+    pub promoted_by: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct EnvironmentPromotionPage {
+    pub items: Vec<EnvironmentPromotionResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+// ---------------------------------------------------------------------------
+// CI source events (P0 product gap)
+// ---------------------------------------------------------------------------
+
+pub const SOURCE_EVENT_KIND_PUSH: &str = "PUSH";
+pub const SOURCE_EVENT_STATUS_PROCESSED: &str = "PROCESSED";
+pub const SOURCE_EVENT_STATUS_SKIPPED: &str = "SKIPPED";
+pub const SOURCE_EVENT_STATUS_FAILED: &str = "FAILED";
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SourceEventResponse {
+    pub id: String,
+    #[serde(rename = "tenantId")]
+    pub tenant_id: i64,
+    #[serde(rename = "appId")]
+    pub app_id: String,
+    #[serde(rename = "sourceRepositoryId")]
+    pub source_repository_id: String,
+    #[serde(rename = "eventKind")]
+    pub event_kind: String,
+    #[serde(rename = "sourceRef")]
+    pub source_ref: String,
+    #[serde(rename = "sourceCommit")]
+    pub source_commit: String,
+    #[serde(rename = "commitMessage", skip_serializing_if = "Option::is_none")]
+    pub commit_message: Option<String>,
+    #[serde(rename = "payloadSha256")]
+    pub payload_sha256: String,
+    #[serde(rename = "eventStatus")]
+    pub event_status: String,
+    #[serde(rename = "buildsTriggered")]
+    pub builds_triggered: i32,
+    #[serde(rename = "errorCode", skip_serializing_if = "Option::is_none")]
+    pub error_code: Option<String>,
+    #[serde(rename = "processedAt", skip_serializing_if = "Option::is_none")]
+    pub processed_at: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct SourceEventPage {
+    pub items: Vec<SourceEventResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SourceEventIngestResponse {
+    #[serde(rename = "eventId")]
+    pub event_id: String,
+    #[serde(rename = "eventStatus")]
+    pub event_status: String,
+    #[serde(rename = "buildsTriggered")]
+    pub builds_triggered: i32,
+    #[serde(rename = "duplicate")]
+    pub duplicate: bool,
+}

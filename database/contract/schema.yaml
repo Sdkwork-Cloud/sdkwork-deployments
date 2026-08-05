@@ -159,3 +159,12 @@ tables:
   - name: deploy_app_database_migration
     lifecycle_status: active
     owner: deploy-platform
+  - name: deploy_source_event
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_app_environment
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_environment_promotion
+    lifecycle_status: active
+    owner: deploy-platform

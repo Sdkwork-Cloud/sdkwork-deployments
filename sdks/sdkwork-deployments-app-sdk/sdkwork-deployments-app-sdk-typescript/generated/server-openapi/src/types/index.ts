@@ -110,6 +110,11 @@ export type { UpdateAppDatabaseProfileRequest } from './update-app-database-prof
 export type { AppDatabaseProfileResponse } from './app-database-profile-response';
 export type { CreateAppDatabaseMigrationRequest } from './create-app-database-migration-request';
 export type { AppDatabaseMigrationResponse } from './app-database-migration-response';
+export type { CreateAppEnvironmentRequest } from './create-app-environment-request';
+export type { UpdateAppEnvironmentRequest } from './update-app-environment-request';
+export type { AppEnvironmentResponse } from './app-environment-response';
+export type { PromoteEnvironmentRequest } from './promote-environment-request';
+export type { EnvironmentPromotionResponse } from './environment-promotion-response';
 export type { DomainZonesListResponse } from './domain-zones-list-response';
 export type { DomainZonesCreateResponse201 } from './domain-zones-create-response201';
 export type { DomainZonesRetrieveResponse } from './domain-zones-retrieve-response';
@@ -189,3 +194,9 @@ export type { AppDatabaseProfilesUpdateResponse } from './app-database-profiles-
 export type { AppDatabaseMigrationsListResponse } from './app-database-migrations-list-response';
 export type { AppDatabaseMigrationsCreateResponse201 } from './app-database-migrations-create-response201';
 export type { AppDatabaseMigrationsRetrieveResponse } from './app-database-migrations-retrieve-response';
+export type { AppEnvironmentsListResponse } from './app-environments-list-response';
+export type { AppEnvironmentsCreateResponse201 } from './app-environments-create-response201';
+export type { AppEnvironmentsRetrieveResponse } from './app-environments-retrieve-response';
+export type { AppEnvironmentsUpdateResponse } from './app-environments-update-response';
+export type { AppEnvironmentsListPromotionsResponse } from './app-environments-list-promotions-response';
+export type { AppEnvironmentsPromoteResponse201 } from './app-environments-promote-response201';

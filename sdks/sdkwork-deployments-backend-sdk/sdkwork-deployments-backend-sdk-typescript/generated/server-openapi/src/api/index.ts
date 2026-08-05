@@ -8,3 +8,7 @@ export { EntitlementApi, createEntitlementApi } from './entitlement';
 export { BuildQueueApi, createBuildQueueApi } from './build-queue';
 export { RunnersApi, createRunnersApi } from './runners';
 export { TlsApi, createTlsApi } from './tls';
+export { RetentionApi, createRetentionApi } from './retention';
+export { UsageApi, createUsageApi } from './usage';
+export { SigningHealthApi, createSigningHealthApi } from './signing-health';
+export { SourceEventsApi, createSourceEventsApi } from './source-events';

@@ -188,6 +188,36 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "tls",
         "tlsOrders.list",
     ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/retention/run",
+        "retention",
+        "retention.run",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/usage/reconcile",
+        "usage",
+        "usage.reconcileDaily",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/signing_identity_health",
+        "signingHealth",
+        "signingIdentityHealth.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/backend/v3/api/source_events",
+        "sourceEvents",
+        "sourceEvents.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/backend/v3/api/source_events",
+        "sourceEvents",
+        "sourceEvents.ingest",
+    ),
 ];
 
 pub fn backend_route_manifest() -> HttpRouteManifest {

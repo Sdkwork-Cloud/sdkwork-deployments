@@ -3715,6 +3715,276 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+  /app/v3/api/apps/{appId}/environments:
+    parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: appEnvironments.list
+      summary: List the environments of an app
+      tags:
+        - appEnvironment
+      security:
+        - AuthToken: []
+          AccessToken: []
+      x-sdkwork-permission: false
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties: false
+                        required: [items, pageInfo]
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/AppEnvironmentResponse'
+                          pageInfo:
+                            $ref: '#/components/schemas/PageInfo'
+        '401':
+          description: "未认证"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    post:
+      operationId: appEnvironments.create
+      summary: Create an environment in the promotion chain
+      tags:
+        - appEnvironment
+      security:
+        - AuthToken: []
+          AccessToken: []
+      x-sdkwork-permission: false
+      x-sdkwork-idempotent: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAppEnvironmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        required: [item]
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/AppEnvironmentResponse'
+        '422':
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /app/v3/api/apps/{appId}/environments/{environmentId}:
+    parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: environmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: appEnvironments.retrieve
+      summary: Retrieve an environment
+      tags:
+        - appEnvironment
+      security:
+        - AuthToken: []
+          AccessToken: []
+      x-sdkwork-permission: false
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        required: [item]
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/AppEnvironmentResponse'
+        '404':
+          description: "资源不存在"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    patch:
+      operationId: appEnvironments.update
+      summary: Update an environment (name, approval requirement, status)
+      tags:
+        - appEnvironment
+      security:
+        - AuthToken: []
+          AccessToken: []
+      x-sdkwork-permission: false
+      x-sdkwork-idempotent: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAppEnvironmentRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        required: [item]
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/AppEnvironmentResponse'
+        '422':
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /app/v3/api/apps/{appId}/environments/{environmentId}/promotions:
+    parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: environmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: appEnvironments.listPromotions
+      summary: List the immutable promotion history of an environment
+      tags:
+        - appEnvironment
+      security:
+        - AuthToken: []
+          AccessToken: []
+      x-sdkwork-permission: false
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        additionalProperties: false
+                        required: [items, pageInfo]
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/EnvironmentPromotionResponse'
+                          pageInfo:
+                            $ref: '#/components/schemas/PageInfo'
+        '401':
+          description: "未认证"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    post:
+      operationId: appEnvironments.promote
+      summary: Promote a release into the environment
+      description: >
+        Sets the environment's current release pointer and appends an
+        immutable promotion record. When fromEnvironmentId is provided the
+        release must be the source environment's current release (chain
+        enforcement).
+      tags:
+        - appEnvironment
+      security:
+        - AuthToken: []
+          AccessToken: []
+      x-sdkwork-permission: false
+      x-sdkwork-idempotent: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromoteEnvironmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        required: [item]
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/EnvironmentPromotionResponse'
+        '409':
+          description: "冲突"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
 components:
   securitySchemes:
     AuthToken:
@@ -6146,6 +6416,127 @@ components:
           format: date-time
         version:
           type: string
+    CreateAppEnvironmentRequest:
+      type: object
+      additionalProperties: false
+      required: [envKey, envName, envLevel]
+      properties:
+        envKey:
+          type: string
+          maxLength: 32
+        envName:
+          type: string
+          maxLength: 100
+        envLevel:
+          type: string
+          enum: [DEVELOPMENT, STAGING, PRODUCTION]
+        approvalRequired:
+          type: boolean
+          default: false
+    UpdateAppEnvironmentRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        envName:
+          type: string
+          maxLength: 100
+        approvalRequired:
+          type: boolean
+        envStatus:
+          type: string
+          enum: [DRAFT, ACTIVE, ARCHIVED]
+    AppEnvironmentResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - appId
+        - envKey
+        - envName
+        - envLevel
+        - approvalRequired
+        - envStatus
+        - createdAt
+        - updatedAt
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        appId:
+          type: string
+          format: uuid
+        envKey:
+          type: string
+        envName:
+          type: string
+        envLevel:
+          type: string
+        approvalRequired:
+          type: boolean
+        currentReleaseId:
+          type: string
+          format: uuid
+        currentReleaseVersion:
+          type: string
+        envStatus:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        version:
+          type: string
+    PromoteEnvironmentRequest:
+      type: object
+      additionalProperties: false
+      required: [releaseId]
+      properties:
+        releaseId:
+          type: string
+          format: uuid
+        fromEnvironmentId:
+          type: string
+          format: uuid
+        note:
+          type: string
+          maxLength: 500
+    EnvironmentPromotionResponse:
+      type: object
+      additionalProperties: false
+      required: [id, appId, environmentId, environmentKey, releaseId, releaseVersion, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        appId:
+          type: string
+          format: uuid
+        environmentId:
+          type: string
+          format: uuid
+        environmentKey:
+          type: string
+        releaseId:
+          type: string
+          format: uuid
+        releaseVersion:
+          type: string
+        fromEnvironmentId:
+          type: string
+          format: uuid
+        fromEnvironmentKey:
+          type: string
+        promotedBy:
+          type: integer
+          format: int64
+        note:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
   responses:
     BadRequest:
       description: "请求参数错误"

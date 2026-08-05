@@ -61,3 +61,7 @@ pub const APP_DATABASE_MIGRATIONS: &str =
     "/app/v3/api/apps/{appId}/database_profiles/{profileId}/migrations";
 pub const APP_DATABASE_MIGRATION: &str =
     "/app/v3/api/apps/{appId}/database_profiles/{profileId}/migrations/{migrationId}";
+pub const APP_ENVIRONMENTS: &str = "/app/v3/api/apps/{appId}/environments";
+pub const APP_ENVIRONMENT: &str = "/app/v3/api/apps/{appId}/environments/{environmentId}";
+pub const APP_ENVIRONMENT_PROMOTIONS: &str =
+    "/app/v3/api/apps/{appId}/environments/{environmentId}/promotions";

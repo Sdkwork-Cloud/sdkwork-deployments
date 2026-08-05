@@ -2745,6 +2745,7 @@ dependencies = [
  "sdkwork-deploy-drive-port",
  "sdkwork-deploy-runtime-compiler",
  "sdkwork-deploy-web-port",
+ "sdkwork-utils-rust",
  "serde_json",
  "tokio",
  "tracing",

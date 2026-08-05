@@ -62,6 +62,10 @@ const client = new SdkworkDeployBackendClient({
 - `client.buildQueue` - build_queue API
 - `client.runners` - runners API
 - `client.tls` - tls API
+- `client.retention` - retention API
+- `client.usage` - usage API
+- `client.signingHealth` - signing_health API
+- `client.sourceEvents` - source_events API
 
 ## Usage Examples
 
@@ -154,6 +158,49 @@ const params = {
   page_size: 2,
 };
 const result = await client.tls.tlsAccounts.list(params);
+```
+
+### retention
+
+```typescript
+// Apply platform retention policies
+const body = {
+  dryRun: true,
+};
+const result = await client.retention.run(body);
+```
+
+### usage
+
+```typescript
+// Rebuild the daily usage aggregate from retained usage facts
+const body = {
+  windowStart: 'windowStart',
+  windowEnd: 'windowEnd',
+};
+const result = await client.usage.reconcileDaily(body);
+```
+
+### signing_health
+
+```typescript
+// List signing identity expiry health
+const params = {
+  page: 1,
+  page_size: 2,
+};
+const result = await client.signingHealth.signingIdentityHealth.list(params);
+```
+
+### source_events
+
+```typescript
+// List ingested Git webhook events
+const params = {
+  page: 1,
+  page_size: 2,
+};
+const result = await client.sourceEvents.list(params);
 ```
 
 ## Error Handling

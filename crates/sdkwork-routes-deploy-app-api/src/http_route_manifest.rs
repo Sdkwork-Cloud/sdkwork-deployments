@@ -550,6 +550,45 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "appDatabase",
         "appDatabaseMigrations.retrieve",
     ),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/apps/{appId}/environments",
+        "appEnvironment",
+        "appEnvironments.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/apps/{appId}/environments",
+        "appEnvironment",
+        "appEnvironments.create",
+    )
+    .with_idempotent(true),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/apps/{appId}/environments/{environmentId}",
+        "appEnvironment",
+        "appEnvironments.retrieve",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Patch,
+        "/app/v3/api/apps/{appId}/environments/{environmentId}",
+        "appEnvironment",
+        "appEnvironments.update",
+    )
+    .with_idempotent(true),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/apps/{appId}/environments/{environmentId}/promotions",
+        "appEnvironment",
+        "appEnvironments.listPromotions",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/apps/{appId}/environments/{environmentId}/promotions",
+        "appEnvironment",
+        "appEnvironments.promote",
+    )
+    .with_idempotent(true),
 ];
 
 pub fn app_route_manifest() -> HttpRouteManifest {

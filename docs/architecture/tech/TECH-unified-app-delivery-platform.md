@@ -555,10 +555,14 @@ Target resource groups:
 
 - app API: `apps`, `platformTargets`, `sourceRepositories`, `buildTemplates`, `builds`,
   `packages`, `releases`, `channels`, `channelRollouts`, `deployments`, `signingIdentities`,
-  `usageEvents`, `databaseProfiles`, `databaseMigrations`;
+  `usageEvents`, `databaseProfiles`, `databaseMigrations`, `environments`
+  (promotion chain with immutable `environmentPromotions` history);
 - backend API: build fleet/queue administration (`buildQueue`, `runners`), runner health,
-  entitlement projections (`entitlements`), package registry, version registry, signing
-  identity health, metering reconciliation;
+  entitlement projections (`entitlements`), signing identity health
+  (`signingIdentityHealth`), retention enforcement (`retention`), usage daily
+  reconciliation (`usage.reconcileDaily`), CI source events (`sourceEvents`: HMAC-verified
+  GitHub webhook ingestion with per-commit deduplication and default-branch build
+  triggering), package registry, version registry, metering reconciliation;
 - generated `@sdkwork/deployments-app-sdk` and `@sdkwork/deployments-backend-sdk` facades are the
   only supported automation surfaces; raw HTTP is not accepted;
 - Drive App SDK remains the bytes path for package/log upload; Drive references stay opaque.

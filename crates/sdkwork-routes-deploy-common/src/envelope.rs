@@ -3,20 +3,22 @@
 use sdkwork_deploy_contract::{
     AcmeAccountPage, AcmeAccountResponse, AppDatabaseMigrationPage, AppDatabaseMigrationResponse,
     AppDatabaseProfilePage, AppDatabaseProfileResponse, AppDeploymentPage, AppDeploymentResponse,
-    AppPage, AppReleasePage, AppReleaseResponse, AppResponse, ArtifactPage, ArtifactResponse,
-    AuditLogPage, AuditLogResponse, BuildPage, BuildQueueItemResponse, BuildQueuePage,
-    BuildResponse, BuildTemplatePage, BuildTemplateResponse, CertificateChallengePage,
-    CertificateChallengeResponse, CertificateOrderPage, CertificateOrderResponse, CertificatePage,
-    CertificateResponse, ChannelPage, ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse,
-    DeploymentPage, DeploymentResponse, DomainHostnamePage, DomainHostnameResponse,
-    DomainVerifyResponse, DomainZonePage, DomainZoneResponse, EntitlementProjectionPage,
-    EntitlementProjectionResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage,
-    HealthCheckResponse, NginxConfigPage, NginxConfigResponse, NginxReloadResponse,
-    NginxStatusResponse, NginxValidateResponse, NodeClusterPage, NodeClusterResponse, PackagePage,
-    PackageResponse, PlatformTargetPage, PlatformTargetResponse, ReleasePage, ReleaseResponse,
-    RunnerHealthPage, RunnerHealthResponse, ServerPage, ServerResponse, SigningIdentityPage,
-    SigningIdentityResponse, SitePage, SiteResponse, SourceRepositoryPage,
-    SourceRepositoryResponse, UsageEventPage, UsageEventResponse,
+    AppEnvironmentPage, AppEnvironmentResponse, AppPage, AppReleasePage, AppReleaseResponse,
+    AppResponse, ArtifactPage, ArtifactResponse, AuditLogPage, AuditLogResponse, BuildPage,
+    BuildQueueItemResponse, BuildQueuePage, BuildResponse, BuildTemplatePage,
+    BuildTemplateResponse, CertificateChallengePage, CertificateChallengeResponse,
+    CertificateOrderPage, CertificateOrderResponse, CertificatePage, CertificateResponse,
+    ChannelPage, ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse, DeploymentPage,
+    DeploymentResponse, DomainHostnamePage, DomainHostnameResponse, DomainVerifyResponse,
+    DomainZonePage, DomainZoneResponse, EntitlementProjectionPage, EntitlementProjectionResponse,
+    EnvVariablePage, EnvVariableResponse, EnvironmentPromotionPage, EnvironmentPromotionResponse,
+    HealthCheckPage, HealthCheckResponse, NginxConfigPage, NginxConfigResponse,
+    NginxReloadResponse, NginxStatusResponse, NginxValidateResponse, NodeClusterPage,
+    NodeClusterResponse, PackagePage, PackageResponse, PlatformTargetPage, PlatformTargetResponse,
+    ReleasePage, ReleaseResponse, RunnerHealthPage, RunnerHealthResponse, ServerPage,
+    ServerResponse, SigningIdentityHealthPage, SigningIdentityHealthResponse, SigningIdentityPage,
+    SigningIdentityResponse, SitePage, SiteResponse, SourceEventPage, SourceEventResponse,
+    SourceRepositoryPage, SourceRepositoryResponse, UsageEventPage, UsageEventResponse,
 };
 use sdkwork_deploy_core::normalize_pagination;
 use sdkwork_utils_rust::{PageInfo, PageMode, SdkWorkPageData, SdkWorkResourceData};
@@ -116,6 +118,26 @@ pub fn certificate_order_page(
 pub fn certificate_challenge_page(
     page: CertificateChallengePage,
 ) -> SdkWorkPageData<CertificateChallengeResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
+}
+
+pub fn signing_identity_health_page(
+    page: SigningIdentityHealthPage,
+) -> SdkWorkPageData<SigningIdentityHealthResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
+}
+
+pub fn app_environment_page(page: AppEnvironmentPage) -> SdkWorkPageData<AppEnvironmentResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
+}
+
+pub fn environment_promotion_page(
+    page: EnvironmentPromotionPage,
+) -> SdkWorkPageData<EnvironmentPromotionResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
+}
+
+pub fn source_event_page(page: SourceEventPage) -> SdkWorkPageData<SourceEventResponse> {
     offset_page(page.items, page.page, page.page_size, page.total)
 }
 

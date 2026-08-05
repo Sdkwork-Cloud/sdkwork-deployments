@@ -4,21 +4,24 @@
 
 use sdkwork_deploy_contract::{
     AppDatabaseMigrationPage, AppDatabaseMigrationResponse, AppDatabaseProfilePage,
-    AppDatabaseProfileResponse, AppKind, AppPage, AppReleasePage, AppReleaseResponse, AppResponse,
-    BuildPage, BuildResponse, BuildTemplatePage, BuildTemplateResponse, ChannelKey, ChannelPage,
-    ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse, CreateAppDatabaseMigrationRequest,
-    CreateAppDatabaseProfileRequest, CreateAppDeploymentRequest, CreateAppReleaseRequest,
+    AppDatabaseProfileResponse, AppEnvironmentPage, AppEnvironmentResponse, AppKind, AppPage,
+    AppReleasePage, AppReleaseResponse, AppResponse, BuildPage, BuildResponse, BuildTemplatePage,
+    BuildTemplateResponse, ChannelKey, ChannelPage, ChannelResponse, ChannelRolloutPage,
+    ChannelRolloutResponse, CreateAppDatabaseMigrationRequest, CreateAppDatabaseProfileRequest,
+    CreateAppDeploymentRequest, CreateAppEnvironmentRequest, CreateAppReleaseRequest,
     CreateAppRequest, CreateBuildRequest, CreateBuildTemplateRequest, CreatePlatformTargetRequest,
     CreateSigningIdentityRequest, CreateSourceRepositoryRequest, DeployAppRequestContext,
-    DeployServiceError, DeployServiceResult, DeploymentStatus, PackagePage, PackageResponse,
-    PlatformTargetPage, PlatformTargetResponse, PromoteChannelRequest, RegisterPackageRequest,
-    ReleaseStatus, SigningIdentityPage, SigningIdentityResponse, SourceRepositoryPage,
-    SourceRepositoryResponse, UpdateAppDatabaseProfileRequest, UpdateAppRequest,
-    UpdateBuildStateRequest, UsageEventPage, ENTITLEMENT_DIMENSION_ACTIVE_APPS,
-    ENTITLEMENT_DIMENSION_BUILD_CONCURRENCY, ENTITLEMENT_DIMENSION_DEPLOYMENT_COUNT,
-    ENTITLEMENT_DIMENSION_PACKAGE_STORAGE_BYTES, ENTITLEMENT_DIMENSION_PLATFORM_TARGETS,
-    ENTITLEMENT_DIMENSION_RELEASE_COUNT, USAGE_DIMENSION_BUILD_MINUTES,
-    USAGE_DIMENSION_DEPLOYMENT_COUNT, USAGE_DIMENSION_PACKAGE_STORAGE_BYTES,
+    DeployServiceError, DeployServiceResult, DeploymentStatus, EnvironmentPromotionPage,
+    EnvironmentPromotionResponse, PackagePage, PackageResponse, PlatformTargetPage,
+    PlatformTargetResponse, PromoteChannelRequest, PromoteEnvironmentRequest,
+    RegisterPackageRequest, ReleaseStatus, SigningIdentityPage, SigningIdentityResponse,
+    SourceRepositoryPage, SourceRepositoryResponse, UpdateAppDatabaseProfileRequest,
+    UpdateAppEnvironmentRequest, UpdateAppRequest, UpdateBuildStateRequest, UsageEventPage,
+    ENTITLEMENT_DIMENSION_ACTIVE_APPS, ENTITLEMENT_DIMENSION_BUILD_CONCURRENCY,
+    ENTITLEMENT_DIMENSION_DEPLOYMENT_COUNT, ENTITLEMENT_DIMENSION_PACKAGE_STORAGE_BYTES,
+    ENTITLEMENT_DIMENSION_PLATFORM_TARGETS, ENTITLEMENT_DIMENSION_RELEASE_COUNT,
+    USAGE_DIMENSION_BUILD_MINUTES, USAGE_DIMENSION_DEPLOYMENT_COUNT,
+    USAGE_DIMENSION_PACKAGE_STORAGE_BYTES,
 };
 use sdkwork_deploy_core::{
     required_identity_field, validate_app_kind_platform, validate_catalog_name,
@@ -942,11 +945,154 @@ impl DeployService {
             .retrieve_app_database_migration(tenant_id, app_id, profile_id, migration_id)
             .await
     }
-}
+    // -- application environments and promotion chain -----------------------------
 
-// ---------------------------------------------------------------------------
-// Validation helpers
-// ---------------------------------------------------------------------------
+    pub async fn create_app_environment(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        request: &CreateAppEnvironmentRequest,
+    ) -> DeployServiceResult<AppEnvironmentResponse> {
+        let tenant_id = Self::tenant_id(context)?;
+        validate_environment_key(&request.env_key)?;
+        if request.env_name.trim().is_empty() || request.env_name.len() > 100 {
+            return Err(DeployServiceError::validation(
+                "envName must be 1..=100 characters",
+            ));
+        }
+        if !matches!(
+            request.env_level.as_str(),
+            "DEVELOPMENT" | "STAGING" | "PRODUCTION"
+        ) {
+            return Err(DeployServiceError::validation(
+                "envLevel must be DEVELOPMENT, STAGING, or PRODUCTION",
+            ));
+        }
+        let environment = self
+            .repository
+            .create_app_environment(tenant_id, context.actor_id, app_id, request)
+            .await?;
+        self.audit_app_action(context, "environment.create", &environment.id)
+            .await?;
+        Ok(environment)
+    }
+
+    pub async fn list_app_environments(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppEnvironmentPage> {
+        let tenant_id = Self::tenant_id(context)?;
+        self.repository
+            .list_app_environments(tenant_id, app_id, page, page_size)
+            .await
+    }
+
+    pub async fn retrieve_app_environment(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        environment_id: &str,
+    ) -> DeployServiceResult<AppEnvironmentResponse> {
+        let tenant_id = Self::tenant_id(context)?;
+        self.repository
+            .retrieve_app_environment(tenant_id, app_id, environment_id)
+            .await
+    }
+
+    pub async fn update_app_environment(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        environment_id: &str,
+        request: &UpdateAppEnvironmentRequest,
+    ) -> DeployServiceResult<AppEnvironmentResponse> {
+        let tenant_id = Self::tenant_id(context)?;
+        if let Some(status) = request.env_status.as_deref() {
+            if !matches!(status, "DRAFT" | "ACTIVE" | "ARCHIVED") {
+                return Err(DeployServiceError::validation(
+                    "envStatus must be DRAFT, ACTIVE, or ARCHIVED",
+                ));
+            }
+        }
+        if let Some(name) = request.env_name.as_deref() {
+            if name.trim().is_empty() || name.len() > 100 {
+                return Err(DeployServiceError::validation(
+                    "envName must be 1..=100 characters",
+                ));
+            }
+        }
+        let environment = self
+            .repository
+            .update_app_environment(tenant_id, context.actor_id, app_id, environment_id, request)
+            .await?;
+        self.audit_app_action(context, "environment.update", &environment.id)
+            .await?;
+        Ok(environment)
+    }
+
+    pub async fn promote_environment(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        environment_id: &str,
+        request: &PromoteEnvironmentRequest,
+    ) -> DeployServiceResult<EnvironmentPromotionResponse> {
+        let tenant_id = Self::tenant_id(context)?;
+        if request.release_id.trim().is_empty() {
+            return Err(DeployServiceError::validation("releaseId is required"));
+        }
+        if let Some(note) = request.note.as_deref() {
+            if note.len() > 500 {
+                return Err(DeployServiceError::validation(
+                    "note must be at most 500 characters",
+                ));
+            }
+        }
+        let promotion = self
+            .repository
+            .promote_environment(tenant_id, context.actor_id, app_id, environment_id, request)
+            .await?;
+        self.audit_app_action(context, "environment.promote", &promotion.id)
+            .await?;
+        Ok(promotion)
+    }
+
+    pub async fn list_environment_promotions(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        environment_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<EnvironmentPromotionPage> {
+        let tenant_id = Self::tenant_id(context)?;
+        self.repository
+            .list_environment_promotions(tenant_id, app_id, environment_id, page, page_size)
+            .await
+    }
+} // ---------------------------------------------------------------------------
+  // Validation helpers
+  // ---------------------------------------------------------------------------
+
+fn validate_environment_key(key: &str) -> DeployServiceResult<()> {
+    if key.is_empty() || key.len() > 32 {
+        return Err(DeployServiceError::validation(
+            "envKey must be 1..=32 characters",
+        ));
+    }
+    if !key
+        .bytes()
+        .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
+    {
+        return Err(DeployServiceError::validation(
+            "envKey must be lowercase letters, digits, and hyphens",
+        ));
+    }
+    Ok(())
+}
 
 fn is_bounded_slug(slug: &str) -> bool {
     !slug.is_empty()

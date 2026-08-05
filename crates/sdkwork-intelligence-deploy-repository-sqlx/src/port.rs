@@ -4,38 +4,43 @@ use async_trait::async_trait;
 use sdkwork_deploy_contract::{
     AcmeAccountPage, AcmeAccountResponse, AppDatabaseMigrationPage, AppDatabaseMigrationResponse,
     AppDatabaseProfilePage, AppDatabaseProfileResponse, AppDeploymentPage, AppDeploymentResponse,
-    AppPage, AppReleasePage, AppReleaseResponse, AppResponse, ArtifactPage, ArtifactResponse,
-    AuditLogPage, BuildPage, BuildQueuePage, BuildResponse, BuildTemplatePage,
-    BuildTemplateResponse, CertificateChallengePage, CertificateOrderPage,
-    CertificateOrderResponse, CertificatePage, CertificateResponse, ChannelPage, ChannelResponse,
-    ChannelRolloutPage, ChannelRolloutResponse, CreateAcmeAccountRequest,
-    CreateAppDatabaseMigrationRequest, CreateAppDatabaseProfileRequest, CreateAppDeploymentRequest,
-    CreateAppReleaseRequest, CreateAppRequest, CreateArtifactRequest, CreateBuildRequest,
-    CreateBuildTemplateRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
-    CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
-    CreateEnvVariableRequest, CreateHealthCheckRequest, CreateNginxConfigRequest,
-    CreateNodeClusterRequest, CreatePlatformTargetRequest, CreateReleaseRequest,
-    CreateServerRequest, CreateSigningIdentityRequest, CreateSiteRequest,
-    CreateSourceRepositoryRequest, DeployAppRequestContext, DeployUploadSessionResponse,
-    DeploymentPage, DeploymentResponse, DeploymentStatus, DomainHostnamePage,
-    DomainHostnameResponse, DomainZonePage, DomainZoneResponse, EntitlementProjectionPage,
-    EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
+    AppEnvironmentPage, AppEnvironmentResponse, AppPage, AppReleasePage, AppReleaseResponse,
+    AppResponse, ArtifactPage, ArtifactResponse, AuditLogPage, BuildPage, BuildQueuePage,
+    BuildResponse, BuildTemplatePage, BuildTemplateResponse, CertificateChallengePage,
+    CertificateOrderPage, CertificateOrderResponse, CertificatePage, CertificateResponse,
+    ChannelPage, ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse,
+    CreateAcmeAccountRequest, CreateAppDatabaseMigrationRequest, CreateAppDatabaseProfileRequest,
+    CreateAppDeploymentRequest, CreateAppEnvironmentRequest, CreateAppReleaseRequest,
+    CreateAppRequest, CreateArtifactRequest, CreateBuildRequest, CreateBuildTemplateRequest,
+    CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDeploymentRequest,
+    CreateDomainHostnameRequest, CreateDomainZoneRequest, CreateEnvVariableRequest,
+    CreateHealthCheckRequest, CreateNginxConfigRequest, CreateNodeClusterRequest,
+    CreatePlatformTargetRequest, CreateReleaseRequest, CreateServerRequest,
+    CreateSigningIdentityRequest, CreateSiteRequest, CreateSourceRepositoryRequest,
+    DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
+    DeploymentStatus, DomainHostnamePage, DomainHostnameResponse, DomainZonePage,
+    DomainZoneResponse, EntitlementProjectionPage, EnvVariablePage, EnvVariableResponse,
+    EnvironmentPromotionPage, EnvironmentPromotionResponse, HealthCheckPage, HealthCheckResponse,
     ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
     NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
     NodeClusterPage, NodeClusterResponse, PackagePage, PackageResponse, PlatformTargetPage,
-    PlatformTargetResponse, PromoteChannelRequest, RegisterPackageRequest, ReleasePage,
-    ReleaseResponse, ReleaseStatus, RequestCertificateOrderRequest, RunnerHealthPage, ServerPage,
-    ServerResponse, SigningIdentityPage, SigningIdentityResponse, SitePage, SiteResponse,
-    SourceRepositoryPage, SourceRepositoryResponse, UpdateAppDatabaseProfileRequest,
+    PlatformTargetResponse, PromoteChannelRequest, PromoteEnvironmentRequest,
+    RegisterPackageRequest, ReleasePage, ReleaseResponse, ReleaseStatus,
+    RequestCertificateOrderRequest, RetentionRunResponse, RunnerHealthPage, ServerPage,
+    ServerResponse, SigningIdentityHealthPage, SigningIdentityPage, SigningIdentityResponse,
+    SitePage, SiteResponse, SourceEventPage, SourceEventResponse, SourceRepositoryPage,
+    SourceRepositoryResponse, UpdateAppDatabaseProfileRequest, UpdateAppEnvironmentRequest,
     UpdateAppRequest, UpdateBuildStateRequest, UpdateDomainHostnameRequest,
     UpdateDomainZoneRequest, UpdateNginxConfigRequest, UpdateNodeClusterRequest,
     UpdateServerRequest, UpdateSiteRequest, UsageEventPage, UsageEventResponse,
+    UsageReconciliationResponse,
 };
 use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
 use sdkwork_deploy_web_port::RuntimeAssignmentReceipt;
 use sdkwork_intelligence_deploy_service::repository::{
     InsertAuditLogCommand, InsertUsageEventCommand,
 };
+use sdkwork_intelligence_deploy_service::repository::{RepositoryMatch, TriggerTarget};
 use sdkwork_intelligence_deploy_service::runtime_publication::{
     DeployRuntimeAssignmentMutationPort, DeployRuntimeAssignmentRepositoryPort,
     RuntimeAssignmentState, RuntimeObservationEvidence, RuntimeObservationPersistenceResult,
@@ -1271,6 +1276,186 @@ impl DeployRepositoryPort for DeployRepository {
         page_size: i32,
     ) -> DeployServiceResult<CertificateChallengePage> {
         self.list_certificate_challenges_repo(tenant_id, order_id, page, page_size)
+            .await
+    }
+
+    async fn run_retention(
+        &self,
+        dry_run: bool,
+        package_retention_days: i64,
+        release_retention_days: i64,
+        build_log_retention_days: i64,
+    ) -> DeployServiceResult<RetentionRunResponse> {
+        self.run_retention_repo(
+            dry_run,
+            package_retention_days,
+            release_retention_days,
+            build_log_retention_days,
+        )
+        .await
+    }
+
+    async fn rebuild_usage_daily(
+        &self,
+        window_start: Option<&str>,
+        window_end: Option<&str>,
+    ) -> DeployServiceResult<UsageReconciliationResponse> {
+        self.rebuild_usage_daily_repo(window_start, window_end)
+            .await
+    }
+
+    async fn list_signing_identity_health(
+        &self,
+        tenant_id: Option<i64>,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<SigningIdentityHealthPage> {
+        self.list_signing_identity_health_repo(tenant_id, page, page_size)
+            .await
+    }
+
+    async fn create_app_environment(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        app_id: &str,
+        request: &CreateAppEnvironmentRequest,
+    ) -> DeployServiceResult<AppEnvironmentResponse> {
+        self.create_app_environment_repo(tenant_id, actor_id, app_id, request)
+            .await
+    }
+
+    async fn list_app_environments(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppEnvironmentPage> {
+        self.list_app_environments_repo(tenant_id, app_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_app_environment(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        environment_id: &str,
+    ) -> DeployServiceResult<AppEnvironmentResponse> {
+        self.retrieve_app_environment_repo(tenant_id, app_id, environment_id)
+            .await
+    }
+
+    async fn update_app_environment(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        app_id: &str,
+        environment_id: &str,
+        request: &UpdateAppEnvironmentRequest,
+    ) -> DeployServiceResult<AppEnvironmentResponse> {
+        self.update_app_environment_repo(tenant_id, actor_id, app_id, environment_id, request)
+            .await
+    }
+
+    async fn promote_environment(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        app_id: &str,
+        environment_id: &str,
+        request: &PromoteEnvironmentRequest,
+    ) -> DeployServiceResult<EnvironmentPromotionResponse> {
+        self.promote_environment_repo(tenant_id, actor_id, app_id, environment_id, request)
+            .await
+    }
+
+    async fn list_environment_promotions(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        environment_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<EnvironmentPromotionPage> {
+        self.list_environment_promotions_repo(tenant_id, app_id, environment_id, page, page_size)
+            .await
+    }
+
+    async fn match_repository_by_url(
+        &self,
+        clone_url: &str,
+    ) -> DeployServiceResult<Option<RepositoryMatch>> {
+        let matched = self.match_repository_by_url_repo(clone_url).await?;
+        Ok(matched.map(|matched| RepositoryMatch {
+            tenant_id: matched.tenant_id,
+            app_id: matched.app_id,
+            repository_id: matched.repository_id,
+            repository_internal_id: matched.repository_internal_id,
+            app_internal_id: matched.app_internal_id,
+            default_branch: matched.default_branch,
+        }))
+    }
+
+    async fn list_trigger_targets(&self, app_id: &str) -> DeployServiceResult<Vec<TriggerTarget>> {
+        self.list_trigger_targets_repo(app_id).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn ingest_source_event(
+        &self,
+        matched: &RepositoryMatch,
+        event_kind: &str,
+        source_ref: &str,
+        source_commit: &str,
+        commit_message: Option<&str>,
+        sender_ref: Option<&str>,
+        payload_sha256: &str,
+    ) -> DeployServiceResult<(SourceEventResponse, bool)> {
+        self.ingest_source_event_repo(
+            &crate::source_events::MatchedRepository {
+                tenant_id: matched.tenant_id,
+                app_id: matched.app_id.clone(),
+                repository_id: matched.repository_id.clone(),
+                repository_internal_id: matched.repository_internal_id,
+                app_internal_id: matched.app_internal_id,
+                default_branch: matched.default_branch.clone(),
+            },
+            event_kind,
+            source_ref,
+            source_commit,
+            commit_message,
+            sender_ref,
+            payload_sha256,
+        )
+        .await
+    }
+
+    async fn update_source_event_result(
+        &self,
+        tenant_id: i64,
+        event_id: &str,
+        processed: bool,
+        builds_triggered: i32,
+        error_code: Option<&str>,
+    ) -> DeployServiceResult<()> {
+        self.update_source_event_result_repo(
+            tenant_id,
+            event_id,
+            processed,
+            builds_triggered,
+            error_code,
+        )
+        .await
+    }
+
+    async fn list_source_events(
+        &self,
+        tenant_id: Option<i64>,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<SourceEventPage> {
+        self.list_source_events_repo(tenant_id, page, page_size)
             .await
     }
 }

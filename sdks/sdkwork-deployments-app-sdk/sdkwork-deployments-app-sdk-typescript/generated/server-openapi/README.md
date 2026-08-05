@@ -73,6 +73,7 @@ const client = new SdkworkDeployAppClient({
 - `client.signing` - signing API
 - `client.usage` - usage API
 - `client.appDatabase` - app_database API
+- `client.appEnvironment` - app_environment API
 
 ## Usage Examples
 
@@ -238,6 +239,18 @@ const params = {
   page_size: 2,
 };
 const result = await client.appDatabase.appDatabaseProfiles.list(appId, params);
+```
+
+### app_environment
+
+```typescript
+// List the environments of an app
+const appId = '1';
+const params = {
+  page: 1,
+  page_size: 2,
+};
+const result = await client.appEnvironment.list(appId, params);
 ```
 
 ## Error Handling

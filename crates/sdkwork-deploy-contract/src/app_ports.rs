@@ -844,6 +844,77 @@ pub trait DeployAppApi: Send + Sync {
             "retrieve_app_database_migration API is not implemented".to_owned(),
         ))
     }
+
+    async fn create_app_environment(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _request: &CreateAppEnvironmentRequest,
+    ) -> DeployServiceResult<AppEnvironmentResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "create_app_environment API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_app_environments(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<AppEnvironmentPage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_app_environments API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_app_environment(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _environment_id: &str,
+    ) -> DeployServiceResult<AppEnvironmentResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "retrieve_app_environment API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn update_app_environment(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _environment_id: &str,
+        _request: &UpdateAppEnvironmentRequest,
+    ) -> DeployServiceResult<AppEnvironmentResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "update_app_environment API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn promote_environment(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _environment_id: &str,
+        _request: &PromoteEnvironmentRequest,
+    ) -> DeployServiceResult<EnvironmentPromotionResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "promote_environment API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_environment_promotions(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _environment_id: &str,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<EnvironmentPromotionPage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_environment_promotions API is not implemented".to_owned(),
+        ))
+    }
 }
 
 #[async_trait]
@@ -1025,4 +1096,40 @@ pub trait DeployBackendApi: Send + Sync {
         page: i32,
         page_size: i32,
     ) -> DeployServiceResult<CertificateChallengePage>;
+
+    async fn run_retention(
+        &self,
+        context: &DeployBackendRequestContext,
+        request: &RetentionRunRequest,
+    ) -> DeployServiceResult<RetentionRunResponse>;
+
+    async fn rebuild_usage_daily(
+        &self,
+        context: &DeployBackendRequestContext,
+        request: &UsageReconciliationRequest,
+    ) -> DeployServiceResult<UsageReconciliationResponse>;
+
+    async fn list_signing_identity_health(
+        &self,
+        context: &DeployBackendRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<SigningIdentityHealthPage>;
+
+    /// Ingests a Git webhook push event (GitHub-compatible payload with
+    /// `X-Hub-Signature-256` HMAC verification) and triggers builds for the
+    /// matched repository's active targets on the default branch.
+    async fn ingest_source_event(
+        &self,
+        context: &DeployBackendRequestContext,
+        payload: &[u8],
+        signature: Option<&str>,
+    ) -> DeployServiceResult<SourceEventIngestResponse>;
+
+    async fn list_source_events(
+        &self,
+        context: &DeployBackendRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<SourceEventPage>;
 }

@@ -90,6 +90,14 @@ control plane:
   `MACOS_DEVELOPER_ID` signing identities, `MICROSOFT_STORE` / `MAC_APP_STORE` targets, and
   desktop auto-update manifests (Electron `latest.yml`, Tauri `latest.json`, Sparkle
   `appcast.xml`) with SHA-512 checksum binding.
+- CI event ingestion is implemented (migration 0010): GitHub-compatible webhook
+  ingestion at `/backend/v3/api/source_events` with `X-Hub-Signature-256` HMAC verification
+  (secret via `SDKWORK_DEPLOY_WEBHOOK_SECRET`, endpoint fails closed without it), per-commit
+  deduplication, and automatic build triggering for active targets on the default branch.
+- The application environment model is implemented (migration 0010):
+  `deploy_app_environment` (env key/level/approval requirement/current release pointer) with
+  chain-enforced promotion (`fromEnvironmentId` must hold the release) and immutable
+  `deploy_environment_promotion` history via `/app/v3/api/apps/{appId}/environments`.
 - The application database structure contract is implemented (migration 0009):
   `deploy_app_database_profile` (engine/catalog/schema contract per app) and
   `deploy_app_database_migration` (versioned migration definitions with SHA-256 checksum
@@ -149,9 +157,11 @@ production-shaped evidence remains required:
   transactional certificate version storage via `/backend/v3/api/tls/*`; the RFC 8555 ACME
   client boundary and HTTP-01 verification endpoint remain credential/network-gated);
 - tenant console, platform admin console, abuse, and incident workflows (metering facts are
-  emitted and entitlement enforcement is implemented behind the
-  `SDKWORK_DEPLOY_ENTITLEMENT_ENFORCEMENT` switch; Commerce projection ingestion remains
-  external);
+  emitted, entitlement enforcement is implemented behind the
+  `SDKWORK_DEPLOY_ENTITLEMENT_ENFORCEMENT` switch, retention enforcement runs via
+  `/backend/v3/api/retention/run` with `SDKWORK_DEPLOY_RETENTION_*_DAYS` windows, and the
+  daily usage aggregate reconciles idempotently via `/backend/v3/api/usage/reconcile`;
+  Commerce projection ingestion remains external);
 - continuous topology evidence that cloud Web workloads cannot activate standalone management authority;
 - production PostgreSQL backup/restore, multi-node rollout, load, security, and recovery evidence;
 - governed publication of the already generated App/Backend SDK packages;

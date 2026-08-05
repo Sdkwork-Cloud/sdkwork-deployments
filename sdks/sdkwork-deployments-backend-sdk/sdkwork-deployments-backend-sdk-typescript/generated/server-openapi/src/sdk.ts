@@ -10,6 +10,10 @@ import { EntitlementApi, createEntitlementApi } from './api/entitlement';
 import { BuildQueueApi, createBuildQueueApi } from './api/build-queue';
 import { RunnersApi, createRunnersApi } from './api/runners';
 import { TlsApi, createTlsApi } from './api/tls';
+import { RetentionApi, createRetentionApi } from './api/retention';
+import { UsageApi, createUsageApi } from './api/usage';
+import { SigningHealthApi, createSigningHealthApi } from './api/signing-health';
+import { SourceEventsApi, createSourceEventsApi } from './api/source-events';
 
 export class SdkworkDeployBackendClient {
   private httpClient: HttpClient;
@@ -22,6 +26,10 @@ export class SdkworkDeployBackendClient {
   public readonly buildQueue: BuildQueueApi;
   public readonly runners: RunnersApi;
   public readonly tls: TlsApi;
+  public readonly retention: RetentionApi;
+  public readonly usage: UsageApi;
+  public readonly signingHealth: SigningHealthApi;
+  public readonly sourceEvents: SourceEventsApi;
 
   constructor(config: SdkworkBackendConfig) {
     this.httpClient = createHttpClient(config);
@@ -40,6 +48,14 @@ export class SdkworkDeployBackendClient {
     this.runners = createRunnersApi(this.httpClient);
 
     this.tls = createTlsApi(this.httpClient);
+
+    this.retention = createRetentionApi(this.httpClient);
+
+    this.usage = createUsageApi(this.httpClient);
+
+    this.signingHealth = createSigningHealthApi(this.httpClient);
+
+    this.sourceEvents = createSourceEventsApi(this.httpClient);
   }
   setAuthToken(token: string): this {
     this.httpClient.setAuthToken(token);

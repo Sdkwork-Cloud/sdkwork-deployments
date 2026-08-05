@@ -25,6 +25,7 @@ Current inventory:
 | 0006 | `deploy_legacy_schema_convergence` | converge pre-2026-07-31 `deploy_domain` / `deploy_certificate` shapes and `deploy_site` / `deploy_server` columns; fails loudly on unmappable legacy rows |
 | 0008 | `deploy_usage_metering` | `deploy_usage_event`, `deploy_tenant_entitlement_projection`, `deploy_site_usage_daily` metering and entitlement read-model tables |
 | 0007 | `deploy_app_delivery` | unified application delivery: `deploy_app`, `deploy_app_platform_target`, `deploy_source_repository`, `deploy_build_template`, `deploy_build`, `deploy_package`, `deploy_release_channel`, `deploy_channel_rollout`, `deploy_signing_identity`, plus additive `app_id`/new-model columns on `deploy_site`, `deploy_release`, `deploy_deployment` |
+| 0010 | `source_events_and_environments` | CI event ingestion (`deploy_source_event`, deduplicated per repository commit, driving automatic builds) and the application environment model (`deploy_app_environment` with current release pointer + immutable `deploy_environment_promotion` history) |
 | 0009 | `app_database_profile` | application database structure contract: `deploy_app_database_profile` (engine/catalog/schema contract per app) and `deploy_app_database_migration` (versioned migration definitions with checksum binding to releases) |
 
 Migrations are idempotent (`IF NOT EXISTS` / guarded `DO` blocks) so they apply

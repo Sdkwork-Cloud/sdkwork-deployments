@@ -39,6 +39,13 @@ export type { CertificateChallengeResponse } from './certificate-challenge-respo
 export type { FailCertificateOrderRequest } from './fail-certificate-order-request';
 export type { ChallengeResultRequest } from './challenge-result-request';
 export type { StoreCertificateVersionRequest } from './store-certificate-version-request';
+export type { RetentionRunRequest } from './retention-run-request';
+export type { RetentionRunResponse } from './retention-run-response';
+export type { UsageReconciliationRequest } from './usage-reconciliation-request';
+export type { UsageReconciliationResponse } from './usage-reconciliation-response';
+export type { SigningIdentityHealthResponse } from './signing-identity-health-response';
+export type { SourceEventResponse } from './source-event-response';
+export type { SourceEventIngestResponse } from './source-event-ingest-response';
 export type { ConfigsListResponse } from './configs-list-response';
 export type { ConfigsCreateResponse201 } from './configs-create-response201';
 export type { ConfigsRetrieveResponse } from './configs-retrieve-response';
@@ -66,3 +73,9 @@ export type { TlsOrdersChallengeResultResponse } from './tls-orders-challenge-re
 export type { TlsOrdersStoreVersionResponse201 } from './tls-orders-store-version-response201';
 export type { TlsOrdersListChallengesResponse } from './tls-orders-list-challenges-response';
 export type { TlsOrdersListResponse } from './tls-orders-list-response';
+export type { RetentionRunPostResponse } from './retention-run-post-response';
+export type { UsageReconcileDailyResponse } from './usage-reconcile-daily-response';
+export type { SigningIdentityHealthListResponse } from './signing-identity-health-list-response';
+export type { SourceEventsListResponse } from './source-events-list-response';
+export type { SourceEventsIngestRequest } from './source-events-ingest-request';
+export type { SourceEventsIngestResponse } from './source-events-ingest-response';

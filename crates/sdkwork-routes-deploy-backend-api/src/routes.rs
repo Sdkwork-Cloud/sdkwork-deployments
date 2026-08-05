@@ -8,8 +8,8 @@ use sdkwork_deploy_contract::{
     AuditLogQuery, ChallengeResultRequest, CreateAcmeAccountRequest, CreateNginxConfigRequest,
     CreateNodeClusterRequest, CreateServerRequest, DeployBackendApi, DeployBackendRequestContext,
     FailCertificateOrderRequest, ListNginxConfigsQuery, RequestCertificateOrderRequest,
-    StoreCertificateVersionRequest, UpdateNginxConfigRequest, UpdateNodeClusterRequest,
-    UpdateServerRequest,
+    RetentionRunRequest, StoreCertificateVersionRequest, UpdateNginxConfigRequest,
+    UpdateNodeClusterRequest, UpdateServerRequest, UsageReconciliationRequest,
 };
 use sdkwork_routes_deploy_common::{envelope, finish_api_json, finish_created_api_json, ok_json};
 use sdkwork_web_core::WebRequestContext;
@@ -72,6 +72,16 @@ pub fn build_router_with_shared_backend_api(api: Arc<dyn DeployBackendApi>) -> R
             get(list_certificate_challenges),
         )
         .route(paths::CERTIFICATE_ORDERS, get(list_certificate_orders))
+        .route(paths::RETENTION_RUN, post(run_retention))
+        .route(paths::USAGE_RECONCILE, post(reconcile_usage_daily))
+        .route(
+            paths::SIGNING_IDENTITY_HEALTH,
+            get(list_signing_identity_health),
+        )
+        .route(
+            paths::SOURCE_EVENTS,
+            get(list_source_events).post(ingest_source_event),
+        )
         .layer(axum::middleware::from_fn(
             sdkwork_routes_deploy_common::pagination::validate_pagination_query,
         ))
@@ -639,6 +649,109 @@ async fn list_certificate_challenges(
                 .list_certificate_challenges(&context, &order_id, query.page, query.page_size)
                 .await?;
             ok_json(envelope::certificate_challenge_page(page))
+        }
+        .await,
+    )
+}
+
+// -- retention, reconciliation, and signing health (TECH §8, PRD §5.8) ---------
+
+async fn run_retention(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Json(request): Json<RetentionRunRequest>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let result = state.api.run_retention(&context, &request).await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn reconcile_usage_daily(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Json(request): Json<UsageReconciliationRequest>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let result = state.api.rebuild_usage_daily(&context, &request).await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn list_signing_identity_health(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let page = state
+                .api
+                .list_signing_identity_health(&context, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::signing_identity_health_page(page))
+        }
+        .await,
+    )
+}
+
+// -- CI source events (webhook ingestion, P0 product gap) ---------------------
+
+async fn ingest_source_event(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    headers: axum::http::HeaderMap,
+    body: axum::body::Bytes,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let signature = headers
+                .get("x-hub-signature-256")
+                .and_then(|value| value.to_str().ok())
+                .map(|value| value.to_owned());
+            let result = state
+                .api
+                .ingest_source_event(&context, &body, signature.as_deref())
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn list_source_events(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let page = state
+                .api
+                .list_source_events(&context, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::source_event_page(page))
         }
         .await,
     )
