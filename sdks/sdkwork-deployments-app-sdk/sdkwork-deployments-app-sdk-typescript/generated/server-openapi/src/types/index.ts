@@ -104,6 +104,12 @@ export type { CreateAppDeploymentRequest } from './create-app-deployment-request
 export type { AppDeploymentResponse } from './app-deployment-response';
 export type { CreateSigningIdentityRequest } from './create-signing-identity-request';
 export type { SigningIdentityResponse } from './signing-identity-response';
+export type { UsageEventResponse } from './usage-event-response';
+export type { CreateAppDatabaseProfileRequest } from './create-app-database-profile-request';
+export type { UpdateAppDatabaseProfileRequest } from './update-app-database-profile-request';
+export type { AppDatabaseProfileResponse } from './app-database-profile-response';
+export type { CreateAppDatabaseMigrationRequest } from './create-app-database-migration-request';
+export type { AppDatabaseMigrationResponse } from './app-database-migration-response';
 export type { DomainZonesListResponse } from './domain-zones-list-response';
 export type { DomainZonesCreateResponse201 } from './domain-zones-create-response201';
 export type { DomainZonesRetrieveResponse } from './domain-zones-retrieve-response';
@@ -175,3 +181,11 @@ export type { DeploymentsRetrieveResponse } from './deployments-retrieve-respons
 export type { SigningIdentitiesListResponse } from './signing-identities-list-response';
 export type { SigningIdentitiesCreateResponse201 } from './signing-identities-create-response201';
 export type { SigningIdentitiesRetrieveResponse } from './signing-identities-retrieve-response';
+export type { UsageEventsListResponse } from './usage-events-list-response';
+export type { AppDatabaseProfilesListResponse } from './app-database-profiles-list-response';
+export type { AppDatabaseProfilesCreateResponse201 } from './app-database-profiles-create-response201';
+export type { AppDatabaseProfilesRetrieveResponse } from './app-database-profiles-retrieve-response';
+export type { AppDatabaseProfilesUpdateResponse } from './app-database-profiles-update-response';
+export type { AppDatabaseMigrationsListResponse } from './app-database-migrations-list-response';
+export type { AppDatabaseMigrationsCreateResponse201 } from './app-database-migrations-create-response201';
+export type { AppDatabaseMigrationsRetrieveResponse } from './app-database-migrations-retrieve-response';

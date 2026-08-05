@@ -8,8 +8,10 @@ mod artifacts;
 mod audit;
 mod builds;
 mod certificates;
+mod database_profiles;
 mod deployments;
 mod domain_zones;
+mod entitlement;
 mod env_variables;
 mod health_checks;
 mod nginx_configs;
@@ -23,7 +25,9 @@ mod servers;
 mod site_composition;
 mod sites;
 mod support;
+mod tls_control;
 mod upload_sessions;
+mod usage;
 
 #[derive(Clone)]
 pub struct DeployRepository {

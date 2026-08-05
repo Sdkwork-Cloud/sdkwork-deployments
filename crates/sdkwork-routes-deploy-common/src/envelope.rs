@@ -1,17 +1,22 @@
 //! Map deploy domain DTOs to SdkWork HTTP API v3 envelope payloads.
 
 use sdkwork_deploy_contract::{
-    AppDeploymentPage, AppDeploymentResponse, AppPage, AppReleasePage, AppReleaseResponse,
-    AppResponse, ArtifactPage, ArtifactResponse, AuditLogPage, AuditLogResponse, BuildPage,
-    BuildResponse, BuildTemplatePage, BuildTemplateResponse, CertificatePage, CertificateResponse,
-    ChannelPage, ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse, DeploymentPage,
-    DeploymentResponse, DomainHostnamePage, DomainHostnameResponse, DomainVerifyResponse,
-    DomainZonePage, DomainZoneResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage,
+    AcmeAccountPage, AcmeAccountResponse, AppDatabaseMigrationPage, AppDatabaseMigrationResponse,
+    AppDatabaseProfilePage, AppDatabaseProfileResponse, AppDeploymentPage, AppDeploymentResponse,
+    AppPage, AppReleasePage, AppReleaseResponse, AppResponse, ArtifactPage, ArtifactResponse,
+    AuditLogPage, AuditLogResponse, BuildPage, BuildQueueItemResponse, BuildQueuePage,
+    BuildResponse, BuildTemplatePage, BuildTemplateResponse, CertificateChallengePage,
+    CertificateChallengeResponse, CertificateOrderPage, CertificateOrderResponse, CertificatePage,
+    CertificateResponse, ChannelPage, ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse,
+    DeploymentPage, DeploymentResponse, DomainHostnamePage, DomainHostnameResponse,
+    DomainVerifyResponse, DomainZonePage, DomainZoneResponse, EntitlementProjectionPage,
+    EntitlementProjectionResponse, EnvVariablePage, EnvVariableResponse, HealthCheckPage,
     HealthCheckResponse, NginxConfigPage, NginxConfigResponse, NginxReloadResponse,
     NginxStatusResponse, NginxValidateResponse, NodeClusterPage, NodeClusterResponse, PackagePage,
     PackageResponse, PlatformTargetPage, PlatformTargetResponse, ReleasePage, ReleaseResponse,
-    ServerPage, ServerResponse, SigningIdentityPage, SigningIdentityResponse, SitePage,
-    SiteResponse, SourceRepositoryPage, SourceRepositoryResponse,
+    RunnerHealthPage, RunnerHealthResponse, ServerPage, ServerResponse, SigningIdentityPage,
+    SigningIdentityResponse, SitePage, SiteResponse, SourceRepositoryPage,
+    SourceRepositoryResponse, UsageEventPage, UsageEventResponse,
 };
 use sdkwork_deploy_core::normalize_pagination;
 use sdkwork_utils_rust::{PageInfo, PageMode, SdkWorkPageData, SdkWorkResourceData};
@@ -65,6 +70,52 @@ pub fn app_deployment_page(page: AppDeploymentPage) -> SdkWorkPageData<AppDeploy
 pub fn signing_identity_page(
     page: SigningIdentityPage,
 ) -> SdkWorkPageData<SigningIdentityResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
+}
+
+pub fn usage_event_page(page: UsageEventPage) -> SdkWorkPageData<UsageEventResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
+}
+
+pub fn app_database_profile_page(
+    page: AppDatabaseProfilePage,
+) -> SdkWorkPageData<AppDatabaseProfileResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
+}
+
+pub fn app_database_migration_page(
+    page: AppDatabaseMigrationPage,
+) -> SdkWorkPageData<AppDatabaseMigrationResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
+}
+
+pub fn entitlement_projection_page(
+    page: EntitlementProjectionPage,
+) -> SdkWorkPageData<EntitlementProjectionResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
+}
+
+pub fn build_queue_page(page: BuildQueuePage) -> SdkWorkPageData<BuildQueueItemResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
+}
+
+pub fn runner_health_page(page: RunnerHealthPage) -> SdkWorkPageData<RunnerHealthResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
+}
+
+pub fn acme_account_page(page: AcmeAccountPage) -> SdkWorkPageData<AcmeAccountResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
+}
+
+pub fn certificate_order_page(
+    page: CertificateOrderPage,
+) -> SdkWorkPageData<CertificateOrderResponse> {
+    offset_page(page.items, page.page, page.page_size, page.total)
+}
+
+pub fn certificate_challenge_page(
+    page: CertificateChallengePage,
+) -> SdkWorkPageData<CertificateChallengeResponse> {
     offset_page(page.items, page.page, page.page_size, page.total)
 }
 

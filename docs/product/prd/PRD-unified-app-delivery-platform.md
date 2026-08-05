@@ -84,14 +84,31 @@ App creation requires a name, slug, `app_kind`, and at least one platform target
 | `IOS_APP` | Flutter / native Swift | App Store Connect, TestFlight, enterprise OTA |
 | `ANDROID_APP` | Flutter / native Kotlin | Play/other stores, enterprise OTA |
 | `HARMONYOS_APP` | ArkTS / Flutter | AppGallery / enterprise distribution |
+| `DESKTOP_APP` | Electron / Tauri / Flutter / native | Windows (MSI/NSIS/MSIX/EXE), macOS (DMG/PKG), Linux (DEB/RPM/AppImage), Microsoft Store, Mac App Store, OTA auto-update |
 
 A platform target carries its platform identity (bundle id / package name / app id / bundle
-name), tech stack (`FLUTTER`, `NATIVE`, `UNI_APP`, or web/API stack), build template reference,
-and allowed channels. One source repository can feed multiple targets; each target keeps its own
+name), tech stack (`FLUTTER`, `NATIVE`, `UNI_APP`, `ELECTRON`, `TAURI`, or web/API stack), build
+template reference, and allowed channels. Desktop targets are per-operating-system
+(`WINDOWS`/`MACOS`/`LINUX`); CPU architecture (x86_64/arm64) is recorded on the package
+`architectures` field. One source repository can feed multiple targets; each target keeps its own
 monotonic `build_number` and semantic version sequence.
 
 Web-kind Apps link a `deploy_site`; existing Sites continue to work and are treated as implicit
 `STATIC_WEB`/`SPA_WEB` Apps.
+
+### 5.1.1 Application Database Structure Contract
+
+An App (typically `API_SERVICE` or `DESKTOP_APP` with a server side) may declare a database
+structure contract so releases ship with their data definition:
+
+- a database profile (`database_profiles` resource) declares the engine
+  (`POSTGRES`/`MYSQL`/`SQLITE`), catalog/schema name, schema and baseline versions, and the
+  migration strategy (`VERSIONED`/`REPEATABLE`);
+- versioned migration definitions are added under the profile with a SHA-256 checksum and an
+  opaque script reference; the checksum is the release-to-schema binding evidence — a release
+  carries the exact migration set recorded on the profile;
+- deploy stores the definitions; the runtime executes them against the declared engine
+  (Flyway/Liquibase-style versioned execution is owned by the application runtime).
 
 ### 5.2 Source Repositories
 
@@ -128,9 +145,13 @@ Every successful build produces one `deploy_package`:
   producing build, signing identity, and platform requirements;
 - in-package manifest standard `sdkwork.deploy-package.v1` with canonical hashing;
 - per-format validation rules (see REQ-2026-0002 functional requirement 8): web bundles, API
-  container image references / process bundles, mini-program archives with platform size ceilings,
-  iOS bundle identity and signing requirements, Android package/signature requirements, HarmonyOS
-  bundle/API requirements.
+  container image references / process bundles / JVM artifacts, mini-program archives with
+  platform size ceilings, iOS bundle identity and signing requirements, Android
+  package/signature requirements, HarmonyOS bundle/API requirements, and desktop installers;
+- desktop installers validate at the container boundary (OLE for MSI, xar for PKG, ar for DEB,
+  RPM magic, ELF for AppImage, PE signature for EXE/NSIS, `koly` trailer for DMG, ZIP container
+  for MSIX/JAR/WAR) with a 2 GiB ceiling; the package manifest travels as registration metadata,
+  never embedded (embedding would break Authenticode/notarization and vendor installers).
 
 ### 5.5 Versions, Channels, And Releases
 
@@ -152,8 +173,8 @@ Deployments execute a channel release against a typed target:
 | `ARTIFACT_RELEASE` | frozen artifact release (legacy-compatible) |
 | `SITE_CONFIG` / `TLS_CONFIG` | existing Site revision/TLS rollout |
 | `MINIPROGRAM_REVIEW` | WeChat/Douyin review submission with platform review reference |
-| `STORE_SUBMISSION` | App Store Connect / store submission |
-| `OTA_DISTRIBUTION` | self-hosted OTA install channel for iOS/Android/HarmonyOS |
+| `STORE_SUBMISSION` | App Store Connect / Microsoft Store / Mac App Store submission |
+| `OTA_DISTRIBUTION` | self-hosted OTA install channel for iOS/Android/HarmonyOS and desktop auto-update (Electron `latest.yml`, Tauri `latest.json`, Sparkle `appcast.xml`) |
 | `ENTERPRISE_DISTRIBUTION` | enterprise signed distribution |
 | `CONTAINER_ROLLOUT` | container image rollout through an approved orchestrator |
 
@@ -164,9 +185,10 @@ reference, rollback linkage, and audit. Platform review states (`PENDING_REVIEW`
 ### 5.7 Signing Identities
 
 `deploy_signing_identity` models iOS signing, Android keystore, HarmonyOS certificate profile,
-and mini-program upload key identities with bounded metadata (name, kind, fingerprint, expiry,
-secret reference). Key material is never stored in Deploy; signing executes in the build runner
-host using injected secret files.
+mini-program upload key, Windows Authenticode (PFX/EV), and macOS Developer ID (with notarization)
+identities with bounded metadata (name, kind, fingerprint, expiry, secret reference). Key
+material is never stored in Deploy; signing executes in the build runner host using injected
+secret files.
 
 ### 5.8 Metering, Quotas, And Retention
 
@@ -296,6 +318,15 @@ submission executor (mini-program CI) after credential integration, review obser
 
 iOS/Android (Flutter and native) and HarmonyOS targets, signing identity enforcement, TestFlight/
 store submission and OTA distribution executors after credential integration.
+
+### Phase 4.5 - Desktop Delivery
+
+Desktop (`DESKTOP_APP`) targets per operating system (WINDOWS/MACOS/LINUX), installer package
+formats (MSI/NSIS/MSIX/EXE, DMG/PKG, DEB/RPM/AppImage) with container-boundary validation and
+2 GiB ceiling, Windows Authenticode and macOS Developer ID signing identities, Microsoft Store /
+Mac App Store targets, and desktop auto-update manifests (Electron `latest.yml`, Tauri
+`latest.json`, Sparkle `appcast.xml`) with SHA-512 checksum binding. The application database
+structure contract (profiles + versioned migration definitions) is available to all App kinds.
 
 ### Phase 5 - Commercial GA
 

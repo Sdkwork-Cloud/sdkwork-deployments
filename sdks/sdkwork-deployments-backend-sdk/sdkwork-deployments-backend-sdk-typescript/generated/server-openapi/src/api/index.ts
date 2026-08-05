@@ -4,3 +4,7 @@ export { NginxApi, createNginxApi } from './nginx';
 export { ServerApi, createServerApi } from './server';
 export { ClusterApi, createClusterApi } from './cluster';
 export { AuditApi, createAuditApi } from './audit';
+export { EntitlementApi, createEntitlementApi } from './entitlement';
+export { BuildQueueApi, createBuildQueueApi } from './build-queue';
+export { RunnersApi, createRunnersApi } from './runners';
+export { TlsApi, createTlsApi } from './tls';

@@ -71,6 +71,8 @@ const client = new SdkworkDeployAppClient({
 - `client.build` - build API
 - `client.package` - package API
 - `client.signing` - signing API
+- `client.usage` - usage API
+- `client.appDatabase` - app_database API
 
 ## Usage Examples
 
@@ -213,6 +215,29 @@ const params = {
   page_size: 2,
 };
 const result = await client.signing.signingIdentities.list(params);
+```
+
+### usage
+
+```typescript
+// List tenant usage metering events
+const params = {
+  page: 1,
+  page_size: 2,
+};
+const result = await client.usage.usageEvents.list(params);
+```
+
+### app_database
+
+```typescript
+// List the database structure contracts of an app
+const appId = '1';
+const params = {
+  page: 1,
+  page_size: 2,
+};
+const result = await client.appDatabase.appDatabaseProfiles.list(appId, params);
 ```
 
 ## Error Handling

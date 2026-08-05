@@ -15,6 +15,8 @@ import { AppApi, createAppApi } from './api/app';
 import { BuildApi, createBuildApi } from './api/build';
 import { PackageApi, createPackageApi } from './api/package';
 import { SigningApi, createSigningApi } from './api/signing';
+import { UsageApi, createUsageApi } from './api/usage';
+import { AppDatabaseApi, createAppDatabaseApi } from './api/app-database';
 
 export class SdkworkDeployAppClient {
   private httpClient: HttpClient;
@@ -32,6 +34,8 @@ export class SdkworkDeployAppClient {
   public readonly build: BuildApi;
   public readonly package: PackageApi;
   public readonly signing: SigningApi;
+  public readonly usage: UsageApi;
+  public readonly appDatabase: AppDatabaseApi;
 
   constructor(config: SdkworkAppConfig) {
     this.httpClient = createHttpClient(config);
@@ -60,6 +64,10 @@ export class SdkworkDeployAppClient {
     this.package = createPackageApi(this.httpClient);
 
     this.signing = createSigningApi(this.httpClient);
+
+    this.usage = createUsageApi(this.httpClient);
+
+    this.appDatabase = createAppDatabaseApi(this.httpClient);
   }
   setAuthToken(token: string): this {
     this.httpClient.setAuthToken(token);

@@ -11,3 +11,15 @@ pub const SERVER: &str = "/backend/v3/api/servers/{serverId}";
 pub const NODE_CLUSTERS: &str = "/backend/v3/api/node_clusters";
 pub const NODE_CLUSTER: &str = "/backend/v3/api/node_clusters/{clusterId}";
 pub const AUDIT_LOGS: &str = "/backend/v3/api/audit_logs";
+pub const ENTITLEMENTS: &str = "/backend/v3/api/entitlements";
+pub const BUILD_QUEUE: &str = "/backend/v3/api/build_queue";
+pub const RUNNERS: &str = "/backend/v3/api/runners";
+pub const TLS_ACCOUNTS: &str = "/backend/v3/api/tls/accounts";
+pub const TLS_ORDERS: &str = "/backend/v3/api/tls/orders";
+pub const TLS_ORDER_ADVANCE: &str = "/backend/v3/api/tls/orders/{orderId}/advance";
+pub const TLS_ORDER_FAIL: &str = "/backend/v3/api/tls/orders/{orderId}/fail";
+pub const TLS_ORDER_CHALLENGE_RESULT: &str =
+    "/backend/v3/api/tls/orders/{orderId}/challenge_result";
+pub const TLS_ORDER_VERSIONS: &str = "/backend/v3/api/tls/orders/{orderId}/versions";
+pub const TLS_ORDER_CHALLENGES: &str = "/backend/v3/api/tls/orders/{orderId}/challenges";
+pub const CERTIFICATE_ORDERS: &str = "/backend/v3/api/certificates/{certificateId}/orders";

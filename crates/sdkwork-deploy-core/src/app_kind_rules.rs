@@ -13,6 +13,11 @@ pub const DOUYIN_MINIPROGRAM_TOTAL_PACKAGE_BYTES: u64 = 20 * 1024 * 1024;
 pub const WEB_BUNDLE_MAXIMUM_BYTES: u64 = 256 * 1024 * 1024;
 /// Generic process bundle ceiling in bytes (512 MiB).
 pub const PROCESS_BUNDLE_MAXIMUM_BYTES: u64 = 512 * 1024 * 1024;
+/// Desktop installer ceiling in bytes (2 GiB): Electron/Tauri installers,
+/// DMG/PKG, and AppImage payloads exceed mobile-scale ceilings.
+pub const DESKTOP_INSTALLER_MAXIMUM_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+/// JVM artifact ceiling in bytes (512 MiB).
+pub const JVM_ARTIFACT_MAXIMUM_BYTES: u64 = 512 * 1024 * 1024;
 
 /// Platform identity field required per platform.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -40,8 +45,10 @@ impl RequiredIdentityField {
 pub fn required_identity_field(platform: &str) -> RequiredIdentityField {
     match platform {
         "IOS" => RequiredIdentityField::BundleId,
+        "MACOS" => RequiredIdentityField::BundleId,
         "ANDROID" => RequiredIdentityField::PackageName,
         "WECHAT" | "DOUYIN" => RequiredIdentityField::AppId,
+        "WINDOWS" => RequiredIdentityField::AppId,
         "HARMONYOS" => RequiredIdentityField::BundleName,
         _ => RequiredIdentityField::None,
     }
@@ -57,6 +64,7 @@ pub fn validate_app_kind_platform(app_kind: &str, platform: &str) -> Result<(), 
         "IOS_APP" => &["IOS"],
         "ANDROID_APP" => &["ANDROID"],
         "HARMONYOS_APP" => &["HARMONYOS"],
+        "DESKTOP_APP" => &["WINDOWS", "MACOS", "LINUX"],
         _ => return Err(format!("unknown app kind {app_kind}")),
     };
     if allowed.contains(&platform) {
@@ -76,11 +84,14 @@ pub fn validate_package_format_for_platform(
 ) -> Result<(), String> {
     let allowed: &[&str] = match platform {
         "WEB" => &["DIST_DIR", "TAR_GZ", "ZIP"],
-        "API" => &["OCI_IMAGE", "PROCESS_BUNDLE", "TAR_GZ"],
+        "API" => &["OCI_IMAGE", "PROCESS_BUNDLE", "TAR_GZ", "JAR", "WAR"],
         "WECHAT" | "DOUYIN" => &["ZIP", "TAR_GZ"],
         "IOS" => &["IPA", "XCARCHIVE", "ZIP"],
         "ANDROID" => &["APK", "AAB", "ZIP"],
         "HARMONYOS" => &["HAP", "APP", "ZIP"],
+        "WINDOWS" => &["MSI", "NSIS", "MSIX", "EXE", "ZIP", "TAR_GZ"],
+        "MACOS" => &["DMG", "PKG", "ZIP"],
+        "LINUX" => &["DEB", "RPM", "APPIMAGE", "TAR_GZ"],
         _ => return Err(format!("unknown platform {platform}")),
     };
     if allowed.contains(&package_format) {
@@ -100,7 +111,8 @@ pub fn package_size_ceiling(platform: &str, package_format: &str) -> Option<u64>
         ("WECHAT", _) => Some(WECHAT_MINIPROGRAM_TOTAL_PACKAGE_BYTES),
         ("DOUYIN", _) => Some(DOUYIN_MINIPROGRAM_TOTAL_PACKAGE_BYTES),
         ("WEB", "DIST_DIR" | "TAR_GZ") => Some(WEB_BUNDLE_MAXIMUM_BYTES),
-        ("API", "PROCESS_BUNDLE") => Some(PROCESS_BUNDLE_MAXIMUM_BYTES),
+        ("API", "PROCESS_BUNDLE" | "JAR" | "WAR") => Some(PROCESS_BUNDLE_MAXIMUM_BYTES),
+        ("WINDOWS" | "MACOS" | "LINUX", _) => Some(DESKTOP_INSTALLER_MAXIMUM_BYTES),
         _ => None,
     }
 }
@@ -204,5 +216,46 @@ mod tests {
         assert!(validate_platform_identity("IOS", "com.sdkwork.example/api").is_err());
         assert!(validate_platform_identity("IOS", "").is_err());
         assert!(validate_platform_identity("WEB", "").is_ok());
+    }
+
+    #[test]
+    fn desktop_platform_matrix_is_enforced() {
+        assert!(validate_app_kind_platform("DESKTOP_APP", "WINDOWS").is_ok());
+        assert!(validate_app_kind_platform("DESKTOP_APP", "MACOS").is_ok());
+        assert!(validate_app_kind_platform("DESKTOP_APP", "LINUX").is_ok());
+        assert!(validate_app_kind_platform("DESKTOP_APP", "ANDROID").is_err());
+        assert!(validate_app_kind_platform("IOS_APP", "MACOS").is_err());
+
+        assert!(validate_package_format_for_platform("WINDOWS", "MSI").is_ok());
+        assert!(validate_package_format_for_platform("WINDOWS", "NSIS").is_ok());
+        assert!(validate_package_format_for_platform("WINDOWS", "MSIX").is_ok());
+        assert!(validate_package_format_for_platform("WINDOWS", "EXE").is_ok());
+        assert!(validate_package_format_for_platform("WINDOWS", "DMG").is_err());
+        assert!(validate_package_format_for_platform("MACOS", "DMG").is_ok());
+        assert!(validate_package_format_for_platform("MACOS", "PKG").is_ok());
+        assert!(validate_package_format_for_platform("MACOS", "MSI").is_err());
+        assert!(validate_package_format_for_platform("LINUX", "DEB").is_ok());
+        assert!(validate_package_format_for_platform("LINUX", "RPM").is_ok());
+        assert!(validate_package_format_for_platform("LINUX", "APPIMAGE").is_ok());
+        assert!(validate_package_format_for_platform("LINUX", "EXE").is_err());
+        assert!(validate_package_format_for_platform("API", "JAR").is_ok());
+        assert!(validate_package_format_for_platform("API", "WAR").is_ok());
+    }
+
+    #[test]
+    fn desktop_identity_and_ceiling_rules_apply() {
+        assert!(validate_platform_identity("MACOS", "com.sdkwork.example").is_ok());
+        assert!(validate_platform_identity("WINDOWS", "SdkWork.Desktop").is_ok());
+        assert!(validate_platform_identity("LINUX", "").is_ok());
+
+        assert!(validate_package_size("WINDOWS", "NSIS", DESKTOP_INSTALLER_MAXIMUM_BYTES).is_ok());
+        assert!(
+            validate_package_size("MACOS", "DMG", DESKTOP_INSTALLER_MAXIMUM_BYTES + 1).is_err()
+        );
+        assert!(
+            validate_package_size("LINUX", "APPIMAGE", DESKTOP_INSTALLER_MAXIMUM_BYTES).is_ok()
+        );
+        assert!(validate_package_size("API", "JAR", JVM_ARTIFACT_MAXIMUM_BYTES).is_ok());
+        assert!(validate_package_size("API", "WAR", JVM_ARTIFACT_MAXIMUM_BYTES + 1).is_err());
     }
 }

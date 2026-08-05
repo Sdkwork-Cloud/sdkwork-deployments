@@ -750,6 +750,100 @@ pub trait DeployAppApi: Send + Sync {
             "retrieve_signing_identity API is not implemented".to_owned(),
         ))
     }
+
+    async fn list_usage_events(
+        &self,
+        _context: &DeployAppRequestContext,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<UsageEventPage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_usage_events API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn create_app_database_profile(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _request: &CreateAppDatabaseProfileRequest,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "create_app_database_profile API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_app_database_profiles(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<AppDatabaseProfilePage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_app_database_profiles API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_app_database_profile(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _profile_id: &str,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "retrieve_app_database_profile API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn update_app_database_profile(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _profile_id: &str,
+        _request: &UpdateAppDatabaseProfileRequest,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "update_app_database_profile API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn create_app_database_migration(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _profile_id: &str,
+        _request: &CreateAppDatabaseMigrationRequest,
+    ) -> DeployServiceResult<AppDatabaseMigrationResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "create_app_database_migration API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn list_app_database_migrations(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _profile_id: &str,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<AppDatabaseMigrationPage> {
+        Err(crate::DeployServiceError::Internal(
+            "list_app_database_migrations API is not implemented".to_owned(),
+        ))
+    }
+
+    async fn retrieve_app_database_migration(
+        &self,
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _profile_id: &str,
+        _migration_id: &str,
+    ) -> DeployServiceResult<AppDatabaseMigrationResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "retrieve_app_database_migration API is not implemented".to_owned(),
+        ))
+    }
 }
 
 #[async_trait]
@@ -848,4 +942,87 @@ pub trait DeployBackendApi: Send + Sync {
         query: &AuditLogQuery,
         cursor: Option<&str>,
     ) -> DeployServiceResult<AuditLogPage>;
+
+    async fn list_entitlement_projections(
+        &self,
+        context: &DeployBackendRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<EntitlementProjectionPage>;
+
+    async fn list_build_queue(
+        &self,
+        context: &DeployBackendRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<BuildQueuePage>;
+
+    async fn list_runner_health(
+        &self,
+        context: &DeployBackendRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<RunnerHealthPage>;
+
+    async fn create_acme_account(
+        &self,
+        context: &DeployBackendRequestContext,
+        request: &CreateAcmeAccountRequest,
+    ) -> DeployServiceResult<AcmeAccountResponse>;
+
+    async fn list_acme_accounts(
+        &self,
+        context: &DeployBackendRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AcmeAccountPage>;
+
+    async fn request_certificate_order(
+        &self,
+        context: &DeployBackendRequestContext,
+        request: &RequestCertificateOrderRequest,
+    ) -> DeployServiceResult<CertificateOrderResponse>;
+
+    async fn advance_certificate_order(
+        &self,
+        context: &DeployBackendRequestContext,
+        order_id: &str,
+    ) -> DeployServiceResult<CertificateOrderResponse>;
+
+    async fn fail_certificate_order(
+        &self,
+        context: &DeployBackendRequestContext,
+        order_id: &str,
+        error_code: &str,
+    ) -> DeployServiceResult<()>;
+
+    async fn record_challenge_result(
+        &self,
+        context: &DeployBackendRequestContext,
+        order_id: &str,
+        challenge_id: Option<&str>,
+        valid: bool,
+    ) -> DeployServiceResult<()>;
+
+    async fn store_certificate_version(
+        &self,
+        context: &DeployBackendRequestContext,
+        request: &StoreCertificateVersionRequest,
+    ) -> DeployServiceResult<CertificateOrderResponse>;
+
+    async fn list_certificate_orders(
+        &self,
+        context: &DeployBackendRequestContext,
+        certificate_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<CertificateOrderPage>;
+
+    async fn list_certificate_challenges(
+        &self,
+        context: &DeployBackendRequestContext,
+        order_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<CertificateChallengePage>;
 }

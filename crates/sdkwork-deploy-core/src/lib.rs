@@ -1,6 +1,7 @@
 //! Deploy core runtime helpers.
 
 pub mod app_kind_rules;
+pub mod database_profile;
 pub mod package_manifest;
 pub mod runtime_env;
 pub mod util;
@@ -9,17 +10,25 @@ pub mod versioning;
 pub use app_kind_rules::{
     package_size_ceiling, required_identity_field, validate_app_kind_platform,
     validate_package_format_for_platform, validate_package_size, validate_platform_identity,
-    RequiredIdentityField, DOUYIN_MINIPROGRAM_MAIN_PACKAGE_BYTES,
-    DOUYIN_MINIPROGRAM_TOTAL_PACKAGE_BYTES, PROCESS_BUNDLE_MAXIMUM_BYTES, WEB_BUNDLE_MAXIMUM_BYTES,
-    WECHAT_MINIPROGRAM_MAIN_PACKAGE_BYTES, WECHAT_MINIPROGRAM_TOTAL_PACKAGE_BYTES,
+    RequiredIdentityField, DESKTOP_INSTALLER_MAXIMUM_BYTES, DOUYIN_MINIPROGRAM_MAIN_PACKAGE_BYTES,
+    DOUYIN_MINIPROGRAM_TOTAL_PACKAGE_BYTES, JVM_ARTIFACT_MAXIMUM_BYTES,
+    PROCESS_BUNDLE_MAXIMUM_BYTES, WEB_BUNDLE_MAXIMUM_BYTES, WECHAT_MINIPROGRAM_MAIN_PACKAGE_BYTES,
+    WECHAT_MINIPROGRAM_TOTAL_PACKAGE_BYTES,
+};
+pub use database_profile::{
+    validate_catalog_name, validate_database_engine, validate_migration_name,
+    validate_migration_strategy, validate_migration_version, validate_profile_key,
+    validate_profile_status, DATABASE_ENGINES, MIGRATION_STATUSES, MIGRATION_STRATEGIES,
+    PROFILE_STATUSES,
 };
 pub use package_manifest::{
     canonical_manifest_sha256, validate_package_manifest, validate_sha256_hex,
     PackageManifestValidation, PACKAGE_MANIFEST_KIND, PACKAGE_MANIFEST_SCHEMA_VERSION,
 };
 pub use runtime_env::{
-    deploy_dev_auth_bypass_enabled, deploy_environment_name, deploy_is_production_like_environment,
-    deploy_use_dev_inline_auth_resolver,
+    deploy_dev_auth_bypass_enabled, deploy_entitlement_enforcement_enabled,
+    deploy_environment_name, deploy_is_production_like_environment,
+    deploy_use_dev_inline_auth_resolver, env_test_lock,
 };
 pub use util::{normalize_pagination, pagination_offset};
 pub use versioning::{SemanticVersion, MAXIMUM_IDENTIFIER_LENGTH, MAXIMUM_VERSION_LENGTH};

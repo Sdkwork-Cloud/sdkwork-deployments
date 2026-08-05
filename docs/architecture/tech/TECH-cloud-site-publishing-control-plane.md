@@ -45,6 +45,19 @@ and real multi-Node rollout evidence remain required. Backend composition mutati
 until a trusted operator credential-delegation or resolved-resource administration contract is
 approved.
 
+The ACME/TLS control plane is implemented as of migration 0004 + `tls_control` orchestration:
+ACME account bindings (secret reference only), certificate order requests with
+`(tenant_id, idempotency_key)` idempotency and one HTTP_01/DNS_01 challenge per identifier, the
+canonical forward-only order state machine (REQUESTED → … → FINALIZING → VERSION_STORED, with
+FAILED/CANCELLED), challenge result recording, and transactional certificate version storage that
+activates the version, supersedes the previous one, and updates the certificate
+`current_version_id`. API surface: `/backend/v3/api/tls/accounts`, `/backend/v3/api/tls/orders`,
+`/backend/v3/api/tls/orders/{orderId}/{advance|fail|challenge_result|versions|challenges}`, and
+`/backend/v3/api/certificates/{certificateId}/orders`. The RFC 8555 ACME client boundary
+(signing, directory discovery, nonce handling) and the HTTP-01 verification endpoint remain
+credential/network-gated; column names in this section are design-era and the migration 0004 DDL
+is the schema authority.
+
 Web Server's native file-backed TLS consumer already validates bounded immutable material and
 node-scoped snapshots, performs exact/wildcard SNI selection, atomically replaces Rustls state, and
 recovers the last known good snapshot. That is data-plane evidence only. Deploy now normalizes

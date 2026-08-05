@@ -52,6 +52,39 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_tenant_slug
 CREATE INDEX IF NOT EXISTS idx_deploy_app_tenant_status_updated
     ON deploy_app (tenant_id, app_status, updated_at DESC);
 
+-- Governed build recipe. Created before deploy_app_platform_target /
+-- deploy_build below: PostgreSQL validates FK target relations at
+-- CREATE TABLE time, so forward references inside one script fail.
+CREATE TABLE IF NOT EXISTS deploy_build_template (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    template_name   VARCHAR(200) NOT NULL,
+    template_version VARCHAR(64) NOT NULL,
+    platform        VARCHAR(16)  NOT NULL,
+    tech_stack      VARCHAR(16)  NOT NULL DEFAULT 'OTHER',
+    toolchain_json  JSONB        NOT NULL DEFAULT '{}',
+    commands_json   JSONB        NOT NULL DEFAULT '[]',
+    artifact_outputs_json JSONB  NOT NULL DEFAULT '[]',
+    quality_gates_json JSONB    NOT NULL DEFAULT '{}',
+    template_status VARCHAR(16)  NOT NULL DEFAULT 'DRAFT',
+    created_by      BIGINT,
+    updated_by      BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at      TIMESTAMPTZ,
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_build_template PRIMARY KEY (id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_build_template_uuid
+    ON deploy_build_template (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_build_template_name_version
+    ON deploy_build_template (tenant_id, template_name, template_version)
+    WHERE deleted_at IS NULL;
+
 -- Platform delivery unit inside an App
 CREATE TABLE IF NOT EXISTS deploy_app_platform_target (
     id              BIGINT       NOT NULL,
@@ -129,37 +162,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_source_repository_key
 CREATE INDEX IF NOT EXISTS idx_deploy_source_repository_tenant_url
     ON deploy_source_repository (tenant_id, repo_url)
     WHERE repo_status = 'VALIDATED';
-
--- Governed build recipe
-CREATE TABLE IF NOT EXISTS deploy_build_template (
-    id              BIGINT       NOT NULL,
-    uuid            VARCHAR(36)  NOT NULL,
-    tenant_id       BIGINT       NOT NULL,
-    organization_id BIGINT       NOT NULL DEFAULT 0,
-    template_name   VARCHAR(200) NOT NULL,
-    template_version VARCHAR(64) NOT NULL,
-    platform        VARCHAR(16)  NOT NULL,
-    tech_stack      VARCHAR(16)  NOT NULL DEFAULT 'OTHER',
-    toolchain_json  JSONB        NOT NULL DEFAULT '{}',
-    commands_json   JSONB        NOT NULL DEFAULT '[]',
-    artifact_outputs_json JSONB  NOT NULL DEFAULT '[]',
-    quality_gates_json JSONB    NOT NULL DEFAULT '{}',
-    template_status VARCHAR(16)  NOT NULL DEFAULT 'DRAFT',
-    created_by      BIGINT,
-    updated_by      BIGINT,
-    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    deleted_at      TIMESTAMPTZ,
-    version         BIGINT       NOT NULL DEFAULT 1,
-    CONSTRAINT pk_deploy_build_template PRIMARY KEY (id)
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_build_template_uuid
-    ON deploy_build_template (uuid);
-
-CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_build_template_name_version
-    ON deploy_build_template (tenant_id, template_name, template_version)
-    WHERE deleted_at IS NULL;
 
 -- Build execution record with monotonic build_number per (App, platform target)
 CREATE TABLE IF NOT EXISTS deploy_build (

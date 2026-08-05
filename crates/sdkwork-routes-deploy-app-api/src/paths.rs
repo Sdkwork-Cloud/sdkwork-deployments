@@ -54,3 +54,10 @@ pub const APP_DEPLOYMENTS: &str = "/app/v3/api/apps/{appId}/deployments";
 pub const APP_DEPLOYMENT: &str = "/app/v3/api/apps/{appId}/deployments/{deploymentId}";
 pub const SIGNING_IDENTITIES: &str = "/app/v3/api/signing_identities";
 pub const SIGNING_IDENTITY: &str = "/app/v3/api/signing_identities/{signingIdentityId}";
+pub const USAGE_EVENTS: &str = "/app/v3/api/usage_events";
+pub const APP_DATABASE_PROFILES: &str = "/app/v3/api/apps/{appId}/database_profiles";
+pub const APP_DATABASE_PROFILE: &str = "/app/v3/api/apps/{appId}/database_profiles/{profileId}";
+pub const APP_DATABASE_MIGRATIONS: &str =
+    "/app/v3/api/apps/{appId}/database_profiles/{profileId}/migrations";
+pub const APP_DATABASE_MIGRATION: &str =
+    "/app/v3/api/apps/{appId}/database_profiles/{profileId}/migrations/{migrationId}";

@@ -144,3 +144,18 @@ tables:
   - name: deploy_signing_identity
     lifecycle_status: active
     owner: deploy-platform
+  - name: deploy_usage_event
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_tenant_entitlement_projection
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_site_usage_daily
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_app_database_profile
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_app_database_migration
+    lifecycle_status: active
+    owner: deploy-platform

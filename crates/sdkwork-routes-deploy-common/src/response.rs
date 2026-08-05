@@ -105,6 +105,13 @@ impl ApiProblem {
         }
     }
 
+    pub fn too_many_requests(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+            status: StatusCode::TOO_MANY_REQUESTS,
+        }
+    }
+
     pub fn dependency_unavailable(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
@@ -154,6 +161,7 @@ impl From<DeployServiceError> for ApiProblem {
             DeployServiceErrorKind::Conflict => Self::conflict(error.to_string()),
             DeployServiceErrorKind::Validation => Self::unprocessable_entity(error.to_string()),
             DeployServiceErrorKind::Forbidden => Self::forbidden(error.to_string()),
+            DeployServiceErrorKind::QuotaExceeded => Self::too_many_requests(error.to_string()),
             DeployServiceErrorKind::DatabaseUnavailable => {
                 Self::dependency_unavailable(error.to_string())
             }

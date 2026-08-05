@@ -62,6 +62,20 @@ const CONTRACT_TABLES: &[&str] = &[
     "deploy_tls_target_observation",
     "deploy_upload_session_ref",
     "deploy_web_node_target",
+    "deploy_app",
+    "deploy_app_platform_target",
+    "deploy_source_repository",
+    "deploy_build_template",
+    "deploy_build",
+    "deploy_package",
+    "deploy_release_channel",
+    "deploy_channel_rollout",
+    "deploy_signing_identity",
+    "deploy_usage_event",
+    "deploy_tenant_entitlement_projection",
+    "deploy_site_usage_daily",
+    "deploy_app_database_profile",
+    "deploy_app_database_migration",
 ];
 
 /// The deploy module lives at the sdkwork-deployments repository root.
@@ -141,7 +155,7 @@ async fn fresh_database_init_and_migrate_converge_to_contract() {
         .expect("migrate on a fresh schema must apply idempotently");
 
     assert_contract_tables_present(&pool).await;
-    assert_migration_count(&pool, 6).await;
+    assert_migration_count(&pool, 9).await;
 
     let drift = DriftEngine::new(database_pool(pool.clone()), module)
         .analyze()
@@ -187,7 +201,7 @@ async fn legacy_database_upgrades_through_forward_migrations() {
         .expect("migrate must converge the legacy schema");
 
     assert_contract_tables_present(&pool).await;
-    assert_migration_count(&pool, 6).await;
+    assert_migration_count(&pool, 9).await;
 
     // The redesigned tables carry the current contract columns...
     assert_column_present(&pool, "deploy_domain", "hostname_ascii").await;

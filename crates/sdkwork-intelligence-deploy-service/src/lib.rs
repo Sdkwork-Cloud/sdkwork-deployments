@@ -4,6 +4,7 @@ pub mod app;
 pub mod app_delivery;
 pub mod backend;
 pub mod domain_verification;
+pub mod entitlement;
 pub mod repository;
 pub mod runtime_publication;
 pub mod site_composition;

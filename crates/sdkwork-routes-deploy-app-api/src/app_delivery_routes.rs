@@ -9,10 +9,11 @@ use axum::{
     Extension, Json, Router,
 };
 use sdkwork_deploy_contract::{
-    CreateAppDeploymentRequest, CreateAppReleaseRequest, CreateAppRequest, CreateBuildRequest,
-    CreateBuildTemplateRequest, CreatePlatformTargetRequest, CreateSigningIdentityRequest,
-    CreateSourceRepositoryRequest, DeployAppRequestContext, PromoteChannelRequest,
-    RegisterPackageRequest, UpdateAppRequest, UpdateBuildStateRequest,
+    CreateAppDatabaseMigrationRequest, CreateAppDatabaseProfileRequest, CreateAppDeploymentRequest,
+    CreateAppReleaseRequest, CreateAppRequest, CreateBuildRequest, CreateBuildTemplateRequest,
+    CreatePlatformTargetRequest, CreateSigningIdentityRequest, CreateSourceRepositoryRequest,
+    DeployAppRequestContext, PromoteChannelRequest, RegisterPackageRequest,
+    UpdateAppDatabaseProfileRequest, UpdateAppRequest, UpdateBuildStateRequest,
 };
 use sdkwork_routes_deploy_common::{envelope, finish_api_json, finish_created_api_json, ok_json};
 use sdkwork_web_core::WebRequestContext;
@@ -80,6 +81,23 @@ pub fn build_app_delivery_router() -> Router<AppState> {
             get(list_signing_identities).post(create_signing_identity),
         )
         .route(paths::SIGNING_IDENTITY, get(retrieve_signing_identity))
+        .route(paths::USAGE_EVENTS, get(list_usage_events))
+        .route(
+            paths::APP_DATABASE_PROFILES,
+            get(list_app_database_profiles).post(create_app_database_profile),
+        )
+        .route(
+            paths::APP_DATABASE_PROFILE,
+            get(retrieve_app_database_profile).patch(update_app_database_profile),
+        )
+        .route(
+            paths::APP_DATABASE_MIGRATIONS,
+            get(list_app_database_migrations).post(create_app_database_migration),
+        )
+        .route(
+            paths::APP_DATABASE_MIGRATION,
+            get(retrieve_app_database_migration),
+        )
 }
 
 // -- apps ------------------------------------------------------------------
@@ -740,6 +758,178 @@ async fn retrieve_signing_identity(
             let result = state
                 .api
                 .retrieve_signing_identity(&context, &identity_id)
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+// -- usage metering -----------------------------------------------------------
+
+async fn list_usage_events(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let (page, page_size) = page_values(&query);
+            let result = state
+                .api
+                .list_usage_events(&context, page, page_size)
+                .await?;
+            ok_json(envelope::usage_event_page(result))
+        }
+        .await,
+    )
+}
+
+// -- application database structure contract ----------------------------------
+
+async fn create_app_database_profile(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(app_id): Path<String>,
+    Json(request): Json<CreateAppDatabaseProfileRequest>,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let result = state
+                .api
+                .create_app_database_profile(&context, &app_id, &request)
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn list_app_database_profiles(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(app_id): Path<String>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let (page, page_size) = page_values(&query);
+            let result = state
+                .api
+                .list_app_database_profiles(&context, &app_id, page, page_size)
+                .await?;
+            ok_json(envelope::app_database_profile_page(result))
+        }
+        .await,
+    )
+}
+
+async fn retrieve_app_database_profile(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((app_id, profile_id)): Path<(String, String)>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let result = state
+                .api
+                .retrieve_app_database_profile(&context, &app_id, &profile_id)
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn update_app_database_profile(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((app_id, profile_id)): Path<(String, String)>,
+    Json(request): Json<UpdateAppDatabaseProfileRequest>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let result = state
+                .api
+                .update_app_database_profile(&context, &app_id, &profile_id, &request)
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn create_app_database_migration(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((app_id, profile_id)): Path<(String, String)>,
+    Json(request): Json<CreateAppDatabaseMigrationRequest>,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let result = state
+                .api
+                .create_app_database_migration(&context, &app_id, &profile_id, &request)
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn list_app_database_migrations(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((app_id, profile_id)): Path<(String, String)>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let (page, page_size) = page_values(&query);
+            let result = state
+                .api
+                .list_app_database_migrations(&context, &app_id, &profile_id, page, page_size)
+                .await?;
+            ok_json(envelope::app_database_migration_page(result))
+        }
+        .await,
+    )
+}
+
+async fn retrieve_app_database_migration(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path((app_id, profile_id, migration_id)): Path<(String, String, String)>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let result = state
+                .api
+                .retrieve_app_database_migration(&context, &app_id, &profile_id, &migration_id)
                 .await?;
             ok_json(envelope::resource(result))
         }

@@ -6,6 +6,7 @@ pub enum DeployServiceErrorKind {
     Conflict,
     Validation,
     Forbidden,
+    QuotaExceeded,
     DatabaseUnavailable,
     Internal,
 }
@@ -20,6 +21,8 @@ pub enum DeployServiceError {
     Validation(String),
     #[error("forbidden: {0}")]
     Forbidden(String),
+    #[error("quota exceeded: {0}")]
+    QuotaExceeded(String),
     #[error("database unavailable")]
     DatabaseUnavailable,
     #[error("internal error: {0}")]
@@ -33,6 +36,7 @@ impl DeployServiceError {
             Self::Conflict(_) => DeployServiceErrorKind::Conflict,
             Self::Validation(_) => DeployServiceErrorKind::Validation,
             Self::Forbidden(_) => DeployServiceErrorKind::Forbidden,
+            Self::QuotaExceeded(_) => DeployServiceErrorKind::QuotaExceeded,
             Self::DatabaseUnavailable => DeployServiceErrorKind::DatabaseUnavailable,
             Self::Internal(_) => DeployServiceErrorKind::Internal,
         }
@@ -52,6 +56,12 @@ impl DeployServiceError {
 
     pub fn forbidden(detail: impl Into<String>) -> Self {
         Self::Forbidden(detail.into())
+    }
+
+    /// Entitlement enforcement failure (429 Too Many Requests semantics):
+    /// the tenant's plan limit for the dimension has been reached.
+    pub fn quota_exceeded(detail: impl Into<String>) -> Self {
+        Self::QuotaExceeded(detail.into())
     }
 }
 

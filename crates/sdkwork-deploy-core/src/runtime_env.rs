@@ -39,6 +39,14 @@ pub fn deploy_use_dev_inline_auth_resolver() -> bool {
     !deploy_is_production_like_environment() && deploy_dev_auth_bypass_enabled()
 }
 
+/// Entitlement consumption enforcement switch. Off by default until the
+/// Commerce projection feed is wired; production operators enable it with
+/// `SDKWORK_DEPLOY_ENTITLEMENT_ENFORCEMENT=on`. When enabled, capacity
+/// creation fails closed without an active entitlement projection.
+pub fn deploy_entitlement_enforcement_enabled() -> bool {
+    env_truthy("SDKWORK_DEPLOY_ENTITLEMENT_ENFORCEMENT")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

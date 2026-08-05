@@ -20,6 +20,7 @@ pub enum AppKind {
     IosApp,
     AndroidApp,
     HarmonyosApp,
+    DesktopApp,
 }
 
 impl AppKind {
@@ -33,6 +34,7 @@ impl AppKind {
             Self::IosApp => "IOS_APP",
             Self::AndroidApp => "ANDROID_APP",
             Self::HarmonyosApp => "HARMONYOS_APP",
+            Self::DesktopApp => "DESKTOP_APP",
         }
     }
 
@@ -46,6 +48,7 @@ impl AppKind {
             "IOS_APP" => Some(Self::IosApp),
             "ANDROID_APP" => Some(Self::AndroidApp),
             "HARMONYOS_APP" => Some(Self::HarmonyosApp),
+            "DESKTOP_APP" => Some(Self::DesktopApp),
             _ => None,
         }
     }
@@ -65,6 +68,9 @@ pub enum Platform {
     Ios,
     Android,
     Harmonyos,
+    Windows,
+    Macos,
+    Linux,
 }
 
 impl Platform {
@@ -77,6 +83,9 @@ impl Platform {
             Self::Ios => "IOS",
             Self::Android => "ANDROID",
             Self::Harmonyos => "HARMONYOS",
+            Self::Windows => "WINDOWS",
+            Self::Macos => "MACOS",
+            Self::Linux => "LINUX",
         }
     }
 }
@@ -91,6 +100,8 @@ pub enum TechStack {
     Rust,
     Go,
     Java,
+    Electron,
+    Tauri,
     Other,
 }
 
@@ -104,6 +115,8 @@ impl TechStack {
             Self::Rust => "RUST",
             Self::Go => "GO",
             Self::Java => "JAVA",
+            Self::Electron => "ELECTRON",
+            Self::Tauri => "TAURI",
             Self::Other => "OTHER",
         }
     }
@@ -164,6 +177,17 @@ pub enum PackageFormat {
     OciImage,
     ProcessBundle,
     TarGz,
+    Msi,
+    Nsis,
+    Msix,
+    Exe,
+    Dmg,
+    Pkg,
+    Deb,
+    Rpm,
+    AppImage,
+    Jar,
+    War,
 }
 
 impl PackageFormat {
@@ -180,6 +204,17 @@ impl PackageFormat {
             Self::OciImage => "OCI_IMAGE",
             Self::ProcessBundle => "PROCESS_BUNDLE",
             Self::TarGz => "TAR_GZ",
+            Self::Msi => "MSI",
+            Self::Nsis => "NSIS",
+            Self::Msix => "MSIX",
+            Self::Exe => "EXE",
+            Self::Dmg => "DMG",
+            Self::Pkg => "PKG",
+            Self::Deb => "DEB",
+            Self::Rpm => "RPM",
+            Self::AppImage => "APPIMAGE",
+            Self::Jar => "JAR",
+            Self::War => "WAR",
         }
     }
 
@@ -196,6 +231,17 @@ impl PackageFormat {
             "OCI_IMAGE" => Some(Self::OciImage),
             "PROCESS_BUNDLE" => Some(Self::ProcessBundle),
             "TAR_GZ" => Some(Self::TarGz),
+            "MSI" => Some(Self::Msi),
+            "NSIS" => Some(Self::Nsis),
+            "MSIX" => Some(Self::Msix),
+            "EXE" => Some(Self::Exe),
+            "DMG" => Some(Self::Dmg),
+            "PKG" => Some(Self::Pkg),
+            "DEB" => Some(Self::Deb),
+            "RPM" => Some(Self::Rpm),
+            "APPIMAGE" => Some(Self::AppImage),
+            "JAR" => Some(Self::Jar),
+            "WAR" => Some(Self::War),
             _ => None,
         }
     }
@@ -361,6 +407,8 @@ pub enum DeploymentTarget {
     Ota,
     Enterprise,
     HarmonyosStore,
+    MicrosoftStore,
+    MacAppStore,
 }
 
 impl DeploymentTarget {
@@ -375,6 +423,8 @@ impl DeploymentTarget {
             Self::Ota => "OTA",
             Self::Enterprise => "ENTERPRISE",
             Self::HarmonyosStore => "HARMONYOS_STORE",
+            Self::MicrosoftStore => "MICROSOFT_STORE",
+            Self::MacAppStore => "MAC_APP_STORE",
         }
     }
 }
@@ -423,6 +473,8 @@ pub enum SigningKind {
     HarmonyosCertProfile,
     MiniprogramUploadKey,
     ApiRepoToken,
+    WindowsAuthenticode,
+    MacosDeveloperId,
 }
 
 impl SigningKind {
@@ -433,6 +485,8 @@ impl SigningKind {
             Self::HarmonyosCertProfile => "HARMONYOS_CERT_PROFILE",
             Self::MiniprogramUploadKey => "MINIPROGRAM_UPLOAD_KEY",
             Self::ApiRepoToken => "API_REPO_TOKEN",
+            Self::WindowsAuthenticode => "WINDOWS_AUTHENTICODE",
+            Self::MacosDeveloperId => "MACOS_DEVELOPER_ID",
         }
     }
 }
@@ -1147,4 +1201,541 @@ pub struct SigningIdentityPage {
     pub total: i64,
     pub page: i32,
     pub page_size: i32,
+}
+
+// ---------------------------------------------------------------------------
+// Usage metering
+// ---------------------------------------------------------------------------
+
+/// Canonical usage dimensions emitted by Deploy.
+pub const USAGE_DIMENSION_BUILD_MINUTES: &str = "build_minutes";
+pub const USAGE_DIMENSION_PACKAGE_STORAGE_BYTES: &str = "package_storage_bytes";
+pub const USAGE_DIMENSION_DEPLOYMENT_COUNT: &str = "deployment_count";
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct UsageEventResponse {
+    pub id: String,
+    #[serde(rename = "tenantId")]
+    pub tenant_id: i64,
+    #[serde(rename = "siteId", skip_serializing_if = "Option::is_none")]
+    pub site_id: Option<String>,
+    #[serde(rename = "periodStart")]
+    pub period_start: String,
+    pub dimension: String,
+    pub quantity: i64,
+    pub unit: String,
+    #[serde(rename = "sourceTargetUuid", skip_serializing_if = "Option::is_none")]
+    pub source_target_uuid: Option<String>,
+    #[serde(rename = "sourceWindowId", skip_serializing_if = "Option::is_none")]
+    pub source_window_id: Option<String>,
+    #[serde(rename = "deduplicationKey")]
+    pub deduplication_key: String,
+    #[serde(rename = "observedAt")]
+    pub observed_at: String,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct UsageEventPage {
+    pub items: Vec<UsageEventResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+// ---------------------------------------------------------------------------
+// Application database structure contract (REQ-2026-0002 extension)
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum DatabaseEngine {
+    Postgres,
+    Mysql,
+    Sqlite,
+}
+
+impl DatabaseEngine {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Postgres => "POSTGRES",
+            Self::Mysql => "MYSQL",
+            Self::Sqlite => "SQLITE",
+        }
+    }
+
+    pub fn parse(value: &str) -> Option<Self> {
+        match value {
+            "POSTGRES" => Some(Self::Postgres),
+            "MYSQL" => Some(Self::Mysql),
+            "SQLITE" => Some(Self::Sqlite),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum DatabaseProfileStatus {
+    Draft,
+    Ready,
+    Active,
+    Superseded,
+    Archived,
+}
+
+impl DatabaseProfileStatus {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Draft => "DRAFT",
+            Self::Ready => "READY",
+            Self::Active => "ACTIVE",
+            Self::Superseded => "SUPERSEDED",
+            Self::Archived => "ARCHIVED",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum DatabaseMigrationStatus {
+    Pending,
+    Applied,
+    Failed,
+    Superseded,
+}
+
+impl DatabaseMigrationStatus {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Pending => "PENDING",
+            Self::Applied => "APPLIED",
+            Self::Failed => "FAILED",
+            Self::Superseded => "SUPERSEDED",
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CreateAppDatabaseProfileRequest {
+    pub profile_key: String,
+    pub db_engine: String,
+    pub catalog_name: String,
+    #[serde(rename = "schemaVersion", skip_serializing_if = "Option::is_none")]
+    pub schema_version: Option<String>,
+    #[serde(rename = "baselineVersion", skip_serializing_if = "Option::is_none")]
+    pub baseline_version: Option<String>,
+    #[serde(rename = "migrationStrategy", skip_serializing_if = "Option::is_none")]
+    pub migration_strategy: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UpdateAppDatabaseProfileRequest {
+    #[serde(rename = "schemaVersion", skip_serializing_if = "Option::is_none")]
+    pub schema_version: Option<String>,
+    #[serde(rename = "baselineVersion", skip_serializing_if = "Option::is_none")]
+    pub baseline_version: Option<String>,
+    #[serde(rename = "migrationStrategy", skip_serializing_if = "Option::is_none")]
+    pub migration_strategy: Option<String>,
+    #[serde(rename = "profileStatus", skip_serializing_if = "Option::is_none")]
+    pub profile_status: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CreateAppDatabaseMigrationRequest {
+    #[serde(rename = "migrationVersion")]
+    pub migration_version: String,
+    #[serde(rename = "migrationName")]
+    pub migration_name: String,
+    #[serde(rename = "checksumSha256")]
+    pub checksum_sha256: String,
+    #[serde(rename = "scriptRef", skip_serializing_if = "Option::is_none")]
+    pub script_ref: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AppDatabaseProfileResponse {
+    pub id: String,
+    #[serde(rename = "appId")]
+    pub app_id: String,
+    #[serde(rename = "profileKey")]
+    pub profile_key: String,
+    #[serde(rename = "dbEngine")]
+    pub db_engine: String,
+    #[serde(rename = "catalogName")]
+    pub catalog_name: String,
+    #[serde(rename = "schemaVersion", skip_serializing_if = "Option::is_none")]
+    pub schema_version: Option<String>,
+    #[serde(rename = "baselineVersion", skip_serializing_if = "Option::is_none")]
+    pub baseline_version: Option<String>,
+    #[serde(rename = "migrationStrategy")]
+    pub migration_strategy: String,
+    #[serde(rename = "profileStatus")]
+    pub profile_status: String,
+    #[serde(rename = "migrationCount")]
+    pub migration_count: i64,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+    pub version: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct AppDatabaseProfilePage {
+    pub items: Vec<AppDatabaseProfileResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AppDatabaseMigrationResponse {
+    pub id: String,
+    #[serde(rename = "profileId")]
+    pub profile_id: String,
+    #[serde(rename = "migrationVersion")]
+    pub migration_version: String,
+    #[serde(rename = "migrationName")]
+    pub migration_name: String,
+    #[serde(rename = "checksumSha256")]
+    pub checksum_sha256: String,
+    #[serde(rename = "scriptRef", skip_serializing_if = "Option::is_none")]
+    pub script_ref: Option<String>,
+    #[serde(rename = "migrationStatus")]
+    pub migration_status: String,
+    #[serde(rename = "appliedAt", skip_serializing_if = "Option::is_none")]
+    pub applied_at: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+    pub version: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct AppDatabaseMigrationPage {
+    pub items: Vec<AppDatabaseMigrationResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+// ---------------------------------------------------------------------------
+// Entitlement consumption enforcement (TECH §4.6, migration 0008)
+// ---------------------------------------------------------------------------
+
+pub const ENTITLEMENT_DIMENSION_ACTIVE_APPS: &str = "active_apps";
+pub const ENTITLEMENT_DIMENSION_PLATFORM_TARGETS: &str = "platform_targets";
+pub const ENTITLEMENT_DIMENSION_BUILD_CONCURRENCY: &str = "build_concurrency";
+pub const ENTITLEMENT_DIMENSION_PACKAGE_STORAGE_BYTES: &str = "package_storage_bytes";
+pub const ENTITLEMENT_DIMENSION_RELEASE_COUNT: &str = "release_count";
+pub const ENTITLEMENT_DIMENSION_DEPLOYMENT_COUNT: &str = "deployment_count";
+pub const ENTITLEMENT_DIMENSION_CHANNEL_COUNT: &str = "channel_count";
+
+/// Commerce-backed entitlement projection read model (backend read surface).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct EntitlementProjectionResponse {
+    pub id: String,
+    #[serde(rename = "tenantId")]
+    pub tenant_id: i64,
+    #[serde(rename = "sourceSystem")]
+    pub source_system: String,
+    #[serde(rename = "sourceSubscriptionUuid")]
+    pub source_subscription_uuid: String,
+    #[serde(rename = "sourceRevision", skip_serializing_if = "Option::is_none")]
+    pub source_revision: Option<String>,
+    #[serde(rename = "planKey", skip_serializing_if = "Option::is_none")]
+    pub plan_key: Option<String>,
+    #[serde(rename = "entitlements")]
+    pub entitlements: serde_json::Value,
+    #[serde(rename = "effectiveAt")]
+    pub effective_at: String,
+    #[serde(rename = "expiresAt", skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<String>,
+    #[serde(rename = "projectionStatus")]
+    pub projection_status: String,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct EntitlementProjectionPage {
+    pub items: Vec<EntitlementProjectionResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+// ---------------------------------------------------------------------------
+// Backend build fleet administration (TECH §8)
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct BuildQueueItemResponse {
+    pub id: String,
+    #[serde(rename = "appId")]
+    pub app_id: String,
+    #[serde(rename = "platformTargetId")]
+    pub platform_target_id: String,
+    #[serde(rename = "buildNumber")]
+    pub build_number: i64,
+    #[serde(rename = "buildStatus")]
+    pub build_status: String,
+    #[serde(rename = "runnerNodeUuid", skip_serializing_if = "Option::is_none")]
+    pub runner_node_uuid: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct BuildQueuePage {
+    pub items: Vec<BuildQueueItemResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RunnerHealthResponse {
+    #[serde(rename = "runnerNodeUuid")]
+    pub runner_node_uuid: String,
+    #[serde(rename = "runnerVersion", skip_serializing_if = "Option::is_none")]
+    pub runner_version: Option<String>,
+    #[serde(rename = "lastSeenAt")]
+    pub last_seen_at: String,
+    #[serde(rename = "buildsCompleted")]
+    pub builds_completed: i64,
+    #[serde(rename = "buildsFailed")]
+    pub builds_failed: i64,
+    #[serde(rename = "activeBuilds")]
+    pub active_builds: i64,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct RunnerHealthPage {
+    pub items: Vec<RunnerHealthResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+// ---------------------------------------------------------------------------
+// TLS control plane (TECH-cloud-site-publishing §4.5): ACME account, order,
+// challenge, and certificate version orchestration read models
+// ---------------------------------------------------------------------------
+
+pub const ACME_CA_LETS_ENCRYPT_STAGING: &str = "LETS_ENCRYPT_STAGING";
+pub const ACME_CA_LETS_ENCRYPT_PRODUCTION: &str = "LETS_ENCRYPT_PRODUCTION";
+pub const ORDER_STATUS_REQUESTED: &str = "REQUESTED";
+pub const ORDER_STATUS_VERSION_STORED: &str = "VERSION_STORED";
+pub const ORDER_STATUS_FAILED: &str = "FAILED";
+pub const ORDER_STATUS_CANCELLED: &str = "CANCELLED";
+pub const CHALLENGE_TYPE_HTTP_01: &str = "HTTP_01";
+pub const CHALLENGE_TYPE_DNS_01: &str = "DNS_01";
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CreateAcmeAccountRequest {
+    pub ca_profile: String,
+    #[serde(rename = "directoryUrl")]
+    pub directory_url: String,
+    #[serde(rename = "contactEmail")]
+    pub contact_email: String,
+    #[serde(
+        rename = "externalAccountDigest",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub external_account_digest: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AcmeAccountResponse {
+    pub id: String,
+    #[serde(rename = "tenantId")]
+    pub tenant_id: i64,
+    #[serde(rename = "caProfile")]
+    pub ca_profile: String,
+    #[serde(rename = "directoryUrl")]
+    pub directory_url: String,
+    #[serde(rename = "contactEmail")]
+    pub contact_email: String,
+    #[serde(
+        rename = "externalAccountDigest",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub external_account_digest: Option<String>,
+    pub status: String,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+    pub version: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct AcmeAccountPage {
+    pub items: Vec<AcmeAccountResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RequestCertificateOrderRequest {
+    #[serde(rename = "certificateId")]
+    pub certificate_id: String,
+    #[serde(rename = "idempotencyKey")]
+    pub idempotency_key: String,
+    #[serde(rename = "challengeType", skip_serializing_if = "Option::is_none")]
+    pub challenge_type: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CertificateOrderResponse {
+    pub id: String,
+    #[serde(rename = "tenantId")]
+    pub tenant_id: i64,
+    #[serde(rename = "certificateId")]
+    pub certificate_id: String,
+    #[serde(rename = "acmeAccountId")]
+    pub acme_account_id: String,
+    #[serde(rename = "requestedVersionNo")]
+    pub requested_version_no: i64,
+    #[serde(rename = "requestSha256")]
+    pub request_sha256: String,
+    #[serde(rename = "idempotencyKey")]
+    pub idempotency_key: String,
+    #[serde(
+        rename = "externalOrderDigest",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub external_order_digest: Option<String>,
+    pub status: String,
+    #[serde(rename = "attemptCount")]
+    pub attempt_count: i32,
+    #[serde(rename = "lastErrorCode", skip_serializing_if = "Option::is_none")]
+    pub last_error_code: Option<String>,
+    #[serde(rename = "deadlineAt")]
+    pub deadline_at: String,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+    pub version: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct CertificateOrderPage {
+    pub items: Vec<CertificateOrderResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CertificateChallengeResponse {
+    pub id: String,
+    #[serde(rename = "tenantId")]
+    pub tenant_id: i64,
+    #[serde(rename = "orderId")]
+    pub order_id: String,
+    #[serde(rename = "identifierId")]
+    pub identifier_id: String,
+    #[serde(rename = "hostname")]
+    pub hostname: String,
+    #[serde(rename = "challengeType")]
+    pub challenge_type: String,
+    #[serde(rename = "proofSha256")]
+    pub proof_sha256: String,
+    #[serde(rename = "presentationRef", skip_serializing_if = "Option::is_none")]
+    pub presentation_ref: Option<String>,
+    pub status: String,
+    #[serde(rename = "attemptCount")]
+    pub attempt_count: i32,
+    #[serde(rename = "checkedAt", skip_serializing_if = "Option::is_none")]
+    pub checked_at: Option<String>,
+    #[serde(rename = "validatedAt", skip_serializing_if = "Option::is_none")]
+    pub validated_at: Option<String>,
+    #[serde(rename = "lastErrorCode", skip_serializing_if = "Option::is_none")]
+    pub last_error_code: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+    pub version: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct CertificateChallengePage {
+    pub items: Vec<CertificateChallengeResponse>,
+    pub total: i64,
+    pub page: i32,
+    pub page_size: i32,
+}
+
+pub const ORDER_STATUS_ACCOUNT_READY: &str = "ACCOUNT_READY";
+pub const ORDER_STATUS_ORDER_PENDING: &str = "ORDER_PENDING";
+pub const ORDER_STATUS_CHALLENGE_PRESENTING: &str = "CHALLENGE_PRESENTING";
+pub const ORDER_STATUS_CHALLENGE_VALIDATING: &str = "CHALLENGE_VALIDATING";
+pub const ORDER_STATUS_FINALIZING: &str = "FINALIZING";
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct StoreCertificateVersionRequest {
+    #[serde(rename = "orderId")]
+    pub order_id: String,
+    #[serde(rename = "versionNo")]
+    pub version_no: i64,
+    #[serde(rename = "serialSha256")]
+    pub serial_sha256: String,
+    #[serde(rename = "fingerprintSha256")]
+    pub fingerprint_sha256: String,
+    #[serde(rename = "spkiSha256")]
+    pub spki_sha256: String,
+    #[serde(rename = "chainSha256")]
+    pub chain_sha256: String,
+    pub issuer: String,
+    pub subject: String,
+    #[serde(rename = "keyAlgorithm")]
+    pub key_algorithm: String,
+    #[serde(rename = "notBefore")]
+    pub not_before: String,
+    #[serde(rename = "notAfter")]
+    pub not_after: String,
+    #[serde(rename = "secretBundleRef")]
+    pub secret_bundle_ref: String,
+}
+
+/// Canonical certificate order state machine transitions (migration 0004).
+pub const ORDER_TRANSITIONS: &[(&str, &str)] = &[
+    ("REQUESTED", "ACCOUNT_READY"),
+    ("ACCOUNT_READY", "ORDER_PENDING"),
+    ("ORDER_PENDING", "CHALLENGE_PRESENTING"),
+    ("CHALLENGE_PRESENTING", "CHALLENGE_VALIDATING"),
+    ("CHALLENGE_VALIDATING", "FINALIZING"),
+];
+
+/// Returns the next order state, or `None` at a terminal state.
+pub fn next_order_transition(status: &str) -> Option<&'static str> {
+    ORDER_TRANSITIONS
+        .iter()
+        .find(|(from, _)| *from == status)
+        .map(|(_, to)| *to)
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FailCertificateOrderRequest {
+    #[serde(rename = "errorCode")]
+    pub error_code: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ChallengeResultRequest {
+    #[serde(rename = "challengeId", skip_serializing_if = "Option::is_none")]
+    pub challenge_id: Option<String>,
+    pub valid: bool,
 }

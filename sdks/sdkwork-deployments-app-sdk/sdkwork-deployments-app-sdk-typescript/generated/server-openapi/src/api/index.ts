@@ -13,3 +13,5 @@ export { AppApi, createAppApi } from './app';
 export { BuildApi, createBuildApi } from './build';
 export { PackageApi, createPackageApi } from './package';
 export { SigningApi, createSigningApi } from './signing';
+export { UsageApi, createUsageApi } from './usage';
+export { AppDatabaseApi, createAppDatabaseApi } from './app-database';

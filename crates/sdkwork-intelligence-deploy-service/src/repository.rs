@@ -3,10 +3,14 @@
 use async_trait::async_trait;
 use sdkwork_deploy_contract::DeployServiceResult;
 use sdkwork_deploy_contract::{
-    AppDeploymentPage, AppDeploymentResponse, AppPage, AppReleasePage, AppReleaseResponse,
-    AppResponse, ArtifactPage, ArtifactResponse, AuditLogPage, BuildPage, BuildResponse,
-    BuildTemplatePage, BuildTemplateResponse, CertificatePage, CertificateResponse, ChannelPage,
-    ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse, CreateAppDeploymentRequest,
+    AcmeAccountPage, AcmeAccountResponse, AppDatabaseMigrationPage, AppDatabaseMigrationResponse,
+    AppDatabaseProfilePage, AppDatabaseProfileResponse, AppDeploymentPage, AppDeploymentResponse,
+    AppPage, AppReleasePage, AppReleaseResponse, AppResponse, ArtifactPage, ArtifactResponse,
+    AuditLogPage, BuildPage, BuildQueuePage, BuildResponse, BuildTemplatePage,
+    BuildTemplateResponse, CertificateChallengePage, CertificateOrderPage,
+    CertificateOrderResponse, CertificatePage, CertificateResponse, ChannelPage, ChannelResponse,
+    ChannelRolloutPage, ChannelRolloutResponse, CreateAcmeAccountRequest,
+    CreateAppDatabaseMigrationRequest, CreateAppDatabaseProfileRequest, CreateAppDeploymentRequest,
     CreateAppReleaseRequest, CreateAppRequest, CreateArtifactRequest, CreateBuildRequest,
     CreateBuildTemplateRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
     CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
@@ -15,16 +19,18 @@ use sdkwork_deploy_contract::{
     CreateServerRequest, CreateSigningIdentityRequest, CreateSiteRequest,
     CreateSourceRepositoryRequest, DeployAppRequestContext, DeployUploadSessionResponse,
     DeploymentPage, DeploymentResponse, DeploymentStatus, DomainHostnamePage,
-    DomainHostnameResponse, DomainZonePage, DomainZoneResponse, EnvVariablePage,
-    EnvVariableResponse, HealthCheckPage, HealthCheckResponse, ListDomainZonesQuery,
-    ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage, NginxConfigResponse,
-    NginxReloadResponse, NginxStatusResponse, NginxValidateResponse, NodeClusterPage,
-    NodeClusterResponse, PackagePage, PackageResponse, PlatformTargetPage, PlatformTargetResponse,
-    PromoteChannelRequest, RegisterPackageRequest, ReleasePage, ReleaseResponse, ReleaseStatus,
-    ServerPage, ServerResponse, SigningIdentityPage, SigningIdentityResponse, SitePage,
-    SiteResponse, SourceRepositoryPage, SourceRepositoryResponse, UpdateAppRequest,
-    UpdateBuildStateRequest, UpdateDomainZoneRequest, UpdateNginxConfigRequest,
-    UpdateNodeClusterRequest, UpdateServerRequest, UpdateSiteRequest,
+    DomainHostnameResponse, DomainZonePage, DomainZoneResponse, EntitlementProjectionPage,
+    EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
+    ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
+    NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
+    NodeClusterPage, NodeClusterResponse, PackagePage, PackageResponse, PlatformTargetPage,
+    PlatformTargetResponse, PromoteChannelRequest, RegisterPackageRequest, ReleasePage,
+    ReleaseResponse, ReleaseStatus, RequestCertificateOrderRequest, RunnerHealthPage, ServerPage,
+    ServerResponse, SigningIdentityPage, SigningIdentityResponse, SitePage, SiteResponse,
+    SourceRepositoryPage, SourceRepositoryResponse, UpdateAppDatabaseProfileRequest,
+    UpdateAppRequest, UpdateBuildStateRequest, UpdateDomainZoneRequest, UpdateNginxConfigRequest,
+    UpdateNodeClusterRequest, UpdateServerRequest, UpdateSiteRequest, UsageEventPage,
+    UsageEventResponse,
 };
 
 use crate::DomainVerificationChallenge;
@@ -38,6 +44,23 @@ pub struct InsertAuditLogCommand {
     pub target_type: String,
     pub target_id: Option<i64>,
     pub target_uuid: Option<String>,
+}
+
+/// Usage fact emitted by the service layer. The `deduplication_key` scoped to
+/// the tenant makes delivery idempotent (build number, package checksum,
+/// deployment uuid based) so retried flows never double-bill.
+#[derive(Clone, Debug)]
+pub struct InsertUsageEventCommand {
+    pub tenant_id: i64,
+    pub organization_id: i64,
+    pub site_id: Option<i64>,
+    pub period_start: String,
+    pub dimension: String,
+    pub quantity: i64,
+    pub unit: String,
+    pub source_target_uuid: Option<String>,
+    pub source_window_id: Option<String>,
+    pub deduplication_key: String,
 }
 
 #[async_trait]
@@ -724,4 +747,183 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         tenant_id: i64,
         identity_id: &str,
     ) -> DeployServiceResult<SigningIdentityResponse>;
+
+    /// Records one usage fact (idempotent on the tenant deduplication key);
+    /// metering failures must never block the primary operation.
+    async fn insert_usage_event(
+        &self,
+        command: &InsertUsageEventCommand,
+    ) -> DeployServiceResult<UsageEventResponse>;
+
+    async fn list_usage_events(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<UsageEventPage>;
+
+    async fn create_app_database_profile(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        app_id: &str,
+        request: &CreateAppDatabaseProfileRequest,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse>;
+
+    async fn list_app_database_profiles(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppDatabaseProfilePage>;
+
+    async fn retrieve_app_database_profile(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        profile_id: &str,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse>;
+
+    async fn update_app_database_profile(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        app_id: &str,
+        profile_id: &str,
+        request: &UpdateAppDatabaseProfileRequest,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse>;
+
+    async fn create_app_database_migration(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        app_id: &str,
+        profile_id: &str,
+        request: &CreateAppDatabaseMigrationRequest,
+    ) -> DeployServiceResult<AppDatabaseMigrationResponse>;
+
+    async fn list_app_database_migrations(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        profile_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppDatabaseMigrationPage>;
+
+    async fn retrieve_app_database_migration(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        profile_id: &str,
+        migration_id: &str,
+    ) -> DeployServiceResult<AppDatabaseMigrationResponse>;
+
+    /// Current tenant usage for one entitlement dimension (enforcement
+    /// evidence; tenant-scoped aggregate).
+    async fn entitlement_usage(&self, tenant_id: i64, dimension: &str) -> DeployServiceResult<i64>;
+
+    async fn list_entitlement_projections(
+        &self,
+        tenant_id: Option<i64>,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<EntitlementProjectionPage>;
+
+    async fn list_build_queue(
+        &self,
+        tenant_id: Option<i64>,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<BuildQueuePage>;
+
+    async fn list_runner_health(
+        &self,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<RunnerHealthPage>;
+
+    async fn create_acme_account(
+        &self,
+        tenant_id: i64,
+        request: &CreateAcmeAccountRequest,
+    ) -> DeployServiceResult<AcmeAccountResponse>;
+
+    async fn list_acme_accounts(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AcmeAccountPage>;
+
+    async fn request_certificate_order(
+        &self,
+        tenant_id: i64,
+        request: &RequestCertificateOrderRequest,
+    ) -> DeployServiceResult<CertificateOrderResponse>;
+
+    async fn advance_certificate_order(
+        &self,
+        tenant_id: i64,
+        order_id: &str,
+        from_status: &str,
+        to_status: &str,
+    ) -> DeployServiceResult<String>;
+
+    async fn fail_certificate_order(
+        &self,
+        tenant_id: i64,
+        order_id: &str,
+        error_code: &str,
+    ) -> DeployServiceResult<()>;
+
+    async fn record_challenge_result(
+        &self,
+        tenant_id: i64,
+        order_id: &str,
+        challenge_id: Option<&str>,
+        valid: bool,
+        error_code: Option<&str>,
+    ) -> DeployServiceResult<()>;
+
+    #[allow(clippy::too_many_arguments)]
+    async fn store_certificate_version(
+        &self,
+        tenant_id: i64,
+        order_id: &str,
+        version_no: i64,
+        serial_sha256: &str,
+        fingerprint_sha256: &str,
+        spki_sha256: &str,
+        chain_sha256: &str,
+        issuer: &str,
+        subject: &str,
+        key_algorithm: &str,
+        not_before: &str,
+        not_after: &str,
+        secret_bundle_ref: &str,
+    ) -> DeployServiceResult<CertificateOrderResponse>;
+
+    async fn retrieve_certificate_order(
+        &self,
+        tenant_id: i64,
+        order_id: &str,
+    ) -> DeployServiceResult<CertificateOrderResponse>;
+
+    async fn list_certificate_orders(
+        &self,
+        tenant_id: i64,
+        certificate_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<CertificateOrderPage>;
+
+    async fn list_certificate_challenges(
+        &self,
+        tenant_id: i64,
+        order_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<CertificateChallengePage>;
 }

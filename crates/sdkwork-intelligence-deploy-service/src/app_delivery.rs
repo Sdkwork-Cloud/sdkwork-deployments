@@ -3,24 +3,33 @@
 //! ceilings, then delegation to the repository port.
 
 use sdkwork_deploy_contract::{
-    AppKind, AppPage, AppReleasePage, AppReleaseResponse, AppResponse, BuildPage, BuildResponse,
-    BuildTemplatePage, BuildTemplateResponse, ChannelKey, ChannelPage, ChannelResponse,
-    ChannelRolloutPage, ChannelRolloutResponse, CreateAppDeploymentRequest,
-    CreateAppReleaseRequest, CreateAppRequest, CreateBuildRequest, CreateBuildTemplateRequest,
-    CreatePlatformTargetRequest, CreateSigningIdentityRequest, CreateSourceRepositoryRequest,
-    DeployAppRequestContext, DeployServiceError, DeployServiceResult, DeploymentStatus,
-    PackagePage, PackageResponse, PlatformTargetPage, PlatformTargetResponse,
-    PromoteChannelRequest, RegisterPackageRequest, ReleaseStatus, SigningIdentityPage,
-    SigningIdentityResponse, SourceRepositoryPage, SourceRepositoryResponse, UpdateAppRequest,
-    UpdateBuildStateRequest,
+    AppDatabaseMigrationPage, AppDatabaseMigrationResponse, AppDatabaseProfilePage,
+    AppDatabaseProfileResponse, AppKind, AppPage, AppReleasePage, AppReleaseResponse, AppResponse,
+    BuildPage, BuildResponse, BuildTemplatePage, BuildTemplateResponse, ChannelKey, ChannelPage,
+    ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse, CreateAppDatabaseMigrationRequest,
+    CreateAppDatabaseProfileRequest, CreateAppDeploymentRequest, CreateAppReleaseRequest,
+    CreateAppRequest, CreateBuildRequest, CreateBuildTemplateRequest, CreatePlatformTargetRequest,
+    CreateSigningIdentityRequest, CreateSourceRepositoryRequest, DeployAppRequestContext,
+    DeployServiceError, DeployServiceResult, DeploymentStatus, PackagePage, PackageResponse,
+    PlatformTargetPage, PlatformTargetResponse, PromoteChannelRequest, RegisterPackageRequest,
+    ReleaseStatus, SigningIdentityPage, SigningIdentityResponse, SourceRepositoryPage,
+    SourceRepositoryResponse, UpdateAppDatabaseProfileRequest, UpdateAppRequest,
+    UpdateBuildStateRequest, UsageEventPage, ENTITLEMENT_DIMENSION_ACTIVE_APPS,
+    ENTITLEMENT_DIMENSION_BUILD_CONCURRENCY, ENTITLEMENT_DIMENSION_DEPLOYMENT_COUNT,
+    ENTITLEMENT_DIMENSION_PACKAGE_STORAGE_BYTES, ENTITLEMENT_DIMENSION_PLATFORM_TARGETS,
+    ENTITLEMENT_DIMENSION_RELEASE_COUNT, USAGE_DIMENSION_BUILD_MINUTES,
+    USAGE_DIMENSION_DEPLOYMENT_COUNT, USAGE_DIMENSION_PACKAGE_STORAGE_BYTES,
 };
 use sdkwork_deploy_core::{
-    required_identity_field, validate_app_kind_platform, validate_package_format_for_platform,
-    validate_package_size, validate_platform_identity, validate_sha256_hex, RequiredIdentityField,
-    SemanticVersion,
+    required_identity_field, validate_app_kind_platform, validate_catalog_name,
+    validate_database_engine, validate_migration_name, validate_migration_strategy,
+    validate_migration_version, validate_package_format_for_platform, validate_package_size,
+    validate_platform_identity, validate_profile_key, validate_profile_status, validate_sha256_hex,
+    RequiredIdentityField, SemanticVersion,
 };
 
-use crate::{repository::InsertAuditLogCommand, DeployService};
+use crate::repository::{InsertAuditLogCommand, InsertUsageEventCommand};
+use crate::DeployService;
 
 const CHANNEL_KEYS: &[&str] = &["stable", "beta", "alpha", "qa"];
 const REPO_PROVIDERS: &[&str] = &["GITHUB", "GITEE", "GITLAB", "SELF_HOSTED"];
@@ -55,6 +64,34 @@ impl DeployService {
             .await
     }
 
+    /// Emits a usage fact without blocking the primary operation: metering
+    /// failures are logged and swallowed (TECH §4.6 fire-and-warn semantics).
+    /// The deduplication key makes retried flows idempotent per fact.
+    async fn record_usage(&self, command: InsertUsageEventCommand) {
+        if let Err(error) = self.repository.insert_usage_event(&command).await {
+            tracing::warn!(
+                "usage metering skipped tenant={} dimension={}: {error}",
+                command.tenant_id,
+                command.dimension
+            );
+        }
+    }
+
+    /// UTC month-start used as the metering period boundary; falls back to
+    /// the current month when the source timestamp is missing or malformed.
+    fn billing_period_start(at: Option<&str>) -> String {
+        use chrono::Datelike;
+        let instant = at
+            .and_then(|value| chrono::DateTime::parse_from_rfc3339(value).ok())
+            .map(|value| value.with_timezone(&chrono::Utc))
+            .unwrap_or_else(chrono::Utc::now);
+        chrono::NaiveDate::from_ymd_opt(instant.year(), instant.month(), 1)
+            .and_then(|date| date.and_hms_opt(0, 0, 0))
+            .map(|naive| chrono::DateTime::from_naive_utc_and_offset(naive, chrono::Utc))
+            .unwrap_or(instant)
+            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+    }
+
     // -- apps -----------------------------------------------------------------
 
     pub async fn create_app(
@@ -63,6 +100,8 @@ impl DeployService {
         request: &CreateAppRequest,
     ) -> DeployServiceResult<AppResponse> {
         let tenant_id = Self::tenant_id(context)?;
+        self.enforce_entitlement(tenant_id, ENTITLEMENT_DIMENSION_ACTIVE_APPS)
+            .await?;
         if request.name.trim().is_empty() {
             return Err(DeployServiceError::validation("app name is required"));
         }
@@ -136,6 +175,8 @@ impl DeployService {
         request: &CreatePlatformTargetRequest,
     ) -> DeployServiceResult<PlatformTargetResponse> {
         let tenant_id = Self::tenant_id(context)?;
+        self.enforce_entitlement(tenant_id, ENTITLEMENT_DIMENSION_PLATFORM_TARGETS)
+            .await?;
         if request.target_key.trim().is_empty() || request.target_key.len() > 120 {
             return Err(DeployServiceError::validation(
                 "targetKey must be 1..=120 characters",
@@ -341,6 +382,8 @@ impl DeployService {
         request: &CreateBuildRequest,
     ) -> DeployServiceResult<BuildResponse> {
         let tenant_id = Self::tenant_id(context)?;
+        self.enforce_entitlement(tenant_id, ENTITLEMENT_DIMENSION_BUILD_CONCURRENCY)
+            .await?;
         if request.idempotency_key.trim().is_empty() {
             return Err(DeployServiceError::validation("idempotencyKey is required"));
         }
@@ -401,6 +444,33 @@ impl DeployService {
             .await?;
         self.audit_app_action(context, "build.stateUpdate", &build.id)
             .await?;
+        if matches!(
+            build.build_status.as_str(),
+            "SUCCEEDED" | "FAILED" | "CANCELLED" | "TIMED_OUT"
+        ) {
+            // Terminal builds bill wall-clock compute minutes, floored at one
+            // minute; the build uuid keys the dedup so replay never double-bills.
+            let duration_ms = build.duration_ms.unwrap_or(0).max(0);
+            let minutes = if duration_ms == 0 {
+                1
+            } else {
+                (duration_ms + 59_999) / 60_000
+            };
+            let period_start = Self::billing_period_start(build.started_at.as_deref());
+            self.record_usage(InsertUsageEventCommand {
+                tenant_id: context.tenant_id,
+                organization_id: context.organization_id.unwrap_or(0),
+                site_id: None,
+                period_start,
+                dimension: USAGE_DIMENSION_BUILD_MINUTES.to_owned(),
+                quantity: minutes,
+                unit: "MINUTES".to_owned(),
+                source_target_uuid: Some(build.platform_target_id.clone()),
+                source_window_id: Some(format!("build:{}", build.id)),
+                deduplication_key: format!("build:{}", build.id),
+            })
+            .await;
+        }
         Ok(build)
     }
 
@@ -412,6 +482,8 @@ impl DeployService {
         request: &RegisterPackageRequest,
     ) -> DeployServiceResult<PackageResponse> {
         let tenant_id = Self::tenant_id(context)?;
+        self.enforce_entitlement(tenant_id, ENTITLEMENT_DIMENSION_PACKAGE_STORAGE_BYTES)
+            .await?;
         validate_sha256(&request.checksum_sha256, "checksumSha256")?;
         validate_sha256(&request.manifest_sha256, "manifestSha256")?;
         SemanticVersion::parse(&request.semantic_version)
@@ -443,7 +515,20 @@ impl DeployService {
             .await?;
         self.audit_app_action(context, "package.register", &package.id)
             .await?;
-        let _ = app_uuid;
+        // Stored package bytes bill storage; the package uuid keys dedup.
+        self.record_usage(InsertUsageEventCommand {
+            tenant_id: context.tenant_id,
+            organization_id: context.organization_id.unwrap_or(0),
+            site_id: None,
+            period_start: Self::billing_period_start(None),
+            dimension: USAGE_DIMENSION_PACKAGE_STORAGE_BYTES.to_owned(),
+            quantity: package.package_size_bytes.max(0),
+            unit: "BYTES".to_owned(),
+            source_target_uuid: Some(app_uuid),
+            source_window_id: Some(format!("package:{}", package.id)),
+            deduplication_key: format!("package:{}", package.id),
+        })
+        .await;
         Ok(package)
     }
 
@@ -480,6 +565,8 @@ impl DeployService {
         request: &CreateAppReleaseRequest,
     ) -> DeployServiceResult<AppReleaseResponse> {
         let tenant_id = Self::tenant_id(context)?;
+        self.enforce_entitlement(tenant_id, ENTITLEMENT_DIMENSION_RELEASE_COUNT)
+            .await?;
         if request.idempotency_key.trim().is_empty() {
             return Err(DeployServiceError::validation("idempotencyKey is required"));
         }
@@ -598,6 +685,8 @@ impl DeployService {
         request: &CreateAppDeploymentRequest,
     ) -> DeployServiceResult<sdkwork_deploy_contract::AppDeploymentResponse> {
         let tenant_id = Self::tenant_id(context)?;
+        self.enforce_entitlement(tenant_id, ENTITLEMENT_DIMENSION_DEPLOYMENT_COUNT)
+            .await?;
         if request.idempotency_key.trim().is_empty() {
             return Err(DeployServiceError::validation("idempotencyKey is required"));
         }
@@ -608,6 +697,21 @@ impl DeployService {
             .await?;
         self.audit_app_action(context, "deployment.create", &deployment.id)
             .await?;
+        // Idempotency replay returns the existing deployment, so the
+        // deployment uuid keys dedup and never over-counts.
+        self.record_usage(InsertUsageEventCommand {
+            tenant_id: context.tenant_id,
+            organization_id: context.organization_id.unwrap_or(0),
+            site_id: None,
+            period_start: Self::billing_period_start(None),
+            dimension: USAGE_DIMENSION_DEPLOYMENT_COUNT.to_owned(),
+            quantity: 1,
+            unit: "COUNT".to_owned(),
+            source_target_uuid: Some(deployment.app_id.clone()),
+            source_window_id: Some(format!("deployment:{}", deployment.id)),
+            deduplication_key: format!("deployment:{}", deployment.id),
+        })
+        .await;
         Ok(deployment)
     }
 
@@ -704,6 +808,140 @@ impl DeployService {
             .retrieve_signing_identity(tenant_id, identity_id)
             .await
     }
+
+    // -- usage metering (read-only tenant surface, TECH §4.6) ------------------
+
+    pub async fn list_usage_events(
+        &self,
+        context: &DeployAppRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<UsageEventPage> {
+        let tenant_id = Self::tenant_id(context)?;
+        self.repository
+            .list_usage_events(tenant_id, page, page_size)
+            .await
+    }
+
+    // -- application database structure contract -------------------------------
+
+    pub async fn create_app_database_profile(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        request: &CreateAppDatabaseProfileRequest,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse> {
+        let tenant_id = Self::tenant_id(context)?;
+        validate_database_engine(&request.db_engine).map_err(DeployServiceError::validation)?;
+        validate_catalog_name(&request.catalog_name).map_err(DeployServiceError::validation)?;
+        validate_profile_key(&request.profile_key).map_err(DeployServiceError::validation)?;
+        if let Some(strategy) = request.migration_strategy.as_deref() {
+            validate_migration_strategy(strategy).map_err(DeployServiceError::validation)?;
+        }
+        let profile = self
+            .repository
+            .create_app_database_profile(tenant_id, context.actor_id, app_id, request)
+            .await?;
+        self.audit_app_action(context, "databaseProfile.create", &profile.id)
+            .await?;
+        Ok(profile)
+    }
+
+    pub async fn list_app_database_profiles(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppDatabaseProfilePage> {
+        let tenant_id = Self::tenant_id(context)?;
+        self.repository
+            .list_app_database_profiles(tenant_id, app_id, page, page_size)
+            .await
+    }
+
+    pub async fn retrieve_app_database_profile(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        profile_id: &str,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse> {
+        let tenant_id = Self::tenant_id(context)?;
+        self.repository
+            .retrieve_app_database_profile(tenant_id, app_id, profile_id)
+            .await
+    }
+
+    pub async fn update_app_database_profile(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        profile_id: &str,
+        request: &UpdateAppDatabaseProfileRequest,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse> {
+        let tenant_id = Self::tenant_id(context)?;
+        if let Some(strategy) = request.migration_strategy.as_deref() {
+            validate_migration_strategy(strategy).map_err(DeployServiceError::validation)?;
+        }
+        if let Some(status) = request.profile_status.as_deref() {
+            validate_profile_status(status).map_err(DeployServiceError::validation)?;
+        }
+        let profile = self
+            .repository
+            .update_app_database_profile(tenant_id, context.actor_id, app_id, profile_id, request)
+            .await?;
+        self.audit_app_action(context, "databaseProfile.update", &profile.id)
+            .await?;
+        Ok(profile)
+    }
+
+    pub async fn create_app_database_migration(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        profile_id: &str,
+        request: &CreateAppDatabaseMigrationRequest,
+    ) -> DeployServiceResult<AppDatabaseMigrationResponse> {
+        let tenant_id = Self::tenant_id(context)?;
+        validate_migration_version(&request.migration_version)
+            .map_err(DeployServiceError::validation)?;
+        validate_migration_name(&request.migration_name).map_err(DeployServiceError::validation)?;
+        validate_sha256(&request.checksum_sha256, "checksumSha256")?;
+        let migration = self
+            .repository
+            .create_app_database_migration(tenant_id, context.actor_id, app_id, profile_id, request)
+            .await?;
+        self.audit_app_action(context, "databaseMigration.create", &migration.id)
+            .await?;
+        Ok(migration)
+    }
+
+    pub async fn list_app_database_migrations(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        profile_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppDatabaseMigrationPage> {
+        let tenant_id = Self::tenant_id(context)?;
+        self.repository
+            .list_app_database_migrations(tenant_id, app_id, profile_id, page, page_size)
+            .await
+    }
+
+    pub async fn retrieve_app_database_migration(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        profile_id: &str,
+        migration_id: &str,
+    ) -> DeployServiceResult<AppDatabaseMigrationResponse> {
+        let tenant_id = Self::tenant_id(context)?;
+        self.repository
+            .retrieve_app_database_migration(tenant_id, app_id, profile_id, migration_id)
+            .await
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -795,4 +1033,43 @@ fn validate_deployment_pair(request: &CreateAppDeploymentRequest) -> DeployServi
         )));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod usage_metering_tests {
+    use chrono::{Datelike, Timelike};
+
+    use super::DeployService;
+
+    fn period_start(at: Option<&str>) -> String {
+        DeployService::billing_period_start(at)
+    }
+
+    #[test]
+    fn billing_period_start_truncates_to_utc_month_start() {
+        assert_eq!(
+            period_start(Some("2026-08-15T13:45:30.123Z")),
+            "2026-08-01T00:00:00.000Z"
+        );
+        assert_eq!(
+            period_start(Some("2026-01-01T00:00:00.000Z")),
+            "2026-01-01T00:00:00.000Z"
+        );
+    }
+
+    #[test]
+    fn billing_period_start_falls_back_to_current_month() {
+        let now = chrono::Utc::now();
+        let period = period_start(None);
+        let parsed = chrono::DateTime::parse_from_rfc3339(&period)
+            .expect("fallback period is a valid timestamp");
+        assert_eq!(parsed.day(), 1);
+        assert_eq!(parsed.hour(), 0);
+        assert_eq!(parsed.minute(), 0);
+        assert_eq!(parsed.year(), now.year());
+        assert_eq!(parsed.month(), now.month());
+        // Malformed input behaves like missing input.
+        let fallback = period_start(Some("not-a-date"));
+        assert_eq!(fallback, period);
+    }
 }

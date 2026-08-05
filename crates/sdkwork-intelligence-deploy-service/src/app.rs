@@ -2,21 +2,23 @@
 
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
-    is_deploy_package_artifact_type, AppDeploymentPage, AppDeploymentResponse, AppPage,
-    AppReleasePage, AppReleaseResponse, AppResponse, BuildPage, BuildResponse, BuildTemplatePage,
-    BuildTemplateResponse, ChannelPage, ChannelResponse, ChannelRolloutPage,
-    ChannelRolloutResponse, CompleteDeployUploadSessionRequest, CreateAppDeploymentRequest,
-    CreateAppReleaseRequest, CreateAppRequest, CreateArtifactRequest, CreateBuildRequest,
-    CreateBuildTemplateRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
-    CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
-    CreateEnvVariableRequest, CreateHealthCheckRequest, CreatePlatformTargetRequest,
-    CreateReleaseRequest, CreateSigningIdentityRequest, CreateSiteRequest,
-    CreateSourceRepositoryRequest, DeployAppApi, DeployAppRequestContext, DeployServiceResult,
-    DeployUploadSessionResponse, ListDomainZonesQuery, ListSitesQuery, PackagePage,
-    PackageResponse, PlatformTargetPage, PlatformTargetResponse, PromoteChannelRequest,
-    RegisterPackageRequest, ReleaseStatus, SigningIdentityPage, SigningIdentityResponse,
-    SourceRepositoryPage, SourceRepositoryResponse, UpdateAppRequest, UpdateBuildStateRequest,
-    UpdateDomainHostnameRequest, UpdateDomainZoneRequest, UpdateSiteRequest,
+    is_deploy_package_artifact_type, AppDatabaseMigrationPage, AppDatabaseMigrationResponse,
+    AppDatabaseProfilePage, AppDatabaseProfileResponse, AppDeploymentPage, AppDeploymentResponse,
+    AppPage, AppReleasePage, AppReleaseResponse, AppResponse, BuildPage, BuildResponse,
+    BuildTemplatePage, BuildTemplateResponse, ChannelPage, ChannelResponse, ChannelRolloutPage,
+    ChannelRolloutResponse, CompleteDeployUploadSessionRequest, CreateAppDatabaseMigrationRequest,
+    CreateAppDatabaseProfileRequest, CreateAppDeploymentRequest, CreateAppReleaseRequest,
+    CreateAppRequest, CreateArtifactRequest, CreateBuildRequest, CreateBuildTemplateRequest,
+    CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDeploymentRequest,
+    CreateDomainHostnameRequest, CreateDomainZoneRequest, CreateEnvVariableRequest,
+    CreateHealthCheckRequest, CreatePlatformTargetRequest, CreateReleaseRequest,
+    CreateSigningIdentityRequest, CreateSiteRequest, CreateSourceRepositoryRequest, DeployAppApi,
+    DeployAppRequestContext, DeployServiceResult, DeployUploadSessionResponse,
+    ListDomainZonesQuery, ListSitesQuery, PackagePage, PackageResponse, PlatformTargetPage,
+    PlatformTargetResponse, PromoteChannelRequest, RegisterPackageRequest, ReleaseStatus,
+    SigningIdentityPage, SigningIdentityResponse, SourceRepositoryPage, SourceRepositoryResponse,
+    UpdateAppDatabaseProfileRequest, UpdateAppRequest, UpdateBuildStateRequest,
+    UpdateDomainHostnameRequest, UpdateDomainZoneRequest, UpdateSiteRequest, UsageEventPage,
     UPLOAD_SESSION_STATUS_CANCELLED, UPLOAD_SESSION_STATUS_COMPLETED,
 };
 use sdkwork_deploy_drive_port::{DriveRequestCredentials, PrepareDeployUploadCommand};
@@ -1282,6 +1284,91 @@ impl DeployAppApi for DeployService {
         identity_id: &str,
     ) -> DeployServiceResult<SigningIdentityResponse> {
         self.retrieve_signing_identity(context, identity_id).await
+    }
+
+    async fn list_usage_events(
+        &self,
+        context: &DeployAppRequestContext,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<UsageEventPage> {
+        self.list_usage_events(context, page, page_size).await
+    }
+
+    async fn create_app_database_profile(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        request: &CreateAppDatabaseProfileRequest,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse> {
+        self.create_app_database_profile(context, app_id, request)
+            .await
+    }
+
+    async fn list_app_database_profiles(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppDatabaseProfilePage> {
+        self.list_app_database_profiles(context, app_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_app_database_profile(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        profile_id: &str,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse> {
+        self.retrieve_app_database_profile(context, app_id, profile_id)
+            .await
+    }
+
+    async fn update_app_database_profile(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        profile_id: &str,
+        request: &UpdateAppDatabaseProfileRequest,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse> {
+        self.update_app_database_profile(context, app_id, profile_id, request)
+            .await
+    }
+
+    async fn create_app_database_migration(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        profile_id: &str,
+        request: &CreateAppDatabaseMigrationRequest,
+    ) -> DeployServiceResult<AppDatabaseMigrationResponse> {
+        self.create_app_database_migration(context, app_id, profile_id, request)
+            .await
+    }
+
+    async fn list_app_database_migrations(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        profile_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppDatabaseMigrationPage> {
+        self.list_app_database_migrations(context, app_id, profile_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_app_database_migration(
+        &self,
+        context: &DeployAppRequestContext,
+        app_id: &str,
+        profile_id: &str,
+        migration_id: &str,
+    ) -> DeployServiceResult<AppDatabaseMigrationResponse> {
+        self.retrieve_app_database_migration(context, app_id, profile_id, migration_id)
+            .await
     }
 }
 

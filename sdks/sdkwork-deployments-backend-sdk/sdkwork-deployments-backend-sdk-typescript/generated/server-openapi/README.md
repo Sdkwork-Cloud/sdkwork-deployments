@@ -58,6 +58,10 @@ const client = new SdkworkDeployBackendClient({
 - `client.server` - server API
 - `client.cluster` - cluster API
 - `client.audit` - audit API
+- `client.entitlement` - entitlement API
+- `client.buildQueue` - build_queue API
+- `client.runners` - runners API
+- `client.tls` - tls API
 
 ## Usage Examples
 
@@ -106,6 +110,50 @@ const params = {
   cursor: 'cursor',
 };
 const result = await client.audit.auditLogs.list(params);
+```
+
+### entitlement
+
+```typescript
+// List Commerce-backed entitlement projections
+const params = {
+  page: 1,
+  page_size: 2,
+};
+const result = await client.entitlement.list(params);
+```
+
+### build_queue
+
+```typescript
+// List queued builds waiting for or claimed by runners
+const params = {
+  page: 1,
+  page_size: 2,
+};
+const result = await client.buildQueue.list(params);
+```
+
+### runners
+
+```typescript
+// List runner liveness and workload health
+const params = {
+  page: 1,
+  page_size: 2,
+};
+const result = await client.runners.list(params);
+```
+
+### tls
+
+```typescript
+// List ACME accounts of the tenant
+const params = {
+  page: 1,
+  page_size: 2,
+};
+const result = await client.tls.tlsAccounts.list(params);
 ```
 
 ## Error Handling

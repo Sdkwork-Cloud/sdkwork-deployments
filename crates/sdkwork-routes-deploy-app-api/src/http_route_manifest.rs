@@ -499,6 +499,57 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         "signing",
         "signingIdentities.retrieve",
     ),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/usage_events",
+        "usage",
+        "usageEvents.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/apps/{appId}/database_profiles",
+        "appDatabase",
+        "appDatabaseProfiles.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/apps/{appId}/database_profiles",
+        "appDatabase",
+        "appDatabaseProfiles.create",
+    )
+    .with_idempotent(true),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/apps/{appId}/database_profiles/{profileId}",
+        "appDatabase",
+        "appDatabaseProfiles.retrieve",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Patch,
+        "/app/v3/api/apps/{appId}/database_profiles/{profileId}",
+        "appDatabase",
+        "appDatabaseProfiles.update",
+    )
+    .with_idempotent(true),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/apps/{appId}/database_profiles/{profileId}/migrations",
+        "appDatabase",
+        "appDatabaseMigrations.list",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
+        "/app/v3/api/apps/{appId}/database_profiles/{profileId}/migrations",
+        "appDatabase",
+        "appDatabaseMigrations.create",
+    )
+    .with_idempotent(true),
+    HttpRoute::dual_token(
+        HttpMethod::Get,
+        "/app/v3/api/apps/{appId}/database_profiles/{profileId}/migrations/{migrationId}",
+        "appDatabase",
+        "appDatabaseMigrations.retrieve",
+    ),
 ];
 
 pub fn app_route_manifest() -> HttpRouteManifest {

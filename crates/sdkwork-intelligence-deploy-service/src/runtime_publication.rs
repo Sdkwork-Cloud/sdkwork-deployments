@@ -886,6 +886,7 @@ fn publication_error_code(error: &DeployServiceError) -> &'static str {
         DeployServiceErrorKind::Conflict => "WEB_ASSIGNMENT_CONFLICT",
         DeployServiceErrorKind::Validation => "WEB_ASSIGNMENT_REJECTED",
         DeployServiceErrorKind::Forbidden => "WEB_ASSIGNMENT_FORBIDDEN",
+        DeployServiceErrorKind::QuotaExceeded => "WEB_ASSIGNMENT_QUOTA_EXCEEDED",
         DeployServiceErrorKind::DatabaseUnavailable => "WEB_DATABASE_UNAVAILABLE",
         DeployServiceErrorKind::Internal => "WEB_PUBLICATION_UNAVAILABLE",
     }

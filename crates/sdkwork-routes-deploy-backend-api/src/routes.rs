@@ -5,9 +5,11 @@ use axum::{
     Extension, Json, Router,
 };
 use sdkwork_deploy_contract::{
-    AuditLogQuery, CreateNginxConfigRequest, CreateNodeClusterRequest, CreateServerRequest,
-    DeployBackendApi, DeployBackendRequestContext, ListNginxConfigsQuery, UpdateNginxConfigRequest,
-    UpdateNodeClusterRequest, UpdateServerRequest,
+    AuditLogQuery, ChallengeResultRequest, CreateAcmeAccountRequest, CreateNginxConfigRequest,
+    CreateNodeClusterRequest, CreateServerRequest, DeployBackendApi, DeployBackendRequestContext,
+    FailCertificateOrderRequest, ListNginxConfigsQuery, RequestCertificateOrderRequest,
+    StoreCertificateVersionRequest, UpdateNginxConfigRequest, UpdateNodeClusterRequest,
+    UpdateServerRequest,
 };
 use sdkwork_routes_deploy_common::{envelope, finish_api_json, finish_created_api_json, ok_json};
 use sdkwork_web_core::WebRequestContext;
@@ -50,6 +52,26 @@ pub fn build_router_with_shared_backend_api(api: Arc<dyn DeployBackendApi>) -> R
         )
         .route(paths::NODE_CLUSTER, put(update_node_cluster))
         .route(paths::AUDIT_LOGS, get(list_audit_logs))
+        .route(paths::ENTITLEMENTS, get(list_entitlements))
+        .route(paths::BUILD_QUEUE, get(list_build_queue))
+        .route(paths::RUNNERS, get(list_runners))
+        .route(
+            paths::TLS_ACCOUNTS,
+            get(list_acme_accounts).post(create_acme_account),
+        )
+        .route(paths::TLS_ORDERS, post(request_certificate_order))
+        .route(paths::TLS_ORDER_ADVANCE, post(advance_certificate_order))
+        .route(paths::TLS_ORDER_FAIL, post(fail_certificate_order))
+        .route(
+            paths::TLS_ORDER_CHALLENGE_RESULT,
+            post(record_challenge_result),
+        )
+        .route(paths::TLS_ORDER_VERSIONS, post(store_certificate_version))
+        .route(
+            paths::TLS_ORDER_CHALLENGES,
+            get(list_certificate_challenges),
+        )
+        .route(paths::CERTIFICATE_ORDERS, get(list_certificate_orders))
         .layer(axum::middleware::from_fn(
             sdkwork_routes_deploy_common::pagination::validate_pagination_query,
         ))
@@ -363,6 +385,260 @@ async fn list_audit_logs(
             } else {
                 ok_json(envelope::audit_log_page(page))
             }
+        }
+        .await,
+    )
+}
+
+// -- build fleet administration (TECH §8) -------------------------------------
+
+async fn list_entitlements(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let page = state
+                .api
+                .list_entitlement_projections(&context, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::entitlement_projection_page(page))
+        }
+        .await,
+    )
+}
+
+async fn list_build_queue(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let page = state
+                .api
+                .list_build_queue(&context, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::build_queue_page(page))
+        }
+        .await,
+    )
+}
+
+async fn list_runners(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let page = state
+                .api
+                .list_runner_health(&context, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::runner_health_page(page))
+        }
+        .await,
+    )
+}
+
+// -- TLS control plane (TECH-cloud-site-publishing §4.5) ----------------------
+
+async fn create_acme_account(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Json(request): Json<CreateAcmeAccountRequest>,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let result = state.api.create_acme_account(&context, &request).await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn list_acme_accounts(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let page = state
+                .api
+                .list_acme_accounts(&context, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::acme_account_page(page))
+        }
+        .await,
+    )
+}
+
+async fn request_certificate_order(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Json(request): Json<RequestCertificateOrderRequest>,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let result = state
+                .api
+                .request_certificate_order(&context, &request)
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn advance_certificate_order(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Path(order_id): Path<String>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let result = state
+                .api
+                .advance_certificate_order(&context, &order_id)
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn fail_certificate_order(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Path(order_id): Path<String>,
+    Json(request): Json<FailCertificateOrderRequest>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            state
+                .api
+                .fail_certificate_order(&context, &order_id, &request.error_code)
+                .await?;
+            ok_json(envelope::resource(
+                serde_json::json!({ "status": "FAILED" }),
+            ))
+        }
+        .await,
+    )
+}
+
+async fn record_challenge_result(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Path(order_id): Path<String>,
+    Json(request): Json<ChallengeResultRequest>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            state
+                .api
+                .record_challenge_result(
+                    &context,
+                    &order_id,
+                    request.challenge_id.as_deref(),
+                    request.valid,
+                )
+                .await?;
+            ok_json(envelope::resource(
+                serde_json::json!({ "status": "recorded" }),
+            ))
+        }
+        .await,
+    )
+}
+
+async fn store_certificate_version(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Json(request): Json<StoreCertificateVersionRequest>,
+) -> Response {
+    finish_created_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let result = state
+                .api
+                .store_certificate_version(&context, &request)
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn list_certificate_orders(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Path(certificate_id): Path<String>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let page = state
+                .api
+                .list_certificate_orders(&context, &certificate_id, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::certificate_order_page(page))
+        }
+        .await,
+    )
+}
+
+async fn list_certificate_challenges(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Path(order_id): Path<String>,
+    Query(query): Query<PageQuery>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let page = state
+                .api
+                .list_certificate_challenges(&context, &order_id, query.page, query.page_size)
+                .await?;
+            ok_json(envelope::certificate_challenge_page(page))
         }
         .await,
     )

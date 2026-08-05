@@ -2,10 +2,14 @@
 
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
-    AppDeploymentPage, AppDeploymentResponse, AppPage, AppReleasePage, AppReleaseResponse,
-    AppResponse, ArtifactPage, ArtifactResponse, AuditLogPage, BuildPage, BuildResponse,
-    BuildTemplatePage, BuildTemplateResponse, CertificatePage, CertificateResponse, ChannelPage,
-    ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse, CreateAppDeploymentRequest,
+    AcmeAccountPage, AcmeAccountResponse, AppDatabaseMigrationPage, AppDatabaseMigrationResponse,
+    AppDatabaseProfilePage, AppDatabaseProfileResponse, AppDeploymentPage, AppDeploymentResponse,
+    AppPage, AppReleasePage, AppReleaseResponse, AppResponse, ArtifactPage, ArtifactResponse,
+    AuditLogPage, BuildPage, BuildQueuePage, BuildResponse, BuildTemplatePage,
+    BuildTemplateResponse, CertificateChallengePage, CertificateOrderPage,
+    CertificateOrderResponse, CertificatePage, CertificateResponse, ChannelPage, ChannelResponse,
+    ChannelRolloutPage, ChannelRolloutResponse, CreateAcmeAccountRequest,
+    CreateAppDatabaseMigrationRequest, CreateAppDatabaseProfileRequest, CreateAppDeploymentRequest,
     CreateAppReleaseRequest, CreateAppRequest, CreateArtifactRequest, CreateBuildRequest,
     CreateBuildTemplateRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
     CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
@@ -14,20 +18,24 @@ use sdkwork_deploy_contract::{
     CreateServerRequest, CreateSigningIdentityRequest, CreateSiteRequest,
     CreateSourceRepositoryRequest, DeployAppRequestContext, DeployUploadSessionResponse,
     DeploymentPage, DeploymentResponse, DeploymentStatus, DomainHostnamePage,
-    DomainHostnameResponse, DomainZonePage, DomainZoneResponse, EnvVariablePage,
-    EnvVariableResponse, HealthCheckPage, HealthCheckResponse, ListDomainZonesQuery,
-    ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage, NginxConfigResponse,
-    NginxReloadResponse, NginxStatusResponse, NginxValidateResponse, NodeClusterPage,
-    NodeClusterResponse, PackagePage, PackageResponse, PlatformTargetPage, PlatformTargetResponse,
-    PromoteChannelRequest, RegisterPackageRequest, ReleasePage, ReleaseResponse, ReleaseStatus,
-    ServerPage, ServerResponse, SigningIdentityPage, SigningIdentityResponse, SitePage,
-    SiteResponse, SourceRepositoryPage, SourceRepositoryResponse, UpdateAppRequest,
-    UpdateBuildStateRequest, UpdateDomainHostnameRequest, UpdateDomainZoneRequest,
-    UpdateNginxConfigRequest, UpdateNodeClusterRequest, UpdateServerRequest, UpdateSiteRequest,
+    DomainHostnameResponse, DomainZonePage, DomainZoneResponse, EntitlementProjectionPage,
+    EnvVariablePage, EnvVariableResponse, HealthCheckPage, HealthCheckResponse,
+    ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
+    NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
+    NodeClusterPage, NodeClusterResponse, PackagePage, PackageResponse, PlatformTargetPage,
+    PlatformTargetResponse, PromoteChannelRequest, RegisterPackageRequest, ReleasePage,
+    ReleaseResponse, ReleaseStatus, RequestCertificateOrderRequest, RunnerHealthPage, ServerPage,
+    ServerResponse, SigningIdentityPage, SigningIdentityResponse, SitePage, SiteResponse,
+    SourceRepositoryPage, SourceRepositoryResponse, UpdateAppDatabaseProfileRequest,
+    UpdateAppRequest, UpdateBuildStateRequest, UpdateDomainHostnameRequest,
+    UpdateDomainZoneRequest, UpdateNginxConfigRequest, UpdateNodeClusterRequest,
+    UpdateServerRequest, UpdateSiteRequest, UsageEventPage, UsageEventResponse,
 };
 use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
 use sdkwork_deploy_web_port::RuntimeAssignmentReceipt;
-use sdkwork_intelligence_deploy_service::repository::InsertAuditLogCommand;
+use sdkwork_intelligence_deploy_service::repository::{
+    InsertAuditLogCommand, InsertUsageEventCommand,
+};
 use sdkwork_intelligence_deploy_service::runtime_publication::{
     DeployRuntimeAssignmentMutationPort, DeployRuntimeAssignmentRepositoryPort,
     RuntimeAssignmentState, RuntimeObservationEvidence, RuntimeObservationPersistenceResult,
@@ -1005,6 +1013,264 @@ impl DeployRepositoryPort for DeployRepository {
         identity_id: &str,
     ) -> DeployServiceResult<SigningIdentityResponse> {
         self.retrieve_signing_identity_repo(tenant_id, identity_id)
+            .await
+    }
+
+    async fn insert_usage_event(
+        &self,
+        command: &InsertUsageEventCommand,
+    ) -> DeployServiceResult<UsageEventResponse> {
+        self.insert_usage_event_repo(command).await
+    }
+
+    async fn list_usage_events(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<UsageEventPage> {
+        self.list_usage_events_repo(tenant_id, page, page_size)
+            .await
+    }
+
+    async fn create_app_database_profile(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        app_id: &str,
+        request: &CreateAppDatabaseProfileRequest,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse> {
+        self.create_app_database_profile_repo(tenant_id, actor_id, app_id, request)
+            .await
+    }
+
+    async fn list_app_database_profiles(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppDatabaseProfilePage> {
+        self.list_app_database_profiles_repo(tenant_id, app_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_app_database_profile(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        profile_id: &str,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse> {
+        self.retrieve_app_database_profile_repo(tenant_id, app_id, profile_id)
+            .await
+    }
+
+    async fn update_app_database_profile(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        app_id: &str,
+        profile_id: &str,
+        request: &UpdateAppDatabaseProfileRequest,
+    ) -> DeployServiceResult<AppDatabaseProfileResponse> {
+        self.update_app_database_profile_repo(tenant_id, actor_id, app_id, profile_id, request)
+            .await
+    }
+
+    async fn create_app_database_migration(
+        &self,
+        tenant_id: i64,
+        actor_id: Option<i64>,
+        app_id: &str,
+        profile_id: &str,
+        request: &CreateAppDatabaseMigrationRequest,
+    ) -> DeployServiceResult<AppDatabaseMigrationResponse> {
+        self.create_app_database_migration_repo(tenant_id, actor_id, app_id, profile_id, request)
+            .await
+    }
+
+    async fn list_app_database_migrations(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        profile_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AppDatabaseMigrationPage> {
+        self.list_app_database_migrations_repo(tenant_id, app_id, profile_id, page, page_size)
+            .await
+    }
+
+    async fn retrieve_app_database_migration(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        profile_id: &str,
+        migration_id: &str,
+    ) -> DeployServiceResult<AppDatabaseMigrationResponse> {
+        self.retrieve_app_database_migration_repo(tenant_id, app_id, profile_id, migration_id)
+            .await
+    }
+
+    async fn entitlement_usage(&self, tenant_id: i64, dimension: &str) -> DeployServiceResult<i64> {
+        self.entitlement_usage_repo(tenant_id, dimension).await
+    }
+
+    async fn list_entitlement_projections(
+        &self,
+        tenant_id: Option<i64>,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<EntitlementProjectionPage> {
+        self.list_entitlement_projections_repo(tenant_id, page, page_size)
+            .await
+    }
+
+    async fn list_build_queue(
+        &self,
+        tenant_id: Option<i64>,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<BuildQueuePage> {
+        self.list_build_queue_repo(tenant_id, page, page_size).await
+    }
+
+    async fn list_runner_health(
+        &self,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<RunnerHealthPage> {
+        self.list_runner_health_repo(page, page_size).await
+    }
+
+    async fn create_acme_account(
+        &self,
+        tenant_id: i64,
+        request: &CreateAcmeAccountRequest,
+    ) -> DeployServiceResult<AcmeAccountResponse> {
+        self.create_acme_account_repo(tenant_id, request).await
+    }
+
+    async fn list_acme_accounts(
+        &self,
+        tenant_id: i64,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<AcmeAccountPage> {
+        self.list_acme_accounts_repo(tenant_id, page, page_size)
+            .await
+    }
+
+    async fn request_certificate_order(
+        &self,
+        tenant_id: i64,
+        request: &RequestCertificateOrderRequest,
+    ) -> DeployServiceResult<CertificateOrderResponse> {
+        self.request_certificate_order_repo(
+            tenant_id,
+            &request.certificate_id,
+            &request.idempotency_key,
+            request.challenge_type.as_deref().unwrap_or("HTTP_01"),
+        )
+        .await
+    }
+
+    async fn advance_certificate_order(
+        &self,
+        tenant_id: i64,
+        order_id: &str,
+        from_status: &str,
+        to_status: &str,
+    ) -> DeployServiceResult<String> {
+        self.advance_certificate_order_repo(tenant_id, order_id, from_status, to_status)
+            .await
+    }
+
+    async fn fail_certificate_order(
+        &self,
+        tenant_id: i64,
+        order_id: &str,
+        error_code: &str,
+    ) -> DeployServiceResult<()> {
+        self.fail_certificate_order_repo(tenant_id, order_id, error_code)
+            .await
+    }
+
+    async fn record_challenge_result(
+        &self,
+        tenant_id: i64,
+        order_id: &str,
+        challenge_id: Option<&str>,
+        valid: bool,
+        error_code: Option<&str>,
+    ) -> DeployServiceResult<()> {
+        self.record_challenge_result_repo(tenant_id, order_id, challenge_id, valid, error_code)
+            .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn store_certificate_version(
+        &self,
+        tenant_id: i64,
+        order_id: &str,
+        version_no: i64,
+        serial_sha256: &str,
+        fingerprint_sha256: &str,
+        spki_sha256: &str,
+        chain_sha256: &str,
+        issuer: &str,
+        subject: &str,
+        key_algorithm: &str,
+        not_before: &str,
+        not_after: &str,
+        secret_bundle_ref: &str,
+    ) -> DeployServiceResult<CertificateOrderResponse> {
+        self.store_certificate_version_repo(
+            tenant_id,
+            order_id,
+            version_no,
+            serial_sha256,
+            fingerprint_sha256,
+            spki_sha256,
+            chain_sha256,
+            issuer,
+            subject,
+            key_algorithm,
+            not_before,
+            not_after,
+            secret_bundle_ref,
+        )
+        .await
+    }
+
+    async fn retrieve_certificate_order(
+        &self,
+        tenant_id: i64,
+        order_id: &str,
+    ) -> DeployServiceResult<CertificateOrderResponse> {
+        self.retrieve_certificate_order_repo(tenant_id, order_id)
+            .await
+    }
+
+    async fn list_certificate_orders(
+        &self,
+        tenant_id: i64,
+        certificate_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<CertificateOrderPage> {
+        self.list_certificate_orders_repo(tenant_id, certificate_id, page, page_size)
+            .await
+    }
+
+    async fn list_certificate_challenges(
+        &self,
+        tenant_id: i64,
+        order_id: &str,
+        page: i32,
+        page_size: i32,
+    ) -> DeployServiceResult<CertificateChallengePage> {
+        self.list_certificate_challenges_repo(tenant_id, order_id, page, page_size)
             .await
     }
 }

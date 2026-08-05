@@ -79,10 +79,29 @@ The unified application delivery model (REQ-2026-0002, ADR-20260804) is implemen
 control plane:
 
 - `deploy_app` is the tenant application aggregate (STATIC_WEB, SPA_WEB, API_SERVICE,
-  WECHAT_MINIPROGRAM, DOUYIN_MINIPROGRAM, IOS_APP, ANDROID_APP, HARMONYOS_APP) with
+  WECHAT_MINIPROGRAM, DOUYIN_MINIPROGRAM, IOS_APP, ANDROID_APP, HARMONYOS_APP, DESKTOP_APP) with
   `deploy_app_platform_target`, `deploy_source_repository`, `deploy_build_template`,
   `deploy_build`, `deploy_package`, `deploy_release` (semver unique), `deploy_release_channel`,
   `deploy_channel_rollout`, and `deploy_signing_identity` tables from migration 0007.
+- Desktop and operating-system delivery is implemented: `DESKTOP_APP` targets
+  `WINDOWS`/`MACOS`/`LINUX` with the installer format matrix (MSI/NSIS/MSIX/EXE, DMG/PKG,
+  DEB/RPM/AppImage) validated at the container boundary with a 2 GiB ceiling, JVM artifacts
+  (JAR/WAR) for the API platform, `ELECTRON`/`TAURI` tech stacks, `WINDOWS_AUTHENTICODE` /
+  `MACOS_DEVELOPER_ID` signing identities, `MICROSOFT_STORE` / `MAC_APP_STORE` targets, and
+  desktop auto-update manifests (Electron `latest.yml`, Tauri `latest.json`, Sparkle
+  `appcast.xml`) with SHA-512 checksum binding.
+- The application database structure contract is implemented (migration 0009):
+  `deploy_app_database_profile` (engine/catalog/schema contract per app) and
+  `deploy_app_database_migration` (versioned migration definitions with SHA-256 checksum
+  binding to releases); API surface
+  `/app/v3/api/apps/{appId}/database_profiles[/{profileId}[/migrations[/{migrationId}]]]`.
+- Usage metering is implemented (migration 0008): append-only `deploy_usage_event` facts with
+  tenant-scoped deduplication idempotency (`build_minutes` on terminal builds,
+  `package_storage_bytes` on package registration, `deployment_count` on deployment creation,
+  emitted fire-and-warn), the Commerce-backed `deploy_tenant_entitlement_projection` read model,
+  and the reconcilable `deploy_site_usage_daily` aggregate. The tenant read surface is
+  `GET /app/v3/api/usage_events`; the service layer and repository integration tests cover
+  dedup replay, tenant scoping, and pagination.
 - Semantic versioning (SemVer 2.0.0), monotonic `build_number` per (App, platform target),
   (app, target, version) uniqueness, channel promotion with immutable rollout history, and the
   deployment kinds for mini-program review, store submission, OTA/enterprise distribution, and
@@ -125,8 +144,14 @@ production-shaped evidence remains required:
 - external public-domain probes, drift dashboards, and multi-node rollout/rollback drills;
 - production capacity/event-storm evidence for the implemented bounded provider metadata cache,
   including private revocation, negative TTL, stale policy, and multi-node freshness drills;
-- certificate secret custody, ACME issue/renew/distribute/hot-activate/SNI verification;
-- tenant console, platform admin console, metering, entitlement, abuse, and incident workflows;
+- certificate secret custody, and ACME hot-activate/SNI verification (the TLS control
+  plane is implemented: ACME accounts, certificate order/challenge state machines, and
+  transactional certificate version storage via `/backend/v3/api/tls/*`; the RFC 8555 ACME
+  client boundary and HTTP-01 verification endpoint remain credential/network-gated);
+- tenant console, platform admin console, abuse, and incident workflows (metering facts are
+  emitted and entitlement enforcement is implemented behind the
+  `SDKWORK_DEPLOY_ENTITLEMENT_ENFORCEMENT` switch; Commerce projection ingestion remains
+  external);
 - continuous topology evidence that cloud Web workloads cannot activate standalone management authority;
 - production PostgreSQL backup/restore, multi-node rollout, load, security, and recovery evidence;
 - governed publication of the already generated App/Backend SDK packages;

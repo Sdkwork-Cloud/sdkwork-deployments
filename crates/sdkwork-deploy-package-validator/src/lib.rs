@@ -96,7 +96,8 @@ pub fn validate_package_file(
         .map_err(PackageValidationError::Rule)?;
 
     let entries = match expectation.package_format.as_str() {
-        "ZIP" | "TAR_GZ" | "IPA" | "APK" | "AAB" | "HAP" | "APP" => {
+        // Archive formats carry the embedded manifest and full entry rules.
+        "ZIP" | "TAR_GZ" | "IPA" | "APK" | "AAB" | "HAP" | "APP" | "JAR" | "WAR" | "MSIX" => {
             let entries = if expectation.package_format == "TAR_GZ" {
                 scan_tar_gz(path)?
             } else {
@@ -105,13 +106,36 @@ pub fn validate_package_file(
             enforce_archive_rules(&entries)?;
             entries
         }
+        // Installer formats are validated by container signature only; the
+        // manifest travels as registration metadata, never embedded (embedding
+        // would break Authenticode/notarization and vendor installers).
+        "MSI" | "NSIS" | "EXE" | "DMG" | "PKG" | "DEB" | "RPM" | "APPIMAGE" => {
+            verify_container_signature(path, expectation.package_format.as_str())?;
+            Vec::new()
+        }
         _ => {
             return Err(PackageValidationError::Rule(format!(
-                "format {} is not a byte-validated archive format",
+                "format {} is not a byte-validated archive or installer format",
                 expectation.package_format
             )))
         }
     };
+
+    // Archive formats must embed the package manifest; installer formats
+    // validate at the container boundary and stay manifest-external.
+    if entries.is_empty() {
+        return Ok(PackageValidationReport {
+            valid: true,
+            format: expectation.package_format.clone(),
+            entry_count: 0,
+            main_package_bytes: None,
+            total_package_bytes: size,
+            manifest_present: false,
+            manifest_sha256: None,
+            error_code: None,
+            checked_at: crate::now_rfc3339(),
+        });
+    }
 
     let manifest = find_entry(&entries, PACKAGE_MANIFEST_PATH).ok_or_else(|| {
         PackageValidationError::Manifest(format!(
@@ -265,6 +289,99 @@ fn scan_tar_gz(path: &Path) -> Result<Vec<Entry>, PackageValidationError> {
         }
     }
     Ok(entries)
+}
+
+/// Verifies the container magic signature of an installer package. Header
+/// reads are bounded to 512 bytes plus the PE `e_lfanew` probe; tail reads are
+/// bounded to 512 bytes (DMG `koly` trailer). Failures are fail-closed.
+fn verify_container_signature(path: &Path, format: &str) -> Result<(), PackageValidationError> {
+    let mut head = [0u8; 512];
+    let mut tail = [0u8; 512];
+    let mut file = fs::File::open(path)
+        .map_err(|error| PackageValidationError::Io(format!("open {format} package: {error}")))?;
+    let head_len = file
+        .read(&mut head)
+        .map_err(|error| PackageValidationError::Io(format!("read {format} header: {error}")))?;
+
+    let (expected, label): (&[u8], &str) = match format {
+        "MSI" => (
+            &[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1],
+            "OLE compound document",
+        ),
+        "PKG" => (b"xar!", "xar archive"),
+        "DEB" => (b"!<arch>\n", "ar archive"),
+        "RPM" => (&[0xED, 0xAB, 0xEE, 0xDB], "RPM container"),
+        "APPIMAGE" => (&[0x7F, b'E', b'L', b'F'], "ELF executable"),
+        "EXE" | "NSIS" => (b"MZ", "PE executable"),
+        "DMG" => {
+            let tail_len = file.read(&mut tail).map_err(|error| {
+                PackageValidationError::Io(format!("read {format} tail: {error}"))
+            })?;
+            // The trailer `koly` block sits in the final 512 bytes.
+            let window = if tail_len >= 512 {
+                &tail[tail_len - 512..]
+            } else {
+                &tail[..tail_len]
+            };
+            if window.windows(4).any(|chunk| chunk == b"koly") {
+                return Ok(());
+            }
+            return Err(PackageValidationError::Rule(
+                "DMG package is missing the koly trailer block".into(),
+            ));
+        }
+        _ => {
+            return Err(PackageValidationError::Rule(format!(
+                "format {format} is not a signature-verified installer format"
+            )))
+        }
+    };
+
+    if head_len < expected.len() || !head[..expected.len()].starts_with(expected) {
+        return Err(PackageValidationError::Rule(format!(
+            "package is not a {label} ({format})"
+        )));
+    }
+
+    // PE executables: verify the `PE\0\0` signature at the e_lfanew offset.
+    if format == "EXE" || format == "NSIS" {
+        if head_len < 0x40 {
+            return Err(PackageValidationError::Rule(
+                "PE executable header is truncated".into(),
+            ));
+        }
+        let e_lfanew =
+            u32::from_le_bytes([head[0x3C], head[0x3D], head[0x3E], head[0x3F]]) as usize;
+        let pe_offset = e_lfanew
+            .checked_add(4)
+            .ok_or_else(|| PackageValidationError::Rule("invalid PE header offset".into()))?;
+        if pe_offset > head_len {
+            return Err(PackageValidationError::Rule(
+                "PE header offset exceeds the bounded read window".into(),
+            ));
+        }
+        if &head[e_lfanew..pe_offset] != b"PE\x00\x00" {
+            return Err(PackageValidationError::Rule(format!(
+                "package is not a valid {label} ({format})"
+            )));
+        }
+        if format == "NSIS" {
+            // NSIS installers embed the "NullsoftInst" marker near the tail.
+            let tail_len = file.read(&mut tail).map_err(|error| {
+                PackageValidationError::Io(format!("read {format} tail: {error}"))
+            })?;
+            if !tail[..tail_len]
+                .windows(12)
+                .any(|chunk| chunk == b"NullsoftInst")
+            {
+                return Err(PackageValidationError::Rule(
+                    "NSIS installer is missing the NullsoftInst marker".into(),
+                ));
+            }
+        }
+    }
+
+    Ok(())
 }
 
 fn enforce_archive_rules(entries: &[Entry]) -> Result<(), PackageValidationError> {
@@ -660,6 +777,95 @@ mod tests {
         let report = validate_directory_package(&dir, &expectation).expect("valid dist dir");
         assert!(report.valid);
         assert_eq!(report.entry_count, 4); // 1 dir + 3 files
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// Writes a synthetic installer with the given leading bytes (plus a
+    /// trailing marker when provided) and validates it under the format.
+    fn assert_installer_accepted(format: &str, head: &[u8], tail_marker: Option<&[u8]>) {
+        let dir = test_dir(&format!("installer-{format}"));
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("installer.bin");
+        let mut bytes = head.to_vec();
+        bytes.resize(1024, 0u8);
+        if let Some(marker) = tail_marker {
+            let offset = bytes.len() - marker.len();
+            bytes[offset..].copy_from_slice(marker);
+        }
+        if format == "EXE" || format == "NSIS" {
+            // e_lfanew = 0x40 pointing at PE\0\0
+            bytes[0x3C..0x40].copy_from_slice(&0x40u32.to_le_bytes());
+            bytes[0x40..0x44].copy_from_slice(b"PE\x00\x00");
+        }
+        if format == "NSIS" {
+            let offset = bytes.len() - 64;
+            bytes[offset..offset + 12].copy_from_slice(b"NullsoftInst");
+        }
+        fs::write(&path, &bytes).unwrap();
+        let mut expectation = expectation("WINDOWS", format);
+        if format == "APPIMAGE" || format == "DEB" || format == "RPM" || format == "PKG" {
+            expectation.platform = "LINUX".to_owned();
+        }
+        if format == "DMG" {
+            expectation.platform = "MACOS".to_owned();
+            expectation.package_format = "DMG".to_owned();
+        }
+        expectation.package_size_bytes = bytes.len() as u64;
+        let report = validate_package_file(&path, &expectation).expect("installer accepted");
+        assert!(report.valid);
+        assert_eq!(report.entry_count, 0);
+        assert!(!report.manifest_present);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
+    fn installer_container_signatures_are_verified() {
+        assert_installer_accepted(
+            "MSI",
+            &[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1],
+            None,
+        );
+        assert_installer_accepted("PKG", b"xar!", None);
+        assert_installer_accepted("DEB", b"!<arch>\n", None);
+        assert_installer_accepted("RPM", &[0xED, 0xAB, 0xEE, 0xDB], None);
+        assert_installer_accepted("APPIMAGE", &[0x7F, b'E', b'L', b'F'], None);
+        assert_installer_accepted("EXE", b"MZ", None);
+        assert_installer_accepted("NSIS", b"MZ", None);
+        assert_installer_accepted("DMG", b"\x00\x01\x02\x03", Some(b"koly"));
+    }
+
+    #[test]
+    fn installer_container_signatures_fail_closed() {
+        // Each case uses its own directory; the shared test_dir counter
+        // guarantees unique paths across parallel test threads.
+        let dir = test_dir("installer-bad-deb");
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("bad.deb");
+        fs::write(&path, b"not-an-archive").unwrap();
+        let mut exp = expectation("LINUX", "DEB");
+        exp.package_size_bytes = fs::metadata(&path).unwrap().len();
+        let error = validate_package_file(&path, &exp).expect_err("bad deb rejected");
+        assert!(error.to_string().contains("ar archive"));
+        fs::remove_dir_all(&dir).unwrap();
+
+        let dir = test_dir("installer-bad-exe");
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("bad.exe");
+        fs::write(&path, b"MZ").unwrap();
+        let mut exp = expectation("WINDOWS", "EXE");
+        exp.package_size_bytes = fs::metadata(&path).unwrap().len();
+        let error = validate_package_file(&path, &exp).expect_err("truncated exe rejected");
+        assert!(error.to_string().contains("truncated"));
+        fs::remove_dir_all(&dir).unwrap();
+
+        let dir = test_dir("installer-bad-dmg");
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("bad.dmg");
+        fs::write(&path, vec![0u8; 600]).unwrap();
+        let mut exp = expectation("MACOS", "DMG");
+        exp.package_size_bytes = fs::metadata(&path).unwrap().len();
+        let error = validate_package_file(&path, &exp).expect_err("dmg without koly rejected");
+        assert!(error.to_string().contains("koly"));
         fs::remove_dir_all(&dir).unwrap();
     }
 }

@@ -6,6 +6,10 @@ import { NginxApi, createNginxApi } from './api/nginx';
 import { ServerApi, createServerApi } from './api/server';
 import { ClusterApi, createClusterApi } from './api/cluster';
 import { AuditApi, createAuditApi } from './api/audit';
+import { EntitlementApi, createEntitlementApi } from './api/entitlement';
+import { BuildQueueApi, createBuildQueueApi } from './api/build-queue';
+import { RunnersApi, createRunnersApi } from './api/runners';
+import { TlsApi, createTlsApi } from './api/tls';
 
 export class SdkworkDeployBackendClient {
   private httpClient: HttpClient;
@@ -14,6 +18,10 @@ export class SdkworkDeployBackendClient {
   public readonly server: ServerApi;
   public readonly cluster: ClusterApi;
   public readonly audit: AuditApi;
+  public readonly entitlement: EntitlementApi;
+  public readonly buildQueue: BuildQueueApi;
+  public readonly runners: RunnersApi;
+  public readonly tls: TlsApi;
 
   constructor(config: SdkworkBackendConfig) {
     this.httpClient = createHttpClient(config);
@@ -24,6 +32,14 @@ export class SdkworkDeployBackendClient {
     this.cluster = createClusterApi(this.httpClient);
 
     this.audit = createAuditApi(this.httpClient);
+
+    this.entitlement = createEntitlementApi(this.httpClient);
+
+    this.buildQueue = createBuildQueueApi(this.httpClient);
+
+    this.runners = createRunnersApi(this.httpClient);
+
+    this.tls = createTlsApi(this.httpClient);
   }
   setAuthToken(token: string): this {
     this.httpClient.setAuthToken(token);
