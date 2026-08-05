@@ -1373,3 +1373,681 @@ CREATE TABLE deploy_tls_target_observation (
 
 CREATE INDEX idx_deploy_tls_target_observation_rollout
     ON deploy_tls_target_observation (tenant_id, snapshot_id, state, node_target_id, id DESC);
+-- folded migration: database/migrations/postgres/0007_deploy_app_delivery.up.sql
+-- Tenant-owned application aggregate (REQ-2026-0002)
+CREATE TABLE IF NOT EXISTS deploy_app (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    name            VARCHAR(200) NOT NULL,
+    slug            VARCHAR(120) NOT NULL,
+    app_kind        VARCHAR(32)  NOT NULL,
+    description     VARCHAR(2000),
+    app_status      VARCHAR(16)  NOT NULL DEFAULT 'DRAFT',
+    site_id         BIGINT       NULL,
+    default_environment VARCHAR(16) NOT NULL DEFAULT 'production',
+    activated_at    TIMESTAMPTZ,
+    paused_at       TIMESTAMPTZ,
+    archived_at     TIMESTAMPTZ,
+    created_by      BIGINT,
+    updated_by      BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at      TIMESTAMPTZ,
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_app PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_app_site FOREIGN KEY (site_id) REFERENCES deploy_site(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_uuid
+    ON deploy_app (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_tenant_slug
+    ON deploy_app (tenant_id, slug)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_deploy_app_tenant_status_updated
+    ON deploy_app (tenant_id, app_status, updated_at DESC);
+
+-- Governed build recipe. Created before deploy_app_platform_target /
+-- deploy_build below: PostgreSQL validates FK target relations at
+-- CREATE TABLE time, so forward references inside one script fail.
+CREATE TABLE IF NOT EXISTS deploy_build_template (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    template_name   VARCHAR(200) NOT NULL,
+    template_version VARCHAR(64) NOT NULL,
+    platform        VARCHAR(16)  NOT NULL,
+    tech_stack      VARCHAR(16)  NOT NULL DEFAULT 'OTHER',
+    toolchain_json  JSONB        NOT NULL DEFAULT '{}',
+    commands_json   JSONB        NOT NULL DEFAULT '[]',
+    artifact_outputs_json JSONB  NOT NULL DEFAULT '[]',
+    quality_gates_json JSONB    NOT NULL DEFAULT '{}',
+    template_status VARCHAR(16)  NOT NULL DEFAULT 'DRAFT',
+    created_by      BIGINT,
+    updated_by      BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at      TIMESTAMPTZ,
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_build_template PRIMARY KEY (id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_build_template_uuid
+    ON deploy_build_template (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_build_template_name_version
+    ON deploy_build_template (tenant_id, template_name, template_version)
+    WHERE deleted_at IS NULL;
+
+-- Platform delivery unit inside an App
+CREATE TABLE IF NOT EXISTS deploy_app_platform_target (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    app_id          BIGINT       NOT NULL,
+    target_key      VARCHAR(120) NOT NULL,
+    platform        VARCHAR(16)  NOT NULL,
+    tech_stack      VARCHAR(16)  NOT NULL DEFAULT 'OTHER',
+    bundle_id       VARCHAR(255),
+    package_name    VARCHAR(255),
+    app_id_value    VARCHAR(255),
+    bundle_name     VARCHAR(255),
+    build_template_id BIGINT     NULL,
+    allowed_channels_json JSONB  NOT NULL DEFAULT '[]',
+    target_status   VARCHAR(16)  NOT NULL DEFAULT 'DRAFT',
+    created_by      BIGINT,
+    updated_by      BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at      TIMESTAMPTZ,
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_app_platform_target PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_app_platform_target_app
+        FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT fk_deploy_app_platform_target_template
+        FOREIGN KEY (build_template_id) REFERENCES deploy_build_template(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_platform_target_uuid
+    ON deploy_app_platform_target (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_platform_target_key
+    ON deploy_app_platform_target (app_id, target_key)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_deploy_app_platform_target_app
+    ON deploy_app_platform_target (app_id, target_status);
+
+-- Git source repository binding
+CREATE TABLE IF NOT EXISTS deploy_source_repository (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    app_id          BIGINT       NOT NULL,
+    repo_key        VARCHAR(120) NOT NULL,
+    repo_provider   VARCHAR(32)  NOT NULL,
+    repo_url        VARCHAR(1000) NOT NULL,
+    default_branch  VARCHAR(255) NOT NULL DEFAULT 'main',
+    clone_mode      VARCHAR(16)  NOT NULL DEFAULT 'SHALLOW',
+    credential_secret_ref VARCHAR(512),
+    repo_status     VARCHAR(16)  NOT NULL DEFAULT 'PENDING',
+    last_validated_at TIMESTAMPTZ,
+    last_error_code VARCHAR(128),
+    created_by      BIGINT,
+    updated_by      BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at      TIMESTAMPTZ,
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_source_repository PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_source_repository_app
+        FOREIGN KEY (app_id) REFERENCES deploy_app(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_source_repository_uuid
+    ON deploy_source_repository (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_source_repository_key
+    ON deploy_source_repository (app_id, repo_key)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_deploy_source_repository_tenant_url
+    ON deploy_source_repository (tenant_id, repo_url)
+    WHERE repo_status = 'VALIDATED';
+
+-- Build execution record with monotonic build_number per (App, platform target)
+CREATE TABLE IF NOT EXISTS deploy_build (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    app_id          BIGINT       NOT NULL,
+    platform_target_id BIGINT    NOT NULL,
+    template_id     BIGINT       NULL,
+    build_number    BIGINT       NOT NULL,
+    source_repository_id BIGINT  NULL,
+    source_ref      VARCHAR(255),
+    source_snapshot_json JSONB   NOT NULL DEFAULT '{}',
+    build_status    VARCHAR(16)  NOT NULL DEFAULT 'QUEUED',
+    log_ref         VARCHAR(512),
+    produced_package_id BIGINT   NULL,
+    quality_gate_json JSONB      NOT NULL DEFAULT '{}',
+    runner_node_uuid VARCHAR(64),
+    runner_version  VARCHAR(64),
+    started_at      TIMESTAMPTZ,
+    finished_at     TIMESTAMPTZ,
+    duration_ms     BIGINT,
+    error_code      VARCHAR(128),
+    idempotency_key VARCHAR(128),
+    created_by      BIGINT,
+    updated_by      BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at      TIMESTAMPTZ,
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_build PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_build_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT fk_deploy_build_target
+        FOREIGN KEY (platform_target_id) REFERENCES deploy_app_platform_target(id),
+    CONSTRAINT fk_deploy_build_template
+        FOREIGN KEY (template_id) REFERENCES deploy_build_template(id),
+    CONSTRAINT fk_deploy_build_repository
+        FOREIGN KEY (source_repository_id) REFERENCES deploy_source_repository(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_build_uuid
+    ON deploy_build (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_build_app_target_number
+    ON deploy_build (app_id, platform_target_id, build_number);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_build_idempotency
+    ON deploy_build (tenant_id, app_id, idempotency_key)
+    WHERE idempotency_key IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_deploy_build_app_status_updated
+    ON deploy_build (app_id, build_status, updated_at);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_build_app_created
+    ON deploy_build (app_id, created_at DESC);
+
+-- Signing identity: metadata and opaque secret reference only
+CREATE TABLE IF NOT EXISTS deploy_signing_identity (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    identity_name   VARCHAR(200) NOT NULL,
+    signing_kind    VARCHAR(32)  NOT NULL,
+    platform_target_id BIGINT    NULL,
+    fingerprint_sha256 VARCHAR(128),
+    expires_at      TIMESTAMPTZ,
+    secret_ref      VARCHAR(512),
+    identity_status VARCHAR(16)  NOT NULL DEFAULT 'PENDING',
+    created_by      BIGINT,
+    updated_by      BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at      TIMESTAMPTZ,
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_signing_identity PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_signing_identity_target
+        FOREIGN KEY (platform_target_id) REFERENCES deploy_app_platform_target(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_signing_identity_uuid
+    ON deploy_signing_identity (uuid);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_signing_identity_tenant_status
+    ON deploy_signing_identity (tenant_id, identity_status, expires_at);
+
+-- Immutable standardized deployment package
+CREATE TABLE IF NOT EXISTS deploy_package (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    app_id          BIGINT       NOT NULL,
+    platform_target_id BIGINT    NOT NULL,
+    build_id        BIGINT       NOT NULL,
+    package_format  VARCHAR(32)  NOT NULL,
+    semantic_version VARCHAR(64) NOT NULL,
+    package_size_bytes BIGINT    NOT NULL,
+    checksum_sha256 VARCHAR(128) NOT NULL,
+    manifest_sha256 VARCHAR(128) NOT NULL,
+    drive_ref_json  JSONB        NOT NULL DEFAULT '{}',
+    signing_identity_id BIGINT   NULL,
+    min_platform_version VARCHAR(64),
+    arch_json       JSONB        NOT NULL DEFAULT '[]',
+    bundle_identity_json JSONB   NOT NULL DEFAULT '{}',
+    package_status  VARCHAR(16)  NOT NULL DEFAULT 'DRAFT',
+    validation_report_json JSONB NOT NULL DEFAULT '{}',
+    created_by      BIGINT,
+    updated_by      BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at      TIMESTAMPTZ,
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_package PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_package_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT fk_deploy_package_target
+        FOREIGN KEY (platform_target_id) REFERENCES deploy_app_platform_target(id),
+    CONSTRAINT fk_deploy_package_build FOREIGN KEY (build_id) REFERENCES deploy_build(id),
+    CONSTRAINT fk_deploy_package_signing
+        FOREIGN KEY (signing_identity_id) REFERENCES deploy_signing_identity(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_package_uuid
+    ON deploy_package (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_package_identity
+    ON deploy_package (app_id, platform_target_id, semantic_version, build_id);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_package_app_target_created
+    ON deploy_package (app_id, platform_target_id, created_at DESC);
+
+-- Release channel current pointer
+CREATE TABLE IF NOT EXISTS deploy_release_channel (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    app_id          BIGINT       NOT NULL,
+    platform_target_id BIGINT    NOT NULL,
+    channel_key     VARCHAR(32)  NOT NULL,
+    current_release_id BIGINT    NULL,
+    channel_status  VARCHAR(16)  NOT NULL DEFAULT 'ACTIVE',
+    created_by      BIGINT,
+    updated_by      BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at      TIMESTAMPTZ,
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_release_channel PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_release_channel_app
+        FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT fk_deploy_release_channel_target
+        FOREIGN KEY (platform_target_id) REFERENCES deploy_app_platform_target(id),
+    CONSTRAINT fk_deploy_release_channel_release
+        FOREIGN KEY (current_release_id) REFERENCES deploy_release(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_release_channel_uuid
+    ON deploy_release_channel (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_release_channel_scope
+    ON deploy_release_channel (app_id, platform_target_id, channel_key)
+    WHERE deleted_at IS NULL;
+
+-- Immutable channel assignment/promotion history
+CREATE TABLE IF NOT EXISTS deploy_channel_rollout (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    channel_id      BIGINT       NOT NULL,
+    release_id      BIGINT       NOT NULL,
+    strategy        VARCHAR(24)  NOT NULL DEFAULT 'IMMEDIATE',
+    percentage      INTEGER      NULL,
+    rollout_status  VARCHAR(16)  NOT NULL DEFAULT 'PENDING',
+    supersedes_rollout_id BIGINT NULL,
+    requested_by    BIGINT,
+    requested_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    completed_at    TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    CONSTRAINT pk_deploy_channel_rollout PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_channel_rollout_channel
+        FOREIGN KEY (channel_id) REFERENCES deploy_release_channel(id),
+    CONSTRAINT fk_deploy_channel_rollout_release
+        FOREIGN KEY (release_id) REFERENCES deploy_release(id),
+    CONSTRAINT ck_deploy_channel_rollout_percentage
+        CHECK (percentage IS NULL OR (percentage >= 1 AND percentage <= 100))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_channel_rollout_uuid
+    ON deploy_channel_rollout (uuid);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_channel_rollout_channel_created
+    ON deploy_channel_rollout (channel_id, created_at DESC);
+
+-- New-model linkage columns on existing tables (all nullable; legacy rows unchanged)
+ALTER TABLE deploy_site
+    ADD COLUMN IF NOT EXISTS app_id BIGINT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_deploy_site_app
+    ON deploy_site (app_id)
+    WHERE app_id IS NOT NULL;
+
+ALTER TABLE deploy_release
+    ADD COLUMN IF NOT EXISTS app_id BIGINT NULL,
+    ADD COLUMN IF NOT EXISTS platform_target_id BIGINT NULL,
+    ADD COLUMN IF NOT EXISTS semantic_version VARCHAR(64) NULL,
+    ADD COLUMN IF NOT EXISTS build_number BIGINT NULL,
+    ADD COLUMN IF NOT EXISTS release_status VARCHAR(16) NULL,
+    ADD COLUMN IF NOT EXISTS release_notes_json JSONB NOT NULL DEFAULT '{}';
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_release_app_target_version
+    ON deploy_release (app_id, platform_target_id, semantic_version)
+    WHERE app_id IS NOT NULL AND platform_target_id IS NOT NULL AND semantic_version IS NOT NULL;
+
+-- Idempotency index required by the release creation ON CONFLICT inference.
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_release_app_idempotency
+    ON deploy_release (tenant_id, app_id, idempotency_key)
+    WHERE idempotency_key IS NOT NULL;
+
+ALTER TABLE deploy_deployment
+    ADD COLUMN IF NOT EXISTS app_id BIGINT NULL,
+    ADD COLUMN IF NOT EXISTS platform_target_id BIGINT NULL,
+    ADD COLUMN IF NOT EXISTS deployment_kind VARCHAR(32) NULL,
+    ADD COLUMN IF NOT EXISTS deployment_target VARCHAR(32) NULL,
+    ADD COLUMN IF NOT EXISTS strategy VARCHAR(24) NULL,
+    ADD COLUMN IF NOT EXISTS percentage INTEGER NULL,
+    ADD COLUMN IF NOT EXISTS platform_review_ref VARCHAR(255) NULL,
+    ADD COLUMN IF NOT EXISTS deployment_status VARCHAR(24) NULL,
+    ADD COLUMN IF NOT EXISTS rollback_from_deployment_id BIGINT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_deploy_deployment_app_created
+    ON deploy_deployment (app_id, created_at DESC)
+    WHERE app_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_deploy_deployment_status_active
+    ON deploy_deployment (deployment_status)
+    WHERE deployment_status IN ('PENDING', 'SUBMITTING', 'PENDING_REVIEW', 'IN_REVIEW', 'ROLLING');
+
+-- folded migration: database/migrations/postgres/0008_deploy_usage_metering.up.sql
+-- Append-only usage fact. The deduplication identity prevents double billing;
+-- Deploy emits facts, Commerce remains the pricing/billing authority.
+CREATE TABLE IF NOT EXISTS deploy_usage_event (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    site_id         BIGINT       NULL,
+    binding_id      BIGINT       NULL,
+    period_start    TIMESTAMPTZ  NOT NULL,
+    dimension       VARCHAR(64)  NOT NULL,
+    quantity        BIGINT       NOT NULL DEFAULT 0,
+    unit            VARCHAR(32)  NOT NULL,
+    source_target_uuid VARCHAR(128),
+    source_window_id VARCHAR(128),
+    deduplication_key VARCHAR(200) NOT NULL,
+    attribution_json JSONB        NOT NULL DEFAULT '{}',
+    observed_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    ingested_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    CONSTRAINT pk_deploy_usage_event PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_usage_event_site
+        FOREIGN KEY (site_id) REFERENCES deploy_site(id),
+    CONSTRAINT ck_deploy_usage_event_quantity
+        CHECK (quantity >= 0),
+    CONSTRAINT ck_deploy_usage_event_dimension
+        CHECK (length(dimension) > 0)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_usage_event_uuid
+    ON deploy_usage_event (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_usage_event_dedup
+    ON deploy_usage_event (tenant_id, deduplication_key);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_usage_event_tenant_period
+    ON deploy_usage_event (tenant_id, period_start DESC);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_usage_event_target
+    ON deploy_usage_event (source_target_uuid)
+    WHERE source_target_uuid IS NOT NULL;
+
+-- Commerce-backed entitlement projection read model. Commerce is the write
+-- authority; stale/absent projections fail closed for new capacity.
+CREATE TABLE IF NOT EXISTS deploy_tenant_entitlement_projection (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    source_system   VARCHAR(64)  NOT NULL,
+    source_subscription_uuid VARCHAR(128) NOT NULL,
+    source_revision VARCHAR(64),
+    plan_key        VARCHAR(64),
+    entitlements_json JSONB      NOT NULL DEFAULT '{}',
+    effective_at    TIMESTAMPTZ  NOT NULL,
+    expires_at      TIMESTAMPTZ,
+    projection_status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+    created_by      BIGINT,
+    updated_by      BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_tenant_entitlement_projection PRIMARY KEY (id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_entitlement_projection_uuid
+    ON deploy_tenant_entitlement_projection (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_entitlement_projection_scope
+    ON deploy_tenant_entitlement_projection (tenant_id, source_system, source_subscription_uuid);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_entitlement_projection_tenant_status
+    ON deploy_tenant_entitlement_projection (tenant_id, projection_status, expires_at);
+
+-- Reconcilable daily aggregate; rebuildable from retained usage facts.
+CREATE TABLE IF NOT EXISTS deploy_site_usage_daily (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    site_id         BIGINT       NOT NULL,
+    usage_date      DATE         NOT NULL,
+    dimension       VARCHAR(64)  NOT NULL,
+    quantity        BIGINT       NOT NULL DEFAULT 0,
+    unit            VARCHAR(32)  NOT NULL,
+    source_revision VARCHAR(64),
+    finalization_status VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+    finalized_at    TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_site_usage_daily PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_site_usage_daily_site
+        FOREIGN KEY (site_id) REFERENCES deploy_site(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_site_usage_daily_uuid
+    ON deploy_site_usage_daily (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_site_usage_daily_scope
+    ON deploy_site_usage_daily (tenant_id, site_id, usage_date, dimension, unit);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_site_usage_daily_period
+    ON deploy_site_usage_daily (tenant_id, usage_date DESC);
+
+-- folded migration: database/migrations/postgres/0009_app_database_profile.up.sql
+-- Database structure contract of an App (at most one active profile per app).
+CREATE TABLE IF NOT EXISTS deploy_app_database_profile (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    app_id          BIGINT       NOT NULL,
+    profile_key     VARCHAR(120) NOT NULL,
+    db_engine       VARCHAR(16)  NOT NULL,
+    catalog_name    VARCHAR(128) NOT NULL,
+    schema_version  VARCHAR(64),
+    baseline_version VARCHAR(64),
+    migration_strategy VARCHAR(24) NOT NULL DEFAULT 'VERSIONED',
+    profile_status  VARCHAR(16)  NOT NULL DEFAULT 'DRAFT',
+    created_by      BIGINT,
+    updated_by      BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at      TIMESTAMPTZ,
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_app_database_profile PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_app_database_profile_app
+        FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT ck_deploy_app_database_profile_engine
+        CHECK (length(db_engine) > 0)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_database_profile_uuid
+    ON deploy_app_database_profile (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_database_profile_key
+    ON deploy_app_database_profile (app_id, profile_key)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_deploy_app_database_profile_app
+    ON deploy_app_database_profile (app_id, profile_status);
+
+-- Versioned migration definitions bound to a profile. Checksums are the
+-- release-to-schema binding evidence: a release ships with the exact
+-- migration set and checksums recorded here.
+CREATE TABLE IF NOT EXISTS deploy_app_database_migration (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    profile_id      BIGINT       NOT NULL,
+    migration_version VARCHAR(64) NOT NULL,
+    migration_name  VARCHAR(200) NOT NULL,
+    checksum_sha256 VARCHAR(64)  NOT NULL,
+    script_ref      VARCHAR(512),
+    migration_status VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+    applied_at      TIMESTAMPTZ,
+    created_by      BIGINT,
+    updated_by      BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at      TIMESTAMPTZ,
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_app_database_migration PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_app_database_migration_profile
+        FOREIGN KEY (profile_id) REFERENCES deploy_app_database_profile(id),
+    CONSTRAINT ck_deploy_app_database_migration_checksum
+        CHECK (length(checksum_sha256) = 64)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_database_migration_uuid
+    ON deploy_app_database_migration (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_database_migration_version
+    ON deploy_app_database_migration (profile_id, migration_version)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_deploy_app_database_migration_profile
+    ON deploy_app_database_migration (profile_id, migration_version);
+
+-- folded migration: database/migrations/postgres/0010_source_events_and_environments.up.sql
+-- Git webhook push events. Deduplicated per (repository, commit): one commit
+-- triggers builds at most once even when the webhook redelivers.
+CREATE TABLE IF NOT EXISTS deploy_source_event (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    app_id          BIGINT       NOT NULL,
+    source_repository_id BIGINT  NOT NULL,
+    event_kind      VARCHAR(16)  NOT NULL,
+    source_ref      VARCHAR(255) NOT NULL,
+    source_commit   VARCHAR(64)  NOT NULL,
+    commit_message  VARCHAR(2000),
+    sender_ref      VARCHAR(512),
+    payload_sha256  VARCHAR(64)  NOT NULL,
+    event_status    VARCHAR(16)  NOT NULL DEFAULT 'PENDING',
+    builds_triggered INTEGER     NOT NULL DEFAULT 0,
+    error_code      VARCHAR(64),
+    processed_at    TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_source_event PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_source_event_repository
+        FOREIGN KEY (source_repository_id) REFERENCES deploy_source_repository(id),
+    CONSTRAINT chk_deploy_source_event_commit CHECK (source_commit ~ '^[0-9a-f]{7,64}$'),
+    CONSTRAINT chk_deploy_source_event_hash CHECK (payload_sha256 ~ '^[0-9a-f]{64}$'),
+    CONSTRAINT chk_deploy_source_event_kind CHECK (event_kind IN ('PUSH'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_source_event_uuid
+    ON deploy_source_event (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_source_event_commit
+    ON deploy_source_event (source_repository_id, source_commit);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_source_event_tenant_created
+    ON deploy_source_event (tenant_id, created_at DESC);
+
+-- Application environment in the promotion chain. Environments carry the
+-- current release pointer; promotion moves a release through the chain with
+-- an immutable history row.
+CREATE TABLE IF NOT EXISTS deploy_app_environment (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    app_id          BIGINT       NOT NULL,
+    env_key         VARCHAR(32)  NOT NULL,
+    env_name        VARCHAR(100) NOT NULL,
+    env_level       VARCHAR(16)  NOT NULL,
+    approval_required BOOLEAN    NOT NULL DEFAULT FALSE,
+    current_release_id BIGINT    NULL,
+    env_status      VARCHAR(16)  NOT NULL DEFAULT 'DRAFT',
+    created_by      BIGINT,
+    updated_by      BIGINT,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at      TIMESTAMPTZ,
+    version         BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT pk_deploy_app_environment PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_app_environment_app
+        FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT fk_deploy_app_environment_release
+        FOREIGN KEY (current_release_id) REFERENCES deploy_release(id),
+    CONSTRAINT chk_deploy_app_environment_level CHECK (env_level IN
+        ('DEVELOPMENT', 'STAGING', 'PRODUCTION')),
+    CONSTRAINT chk_deploy_app_environment_status CHECK (env_status IN
+        ('DRAFT', 'ACTIVE', 'ARCHIVED'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_environment_uuid
+    ON deploy_app_environment (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_environment_key
+    ON deploy_app_environment (app_id, env_key)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_deploy_app_environment_app
+    ON deploy_app_environment (app_id, env_status);
+
+-- Immutable promotion history: who moved which release into which
+-- environment, optionally from a source environment (chain enforcement).
+CREATE TABLE IF NOT EXISTS deploy_environment_promotion (
+    id              BIGINT       NOT NULL,
+    uuid            VARCHAR(36)  NOT NULL,
+    tenant_id       BIGINT       NOT NULL,
+    organization_id BIGINT       NOT NULL DEFAULT 0,
+    app_id          BIGINT       NOT NULL,
+    environment_id  BIGINT       NOT NULL,
+    release_id      BIGINT       NOT NULL,
+    from_environment_id BIGINT   NULL,
+    promoted_by     BIGINT,
+    note            VARCHAR(500),
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    CONSTRAINT pk_deploy_environment_promotion PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_environment_promotion_env
+        FOREIGN KEY (environment_id) REFERENCES deploy_app_environment(id),
+    CONSTRAINT fk_deploy_environment_promotion_release
+        FOREIGN KEY (release_id) REFERENCES deploy_release(id),
+    CONSTRAINT fk_deploy_environment_promotion_from_env
+        FOREIGN KEY (from_environment_id) REFERENCES deploy_app_environment(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_environment_promotion_uuid
+    ON deploy_environment_promotion (uuid);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_environment_promotion_env_created
+    ON deploy_environment_promotion (environment_id, created_at DESC);
