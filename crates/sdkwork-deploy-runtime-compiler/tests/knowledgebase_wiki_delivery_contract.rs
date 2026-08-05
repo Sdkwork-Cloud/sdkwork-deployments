@@ -12,7 +12,7 @@ use sdkwork_deploy_runtime_compiler::{
     RuntimeSecurityPolicy, RuntimeSetCompilationInput, RuntimeVariant, RuntimeVariantRule,
     RuntimeVariantRuleMatcher, SiteRuntimeCompilationInput,
 };
-use sdkwork_knowledgebase_internal_sdk_generated_rust::{
+use sdkwork_knowledgebase_internal_sdk::{
     models::{
         ResolveWikiRouteRequest, WikiPublicPageListData, WikiPublicPageMetadata, WikiPublication,
         WikiRouteResolution,
@@ -31,7 +31,8 @@ use sdkwork_webserver_delivery_runtime::{
 };
 use sdkwork_webserver_knowledgebase_provider::{
     FixedKnowledgebaseWikiSdkClientResolver, KnowledgebaseWikiSdkClient,
-    KnowledgebaseWikiWebsiteProvider, KNOWLEDGEBASE_WIKI_PROVIDER_CONTRACT_VERSION,
+    KnowledgebaseWikiWebsiteProvider, OpenedWikiContentStream, WikiContentChunkStream,
+    KNOWLEDGEBASE_WIKI_PROVIDER_CONTRACT_VERSION,
 };
 
 const NODE_UUID: &str = "node-contract-0001";
@@ -43,6 +44,19 @@ const MOBILE_PUBLICATION_UUID: &str = "11111111-1111-4111-8111-111111111502";
 struct PageState {
     content: Vec<u8>,
     public_version: u64,
+}
+
+/// Yields the whole page body in one bounded chunk, mirroring the fake
+/// `retrieve_content` byte-for-byte.
+struct SingleChunkStream {
+    content: Option<Vec<u8>>,
+}
+
+#[async_trait]
+impl WikiContentChunkStream for SingleChunkStream {
+    async fn next_chunk(&mut self) -> Result<Option<Vec<u8>>, SdkworkError> {
+        Ok(self.content.take())
+    }
 }
 
 struct FakeKnowledgebaseSdk {
@@ -160,6 +174,20 @@ impl KnowledgebaseWikiSdkClient for FakeKnowledgebaseSdk {
         _content_handle: &str,
     ) -> Result<Vec<u8>, SdkworkError> {
         Ok(self.page(publication_uuid)?.content)
+    }
+
+    async fn retrieve_content_stream(
+        &self,
+        publication_uuid: &str,
+        _content_handle: &str,
+    ) -> Result<OpenedWikiContentStream, SdkworkError> {
+        let content = self.page(publication_uuid)?.content;
+        Ok(OpenedWikiContentStream {
+            content_length: Some(content.len() as u64),
+            stream: Box::new(SingleChunkStream {
+                content: Some(content),
+            }),
+        })
     }
 
     async fn list_navigation(

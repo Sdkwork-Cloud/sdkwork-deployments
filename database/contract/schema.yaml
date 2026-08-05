@@ -120,16 +120,19 @@ tables:
   - name: deploy_app
     lifecycle_status: active
     owner: deploy-platform
+  - name: deploy_build_template
+    lifecycle_status: active
+    owner: deploy-platform
   - name: deploy_app_platform_target
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_source_repository
     lifecycle_status: active
     owner: deploy-platform
-  - name: deploy_build_template
+  - name: deploy_build
     lifecycle_status: active
     owner: deploy-platform
-  - name: deploy_build
+  - name: deploy_signing_identity
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_package
@@ -139,9 +142,6 @@ tables:
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_channel_rollout
-    lifecycle_status: active
-    owner: deploy-platform
-  - name: deploy_signing_identity
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_usage_event

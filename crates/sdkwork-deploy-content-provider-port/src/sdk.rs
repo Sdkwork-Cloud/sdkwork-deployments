@@ -12,7 +12,7 @@ use sdkwork_drive_app_sdk_generated_rust::{
     WebsiteRootSpaceSelector,
 };
 use sdkwork_drive_internal_sdk_generated_rust::SdkworkCustomClient as DriveInternalClient;
-use sdkwork_knowledgebase_internal_sdk_generated_rust::SdkworkCustomClient as KnowledgebaseInternalClient;
+use sdkwork_knowledgebase_internal_sdk::SdkworkCustomClient as KnowledgebaseInternalClient;
 use sdkwork_utils_rust::string::trim;
 
 use crate::{
@@ -194,7 +194,7 @@ fn validated_knowledgebase_resource(
     key: String,
     source: ContentProviderResourceSource,
     expected_publication_uuid: &str,
-    publication: sdkwork_knowledgebase_internal_sdk_generated_rust::WikiPublication,
+    publication: sdkwork_knowledgebase_internal_sdk::WikiPublication,
 ) -> DeployServiceResult<ValidatedContentProviderResource> {
     if publication.publication_uuid != expected_publication_uuid {
         return Err(provider_unavailable("Knowledgebase Internal API"));
@@ -408,7 +408,7 @@ mod tests {
     #[test]
     fn knowledgebase_search_capability_matches_the_owner_publication() {
         for search_enabled in [false, true] {
-            let publication = sdkwork_knowledgebase_internal_sdk_generated_rust::WikiPublication {
+            let publication = sdkwork_knowledgebase_internal_sdk::WikiPublication {
                 publication_uuid: "publication-1".to_owned(),
                 search_enabled,
                 ..Default::default()

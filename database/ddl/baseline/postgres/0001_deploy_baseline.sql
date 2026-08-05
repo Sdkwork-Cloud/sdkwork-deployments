@@ -1412,7 +1412,7 @@ CREATE INDEX IF NOT EXISTS idx_deploy_app_tenant_status_updated
 
 -- Governed build recipe. Created before deploy_app_platform_target /
 -- deploy_build below: PostgreSQL validates FK target relations at
--- CREATE TABLE time, so forward references inside one script fail.
+-- table-creation time, so forward references inside one script fail.
 CREATE TABLE IF NOT EXISTS deploy_build_template (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(36)  NOT NULL,

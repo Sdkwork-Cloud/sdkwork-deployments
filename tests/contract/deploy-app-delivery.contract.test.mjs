@@ -79,11 +79,14 @@ for (const kind of [
 }
 
 // ---------------------------------------------------------------------------
-// Migration schema: new tables exist and legacy tables gain additive columns
+// Baseline schema: new tables exist and legacy tables gain additive columns.
+// Pre-launch the greenfield migration inventory is consolidated on the single
+// baseline snapshot, so the app-delivery contract is asserted against the
+// baseline instead of the folded 0007 migration.
 // ---------------------------------------------------------------------------
 
 const migration = fs.readFileSync(
-  path.join(root, 'database/migrations/postgres/0007_deploy_app_delivery.up.sql'),
+  path.join(root, 'database/ddl/baseline/postgres/0001_deploy_baseline.sql'),
   'utf-8',
 );
 
@@ -101,7 +104,7 @@ const expectedTables = [
 for (const table of expectedTables) {
   assert.ok(
     migration.includes(`CREATE TABLE IF NOT EXISTS ${table}`),
-    `migration 0007 is missing table ${table}`,
+    `baseline is missing table ${table}`,
   );
 }
 
@@ -109,14 +112,14 @@ for (const table of expectedTables) {
 for (const column of ['app_id', 'semantic_version', 'deployment_kind']) {
   assert.ok(
     migration.includes(`ADD COLUMN IF NOT EXISTS ${column}`),
-    `migration 0007 is missing additive column ${column}`,
+    `baseline is missing additive column ${column}`,
   );
 }
 
 // Semantic version uniqueness index is present.
 assert.ok(
   migration.includes('uk_deploy_release_app_target_version'),
-  'migration 0007 is missing the (app, target, version) uniqueness index',
+  'baseline is missing the (app, target, version) uniqueness index',
 );
 
 // Table registry and schema contract agree.

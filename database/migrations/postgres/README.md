@@ -1,35 +1,21 @@
-# PostgreSQL migrations
+# PostgreSQL Migrations
 
-Add versioned SQL files using `{version}_{name}.up.sql` and optional `{version}_{name}.down.sql`.
+Pre-launch the Deploy schema is consolidated on the single greenfield baseline:
+`database/ddl/baseline/postgres/0001_deploy_baseline.sql`. It contains the
+complete initial schema (site, DNS/domain, certificate/TLS lifecycle, node
+cluster, upload session refs, artifacts and releases, unified application
+delivery — apps, platform targets, source repositories, build templates,
+builds, packages, release channels and rollouts, signing identities, usage
+metering and entitlement projections, app database profiles, CI source event
+ingestion, and the application environment promotion chain).
 
-## Evolution policy (SDKWORK database framework spec §6.1 / §7.4)
+No ordered post-baseline migrations exist while the app is pre-launch; the
+lifecycle orchestrator applies the baseline once on an empty schema
+(`baseline-plus-migrations`, `lifecycle.autoMigrate=false`). The drift gate
+then verifies the live schema against `database/contract/`. Shared development
+schemas converge by resetting the module state to the baseline instead of
+replaying forward-only migrations.
 
-The consolidated baseline (`ddl/baseline/postgres/0001_deploy_baseline.sql`) is a
-full-schema snapshot used **only** to bootstrap empty databases (`db:init`).
-Existing databases converge through `db:migrate`; replaying a changed baseline
-over a non-empty schema is forbidden.
-
-Every table or column added to the baseline after the first deploy snapshot
-must also exist as an idempotent forward migration here, so databases
-initialized from an earlier baseline converge without manual SQL.
-
-Current inventory:
-
-| version | name | content |
-| --- | --- | --- |
-| 0001 | `deploy_upload_session_ref` | Drive-backed artifact upload session refs (historical, restored from git 5926afb; registered as historical-immutable in `metadata.json`) |
-| 0002 | `deploy_artifact_release` | `deploy_artifact`, `deploy_release`, `deploy_deployment.release_id` |
-| 0003 | `deploy_site_runtime` | site resource / variant / variant_rule / mount / binding / revision / web_node_target / runtime_assignment / site_target_observation |
-| 0004 | `deploy_domain_certificate_tls` | `deploy_dns_zone`, domain_verification, ACME account/order/challenge/distribution, certificate_identifier/version, TLS policy/binding/runtime tables |
-| 0005 | `deploy_node_cluster` | node cluster grouping table |
-| 0006 | `deploy_legacy_schema_convergence` | converge pre-2026-07-31 `deploy_domain` / `deploy_certificate` shapes and `deploy_site` / `deploy_server` columns; fails loudly on unmappable legacy rows |
-| 0008 | `deploy_usage_metering` | `deploy_usage_event`, `deploy_tenant_entitlement_projection`, `deploy_site_usage_daily` metering and entitlement read-model tables |
-| 0007 | `deploy_app_delivery` | unified application delivery: `deploy_app`, `deploy_app_platform_target`, `deploy_source_repository`, `deploy_build_template`, `deploy_build`, `deploy_package`, `deploy_release_channel`, `deploy_channel_rollout`, `deploy_signing_identity`, plus additive `app_id`/new-model columns on `deploy_site`, `deploy_release`, `deploy_deployment` |
-| 0010 | `source_events_and_environments` | CI event ingestion (`deploy_source_event`, deduplicated per repository commit, driving automatic builds) and the application environment model (`deploy_app_environment` with current release pointer + immutable `deploy_environment_promotion` history) |
-| 0009 | `app_database_profile` | application database structure contract: `deploy_app_database_profile` (engine/catalog/schema contract per app) and `deploy_app_database_migration` (versioned migration definitions with checksum binding to releases) |
-
-Migrations are idempotent (`IF NOT EXISTS` / guarded `DO` blocks) so they apply
-cleanly to both fresh (baseline-applied) and older databases. They are
-irreversible (`reversible: false`, `rollback: forward-fix`) — dropping tables is
-not data-preserving — and therefore ship without `.down.sql` files except the
-historical `0001`.
+After the first production release, add ordered expand/contract migrations here
+without rewriting the released baseline; the previous greenfield migration
+inventory was folded into the baseline before launch.

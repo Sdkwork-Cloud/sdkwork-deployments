@@ -39,7 +39,7 @@
     "sdkDependencies": [
       {"workspace": "sdkwork-drive-app-sdk", "surface": "app-api", "credentialMode": "dual-token", "apiAuthority": "sdkwork-drive-app-api", "packageByLanguage": {"rust": "sdkwork-drive-app-sdk-generated-rust"}},
       {"workspace": "sdkwork-drive-internal-sdk", "surface": "internal-api", "credentialMode": "ingress-token", "apiAuthority": "sdkwork-drive-internal-api", "packageByLanguage": {"rust": "sdkwork-drive-internal-sdk-generated-rust"}},
-      {"workspace": "sdkwork-knowledgebase-internal-sdk", "surface": "internal-api", "credentialMode": "ingress-token", "apiAuthority": "sdkwork-knowledgebase-internal-api", "packageByLanguage": {"rust": "sdkwork-knowledgebase-internal-sdk-generated-rust"}}
+      {"workspace": "sdkwork-knowledgebase-internal-sdk", "surface": "internal-api", "credentialMode": "ingress-token", "apiAuthority": "sdkwork-knowledgebase-internal-api", "packageByLanguage": {"rust": "sdkwork-knowledgebase-internal-sdk"}}
     ],
     "dependencyApiExports": [],
     "dependencyApiSurfaces": [],
