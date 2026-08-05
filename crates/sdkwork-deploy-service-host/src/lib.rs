@@ -6,6 +6,7 @@ use sdkwork_database_id::{NodeLease, SnowflakeIdGenerator, SnowflakeNodeAllocato
 use sdkwork_deploy_content_provider_port::{
     content_provider_port_from_env, website_provider_event_delivery_port_from_env,
 };
+use sdkwork_database_sqlx::DatabasePool;
 use sdkwork_deploy_database_host::bootstrap_deploy_database_from_env;
 use sdkwork_deploy_drive_port::deploy_drive_port_from_env;
 use sdkwork_deploy_web_port::{
@@ -59,8 +60,13 @@ async fn snowflake_from_env() -> Result<(SnowflakeIdGenerator, Option<NodeLease>
 
 async fn repository_from_env() -> Result<Arc<DeployRepository>, String> {
     let database = bootstrap_deploy_database_from_env().await?;
-    let pool = database
-        .pool()
+    repository_from_pool(database.pool().clone()).await
+}
+
+/// Build the Deploy repository against a caller-provided database pool so the
+/// platform cloud gateway can share its process-wide PostgreSQL pool.
+async fn repository_from_pool(pool: DatabasePool) -> Result<Arc<DeployRepository>, String> {
+    let pool = pool
         .as_postgres()
         .cloned()
         .ok_or_else(|| "Deploy authoritative database must use PostgreSQL".to_owned())?;
@@ -126,7 +132,16 @@ pub async fn bootstrap_runtime_publication_host_from_env() -> Result<RuntimePubl
 }
 
 pub async fn bootstrap_deploy_service_host_from_env() -> Result<DeployServiceHost, String> {
-    let repository = repository_from_env().await?;
+    let database = bootstrap_deploy_database_from_env().await?;
+    bootstrap_deploy_service_host_with_pool(database.pool().clone()).await
+}
+
+/// Assemble the Deploy service host against a caller-provided database pool so
+/// the platform cloud gateway can share its process-wide PostgreSQL pool.
+pub async fn bootstrap_deploy_service_host_with_pool(
+    pool: DatabasePool,
+) -> Result<DeployServiceHost, String> {
+    let repository = repository_from_pool(pool).await?;
     let service_repository = repository.clone() as Arc<dyn DeployRepositoryPort>;
     let runtime_repository = repository as Arc<dyn DeployRuntimeAssignmentRepositoryPort>;
     let runtime_publication = Arc::new(RuntimePublicationService::new(

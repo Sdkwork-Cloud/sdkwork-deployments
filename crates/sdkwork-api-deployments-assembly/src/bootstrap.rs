@@ -1,6 +1,7 @@
 //! Business-only gateway bootstrap for sdkwork-deployments.
 
 use axum::{Extension, Router};
+use sdkwork_database_sqlx::DatabasePool;
 use sdkwork_deploy_service_host::bootstrap_deploy_service_host_from_env;
 use sdkwork_intelligence_deploy_service::DeployService;
 use sdkwork_routes_deploy_app_api::{
@@ -31,6 +32,21 @@ pub struct ApiAssembly {
 
 pub async fn assemble_business_routes() -> Result<ApiAssembly, String> {
     let service = bootstrap_deploy_service_host_from_env().await?.service;
+    assemble_business_routes_with_service(service).await
+}
+
+/// Assemble the Deploy API against a caller-provided database pool so the
+/// platform cloud gateway can share its process-wide PostgreSQL pool.
+pub async fn assemble_api_router_with_pool(pool: DatabasePool) -> Result<ApiAssembly, String> {
+    let service = sdkwork_deploy_service_host::bootstrap_deploy_service_host_with_pool(pool)
+        .await?
+        .service;
+    assemble_business_routes_with_service(service).await
+}
+
+async fn assemble_business_routes_with_service(
+    service: Arc<DeployService>,
+) -> Result<ApiAssembly, String> {
     let app = wrap_app(mount_app(service.clone())).await;
     let backend = wrap_backend(mount_backend(service.clone())).await;
     let router = Router::new()
