@@ -12,7 +12,7 @@
 -- Author: SDKWork Deploy Server
 -- Date: 2026-06-14
 
-CREATE TABLE deploy_site (
+CREATE TABLE IF NOT EXISTS deploy_site (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(64)  NOT NULL,
     tenant_id       BIGINT       NOT NULL DEFAULT 0,
@@ -55,16 +55,16 @@ COMMENT ON COLUMN deploy_site.status IS '状态：0=草稿，1=活跃，2=暂停
 COMMENT ON COLUMN deploy_site.runtime_config IS '运行时配置JSON';
 COMMENT ON COLUMN deploy_site.version IS '乐观锁版本号';
 
-CREATE INDEX idx_deploy_site_tenant_status_updated
+CREATE INDEX IF NOT EXISTS idx_deploy_site_tenant_status_updated
     ON deploy_site (tenant_id, organization_id, status, updated_at DESC);
 
-CREATE INDEX idx_deploy_site_user_updated
+CREATE INDEX IF NOT EXISTS idx_deploy_site_user_updated
     ON deploy_site (tenant_id, user_id, updated_at DESC);
 
-CREATE INDEX idx_deploy_site_slug
+CREATE INDEX IF NOT EXISTS idx_deploy_site_slug
     ON deploy_site (tenant_id, slug);
 
-CREATE TABLE deploy_dns_zone (
+CREATE TABLE IF NOT EXISTS deploy_dns_zone (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(36)  NOT NULL,
     tenant_id       BIGINT       NOT NULL,
@@ -85,11 +85,11 @@ CREATE TABLE deploy_dns_zone (
     CONSTRAINT chk_deploy_dns_zone_status CHECK (status IN ('ACTIVE', 'PAUSED'))
 );
 
-CREATE UNIQUE INDEX uk_deploy_dns_zone_active_apex
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_dns_zone_active_apex
     ON deploy_dns_zone (apex_hostname)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX idx_deploy_dns_zone_tenant_updated
+CREATE INDEX IF NOT EXISTS idx_deploy_dns_zone_tenant_updated
     ON deploy_dns_zone (tenant_id, updated_at DESC, id DESC)
     WHERE deleted_at IS NULL;
 
@@ -99,7 +99,7 @@ CREATE INDEX idx_deploy_dns_zone_tenant_updated
 -- Author: SDKWork Deploy Server
 -- Date: 2026-06-14
 
-CREATE TABLE deploy_domain (
+CREATE TABLE IF NOT EXISTS deploy_domain (
     id                  BIGINT       NOT NULL,
     uuid                VARCHAR(36)  NOT NULL,
     tenant_id           BIGINT       NOT NULL,
@@ -135,19 +135,19 @@ COMMENT ON COLUMN deploy_domain.hostname_type IS 'EXACT 或 WILDCARD';
 COMMENT ON COLUMN deploy_domain.verification_status IS '所有权验证状态';
 COMMENT ON COLUMN deploy_domain.status IS 'hostname 管理生命周期状态';
 
-CREATE UNIQUE INDEX uk_deploy_domain_active_hostname
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_domain_active_hostname
     ON deploy_domain (hostname_ascii)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX idx_deploy_domain_tenant_status
+CREATE INDEX IF NOT EXISTS idx_deploy_domain_tenant_status
     ON deploy_domain (tenant_id, status, updated_at DESC, id DESC)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX idx_deploy_domain_zone_updated
+CREATE INDEX IF NOT EXISTS idx_deploy_domain_zone_updated
     ON deploy_domain (tenant_id, zone_id, updated_at DESC, id DESC)
     WHERE deleted_at IS NULL;
 
-CREATE TABLE deploy_domain_verification (
+CREATE TABLE IF NOT EXISTS deploy_domain_verification (
     id                    BIGINT       NOT NULL,
     uuid                  VARCHAR(36)  NOT NULL,
     tenant_id             BIGINT       NOT NULL,
@@ -180,11 +180,11 @@ CREATE TABLE deploy_domain_verification (
     CONSTRAINT chk_deploy_domain_verification_attempts CHECK (attempt_count BETWEEN 0 AND 1000)
 );
 
-CREATE UNIQUE INDEX uk_deploy_domain_verification_active
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_domain_verification_active
     ON deploy_domain_verification (domain_id)
     WHERE status IN ('PENDING', 'CHECKING');
 
-CREATE INDEX idx_deploy_domain_verification_due
+CREATE INDEX IF NOT EXISTS idx_deploy_domain_verification_due
     ON deploy_domain_verification (status, next_attempt_at, expires_at, id)
     WHERE status IN ('PENDING', 'CHECKING');
 
@@ -194,7 +194,7 @@ CREATE INDEX idx_deploy_domain_verification_due
 -- Author: SDKWork Deploy Server
 -- Date: 2026-06-14
 
-CREATE TABLE deploy_nginx_config (
+CREATE TABLE IF NOT EXISTS deploy_nginx_config (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(64)  NOT NULL,
     tenant_id       BIGINT       NOT NULL DEFAULT 0,
@@ -226,10 +226,10 @@ COMMENT ON COLUMN deploy_nginx_config.version_no IS '配置版本号';
 COMMENT ON COLUMN deploy_nginx_config.deployed_at IS '部署时间';
 COMMENT ON COLUMN deploy_nginx_config.status IS '状态：0=草稿，1=活跃，2=归档';
 
-CREATE INDEX idx_deploy_nginx_config_site_active
+CREATE INDEX IF NOT EXISTS idx_deploy_nginx_config_site_active
     ON deploy_nginx_config (site_id, is_active);
 
-CREATE INDEX idx_deploy_nginx_config_type_status
+CREATE INDEX IF NOT EXISTS idx_deploy_nginx_config_type_status
     ON deploy_nginx_config (config_type, status);
 
 -- source: migrations/004_create_deploy_certificate.sql
@@ -238,7 +238,7 @@ CREATE INDEX idx_deploy_nginx_config_type_status
 -- Author: SDKWork Deploy Server
 -- Date: 2026-06-14
 
-CREATE TABLE deploy_certificate (
+CREATE TABLE IF NOT EXISTS deploy_certificate (
     id                      BIGINT       NOT NULL,
     uuid                    VARCHAR(36)  NOT NULL,
     tenant_id               BIGINT       NOT NULL,
@@ -274,15 +274,15 @@ COMMENT ON TABLE deploy_certificate IS 'TLS certificate lifecycle aggregate; hos
 COMMENT ON COLUMN deploy_certificate.certificate_source IS 'MANAGED ACME lifecycle or CUSTOM secret-manager lifecycle';
 COMMENT ON COLUMN deploy_certificate.preferred_key_algorithm IS 'Preferred issuance key algorithm; active RSA and ECDSA versions may coexist';
 
-CREATE INDEX idx_deploy_certificate_renewal
+CREATE INDEX IF NOT EXISTS idx_deploy_certificate_renewal
     ON deploy_certificate (tenant_id, renewal_status, updated_at, id)
     WHERE auto_renew = TRUE AND status IN ('ACTIVE', 'FAILED') AND deleted_at IS NULL;
 
-CREATE INDEX idx_deploy_certificate_tenant_updated
+CREATE INDEX IF NOT EXISTS idx_deploy_certificate_tenant_updated
     ON deploy_certificate (tenant_id, updated_at DESC, id DESC)
     WHERE deleted_at IS NULL;
 
-CREATE TABLE deploy_certificate_identifier (
+CREATE TABLE IF NOT EXISTS deploy_certificate_identifier (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(36)  NOT NULL,
     tenant_id       BIGINT       NOT NULL,
@@ -302,10 +302,10 @@ CREATE TABLE deploy_certificate_identifier (
     CONSTRAINT chk_deploy_certificate_identifier_position CHECK (position BETWEEN 0 AND 99)
 );
 
-CREATE INDEX idx_deploy_certificate_identifier_domain
+CREATE INDEX IF NOT EXISTS idx_deploy_certificate_identifier_domain
     ON deploy_certificate_identifier (tenant_id, domain_id, certificate_id);
 
-CREATE TABLE deploy_certificate_version (
+CREATE TABLE IF NOT EXISTS deploy_certificate_version (
     id                BIGINT       NOT NULL,
     uuid              VARCHAR(36)  NOT NULL,
     tenant_id         BIGINT       NOT NULL,
@@ -344,14 +344,26 @@ CREATE TABLE deploy_certificate_version (
     )
 );
 
-CREATE INDEX idx_deploy_certificate_version_lifecycle
+CREATE INDEX IF NOT EXISTS idx_deploy_certificate_version_lifecycle
     ON deploy_certificate_version (tenant_id, status, not_after, id);
 
 ALTER TABLE deploy_certificate
-    ADD COLUMN desired_version_id BIGINT,
-    ADD COLUMN current_version_id BIGINT,
-    ADD CONSTRAINT fk_deploy_certificate_desired_version FOREIGN KEY (desired_version_id) REFERENCES deploy_certificate_version(id),
-    ADD CONSTRAINT fk_deploy_certificate_current_version FOREIGN KEY (current_version_id) REFERENCES deploy_certificate_version(id);
+    ADD COLUMN IF NOT EXISTS desired_version_id BIGINT,
+    ADD COLUMN IF NOT EXISTS current_version_id BIGINT;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_deploy_certificate_desired_version') THEN
+        ALTER TABLE deploy_certificate ADD CONSTRAINT fk_deploy_certificate_desired_version FOREIGN KEY (desired_version_id) REFERENCES deploy_certificate_version(id);
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_deploy_certificate_current_version') THEN
+        ALTER TABLE deploy_certificate ADD CONSTRAINT fk_deploy_certificate_current_version FOREIGN KEY (current_version_id) REFERENCES deploy_certificate_version(id);
+    END IF;
+END $$;
 
 -- source: migrations/005_create_deploy_deployment.sql
 -- Migration: 005_create_deploy_deployment
@@ -359,7 +371,7 @@ ALTER TABLE deploy_certificate
 -- Author: SDKWork Deploy Server
 -- Date: 2026-06-14
 
-CREATE TABLE deploy_deployment (
+CREATE TABLE IF NOT EXISTS deploy_deployment (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(64)  NOT NULL,
     tenant_id       BIGINT       NOT NULL DEFAULT 0,
@@ -400,13 +412,13 @@ COMMENT ON COLUMN deploy_deployment.duration_ms IS '部署耗时（毫秒）';
 COMMENT ON COLUMN deploy_deployment.rollback_from IS '回滚来源部署ID';
 COMMENT ON COLUMN deploy_deployment.idempotency_key IS '幂等键，租户内唯一';
 
-CREATE INDEX idx_deploy_deployment_site_created
+CREATE INDEX IF NOT EXISTS idx_deploy_deployment_site_created
     ON deploy_deployment (site_id, created_at DESC);
 
-CREATE INDEX idx_deploy_deployment_tenant_status
+CREATE INDEX IF NOT EXISTS idx_deploy_deployment_tenant_status
     ON deploy_deployment (tenant_id, status, created_at DESC);
 
-CREATE INDEX idx_deploy_deployment_status
+CREATE INDEX IF NOT EXISTS idx_deploy_deployment_status
     ON deploy_deployment (status)
     WHERE status IN (0, 1, 2);
 
@@ -416,7 +428,7 @@ CREATE INDEX idx_deploy_deployment_status
 -- Author: SDKWork Deploy Server
 -- Date: 2026-06-14
 
-CREATE TABLE deploy_env_variable (
+CREATE TABLE IF NOT EXISTS deploy_env_variable (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(64)  NOT NULL,
     tenant_id       BIGINT       NOT NULL DEFAULT 0,
@@ -440,7 +452,7 @@ COMMENT ON COLUMN deploy_env_variable.value_encrypted IS '加密存储的变量�
 COMMENT ON COLUMN deploy_env_variable.is_secret IS '是否为密钥类型';
 COMMENT ON COLUMN deploy_env_variable.environment IS '所属环境';
 
-CREATE INDEX idx_deploy_env_variable_site_env
+CREATE INDEX IF NOT EXISTS idx_deploy_env_variable_site_env
     ON deploy_env_variable (site_id, environment);
 
 -- source: migrations/007_create_deploy_health_check.sql
@@ -449,7 +461,7 @@ CREATE INDEX idx_deploy_env_variable_site_env
 -- Author: SDKWork Deploy Server
 -- Date: 2026-06-14
 
-CREATE TABLE deploy_health_check (
+CREATE TABLE IF NOT EXISTS deploy_health_check (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(64)  NOT NULL,
     tenant_id       BIGINT       NOT NULL DEFAULT 0,
@@ -477,7 +489,7 @@ COMMENT ON COLUMN deploy_health_check.check_interval IS '检查间隔（秒）';
 COMMENT ON COLUMN deploy_health_check.timeout_ms IS '超时时间（毫秒）';
 COMMENT ON COLUMN deploy_health_check.retry_count IS '重试次数';
 
-CREATE INDEX idx_deploy_health_check_site
+CREATE INDEX IF NOT EXISTS idx_deploy_health_check_site
     ON deploy_health_check (site_id);
 
 -- source: migrations/008_create_deploy_health_result.sql
@@ -486,7 +498,7 @@ CREATE INDEX idx_deploy_health_check_site
 -- Author: SDKWork Deploy Server
 -- Date: 2026-06-14
 
-CREATE TABLE deploy_health_result (
+CREATE TABLE IF NOT EXISTS deploy_health_result (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(64)  NOT NULL,
     tenant_id       BIGINT       NOT NULL DEFAULT 0,
@@ -507,10 +519,10 @@ COMMENT ON COLUMN deploy_health_result.response_ms IS '响应时间（毫秒）'
 COMMENT ON COLUMN deploy_health_result.status_code IS 'HTTP状态码';
 COMMENT ON COLUMN deploy_health_result.checked_at IS '检查时间';
 
-CREATE INDEX idx_deploy_health_result_check_time
+CREATE INDEX IF NOT EXISTS idx_deploy_health_result_check_time
     ON deploy_health_result (health_check_id, checked_at DESC);
 
-CREATE INDEX idx_deploy_health_result_site_time
+CREATE INDEX IF NOT EXISTS idx_deploy_health_result_site_time
     ON deploy_health_result (site_id, checked_at DESC);
 
 -- source: migrations/009_create_deploy_audit_log.sql
@@ -519,7 +531,7 @@ CREATE INDEX idx_deploy_health_result_site_time
 -- Author: SDKWork Deploy Server
 -- Date: 2026-06-14
 
-CREATE TABLE deploy_audit_log (
+CREATE TABLE IF NOT EXISTS deploy_audit_log (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(64)  NOT NULL,
     tenant_id       BIGINT       NOT NULL DEFAULT 0,
@@ -547,13 +559,13 @@ COMMENT ON COLUMN deploy_audit_log.target_type IS '目标对象类型';
 COMMENT ON COLUMN deploy_audit_log.target_id IS '目标对象ID';
 COMMENT ON COLUMN deploy_audit_log.changes IS '变更内容JSON：{"field": {"old": x, "new": y}}';
 
-CREATE INDEX idx_deploy_audit_log_target
+CREATE INDEX IF NOT EXISTS idx_deploy_audit_log_target
     ON deploy_audit_log (target_type, target_id, created_at DESC);
 
-CREATE INDEX idx_deploy_audit_log_operator
+CREATE INDEX IF NOT EXISTS idx_deploy_audit_log_operator
     ON deploy_audit_log (operator_id, created_at DESC);
 
-CREATE INDEX idx_deploy_audit_log_tenant_action
+CREATE INDEX IF NOT EXISTS idx_deploy_audit_log_tenant_action
     ON deploy_audit_log (tenant_id, action, created_at DESC);
 
 -- source: migrations/010_create_deploy_server.sql
@@ -562,7 +574,7 @@ CREATE INDEX idx_deploy_audit_log_tenant_action
 -- Author: SDKWork Deploy Server
 -- Date: 2026-06-23
 
-CREATE TABLE deploy_server (
+CREATE TABLE IF NOT EXISTS deploy_server (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(64)  NOT NULL,
     tenant_id       BIGINT       NOT NULL DEFAULT 0,
@@ -592,13 +604,13 @@ COMMENT ON COLUMN deploy_server.ssh_user IS 'SSH 登录用户';
 COMMENT ON COLUMN deploy_server.ssh_key_path IS 'SSH 密钥路径';
 COMMENT ON COLUMN deploy_server.description IS '节点描述';
 
-CREATE INDEX idx_deploy_server_tenant_status
+CREATE INDEX IF NOT EXISTS idx_deploy_server_tenant_status
     ON deploy_server (tenant_id, status, updated_at DESC);
 
-CREATE INDEX idx_deploy_server_cluster
+CREATE INDEX IF NOT EXISTS idx_deploy_server_cluster
     ON deploy_server (tenant_id, cluster_id);
 
-CREATE TABLE deploy_node_cluster (
+CREATE TABLE IF NOT EXISTS deploy_node_cluster (
     id          BIGINT       NOT NULL,
     uuid        VARCHAR(64)  NOT NULL,
     tenant_id   BIGINT       NOT NULL DEFAULT 0,
@@ -618,7 +630,7 @@ CREATE TABLE deploy_node_cluster (
 COMMENT ON TABLE deploy_node_cluster IS '部署节点集群表（宿主节点分组）';
 COMMENT ON COLUMN deploy_node_cluster.status IS '状态：0=启用，1=停用';
 
-CREATE INDEX idx_deploy_node_cluster_tenant_status
+CREATE INDEX IF NOT EXISTS idx_deploy_node_cluster_tenant_status
     ON deploy_node_cluster (tenant_id, status, updated_at DESC);
 
 -- folded migration: migrations/postgres/0001_deploy_upload_session_ref.up.sql
@@ -729,7 +741,7 @@ CREATE INDEX IF NOT EXISTS idx_deploy_deployment_release
 
 -- Live website composition. Provider UUIDs are opaque owner-service identities; source content
 -- versions, object keys, URLs, and credentials never enter these configuration tables.
-CREATE TABLE deploy_site_resource (
+CREATE TABLE IF NOT EXISTS deploy_site_resource (
     id                        BIGINT PRIMARY KEY NOT NULL,
     uuid                      VARCHAR(36) NOT NULL,
     tenant_id                 BIGINT NOT NULL,
@@ -757,15 +769,15 @@ CREATE TABLE deploy_site_resource (
     CONSTRAINT chk_deploy_site_resource_status CHECK (status IN ('PENDING', 'VALID', 'INVALID', 'UNAVAILABLE', 'REVOKED'))
 );
 
-CREATE INDEX idx_deploy_site_resource_site_status
+CREATE INDEX IF NOT EXISTS idx_deploy_site_resource_site_status
     ON deploy_site_resource (tenant_id, site_id, status)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX idx_deploy_site_resource_provider
+CREATE INDEX IF NOT EXISTS idx_deploy_site_resource_provider
     ON deploy_site_resource (tenant_id, provider_type, provider_resource_uuid)
     WHERE deleted_at IS NULL;
 
-CREATE TABLE deploy_site_variant (
+CREATE TABLE IF NOT EXISTS deploy_site_variant (
     id              BIGINT PRIMARY KEY NOT NULL,
     uuid            VARCHAR(36) NOT NULL,
     tenant_id       BIGINT NOT NULL,
@@ -790,15 +802,15 @@ CREATE TABLE deploy_site_variant (
     CONSTRAINT chk_deploy_site_variant_status CHECK (status IN ('ACTIVE', 'DISABLED'))
 );
 
-CREATE UNIQUE INDEX uk_deploy_site_variant_default
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_site_variant_default
     ON deploy_site_variant (site_id)
     WHERE is_default = TRUE AND status = 'ACTIVE' AND deleted_at IS NULL;
 
-CREATE INDEX idx_deploy_site_variant_site_priority
+CREATE INDEX IF NOT EXISTS idx_deploy_site_variant_site_priority
     ON deploy_site_variant (tenant_id, site_id, status, priority, uuid)
     WHERE deleted_at IS NULL;
 
-CREATE TABLE deploy_site_variant_rule (
+CREATE TABLE IF NOT EXISTS deploy_site_variant_rule (
     id                BIGINT PRIMARY KEY NOT NULL,
     uuid              VARCHAR(36) NOT NULL,
     tenant_id         BIGINT NOT NULL,
@@ -824,11 +836,11 @@ CREATE TABLE deploy_site_variant_rule (
     CONSTRAINT chk_deploy_site_variant_rule_priority CHECK (priority BETWEEN 0 AND 65535)
 );
 
-CREATE INDEX idx_deploy_site_variant_rule_order
+CREATE INDEX IF NOT EXISTS idx_deploy_site_variant_rule_order
     ON deploy_site_variant_rule (tenant_id, site_id, status, priority, uuid)
     WHERE deleted_at IS NULL;
 
-CREATE TABLE deploy_site_mount (
+CREATE TABLE IF NOT EXISTS deploy_site_mount (
     id                BIGINT PRIMARY KEY NOT NULL,
     uuid              VARCHAR(36) NOT NULL,
     tenant_id         BIGINT NOT NULL,
@@ -861,11 +873,11 @@ CREATE TABLE deploy_site_mount (
     CONSTRAINT chk_deploy_site_mount_status CHECK (status IN ('ACTIVE', 'DISABLED', 'INVALID'))
 );
 
-CREATE INDEX idx_deploy_site_mount_route
+CREATE INDEX IF NOT EXISTS idx_deploy_site_mount_route
     ON deploy_site_mount (tenant_id, site_id, variant_id, status, path_prefix)
     WHERE deleted_at IS NULL;
 
-CREATE TABLE deploy_site_binding (
+CREATE TABLE IF NOT EXISTS deploy_site_binding (
     id                   BIGINT PRIMARY KEY NOT NULL,
     uuid                 VARCHAR(36) NOT NULL,
     tenant_id            BIGINT NOT NULL,
@@ -906,23 +918,23 @@ CREATE TABLE deploy_site_binding (
     CONSTRAINT chk_deploy_site_binding_redirect_status CHECK (redirect_status_code IS NULL OR redirect_status_code IN (301, 302, 307, 308))
 );
 
-CREATE INDEX idx_deploy_site_binding_site_status
+CREATE INDEX IF NOT EXISTS idx_deploy_site_binding_site_status
     ON deploy_site_binding (tenant_id, site_id, environment, status)
     WHERE deleted_at IS NULL;
 
-CREATE UNIQUE INDEX uk_deploy_site_binding_active_key
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_site_binding_active_key
     ON deploy_site_binding (site_id, binding_key)
     WHERE deleted_at IS NULL;
 
-CREATE UNIQUE INDEX uk_deploy_site_binding_active_route
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_site_binding_active_route
     ON deploy_site_binding (hostname_ascii, path_prefix, environment)
     WHERE deleted_at IS NULL;
 
-CREATE UNIQUE INDEX uk_deploy_site_binding_canonical
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_site_binding_canonical
     ON deploy_site_binding (site_id, environment)
     WHERE is_canonical = TRUE AND status = 'ACTIVE' AND deleted_at IS NULL;
 
-CREATE TABLE deploy_tls_policy (
+CREATE TABLE IF NOT EXISTS deploy_tls_policy (
     id                    BIGINT       NOT NULL,
     uuid                  VARCHAR(36)  NOT NULL,
     tenant_id             BIGINT       NOT NULL,
@@ -957,11 +969,11 @@ CREATE TABLE deploy_tls_policy (
     CONSTRAINT chk_deploy_tls_policy_status CHECK (status IN ('ACTIVE', 'PAUSED', 'ARCHIVED'))
 );
 
-CREATE UNIQUE INDEX uk_deploy_tls_policy_active_binding
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_tls_policy_active_binding
     ON deploy_tls_policy (site_binding_id)
     WHERE status = 'ACTIVE' AND deleted_at IS NULL;
 
-CREATE TABLE deploy_listener_certificate_binding (
+CREATE TABLE IF NOT EXISTS deploy_listener_certificate_binding (
     id                    BIGINT      NOT NULL,
     uuid                  VARCHAR(36) NOT NULL,
     tenant_id             BIGINT      NOT NULL,
@@ -990,15 +1002,15 @@ CREATE TABLE deploy_listener_certificate_binding (
     CONSTRAINT chk_deploy_listener_certificate_binding_status CHECK (status IN ('CANDIDATE', 'ACTIVE', 'PAUSED', 'FAILED', 'ARCHIVED'))
 );
 
-CREATE UNIQUE INDEX uk_deploy_listener_certificate_binding_active_algorithm
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_listener_certificate_binding_active_algorithm
     ON deploy_listener_certificate_binding (site_binding_id, key_algorithm)
     WHERE status = 'ACTIVE' AND deleted_at IS NULL;
 
-CREATE INDEX idx_deploy_listener_certificate_binding_certificate
+CREATE INDEX IF NOT EXISTS idx_deploy_listener_certificate_binding_certificate
     ON deploy_listener_certificate_binding (tenant_id, certificate_id, status)
     WHERE deleted_at IS NULL;
 
-CREATE TABLE deploy_site_revision (
+CREATE TABLE IF NOT EXISTS deploy_site_revision (
     id                        BIGINT PRIMARY KEY NOT NULL,
     uuid                      VARCHAR(36) NOT NULL,
     tenant_id                 BIGINT NOT NULL,
@@ -1029,10 +1041,10 @@ CREATE TABLE deploy_site_revision (
     CONSTRAINT chk_deploy_site_revision_validation CHECK (validation_status IN ('VALID', 'INVALID'))
 );
 
-CREATE INDEX idx_deploy_site_revision_site_created
+CREATE INDEX IF NOT EXISTS idx_deploy_site_revision_site_created
     ON deploy_site_revision (tenant_id, site_id, revision_no DESC);
 
-CREATE TABLE deploy_web_node_target (
+CREATE TABLE IF NOT EXISTS deploy_web_node_target (
     id                BIGINT PRIMARY KEY NOT NULL,
     uuid              VARCHAR(36) NOT NULL,
     tenant_id         BIGINT NOT NULL,
@@ -1051,13 +1063,13 @@ CREATE TABLE deploy_web_node_target (
     CONSTRAINT chk_deploy_web_node_target_status CHECK (status IN ('ACTIVE', 'DRAINING', 'DISABLED'))
 );
 
-CREATE INDEX idx_deploy_web_node_target_tenant
+CREATE INDEX IF NOT EXISTS idx_deploy_web_node_target_tenant
     ON deploy_web_node_target (tenant_id, environment, status, node_uuid)
     WHERE deleted_at IS NULL;
 
 -- Durable desired-state/outbox row. Web Server owns the delivery projection and Node observation;
 -- Deployments retains the exact bytes and publication result needed for idempotent reconciliation.
-CREATE TABLE deploy_runtime_assignment (
+CREATE TABLE IF NOT EXISTS deploy_runtime_assignment (
     id                     BIGINT PRIMARY KEY NOT NULL,
     uuid                   VARCHAR(36) NOT NULL,
     tenant_id              BIGINT NOT NULL,
@@ -1094,15 +1106,15 @@ CREATE TABLE deploy_runtime_assignment (
     )
 );
 
-CREATE INDEX idx_deploy_runtime_assignment_delivery
+CREATE INDEX IF NOT EXISTS idx_deploy_runtime_assignment_delivery
     ON deploy_runtime_assignment (publish_status, next_attempt_at, lease_expires_at, created_at)
     WHERE publish_status IN ('PENDING', 'PUBLISHING', 'FAILED');
 
-CREATE INDEX idx_deploy_runtime_assignment_target_latest
+CREATE INDEX IF NOT EXISTS idx_deploy_runtime_assignment_target_latest
     ON deploy_runtime_assignment (tenant_id, node_target_id, generation DESC);
 
 -- Authenticated, append-only evidence read from the Web-owned runtime observation API.
-CREATE TABLE deploy_site_target_observation (
+CREATE TABLE IF NOT EXISTS deploy_site_target_observation (
     id                       BIGINT PRIMARY KEY NOT NULL,
     uuid                     VARCHAR(36) NOT NULL,
     tenant_id                BIGINT NOT NULL,
@@ -1144,13 +1156,13 @@ CREATE TABLE deploy_site_target_observation (
     )
 );
 
-CREATE INDEX idx_deploy_site_target_observation_rollout
+CREATE INDEX IF NOT EXISTS idx_deploy_site_target_observation_rollout
     ON deploy_site_target_observation (tenant_id, site_revision_id, state, node_target_id);
 
-CREATE INDEX idx_deploy_site_target_observation_assignment
+CREATE INDEX IF NOT EXISTS idx_deploy_site_target_observation_assignment
     ON deploy_site_target_observation (runtime_assignment_id, id DESC);
 
-CREATE TABLE deploy_acme_account (
+CREATE TABLE IF NOT EXISTS deploy_acme_account (
     id                 BIGINT        NOT NULL,
     uuid               VARCHAR(36)   NOT NULL,
     tenant_id          BIGINT        NOT NULL,
@@ -1174,11 +1186,11 @@ CREATE TABLE deploy_acme_account (
     )
 );
 
-CREATE UNIQUE INDEX uk_deploy_acme_account_tenant_profile_email
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_acme_account_tenant_profile_email
     ON deploy_acme_account (tenant_id, ca_profile, contact_email)
     WHERE deleted_at IS NULL;
 
-CREATE TABLE deploy_certificate_order (
+CREATE TABLE IF NOT EXISTS deploy_certificate_order (
     id                    BIGINT       NOT NULL,
     uuid                  VARCHAR(36)  NOT NULL,
     tenant_id             BIGINT       NOT NULL,
@@ -1219,14 +1231,18 @@ CREATE TABLE deploy_certificate_order (
     )
 );
 
-CREATE INDEX idx_deploy_certificate_order_due
+CREATE INDEX IF NOT EXISTS idx_deploy_certificate_order_due
     ON deploy_certificate_order (status, next_attempt_at, lease_expires_at, id)
     WHERE status NOT IN ('VERSION_STORED', 'FAILED', 'CANCELLED');
 
-ALTER TABLE deploy_certificate_version
-    ADD CONSTRAINT fk_deploy_certificate_version_order FOREIGN KEY (source_order_id) REFERENCES deploy_certificate_order(id);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_deploy_certificate_version_order') THEN
+        ALTER TABLE deploy_certificate_version ADD CONSTRAINT fk_deploy_certificate_version_order FOREIGN KEY (source_order_id) REFERENCES deploy_certificate_order(id);
+    END IF;
+END $$;
 
-CREATE TABLE deploy_certificate_challenge (
+CREATE TABLE IF NOT EXISTS deploy_certificate_challenge (
     id                    BIGINT       NOT NULL,
     uuid                  VARCHAR(36)  NOT NULL,
     tenant_id             BIGINT       NOT NULL,
@@ -1258,11 +1274,11 @@ CREATE TABLE deploy_certificate_challenge (
     )
 );
 
-CREATE INDEX idx_deploy_certificate_challenge_due
+CREATE INDEX IF NOT EXISTS idx_deploy_certificate_challenge_due
     ON deploy_certificate_challenge (status, next_attempt_at, id)
     WHERE status NOT IN ('VALID', 'FAILED', 'CLEANED');
 
-CREATE TABLE deploy_certificate_distribution (
+CREATE TABLE IF NOT EXISTS deploy_certificate_distribution (
     id                    BIGINT       NOT NULL,
     uuid                  VARCHAR(36)  NOT NULL,
     tenant_id             BIGINT       NOT NULL,
@@ -1285,11 +1301,11 @@ CREATE TABLE deploy_certificate_distribution (
     CONSTRAINT chk_deploy_certificate_distribution_status CHECK (status IN ('PENDING', 'AUTHORIZED', 'MATERIAL_READY', 'FAILED', 'EXPIRED', 'REVOKED'))
 );
 
-CREATE INDEX idx_deploy_certificate_distribution_expiry
+CREATE INDEX IF NOT EXISTS idx_deploy_certificate_distribution_expiry
     ON deploy_certificate_distribution (status, authorization_expires_at, id)
     WHERE status IN ('PENDING', 'AUTHORIZED', 'MATERIAL_READY');
 
-CREATE TABLE deploy_tls_runtime_snapshot (
+CREATE TABLE IF NOT EXISTS deploy_tls_runtime_snapshot (
     id                    BIGINT       NOT NULL,
     uuid                  VARCHAR(36)  NOT NULL,
     tenant_id             BIGINT       NOT NULL,
@@ -1313,7 +1329,7 @@ CREATE TABLE deploy_tls_runtime_snapshot (
     CONSTRAINT chk_deploy_tls_runtime_snapshot_status CHECK (status IN ('PENDING', 'PUBLISHED', 'ACTIVE', 'FAILED', 'SUPERSEDED'))
 );
 
-CREATE TABLE deploy_tls_runtime_assignment (
+CREATE TABLE IF NOT EXISTS deploy_tls_runtime_assignment (
     id                    BIGINT       NOT NULL,
     uuid                  VARCHAR(36)  NOT NULL,
     tenant_id             BIGINT       NOT NULL,
@@ -1339,7 +1355,7 @@ CREATE TABLE deploy_tls_runtime_assignment (
     CONSTRAINT chk_deploy_tls_runtime_assignment_position CHECK (position BETWEEN 0 AND 9999)
 );
 
-CREATE TABLE deploy_tls_target_observation (
+CREATE TABLE IF NOT EXISTS deploy_tls_target_observation (
     id                    BIGINT       NOT NULL,
     uuid                  VARCHAR(36)  NOT NULL,
     tenant_id             BIGINT       NOT NULL,
@@ -1371,7 +1387,7 @@ CREATE TABLE deploy_tls_target_observation (
     )
 );
 
-CREATE INDEX idx_deploy_tls_target_observation_rollout
+CREATE INDEX IF NOT EXISTS idx_deploy_tls_target_observation_rollout
     ON deploy_tls_target_observation (tenant_id, snapshot_id, state, node_target_id, id DESC);
 -- folded migration: database/migrations/postgres/0007_deploy_app_delivery.up.sql
 -- Tenant-owned application aggregate (REQ-2026-0002)
