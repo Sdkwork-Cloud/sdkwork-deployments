@@ -1,7 +1,7 @@
 openapi: 3.1.2
 info:
   title: SDKWork Deploy App API
-  description: "SDKWork Deploy Server 应用端 API，供前端应用客户端调用"
+  description: "SDKWork Deploy Server API"
   version: 1.0.0
   contact:
     name: SDKWork Team

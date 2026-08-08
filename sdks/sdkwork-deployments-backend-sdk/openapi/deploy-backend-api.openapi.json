@@ -2,7 +2,7 @@
   "openapi": "3.1.2",
   "info": {
     "title": "SDKWork Deploy Backend API",
-    "description": "SDKWork Deploy Server 管理后台 API",
+    "description": "SDKWork Deploy Server API",
     "version": "1.0.0"
   },
   "servers": [

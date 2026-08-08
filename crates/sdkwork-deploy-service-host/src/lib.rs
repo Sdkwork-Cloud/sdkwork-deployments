@@ -3,10 +3,10 @@
 use std::sync::Arc;
 
 use sdkwork_database_id::{NodeLease, SnowflakeIdGenerator, SnowflakeNodeAllocator};
+use sdkwork_database_sqlx::DatabasePool;
 use sdkwork_deploy_content_provider_port::{
     content_provider_port_from_env, website_provider_event_delivery_port_from_env,
 };
-use sdkwork_database_sqlx::DatabasePool;
 use sdkwork_deploy_database_host::bootstrap_deploy_database_from_env;
 use sdkwork_deploy_drive_port::deploy_drive_port_from_env;
 use sdkwork_deploy_web_port::{
