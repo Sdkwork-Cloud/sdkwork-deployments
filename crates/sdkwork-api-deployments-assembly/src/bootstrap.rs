@@ -87,6 +87,28 @@ pub async fn assemble_api_router() -> Result<ApiAssembly, String> {
     assemble_business_routes().await
 }
 
+/// Host-neutral Deploy App API contribution for composing gateways that install
+/// their own single Web Framework layer (for example the BirdCoder standalone
+/// gateway). Exports the bare app router plus its complete inventory so
+/// consumers never import `sdkwork-routes-deploy-app-api` or
+/// `sdkwork-intelligence-deploy-service` directly (API_ASSEMBLY_SPEC §3/§6.1).
+pub async fn assemble_app_api_contribution_from_env(
+) -> Result<ApiAssemblyContribution, String> {
+    let service = bootstrap_deploy_service_host_from_env().await?.service;
+    let router = sdkwork_routes_deploy_app_api::build_router_with_shared_app_api(service.clone());
+    let app_openapi: serde_json::Value = serde_json::from_str(APP_OPENAPI_JSON)
+        .map_err(|error| format!("parse deploy app OpenAPI: {error}"))?;
+    ApiAssemblyContribution::from_openapi_documents(
+        "sdkwork-deployments",
+        "SDKWork Deploy App API",
+        router,
+        sdkwork_routes_deploy_app_api::app_route_manifest(),
+        vec![app_openapi],
+        sdkwork_routes_deploy_app_api::deploy_app_api_domain_context_injectors(),
+        Arc::new(DeployServiceReadinessCheck { service }),
+    )
+}
+
 /// Composable domain management + certificate management contribution for
 /// consuming hosts (for example the Web Server standalone gateway).
 ///
