@@ -34,8 +34,11 @@
       {"name": "databaseMigrationEntrypoint", "export": "."}
     ],
     "requiredPorts": [
-      {"name": "apiAssembly", "export": ".", "provider": "sdkwork-api-deployments-assembly"},
-      {"name": "deployDatabaseHost", "export": ".", "provider": "sdkwork-deploy-database-host"}
+      {
+        "name": "applicationApiAssembly",
+        "export": "sdkwork_api_deployments_assembly::assemble_api_router",
+        "provider": "sdkwork-api-deployments-assembly"
+      }
     ],
     "runtimeEntrypoints": [
       "sdkwork-api-deployments-standalone-gateway",

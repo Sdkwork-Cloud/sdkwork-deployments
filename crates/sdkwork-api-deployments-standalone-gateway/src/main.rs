@@ -27,7 +27,9 @@ async fn main() {
     let assembly = assemble_api_router()
         .await
         .expect("deploy standalone-gateway bootstrap failed");
-    let app = build_router(assembly);
+    let app = build_router(assembly)
+        .await
+        .expect("compose deploy standalone-gateway routes failed");
     let listener = tokio::net::TcpListener::bind(&bind_address)
         .await
         .expect("bind deploy standalone-gateway listener failed");
