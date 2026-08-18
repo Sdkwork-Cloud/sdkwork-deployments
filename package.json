@@ -53,7 +53,9 @@
     "deploy:plan:standalone": "pnpm exec sdkwork-app deploy:plan --deployment-profile standalone",
     "deploy:plan:cloud": "pnpm exec sdkwork-app deploy:plan --deployment-profile cloud",
     "deploy:validate:standalone": "pnpm exec sdkwork-app deploy:validate --deployment-profile standalone",
-    "deploy:validate:cloud": "pnpm exec sdkwork-app deploy:validate --deployment-profile cloud"
+    "deploy:validate:cloud": "pnpm exec sdkwork-app deploy:validate --deployment-profile cloud",
+    "db:postgres:plan": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . plan --engine postgres",
+    "db:postgres:init": "cargo run --manifest-path ../sdkwork-database/Cargo.toml -p sdkwork-database-cli -- --app-root . init --engine postgres"
   },
   "exports": {
     ".": {
