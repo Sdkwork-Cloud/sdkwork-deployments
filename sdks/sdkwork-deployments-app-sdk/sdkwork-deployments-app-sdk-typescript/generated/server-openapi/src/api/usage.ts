@@ -23,16 +23,14 @@ export class UsageUsageEventsApi {
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: UsageEventResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/usage_events`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: UsageEventResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/usage_events`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
 export class UsageApi {
-  private client: HttpClient;
   public readonly usageEvents: UsageUsageEventsApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.usageEvents = new UsageUsageEventsApi(client);
   }
 

@@ -1,6 +1,6 @@
 {
   "name": "@sdkwork/deployments-backend-sdk",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "SDKWork Deploy Backend API composed consumer facade.",
   "type": "module",
   "private": false,

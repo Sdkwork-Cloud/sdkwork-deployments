@@ -14,18 +14,10 @@ export class RetentionApi {
 
 /** Apply platform retention policies */
   async run(body: RetentionRunRequest, requestOptions?: ApiRequestOptions): Promise<RetentionRunResponse> {
-    return this.client.request<RetentionRunResponse>(backendApiPath(`/retention/run`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<RetentionRunResponse>(backendApiPath(`/retention/run`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
 export function createRetentionApi(client: HttpClient): RetentionApi {
   return new RetentionApi(client);
-}
-
-function appendQueryString(path: string, rawQueryString: string): string {
-  const query = rawQueryString.replace(/^\?+/, '');
-  if (!query) {
-    return path;
-  }
-  return path.includes('?') ? `${path}&${query}` : `${path}?${query}`;
 }

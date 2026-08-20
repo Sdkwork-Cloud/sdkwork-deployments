@@ -23,17 +23,17 @@ export class AppDatabaseAppDatabaseMigrationsApi {
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: AppDatabaseMigrationResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}/migrations`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: AppDatabaseMigrationResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}/migrations`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Add a versioned migration definition to a database profile */
   async create(appId: string, profileId: string, body: CreateAppDatabaseMigrationRequest, requestOptions?: ApiRequestOptions): Promise<AppDatabaseMigrationResponse> {
-    return this.client.request<AppDatabaseMigrationResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}/migrations`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<AppDatabaseMigrationResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}/migrations`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Retrieve a versioned migration definition */
   async retrieve(appId: string, profileId: string, migrationId: string, requestOptions?: ApiRequestOptions): Promise<AppDatabaseMigrationResponse> {
-    return this.client.request<AppDatabaseMigrationResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}/migrations/${serializePathParameter(migrationId, { name: 'migrationId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<AppDatabaseMigrationResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}/migrations/${serializePathParameter(migrationId, { name: 'migrationId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -56,32 +56,30 @@ export class AppDatabaseAppDatabaseProfilesApi {
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: AppDatabaseProfileResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: AppDatabaseProfileResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Declare the database structure contract of an app */
   async create(appId: string, body: CreateAppDatabaseProfileRequest, requestOptions?: ApiRequestOptions): Promise<AppDatabaseProfileResponse> {
-    return this.client.request<AppDatabaseProfileResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<AppDatabaseProfileResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Retrieve a database structure contract */
   async retrieve(appId: string, profileId: string, requestOptions?: ApiRequestOptions): Promise<AppDatabaseProfileResponse> {
-    return this.client.request<AppDatabaseProfileResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<AppDatabaseProfileResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 
 /** Update a database structure contract */
   async update(appId: string, profileId: string, body: UpdateAppDatabaseProfileRequest, requestOptions?: ApiRequestOptions): Promise<AppDatabaseProfileResponse> {
-    return this.client.request<AppDatabaseProfileResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PATCH' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<AppDatabaseProfileResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/database_profiles/${serializePathParameter(profileId, { name: 'profileId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PATCH' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class AppDatabaseApi {
-  private client: HttpClient;
   public readonly appDatabaseProfiles: AppDatabaseAppDatabaseProfilesApi;
   public readonly appDatabaseMigrations: AppDatabaseAppDatabaseMigrationsApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.appDatabaseProfiles = new AppDatabaseAppDatabaseProfilesApi(client);
     this.appDatabaseMigrations = new AppDatabaseAppDatabaseMigrationsApi(client);
   }

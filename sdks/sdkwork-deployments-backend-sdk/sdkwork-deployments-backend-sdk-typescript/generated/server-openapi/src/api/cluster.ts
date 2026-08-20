@@ -27,7 +27,7 @@ export class ClusterApi {
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: NodeClusterResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/node_clusters`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: NodeClusterResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/node_clusters`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** 创建节点集群 */
@@ -38,12 +38,12 @@ export class ClusterApi {
       },
       {}
     );
-    return this.client.request<NodeClusterResponse>(backendApiPath(`/node_clusters`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<NodeClusterResponse>(backendApiPath(`/node_clusters`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', ...(requestHeaders !== undefined ? { headers: requestHeaders } : {}), sdkworkUnwrapKind: 'item' });
   }
 
 /** 更新节点集群 */
   async update(clusterId: string, body: UpdateNodeClusterRequest, requestOptions?: ApiRequestOptions): Promise<NodeClusterResponse> {
-    return this.client.request<NodeClusterResponse>(backendApiPath(`/node_clusters/${serializePathParameter(clusterId, { name: 'clusterId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PUT' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<NodeClusterResponse>(backendApiPath(`/node_clusters/${serializePathParameter(clusterId, { name: 'clusterId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PUT' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 

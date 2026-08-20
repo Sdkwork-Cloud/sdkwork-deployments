@@ -23,12 +23,12 @@ export class SourceEventsApi {
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: SourceEventResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/source_events`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: SourceEventResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/source_events`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Ingest a Git webhook push event and trigger builds */
   async ingest(body: SourceEventsIngestRequest, requestOptions?: ApiRequestOptions): Promise<SourceEventIngestResponse> {
-    return this.client.request<SourceEventIngestResponse>(backendApiPath(`/source_events`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<SourceEventIngestResponse>(backendApiPath(`/source_events`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 

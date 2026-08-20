@@ -12,7 +12,7 @@ use sdkwork_deploy_runtime_compiler::{
     RuntimeSecurityPolicy, RuntimeSetCompilationInput, RuntimeVariant, RuntimeVariantRule,
     RuntimeVariantRuleMatcher, SiteRuntimeCompilationInput,
 };
-use sdkwork_knowledgebase_internal_sdk::{
+use sdkwork_knowledgebase_internal_sdk_generated_rust::{
     models::{
         ResolveWikiRouteRequest, WikiPublicPageListData, WikiPublicPageMetadata, WikiPublication,
         WikiRouteResolution,

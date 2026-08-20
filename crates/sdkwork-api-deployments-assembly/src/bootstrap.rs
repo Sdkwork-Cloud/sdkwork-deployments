@@ -92,8 +92,7 @@ pub async fn assemble_api_router() -> Result<ApiAssembly, String> {
 /// gateway). Exports the bare app router plus its complete inventory so
 /// consumers never import `sdkwork-routes-deploy-app-api` or
 /// `sdkwork-intelligence-deploy-service` directly (API_ASSEMBLY_SPEC §3/§6.1).
-pub async fn assemble_app_api_contribution_from_env(
-) -> Result<ApiAssemblyContribution, String> {
+pub async fn assemble_app_api_contribution_from_env() -> Result<ApiAssemblyContribution, String> {
     let service = bootstrap_deploy_service_host_from_env().await?.service;
     let router = sdkwork_routes_deploy_app_api::build_router_with_shared_app_api(service.clone());
     let app_openapi: serde_json::Value = serde_json::from_str(APP_OPENAPI_JSON)

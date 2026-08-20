@@ -24,27 +24,27 @@ export class TlsTlsOrdersApi {
 
 /** Request a certificate order for a certificate */
   async request(body: RequestCertificateOrderRequest, requestOptions?: ApiRequestOptions): Promise<CertificateOrderResponse> {
-    return this.client.request<CertificateOrderResponse>(backendApiPath(`/tls/orders`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<CertificateOrderResponse>(backendApiPath(`/tls/orders`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Advance a certificate order one canonical state machine step */
   async advance(orderId: string, requestOptions?: ApiRequestOptions): Promise<CertificateOrderResponse> {
-    return this.client.request<CertificateOrderResponse>(backendApiPath(`/tls/orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/advance`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<CertificateOrderResponse>(backendApiPath(`/tls/orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/advance`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, sdkworkUnwrapKind: 'item' });
   }
 
 /** Fail a certificate order with a stable error code */
   async fail(orderId: string, body: FailCertificateOrderRequest, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    return this.client.request<Record<string, unknown>>(backendApiPath(`/tls/orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/fail`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/tls/orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/fail`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Record a challenge validation result */
   async challengeResult(orderId: string, body: ChallengeResultRequest, requestOptions?: ApiRequestOptions): Promise<Record<string, unknown>> {
-    return this.client.request<Record<string, unknown>>(backendApiPath(`/tls/orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/challenge_result`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<Record<string, unknown>>(backendApiPath(`/tls/orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/challenge_result`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** Store the issued certificate version and complete the order */
   async storeVersion(orderId: string, body: StoreCertificateVersionRequest, requestOptions?: ApiRequestOptions): Promise<CertificateOrderResponse> {
-    return this.client.request<CertificateOrderResponse>(backendApiPath(`/tls/orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/versions`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<CertificateOrderResponse>(backendApiPath(`/tls/orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/versions`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** List challenges of a certificate order */
@@ -53,7 +53,7 @@ export class TlsTlsOrdersApi {
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: CertificateChallengeResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/tls/orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/challenges`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: CertificateChallengeResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/tls/orders/${serializePathParameter(orderId, { name: 'orderId', style: 'simple', explode: false })}/challenges`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** List certificate orders of a certificate */
@@ -62,7 +62,7 @@ export class TlsTlsOrdersApi {
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: CertificateOrderResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/certificates/${serializePathParameter(certificateId, { name: 'certificateId', style: 'simple', explode: false })}/orders`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: CertificateOrderResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/certificates/${serializePathParameter(certificateId, { name: 'certificateId', style: 'simple', explode: false })}/orders`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
@@ -85,22 +85,20 @@ export class TlsTlsAccountsApi {
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: AcmeAccountResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/tls/accounts`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: AcmeAccountResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/tls/accounts`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Create an ACME account binding */
   async create(body: CreateAcmeAccountRequest, requestOptions?: ApiRequestOptions): Promise<AcmeAccountResponse> {
-    return this.client.request<AcmeAccountResponse>(backendApiPath(`/tls/accounts`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<AcmeAccountResponse>(backendApiPath(`/tls/accounts`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class TlsApi {
-  private client: HttpClient;
   public readonly tlsAccounts: TlsTlsAccountsApi;
   public readonly tlsOrders: TlsTlsOrdersApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.tlsAccounts = new TlsTlsAccountsApi(client);
     this.tlsOrders = new TlsTlsOrdersApi(client);
   }

@@ -35,16 +35,14 @@ export class AuditAuditLogsApi {
       { name: 'end_date', value: params?.endDate, style: 'form', explode: true, allowReserved: false },
       { name: 'cursor', value: params?.cursor, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: AuditLogResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/audit_logs`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: AuditLogResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/audit_logs`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 }
 
 export class AuditApi {
-  private client: HttpClient;
   public readonly auditLogs: AuditAuditLogsApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.auditLogs = new AuditAuditLogsApi(client);
   }
 

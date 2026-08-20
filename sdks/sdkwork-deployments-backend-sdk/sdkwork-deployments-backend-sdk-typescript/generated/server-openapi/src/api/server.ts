@@ -29,7 +29,7 @@ export class ServerApi {
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
       { name: 'cluster_id', value: params?.clusterId, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: ServerResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/servers`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: ServerResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/servers`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** 注册服务器节点 */
@@ -40,12 +40,12 @@ export class ServerApi {
       },
       {}
     );
-    return this.client.request<ServerResponse>(backendApiPath(`/servers`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<ServerResponse>(backendApiPath(`/servers`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', ...(requestHeaders !== undefined ? { headers: requestHeaders } : {}), sdkworkUnwrapKind: 'item' });
   }
 
 /** 更新服务器节点 */
   async update(serverId: string, body: UpdateServerRequest, requestOptions?: ApiRequestOptions): Promise<ServerResponse> {
-    return this.client.request<ServerResponse>(backendApiPath(`/servers/${serializePathParameter(serverId, { name: 'serverId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PUT' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<ServerResponse>(backendApiPath(`/servers/${serializePathParameter(serverId, { name: 'serverId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PUT' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 

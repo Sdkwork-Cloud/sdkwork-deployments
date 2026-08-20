@@ -27,7 +27,7 @@ export class SigningSigningIdentitiesApi {
       { name: 'page', value: params?.page, style: 'form', explode: true, allowReserved: false },
       { name: 'page_size', value: params?.pageSize, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: SigningIdentityResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/signing_identities`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: SigningIdentityResponse[]; pageInfo: PageInfo; }>(appendQueryString(appApiPath(`/signing_identities`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** Create a signing identity (secret reference only) */
@@ -38,21 +38,19 @@ export class SigningSigningIdentitiesApi {
       },
       {}
     );
-    return this.client.request<SigningIdentityResponse>(appApiPath(`/signing_identities`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<SigningIdentityResponse>(appApiPath(`/signing_identities`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', ...(requestHeaders !== undefined ? { headers: requestHeaders } : {}), sdkworkUnwrapKind: 'item' });
   }
 
 /** Retrieve a signing identity */
   async retrieve(signingIdentityId: string, requestOptions?: ApiRequestOptions): Promise<SigningIdentityResponse> {
-    return this.client.request<SigningIdentityResponse>(appApiPath(`/signing_identities/${serializePathParameter(signingIdentityId, { name: 'signingIdentityId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<SigningIdentityResponse>(appApiPath(`/signing_identities/${serializePathParameter(signingIdentityId, { name: 'signingIdentityId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class SigningApi {
-  private client: HttpClient;
   public readonly signingIdentities: SigningSigningIdentitiesApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.signingIdentities = new SigningSigningIdentitiesApi(client);
   }
 

@@ -14,18 +14,10 @@ export class UsageApi {
 
 /** Rebuild the daily usage aggregate from retained usage facts */
   async reconcileDaily(body: UsageReconciliationRequest, requestOptions?: ApiRequestOptions): Promise<UsageReconciliationResponse> {
-    return this.client.request<UsageReconciliationResponse>(backendApiPath(`/usage/reconcile`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<UsageReconciliationResponse>(backendApiPath(`/usage/reconcile`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }
 
 export function createUsageApi(client: HttpClient): UsageApi {
   return new UsageApi(client);
-}
-
-function appendQueryString(path: string, rawQueryString: string): string {
-  const query = rawQueryString.replace(/^\?+/, '');
-  if (!query) {
-    return path;
-  }
-  return path.includes('?') ? `${path}&${query}` : `${path}?${query}`;
 }

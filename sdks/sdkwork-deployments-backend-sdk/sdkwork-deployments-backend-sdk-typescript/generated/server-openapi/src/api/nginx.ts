@@ -24,12 +24,12 @@ export class NginxRuntimeApi {
       },
       {}
     );
-    return this.client.request<NginxReloadResponse>(backendApiPath(`/nginx/reload`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, headers: requestHeaders, sdkworkUnwrapKind: 'item' });
+    return this.client.request<NginxReloadResponse>(backendApiPath(`/nginx/reload`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, ...(requestHeaders !== undefined ? { headers: requestHeaders } : {}), sdkworkUnwrapKind: 'item' });
   }
 
 /** 获取 Nginx 状态 */
   async retrieve(requestOptions?: ApiRequestOptions): Promise<NginxStatusResponse> {
-    return this.client.request<NginxStatusResponse>(backendApiPath(`/nginx/status`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<NginxStatusResponse>(backendApiPath(`/nginx/status`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 }
 
@@ -70,7 +70,7 @@ export class NginxConfigsApi {
       { name: 'config_type', value: params?.configType, style: 'form', explode: true, allowReserved: false },
       { name: 'is_active', value: params?.isActive, style: 'form', explode: true, allowReserved: false },
     ]);
-    return this.client.request<{ items: NginxConfigResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/nginx/configs`), query), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'page' });
+    return this.client.request<{ items: NginxConfigResponse[]; pageInfo: PageInfo; }>(appendQueryString(backendApiPath(`/nginx/configs`), query), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'page' });
   }
 
 /** 创建 Nginx 配置 */
@@ -81,17 +81,17 @@ export class NginxConfigsApi {
       },
       {}
     );
-    return this.client.request<NginxConfigResponse>(backendApiPath(`/nginx/configs`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, body, headers: requestHeaders, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<NginxConfigResponse>(backendApiPath(`/nginx/configs`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', ...(requestHeaders !== undefined ? { headers: requestHeaders } : {}), sdkworkUnwrapKind: 'item' });
   }
 
 /** 获取 Nginx 配置详情 */
   async retrieve(configId: string, requestOptions?: ApiRequestOptions): Promise<NginxConfigResponse> {
-    return this.client.request<NginxConfigResponse>(backendApiPath(`/nginx/configs/${serializePathParameter(configId, { name: 'configId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'GET' as any, sdkworkUnwrapKind: 'item' });
+    return this.client.request<NginxConfigResponse>(backendApiPath(`/nginx/configs/${serializePathParameter(configId, { name: 'configId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'GET' as any, sdkworkUnwrapKind: 'item' });
   }
 
 /** 更新 Nginx 配置 */
   async update(configId: string, body: UpdateNginxConfigRequest, requestOptions?: ApiRequestOptions): Promise<NginxConfigResponse> {
-    return this.client.request<NginxConfigResponse>(backendApiPath(`/nginx/configs/${serializePathParameter(configId, { name: 'configId', style: 'simple', explode: false })}`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'PUT' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
+    return this.client.request<NginxConfigResponse>(backendApiPath(`/nginx/configs/${serializePathParameter(configId, { name: 'configId', style: 'simple', explode: false })}`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PUT' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 
 /** 校验 Nginx 配置 */
@@ -102,7 +102,7 @@ export class NginxConfigsApi {
       },
       {}
     );
-    return this.client.request<NginxValidateResponse>(backendApiPath(`/nginx/configs/${serializePathParameter(configId, { name: 'configId', style: 'simple', explode: false })}/validate`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, headers: requestHeaders, sdkworkUnwrapKind: 'item' });
+    return this.client.request<NginxValidateResponse>(backendApiPath(`/nginx/configs/${serializePathParameter(configId, { name: 'configId', style: 'simple', explode: false })}/validate`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, ...(requestHeaders !== undefined ? { headers: requestHeaders } : {}), sdkworkUnwrapKind: 'item' });
   }
 
 /** 部署 Nginx 配置 */
@@ -113,17 +113,15 @@ export class NginxConfigsApi {
       },
       {}
     );
-    return this.client.request<NginxDeployResponse>(backendApiPath(`/nginx/configs/${serializePathParameter(configId, { name: 'configId', style: 'simple', explode: false })}/deploy`), { signal: requestOptions?.signal, timeout: requestOptions?.timeout, method: 'POST' as any, headers: requestHeaders, sdkworkUnwrapKind: 'item' });
+    return this.client.request<NginxDeployResponse>(backendApiPath(`/nginx/configs/${serializePathParameter(configId, { name: 'configId', style: 'simple', explode: false })}/deploy`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, ...(requestHeaders !== undefined ? { headers: requestHeaders } : {}), sdkworkUnwrapKind: 'item' });
   }
 }
 
 export class NginxApi {
-  private client: HttpClient;
   public readonly configs: NginxConfigsApi;
   public readonly runtime: NginxRuntimeApi;
 
   constructor(client: HttpClient) {
-    this.client = client;
     this.configs = new NginxConfigsApi(client);
     this.runtime = new NginxRuntimeApi(client);
   }
