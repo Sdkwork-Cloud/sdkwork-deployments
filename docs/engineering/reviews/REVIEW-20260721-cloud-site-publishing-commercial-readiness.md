@@ -16,7 +16,7 @@ This review evaluates whether the cross-repository design can become a commercia
 platform based on:
 
 - `sdkwork-deployments` as the control-plane and database authority;
-- `sdkwork-web-server` as the HTTP/TLS data plane;
+- `sdkwork-webserver` as the HTTP/TLS data plane;
 - `sdkwork-drive` Website Spaces and directory resources;
 - `sdkwork-knowledgebase` live `sources/raw` Wiki resources;
 - multi-domain, path, client Variant, certificate, user-console, admin-console, entitlement,

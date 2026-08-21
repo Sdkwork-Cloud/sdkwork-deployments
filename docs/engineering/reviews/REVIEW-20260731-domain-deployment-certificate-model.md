@@ -9,7 +9,7 @@ PAGINATION_SPEC.md, SDK_SPEC.md, SECURITY_SPEC.md, NGINX_SPEC.md, TEST_SPEC.md
 ## 1. Scope And Verdict
 
 This review covers the domain, application deployment, certificate, tenant identity, and runtime
-activation relationships in `sdkwork-deployments`, `sdkwork-iam`, and `sdkwork-web-server`.
+activation relationships in `sdkwork-deployments`, `sdkwork-iam`, and `sdkwork-webserver`.
 
 The target cloud model is now implemented in Deployments: root-domain Zones own hostnames,
 applications bind hostnames through a relation table, certificates identify one or more hostnames,

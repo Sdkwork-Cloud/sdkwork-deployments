@@ -1,0 +1,46 @@
+# =============================================================================
+# SDKWork Deploy — standalone gateway stack (external dependency mode)
+# =============================================================================
+# Two single-process containers share one immutable image digest:
+#   gateway  sdkwork-api-deployments-standalone-gateway  (public application API)
+#   worker   sdkwork-deploy-runtime-assignment-worker     (runtime assignment worker)
+#
+# PostgreSQL and Redis are provisioned EXTERNALLY (see docker-compose.external.yml
+# and scripts/provision-databases.sh). They are NOT started by compose.
+#
+# This file is rendered against the per-environment .env produced by
+# scripts/generate-env.sh and is invoked through scripts/deploy.sh, which supplies
+# `--env-file ./docker/env/<env>.env`. The variables below
+# (GATEWAY_IMAGE, GATEWAY_HOST_PORT, GATEWAY_ENVIRONMENT, SDKWORK_*) come from that
+# env file.
+#
+# Spec alignment:
+#   - Container listens on 3900 (ENVIRONMENT_SPEC server-bind / NGINX_SPEC; 8080 is
+#     explicitly obsolete).
+#   - Host port is the per-environment GATEWAY_HOST_PORT
+#     (3910 development, 3911 test, 3912 staging, 3913 production).
+# =============================================================================
+
+services:
+  gateway:
+    image: ${GATEWAY_IMAGE:-sdkwork-api-deployments-standalone-gateway:local}
+    container_name: ${GATEWAY_ENVIRONMENT:-development}-gateway
+    command: ["sdkwork-api-deployments-standalone-gateway"]
+    # All runtime configuration is injected via `docker compose --env-file`.
+    ports:
+      - "${GATEWAY_HOST_PORT:-3910}:3900"
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3900/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  worker:
+    image: ${GATEWAY_IMAGE:-sdkwork-api-deployments-standalone-gateway:local}
+    container_name: ${GATEWAY_ENVIRONMENT:-development}-worker
+    command: ["sdkwork-deploy-runtime-assignment-worker"]
+    restart: unless-stopped
+    stop_grace_period: 30s

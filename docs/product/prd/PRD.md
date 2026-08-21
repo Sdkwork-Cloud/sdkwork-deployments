@@ -21,7 +21,7 @@ Specs: REQUIREMENTS_SPEC.md, DOCUMENTATION_SPEC.md
 
 Deprecated redirect:
 
-- [PRD-2026-06-14-deploy-web-server-prd.md](PRD-2026-06-14-deploy-web-server-prd.md) - retained only
+- [PRD-2026-06-14-deploy-webserver-prd.md](PRD-2026-06-14-deploy-webserver-prd.md) - retained only
   as a redirect to the current product authority; it contains no active requirements.
 
 ## 1. Background And Problem

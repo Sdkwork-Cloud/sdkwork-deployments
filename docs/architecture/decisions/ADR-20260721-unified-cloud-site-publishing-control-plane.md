@@ -24,7 +24,7 @@ without weakening source ownership or creating two writable authorities.
 
 1. `sdkwork-deployments` owns the cloud publishing control plane and the normalized `deploy_*`
    database authority.
-2. `sdkwork-web-server` owns the HTTP/TLS data plane and consumes immutable compiled descriptors and
+2. `sdkwork-webserver` owns the HTTP/TLS data plane and consumes immutable compiled descriptors and
    separate TLS runtime snapshots. It does not originate business site state.
 3. `sdkwork-drive` owns Space, folder, node, upload, version, storage, and `ATOMIC_SYNC` behavior. A
    new `website` Space type establishes eligibility but never publication by itself. Drive owns
@@ -72,7 +72,7 @@ flowchart LR
   Deploy --> Compiler["Descriptor compiler"]
   Compiler --> Config["Immutable website snapshot"]
   Deploy --> TLS["TLS orchestrator and snapshot"]
-  Config --> Web["sdkwork-web-server data plane"]
+  Config --> Web["sdkwork-webserver data plane"]
   TLS --> Web
   Web --> DrivePort["Drive resource resolver"]
   Web --> KBPort["Knowledgebase Wiki resolver"]

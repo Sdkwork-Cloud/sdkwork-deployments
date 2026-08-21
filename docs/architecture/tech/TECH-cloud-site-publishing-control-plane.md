@@ -74,7 +74,7 @@ operations, and served-fingerprint convergence.
 | Site publishing | `deploy_*` | sdkwork-deployments | Site/resources/mounts/bindings/variants/revisions |
 | Files and directories | `dr_*` | sdkwork-drive | Spaces/nodes/versions/uploads/storage/atomic sync |
 | Wiki content | `kb_*` | sdkwork-knowledgebase | Wiki enablement/page state/render/navigation/index |
-| HTTP/TLS runtime | runtime snapshots and observations | sdkwork-web-server | request routing/static/proxy/Wiki streaming/TLS hot load |
+| HTTP/TLS runtime | runtime snapshots and observations | sdkwork-webserver | request routing/static/proxy/Wiki streaming/TLS hot load |
 | Identity and permissions | IAM authority | sdkwork-iam/appbase | tenant/user/org/session/roles/permissions |
 | Price and billing | Commerce authority | sdkwork-commerce | catalog/price/invoice/payment/tax/credit |
 | Usage facts | `deploy_*` plus events | sdkwork-deployments | delivery measurement and reconciliation feed |
@@ -505,7 +505,7 @@ source.
 `descriptorSha256` is computed over canonical serialized content excluding the hash field. Unknown
 major schema versions fail closed. Minor additive fields follow an explicit compatibility policy.
 The currently executable consumer contract is
-`sdkwork-web-server/specs/sdkwork.website-runtime.descriptor.schema.json`. Object keys are
+`sdkwork-webserver/specs/sdkwork.website-runtime.descriptor.schema.json`. Object keys are
 recursively ordered for hashing; unordered entity collections are emitted in stable-ID order, while
 meaningful ordered arrays such as index-file preference preserve authored order.
 
@@ -538,7 +538,7 @@ unique ascending `siteUuid` order. `snapshotSha256` covers the canonical envelop
 its own field and therefore includes every nested descriptor and descriptor hash. `nodeUuid` and
 `environment` are mandatory activation scope, not diagnostics. Cross-Site duplicate
 `(hostname,pathPrefix)` ownership fails the entire set. The executable consumer contract is
-`sdkwork-web-server/specs/sdkwork.website-runtime-set.snapshot.schema.json`; the Web Node compiles
+`sdkwork-webserver/specs/sdkwork.website-runtime-set.snapshot.schema.json`; the Web Node compiles
 the complete set before one pointer swap, accepts an empty assigned set, and never exposes a
 partially updated routing map.
 

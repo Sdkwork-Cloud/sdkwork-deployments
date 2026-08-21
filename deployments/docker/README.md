@@ -13,18 +13,40 @@ immutable image digest and database schema.
 Build from the SDKWork workspace root so Cargo sibling dependencies are available:
 
 ```bash
-docker build -f sdkwork-deployments/deployments/docker/Dockerfile -t sdkwork-api-deployments-standalone-gateway:latest .
+docker build -f sdkwork-deployments/deployments/docker/Dockerfile -t sdkwork-api-deployments-standalone-gateway:local .
 ```
 
 Run against the workspace PostgreSQL development database:
 
 ```bash
-docker run --rm -p 3900:8080 \
+docker run --rm -p 3900:3900 \
   -e SDKWORK_DATABASE_URL=postgresql://sdkwork_ai_dev:change-me@host.docker.internal:5432/sdkwork_ai_dev \
   -e SDKWORK_DATABASE_SCHEMA=sdkwork_ai_dev \
   -e SDKWORK_DATABASE_AUTO_MIGRATE=true \
-  sdkwork-api-deployments-standalone-gateway:latest
+  sdkwork-api-deployments-standalone-gateway:local
 ```
+
+> The container listens on **3900** (spec: `ENVIRONMENT_SPEC` server-bind / `NGINX_SPEC`;
+> the legacy `8080` binding is obsolete). Map the host port to **3900**, not 8080.
+
+### Compose deployment (recommended)
+
+Use the bundled Compose files in this directory for the external-dependency mode
+(PostgreSQL/Redis run outside the stack):
+
+```bash
+# From a module workspace that produced the env files at ./docker/env/<env>.env
+docker compose \
+  -f sdkwork-deployments/deployments/docker/docker-compose.yml \
+  -f sdkwork-deployments/deployments/docker/docker-compose.external.yml \
+  --env-file ./docker/env/development.env \
+  -p sdkwork-api-cloud-gateway-development up -d
+```
+
+The `deploy.sh` / `deploy.ps1` scripts wrap this exactly and fall back to the
+bundled templates automatically. The generated env sets
+`SDKWORK_DEPLOY_DEPLOYMENT_PROFILE=standalone` so the container runs in
+standalone (external-dependency) mode, matching `PROFILE_ID=standalone.<env>`.
 
 Production deployments must inject the shared PostgreSQL identity through `SDKWORK_DATABASE_*`.
 Deploy and IAM modules use that same database and schema; no module-specific database secret is

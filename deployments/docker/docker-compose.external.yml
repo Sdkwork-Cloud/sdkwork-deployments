@@ -1,0 +1,21 @@
+# =============================================================================
+# SDKWork Deploy — external dependency overrides
+# =============================================================================
+# The gateway and worker connect to PostgreSQL and Redis that are provisioned
+# OUTSIDE compose (host.docker.internal by default, per scripts/generate-env.sh).
+#
+# On Linux, `host.docker.internal` is not resolved by default. This override maps
+# it to the host gateway so the external-dependency mode works cross-platform
+# (Windows/macOS Docker Desktop resolve it natively; Linux needs this shim).
+#
+# This file is always merged after docker-compose.yml by scripts/deploy.sh:
+#   docker compose -f docker-compose.yml -f docker-compose.external.yml ...
+# =============================================================================
+
+services:
+  gateway:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  worker:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

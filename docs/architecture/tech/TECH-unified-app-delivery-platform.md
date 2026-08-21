@@ -18,7 +18,7 @@ RELEASE_SPEC.md, MIGRATION_SPEC.md
 | Site publishing | `deploy_site*` | sdkwork-deployments | web Site delivery configuration (existing model) |
 | Source repositories | external Git hosts | external | repository hosting, commit history |
 | Files and directories | `dr_*` | sdkwork-drive | package bytes, build log bytes, storage, retention |
-| HTTP/TLS runtime | runtime snapshots and observations | sdkwork-web-server | request routing/static/proxy/Wiki streaming/TLS |
+| HTTP/TLS runtime | runtime snapshots and observations | sdkwork-webserver | request routing/static/proxy/Wiki streaming/TLS |
 | Container runtime | external orchestrator | external | container image execution |
 | Platform review | WeChat/Douyin/App Store | external platforms | review decisions, submission state |
 | Identity and permissions | IAM authority | sdkwork-iam/appbase | tenant/user/org/session/roles/permissions |

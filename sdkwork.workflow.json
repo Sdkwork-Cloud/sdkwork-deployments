@@ -66,8 +66,8 @@
       "tokenSecret": "SDKWORK_RELEASE_TOKEN"
     },
     {
-      "id": "sdkwork-web-server",
-      "repository": "sdkwork-ai/sdkwork-web-server",
+      "id": "sdkwork-webserver",
+      "repository": "sdkwork-ai/sdkwork-webserver",
       "refInput": "SDKWORK_WEB_SERVER_REF",
       "tokenSecret": "SDKWORK_RELEASE_TOKEN"
     },

@@ -1,22 +1,36 @@
-version: 1
-profile: cloud.production
+version: 2
+defaultProfile: cloud.production
 
-install:
-  layout: binary-package
-
-expose:
-  - domain: deploy.sdkwork.com
-    tls: sdkwork.com
-    mode: api
-
-  - domain: deploy-app.sdkwork.com
-    tls: sdkwork.com
-    mode: api
-
-  - domain: deploy-admin.sdkwork.com
-    tls: sdkwork.com
-    mode: api
-
-packages: []
-
-overrides: {}
+profiles:
+  cloud.production:
+    deployment:
+      deploymentProfile: cloud
+      environment: production
+      deliveryKind: container-image
+      deploymentDriver: kubernetes
+      managementModel: sdkwork-managed
+      tenancyModel: single-tenant
+      isolationModel: dedicated
+      networkExposure: public
+      rolloutStrategy: rolling
+      availabilityMode: high-availability
+    install:
+      layout: binary-package
+    expose:
+      - domain: deploy.sdkwork.com
+        tls: sdkwork.com
+        mode: api
+      - domain: deploy-app.sdkwork.com
+        tls: sdkwork.com
+        mode: api
+      - domain: deploy-admin.sdkwork.com
+        tls: sdkwork.com
+        mode: api
+    packages: []
+    overrides:
+      topology:
+        spec: specs/topology.spec.json
+        profile: cloud.production
+        env: etc/topology/cloud.production.env
+      kubernetes:
+        reference: deployments/kubernetes/
