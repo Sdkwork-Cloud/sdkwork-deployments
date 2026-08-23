@@ -1,6 +1,5 @@
 version: 2
 defaultProfile: cloud.production
-
 profiles:
   cloud.production:
     deployment:
@@ -17,15 +16,42 @@ profiles:
     install:
       layout: binary-package
     expose:
-      - domain: deploy.sdkwork.com
-        tls: sdkwork.com
-        mode: api
-      - domain: deploy-app.sdkwork.com
-        tls: sdkwork.com
-        mode: api
       - domain: deploy-admin.sdkwork.com
         tls: sdkwork.com
         mode: api
+        aliases:
+          - deploy-app.sdkwork.com
+          - deploy.sdkwork.com
+      - domain: deploy-admin.birdcoder.com
+        tls: birdcoder.com
+        mode: api
+        aliases:
+          - deploy-app.birdcoder.com
+          - deploy.birdcoder.com
+      - domain: deploy-admin.dtupay.com
+        tls: dtupay.com
+        mode: api
+        aliases:
+          - deploy-app.dtupay.com
+          - deploy.dtupay.com
+      - domain: deploy-admin.sdkwork.cn
+        tls: sdkwork.cn
+        mode: api
+        aliases:
+          - deploy-app.sdkwork.cn
+          - deploy.sdkwork.cn
+      - domain: deploy-admin.birdcoder.cn
+        tls: birdcoder.cn
+        mode: api
+        aliases:
+          - deploy-app.birdcoder.cn
+          - deploy.birdcoder.cn
+      - domain: deploy-admin.dtupay.cn
+        tls: dtupay.cn
+        mode: api
+        aliases:
+          - deploy-app.dtupay.cn
+          - deploy.dtupay.cn
     packages: []
     overrides:
       topology:
