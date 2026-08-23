@@ -52,6 +52,8 @@ export const deploymentsWorkspaceEnUs = {
   "resource.nodes.description": "Host node inventory and runtime state",
   "resource.audit.label": "Audit",
   "resource.audit.description": "Operator action evidence",
+  "resource.localProjects.label": "Local Projects",
+  "resource.localProjects.description": "Docker deploy modules, local nodes, and Drive sandbox file browser",
   "action.sites.create": "Create application",
   "action.sites.update": "Update",
   "action.sites.activate": "Enable",

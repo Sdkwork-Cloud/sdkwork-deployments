@@ -1,4 +1,4 @@
-import { Activity, AppWindow, Boxes, ChevronLeft, ChevronRight, FileKey2, Globe2, LogOut, Network, Package, RefreshCw, Rocket, ScrollText, Search, Server, ServerCog, Settings2, Shield, Tags, Upload, X } from "lucide-react";
+import { Activity, AppWindow, Boxes, ChevronLeft, ChevronRight, FileKey2, FolderTree, Globe2, LogOut, Network, Package, RefreshCw, Rocket, ScrollText, Search, Server, ServerCog, Settings2, Shield, Tags, Upload, X } from "lucide-react";
 import { Suspense, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 
@@ -112,6 +112,7 @@ function resourceIcon(resource: DeploymentsResourceKey): ReactNode {
     clusters: Network,
     nodes: Server,
     audit: ScrollText,
+    localProjects: FolderTree,
   } satisfies Record<DeploymentsResourceKey, typeof AppWindow>;
   const Icon = icons[resource];
   return <Icon size={17} />;

@@ -21,6 +21,7 @@ import {
   type DeploymentsRegistry,
 } from "@sdkwork/deployments-pc-commons";
 import type { AuthTokenManager } from "@sdkwork/sdk-common";
+import { uuid } from "@sdkwork/utils/id";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 
 export type {
@@ -280,12 +281,5 @@ function stringValue(value: unknown): string | undefined {
 }
 
 function idempotencyParams(): { idempotencyKey: string } {
-  return { idempotencyKey: createIdempotencyKey() };
-}
-
-function createIdempotencyKey(): string {
-  if (typeof globalThis.crypto?.randomUUID !== "function") {
-    throw new Error("crypto.randomUUID is required for idempotent deployment operations");
-  }
-  return globalThis.crypto.randomUUID();
+  return { idempotencyKey: uuid() };
 }

@@ -1,0 +1,112 @@
+.local-projects-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.local-projects-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.local-projects-panel {
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem 1rem;
+  background: color-mix(in srgb, canvas 92%, transparent);
+}
+
+.local-projects-panel > header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.local-projects-panel h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.local-projects-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.local-projects-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  text-align: left;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 0.55rem;
+  padding: 0.7rem 0.85rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.local-projects-item:hover,
+.local-projects-item:focus-visible {
+  border-color: color-mix(in srgb, currentColor 35%, transparent);
+  outline: none;
+}
+
+.local-projects-item strong {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.local-projects-item small {
+  display: block;
+  margin-top: 0.15rem;
+  opacity: 0.72;
+  font-size: 0.78rem;
+}
+
+.local-projects-item > span:last-child {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  opacity: 0.78;
+}
+
+.local-projects-browser {
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem 1rem;
+  min-height: 28rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.local-projects-browser > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.local-projects-browser h2 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.local-projects-browser p {
+  margin: 0.25rem 0 0;
+  opacity: 0.75;
+  font-size: 0.85rem;
+}
+
+.local-projects-explorer {
+  min-height: 24rem;
+  flex: 1;
+}

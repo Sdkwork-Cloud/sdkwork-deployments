@@ -1,6 +1,10 @@
 import { useSdkworkAuthControllerState } from "@sdkwork/auth-pc-react";
 import { deploymentsModule as adminAudit } from "@sdkwork/deployments-pc-admin-audit";
 import { deploymentsModule as infrastructure } from "@sdkwork/deployments-pc-admin-infrastructure";
+import {
+  deploymentsModule as localProjects,
+  LocalProjectsPage,
+} from "@sdkwork/deployments-pc-admin-local-projects";
 import { deploymentsModule as adminNodes } from "@sdkwork/deployments-pc-admin-nodes";
 import type { DeploymentsPcModuleDefinition } from "@sdkwork/deployments-pc-commons";
 import { createDeploymentsConsoleRegistry, DeploymentsConsoleProvider } from "@sdkwork/deployments-pc-console-core";
@@ -10,6 +14,7 @@ import { deploymentsModule as publishing } from "@sdkwork/deployments-pc-console
 import { DeploymentsConsoleShell } from "@sdkwork/deployments-pc-console-shell";
 import { deploymentsModule as configuration } from "@sdkwork/deployments-pc-console-site-configuration";
 import { deploymentsModule as sites } from "@sdkwork/deployments-pc-console-sites";
+import { createDriveSandboxExplorerSdkPort } from "@sdkwork/drive-pc-sandbox-explorer-sdk-adapter";
 import { lazy, Suspense, useMemo } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
@@ -20,17 +25,77 @@ const consoleModules = [sites, configuration, delivery, publishing, monitoring] 
 const LazyDomainManagementPage = lazy(() => import("@sdkwork/deployments-pc-console-delivery/management").then((module) => ({ default: module.DomainManagementPage })));
 const LazyCertificateManagementPage = lazy(() => import("@sdkwork/deployments-pc-console-delivery/management").then((module) => ({ default: module.CertificateManagementPage })));
 const consoleResourcePages = { domains: LazyDomainManagementPage, certificates: LazyCertificateManagementPage } as const;
-const adminModules = [infrastructure, adminNodes, adminAudit] satisfies readonly DeploymentsPcModuleDefinition[];
+const adminModules = [localProjects, infrastructure, adminNodes, adminAudit] satisfies readonly DeploymentsPcModuleDefinition[];
+const adminResourcePages = { localProjects: LocalProjectsPage } as const;
 const LazyAuth = lazy(() => import("./auth/DeploymentsAuthRoutes.tsx").then((module) => ({ default: module.DeploymentsAuthRoutes })));
 const LazyAdmin = lazy(() => import("./surfaces/DeploymentsAdminSurface.tsx").then((module) => ({ default: module.DeploymentsAdminSurface })));
 
-export function App({ runtime }: { runtime: BootstrappedDeploymentsRuntime }) { return <BrowserRouter><Authenticated runtime={runtime} /></BrowserRouter>; }
+export function App({ runtime }: { runtime: BootstrappedDeploymentsRuntime }) {
+  return (
+    <BrowserRouter>
+      <Authenticated runtime={runtime} />
+    </BrowserRouter>
+  );
+}
 
 function Authenticated({ runtime }: { runtime: BootstrappedDeploymentsRuntime }) {
   const state = useSdkworkAuthControllerState(runtime.authController);
   const registry = useMemo(() => createDeploymentsConsoleRegistry(runtime.clients), [runtime.clients]);
+  const sandboxExplorerPort = useMemo(
+    () => createDriveSandboxExplorerSdkPort({ client: runtime.clients.drive }),
+    [runtime.clients.drive],
+  );
   const permissionScope = state.session?.context?.permissionScope ?? [];
   const userLabel = state.user?.displayName || state.user?.email;
-  const signOut = () => { void runtime.authController.signOut(); };
-  return <DeploymentsAuthGate controller={runtime.authController} authRoutes={<Suspense fallback={<div className="bootstrap-state">SDKWork Deployments</div>}><LazyAuth controller={runtime.authController} /></Suspense>}><DeploymentsConsoleProvider clients={runtime.clients}><Routes><Route path="/console/*" element={<DeploymentsConsoleShell locale={runtime.locale} modules={consoleModules} permissionScope={permissionScope} registry={registry} resourcePages={consoleResourcePages} userLabel={userLabel} onSignOut={signOut} />} /><Route path="/admin/*" element={<Suspense fallback={<div className="bootstrap-state">SDKWork Deployments</div>}><LazyAdmin backendApiBaseUrl={runtime.config.backendApiBaseUrl} locale={runtime.locale} modules={adminModules} permissionScope={permissionScope} tokenManager={runtime.tokenManager} userLabel={userLabel} onSignOut={signOut} /></Suspense>} /><Route path="*" element={<Navigate to="/console" replace />} /></Routes></DeploymentsConsoleProvider></DeploymentsAuthGate>;
+  const signOut = () => {
+    void runtime.authController.signOut();
+  };
+  return (
+    <DeploymentsAuthGate
+      controller={runtime.authController}
+      authRoutes={
+        <Suspense fallback={<div className="bootstrap-state">SDKWork Deployments</div>}>
+          <LazyAuth controller={runtime.authController} />
+        </Suspense>
+      }
+    >
+      <DeploymentsConsoleProvider clients={runtime.clients}>
+        <Routes>
+          <Route
+            path="/console/*"
+            element={
+              <DeploymentsConsoleShell
+                locale={runtime.locale}
+                modules={consoleModules}
+                permissionScope={permissionScope}
+                registry={registry}
+                resourcePages={consoleResourcePages}
+                userLabel={userLabel}
+                onSignOut={signOut}
+              />
+            }
+          />
+          <Route
+            path="/admin/*"
+            element={
+              <Suspense fallback={<div className="bootstrap-state">SDKWork Deployments</div>}>
+                <LazyAdmin
+                  backendApiBaseUrl={runtime.config.backendApiBaseUrl}
+                  locale={runtime.locale}
+                  modules={adminModules}
+                  permissionScope={permissionScope}
+                  resourcePages={adminResourcePages}
+                  sandboxExplorerPort={sandboxExplorerPort}
+                  tokenManager={runtime.tokenManager}
+                  userLabel={userLabel}
+                  onSignOut={signOut}
+                />
+              </Suspense>
+            }
+          />
+          <Route path="*" element={<Navigate to="/console" replace />} />
+        </Routes>
+      </DeploymentsConsoleProvider>
+    </DeploymentsAuthGate>
+  );
 }

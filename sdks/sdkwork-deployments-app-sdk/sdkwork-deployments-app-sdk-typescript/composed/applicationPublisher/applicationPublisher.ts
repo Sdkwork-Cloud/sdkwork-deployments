@@ -1,3 +1,4 @@
+import { uuid } from '@sdkwork/utils/id';
 import { ApplicationPublishError, toApplicationPublishError } from './errors';
 import {
   createdApplicationPublishSiteEvidence,
@@ -367,14 +368,7 @@ function resolveIdempotencyKey(
 }
 
 function createRuntimeIdempotencyKey(): string {
-  if (typeof globalThis.crypto?.randomUUID !== 'function') {
-    throw new ApplicationPublishError(
-      'IDEMPOTENCY_KEY_UNAVAILABLE',
-      'registerArtifact',
-      'crypto.randomUUID is required to publish an application.',
-    );
-  }
-  return globalThis.crypto.randomUUID();
+  return uuid();
 }
 
 function throwIfAborted(

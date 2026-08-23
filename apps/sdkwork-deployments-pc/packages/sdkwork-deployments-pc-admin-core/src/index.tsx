@@ -7,6 +7,7 @@ import {
   type DeploymentsRegistry,
 } from "@sdkwork/deployments-pc-commons";
 import type { AuthTokenManager } from "@sdkwork/sdk-common";
+import { uuid } from "@sdkwork/utils/id";
 import { createContext, useContext, type ReactNode } from "react";
 
 const Context = createContext<SdkworkDeployBackendClient | null>(null);
@@ -123,8 +124,5 @@ function selected(context: DeploymentsActionContext, field: string): string {
 }
 
 function idempotencyParams(): { idempotencyKey: string } {
-  if (typeof globalThis.crypto?.randomUUID !== "function") {
-    throw new Error("crypto.randomUUID is required for idempotent deployment operations");
-  }
-  return { idempotencyKey: globalThis.crypto.randomUUID() };
+  return { idempotencyKey: uuid() };
 }

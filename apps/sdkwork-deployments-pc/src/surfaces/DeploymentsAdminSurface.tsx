@@ -1,6 +1,12 @@
 import { createDeploymentsAdminClient, createDeploymentsAdminRegistry, DeploymentsAdminProvider } from "@sdkwork/deployments-pc-admin-core";
+import { LocalProjectsExplorerPortProvider } from "@sdkwork/deployments-pc-admin-local-projects";
 import { DeploymentsAdminShell } from "@sdkwork/deployments-pc-admin-shell";
-import type { DeploymentsLocale, DeploymentsPcModuleDefinition } from "@sdkwork/deployments-pc-commons";
+import type {
+  DeploymentsLocale,
+  DeploymentsPcModuleDefinition,
+  DeploymentsResourcePages,
+} from "@sdkwork/deployments-pc-commons";
+import type { SandboxExplorerPort } from "@sdkwork/drive-pc-sandbox-contracts";
 import type { AuthTokenManager } from "@sdkwork/sdk-common";
 import { useMemo } from "react";
 
@@ -10,12 +16,38 @@ export interface DeploymentsAdminSurfaceProps {
   modules: readonly DeploymentsPcModuleDefinition[];
   onSignOut(): void;
   permissionScope: readonly string[];
+  resourcePages?: DeploymentsResourcePages;
+  sandboxExplorerPort?: SandboxExplorerPort | null;
   tokenManager: AuthTokenManager;
   userLabel?: string;
 }
 
-export function DeploymentsAdminSurface({ backendApiBaseUrl, locale, modules, onSignOut, permissionScope, tokenManager, userLabel }: DeploymentsAdminSurfaceProps) {
+export function DeploymentsAdminSurface({
+  backendApiBaseUrl,
+  locale,
+  modules,
+  onSignOut,
+  permissionScope,
+  resourcePages,
+  sandboxExplorerPort = null,
+  tokenManager,
+  userLabel,
+}: DeploymentsAdminSurfaceProps) {
   const client = useMemo(() => createDeploymentsAdminClient(backendApiBaseUrl, tokenManager), [backendApiBaseUrl, tokenManager]);
   const registry = useMemo(() => createDeploymentsAdminRegistry(client), [client]);
-  return <DeploymentsAdminProvider client={client}><DeploymentsAdminShell locale={locale} modules={modules} permissionScope={permissionScope} registry={registry} userLabel={userLabel} onSignOut={onSignOut} /></DeploymentsAdminProvider>;
+  return (
+    <LocalProjectsExplorerPortProvider port={sandboxExplorerPort}>
+      <DeploymentsAdminProvider client={client}>
+        <DeploymentsAdminShell
+          locale={locale}
+          modules={modules}
+          permissionScope={permissionScope}
+          registry={registry}
+          resourcePages={resourcePages}
+          userLabel={userLabel}
+          onSignOut={onSignOut}
+        />
+      </DeploymentsAdminProvider>
+    </LocalProjectsExplorerPortProvider>
+  );
 }
