@@ -52,6 +52,54 @@ profiles:
         aliases:
           - deploy-app.dtupay.cn
           - deploy.dtupay.cn
+      - domain: deploy-admin.skubc.com
+        tls: skubc.com
+        mode: api
+        aliases:
+          - deploy-app.skubc.com
+          - deploy.skubc.com
+      - domain: deploy-admin.skubc.cn
+        tls: skubc.cn
+        mode: api
+        aliases:
+          - deploy-app.skubc.cn
+          - deploy.skubc.cn
+      - domain: deploy-admin.zowalk.com
+        tls: zowalk.com
+        mode: api
+        aliases:
+          - deploy-app.zowalk.com
+          - deploy.zowalk.com
+      - domain: deploy-admin.zowalk.cn
+        tls: zowalk.cn
+        mode: api
+        aliases:
+          - deploy-app.zowalk.cn
+          - deploy.zowalk.cn
+      - domain: deploy-admin.offer86.com
+        tls: offer86.com
+        mode: api
+        aliases:
+          - deploy-app.offer86.com
+          - deploy.offer86.com
+      - domain: deploy-admin.offer86.cn
+        tls: offer86.cn
+        mode: api
+        aliases:
+          - deploy-app.offer86.cn
+          - deploy.offer86.cn
+      - domain: deploy-admin.86offer.com
+        tls: 86offer.com
+        mode: api
+        aliases:
+          - deploy-app.86offer.com
+          - deploy.86offer.com
+      - domain: deploy-admin.86offer.cn
+        tls: 86offer.cn
+        mode: api
+        aliases:
+          - deploy-app.86offer.cn
+          - deploy.86offer.cn
     packages: []
     overrides:
       topology:

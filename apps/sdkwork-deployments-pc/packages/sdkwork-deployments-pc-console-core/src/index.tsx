@@ -161,7 +161,7 @@ export function createDeploymentsConsoleRegistry(clients: DeploymentsConsoleClie
           const file = context.file;
           const siteId = requiredSiteId(context.scopeId);
           if (!file) throw new Error("Package file is required");
-          const idempotencyKey = createIdempotencyKey();
+          const idempotencyKey = uuid();
           const uploaded = await clients.drive.uploader.uploadArchive({
             file,
             appResourceType: "deploy.artifact",
@@ -191,7 +191,7 @@ export function createDeploymentsConsoleRegistry(clients: DeploymentsConsoleClie
     releases: scoped(
       (query) => client.release.sites.releases.list(requiredSiteId(query.scopeId), { page: query.page, pageSize: query.pageSize }),
       [action("create", "Create release", { artifactId: "", versionTag: "" }, (context) => {
-        const idempotencyKey = createIdempotencyKey();
+        const idempotencyKey = uuid();
         return client.release.sites.releases.create(
           requiredSiteId(context.scopeId),
           { ...context.body, idempotencyKey } as unknown as Parameters<typeof client.release.sites.releases.create>[1],
@@ -203,7 +203,7 @@ export function createDeploymentsConsoleRegistry(clients: DeploymentsConsoleClie
       (query) => client.deployment.sites.deployments.list(requiredSiteId(query.scopeId), { page: query.page, pageSize: query.pageSize }),
       [
         action("deploy", "Start deployment", { deployType: 1, releaseId: "", environment: "production" }, (context) => {
-          const idempotencyKey = createIdempotencyKey();
+          const idempotencyKey = uuid();
           return client.deployment.sites.deployments.create(
             requiredSiteId(context.scopeId),
             { ...context.body, idempotencyKey } as unknown as Parameters<typeof client.deployment.sites.deployments.create>[1],
