@@ -17,6 +17,7 @@ use sdkwork_database_spi::DefaultDatabaseModule;
 use sdkwork_database_sqlx::DatabasePool;
 use sdkwork_intelligence_deploy_repository_sqlx::DeployRepository;
 use sdkwork_intelligence_deploy_service::repository::InsertUsageEventCommand;
+use sdkwork_deploy_contract::UsageEventQuery;
 use sdkwork_intelligence_deploy_service::DeployRepositoryPort;
 use sqlx::PgPool;
 
@@ -62,6 +63,8 @@ fn usage_command(tenant_id: i64, deduplication_key: &str) -> InsertUsageEventCom
         tenant_id,
         organization_id: 9,
         site_id: None,
+        binding_id: None,
+        attribution: None,
         period_start: "2026-08-01T00:00:00.000Z".to_owned(),
         dimension: "build_minutes".to_owned(),
         quantity: 7,
@@ -92,7 +95,7 @@ async fn usage_event_insert_is_idempotent_on_dedup_key() {
     assert_eq!(replay.id, first.id, "replay must return the original fact");
 
     let page = repository
-        .list_usage_events(7, 1, 20)
+        .list_usage_events(7, &UsageEventQuery { page: 1, page_size: 20, ..Default::default() })
         .await
         .expect("list usage facts");
     assert_eq!(page.total, 1, "replay must not duplicate the fact");
@@ -119,7 +122,7 @@ async fn usage_events_are_tenant_scoped_and_paginated() {
         .expect("insert tenant 8 fact");
 
     let page = repository
-        .list_usage_events(7, 1, 1)
+        .list_usage_events(7, &UsageEventQuery { page: 1, page_size: 1, ..Default::default() })
         .await
         .expect("list tenant 7 page");
     assert_eq!(page.total, 2);
@@ -129,7 +132,7 @@ async fn usage_events_are_tenant_scoped_and_paginated() {
     assert!(page.items[0].deduplication_key.starts_with("build:build-"));
 
     let other = repository
-        .list_usage_events(8, 1, 20)
+        .list_usage_events(8, &UsageEventQuery { page: 1, page_size: 20, ..Default::default() })
         .await
         .expect("list tenant 8");
     assert_eq!(other.total, 1);

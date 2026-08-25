@@ -5,6 +5,7 @@ use crate::app_delivery::*;
 use crate::dto::*;
 use crate::problem::DeployServiceResult;
 use crate::site_composition::{SiteCompositionResponse, UpdateSiteCompositionRequest};
+use crate::usage::{IngestUsageEventsRequest, UsageIngestResult};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeployAppRequestContext {
@@ -22,6 +23,36 @@ pub struct DeployAppRequestContext {
 pub struct DeployBackendRequestContext {
     pub operator_id: Option<i64>,
     pub tenant_id: Option<i64>,
+}
+
+/// Traffic usage event list filters (per-domain / per-server-IP / per-app).
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct UsageEventQuery {
+    #[serde(default = "crate::dto::default_page")]
+    pub page: i32,
+    #[serde(default = "crate::dto::default_page_size")]
+    pub page_size: i32,
+    /// Filter by binding public uuid (per-domain attribution).
+    #[serde(rename = "bindingId", default, skip_serializing_if = "Option::is_none")]
+    pub binding_id: Option<String>,
+    /// Filter by usage dimension (`traffic.requests`, …).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dimension: Option<String>,
+    /// Filter by hostname (attribution hostname exact match).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hostname: Option<String>,
+    /// Filter by server IP (attribution serverIp exact match).
+    #[serde(rename = "serverIp", default, skip_serializing_if = "Option::is_none")]
+    pub server_ip: Option<String>,
+    /// Filter by app public uuid (attribution appId exact match).
+    #[serde(rename = "appId", default, skip_serializing_if = "Option::is_none")]
+    pub app_id: Option<String>,
+    /// Window start inclusive (RFC 3339).
+    #[serde(rename = "since", default, skip_serializing_if = "Option::is_none")]
+    pub since: Option<String>,
+    /// Window start exclusive (RFC 3339).
+    #[serde(rename = "until", default, skip_serializing_if = "Option::is_none")]
+    pub until: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -754,8 +785,7 @@ pub trait DeployAppApi: Send + Sync {
     async fn list_usage_events(
         &self,
         _context: &DeployAppRequestContext,
-        _page: i32,
-        _page_size: i32,
+        _query: &UsageEventQuery,
     ) -> DeployServiceResult<UsageEventPage> {
         Err(crate::DeployServiceError::Internal(
             "list_usage_events API is not implemented".to_owned(),
@@ -1102,6 +1132,12 @@ pub trait DeployBackendApi: Send + Sync {
         context: &DeployBackendRequestContext,
         request: &RetentionRunRequest,
     ) -> DeployServiceResult<RetentionRunResponse>;
+
+    async fn ingest_usage_events(
+        &self,
+        context: &DeployBackendRequestContext,
+        request: &IngestUsageEventsRequest,
+    ) -> DeployServiceResult<UsageIngestResult>;
 
     async fn rebuild_usage_daily(
         &self,

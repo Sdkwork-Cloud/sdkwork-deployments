@@ -1219,6 +1219,8 @@ pub struct UsageEventResponse {
     pub tenant_id: i64,
     #[serde(rename = "siteId", skip_serializing_if = "Option::is_none")]
     pub site_id: Option<String>,
+    #[serde(rename = "bindingId", skip_serializing_if = "Option::is_none")]
+    pub binding_id: Option<String>,
     #[serde(rename = "periodStart")]
     pub period_start: String,
     pub dimension: String,
@@ -1230,6 +1232,8 @@ pub struct UsageEventResponse {
     pub source_window_id: Option<String>,
     #[serde(rename = "deduplicationKey")]
     pub deduplication_key: String,
+    #[serde(rename = "attribution", default, skip_serializing_if = "Option::is_none")]
+    pub attribution: Option<crate::usage::UsageEventAttribution>,
     #[serde(rename = "observedAt")]
     pub observed_at: String,
     #[serde(rename = "createdAt")]
@@ -1433,6 +1437,9 @@ pub const ENTITLEMENT_DIMENSION_PACKAGE_STORAGE_BYTES: &str = "package_storage_b
 pub const ENTITLEMENT_DIMENSION_RELEASE_COUNT: &str = "release_count";
 pub const ENTITLEMENT_DIMENSION_DEPLOYMENT_COUNT: &str = "deployment_count";
 pub const ENTITLEMENT_DIMENSION_CHANNEL_COUNT: &str = "channel_count";
+pub const ENTITLEMENT_DIMENSION_TRAFFIC_REQUESTS: &str = "traffic.requests";
+pub const ENTITLEMENT_DIMENSION_TRAFFIC_INGRESS_BYTES: &str = "traffic.ingress_bytes";
+pub const ENTITLEMENT_DIMENSION_TRAFFIC_EGRESS_BYTES: &str = "traffic.egress_bytes";
 
 /// Commerce-backed entitlement projection read model (backend read surface).
 #[derive(Clone, Debug, Serialize, Deserialize)]

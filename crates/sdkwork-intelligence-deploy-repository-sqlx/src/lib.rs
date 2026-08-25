@@ -19,6 +19,7 @@ mod nginx_configs;
 mod nginx_orchestrator;
 mod nginx_security;
 mod node_clusters;
+mod platform_app_domains;
 mod port;
 mod releases;
 mod retention;
@@ -62,6 +63,18 @@ impl DeployRepository {
             secret_key,
             _node_lease: Some(node_lease),
         }
+    }
+
+    /// Read-only constructor for consumers that only resolve deployed sites
+    /// (for example the Web Server app-domain fallback). Ids minted through
+    /// this handle are process-local placeholders; write provisioning flows
+    /// belong to the control plane process.
+    pub fn new_lookup(pool: PgPool) -> Self {
+        Self::new(
+            pool,
+            SnowflakeIdGenerator::new(0).expect("lookup snowflake node id"),
+            [0u8; 32],
+        )
     }
 
     pub fn pool(&self) -> &PgPool {

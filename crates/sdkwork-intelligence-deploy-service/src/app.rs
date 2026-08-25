@@ -23,6 +23,7 @@ use sdkwork_deploy_contract::{
     UpdateAppEnvironmentRequest, UpdateAppRequest, UpdateBuildStateRequest,
     UpdateDomainHostnameRequest, UpdateDomainZoneRequest, UpdateSiteRequest, UsageEventPage,
     UPLOAD_SESSION_STATUS_CANCELLED, UPLOAD_SESSION_STATUS_COMPLETED,
+    UsageEventQuery,
 };
 use sdkwork_deploy_drive_port::{DriveRequestCredentials, PrepareDeployUploadCommand};
 
@@ -1292,10 +1293,9 @@ impl DeployAppApi for DeployService {
     async fn list_usage_events(
         &self,
         context: &DeployAppRequestContext,
-        page: i32,
-        page_size: i32,
+        query: &UsageEventQuery,
     ) -> DeployServiceResult<UsageEventPage> {
-        self.list_usage_events(context, page, page_size).await
+        self.list_usage_events(context, query).await
     }
 
     async fn create_app_database_profile(

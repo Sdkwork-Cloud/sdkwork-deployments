@@ -11,6 +11,8 @@ use sdkwork_deploy_contract::{
     SourceEventIngestResponse, SourceEventPage, StoreCertificateVersionRequest,
     UpdateNginxConfigRequest, UpdateNodeClusterRequest, UpdateServerRequest,
     UsageReconciliationRequest, UsageReconciliationResponse,
+    IngestUsageEventsRequest,
+    UsageIngestResult
 };
 
 use crate::DeployService;
@@ -469,6 +471,24 @@ impl DeployBackendApi for DeployService {
         let _ = context;
         self.repository
             .run_retention(request.dry_run, package_days, release_days, log_days)
+            .await
+    }
+
+    async fn ingest_usage_events(
+        &self,
+        _context: &DeployBackendRequestContext,
+        request: &IngestUsageEventsRequest,
+    ) -> DeployServiceResult<UsageIngestResult> {
+        if request.events.len() > 10_000 {
+            return Err(DeployServiceError::validation(
+                "a single usage ingest batch must not exceed 10000 events",
+            ));
+        }
+        if request.events.is_empty() {
+            return Ok(UsageIngestResult::default());
+        }
+        self.repository
+            .insert_usage_events_batch(&request.events)
             .await
     }
 

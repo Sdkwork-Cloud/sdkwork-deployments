@@ -20,6 +20,26 @@ impl DeployRepository {
         tenant_id: i64,
         dimension: &str,
     ) -> DeployServiceResult<i64> {
+        // Traffic dimensions aggregate the tenant daily rollup (SaaS
+        // billing); the daily tables carry no deleted_at column, so they
+        // are handled before the generic live-table match.
+        if matches!(
+            dimension,
+            "traffic.requests" | "traffic.ingress_bytes" | "traffic.egress_bytes"
+        ) {
+            let row = sqlx::query(
+                "SELECT COALESCE(SUM(quantity), 0) AS usage_value
+                 FROM deploy_tenant_usage_daily
+                 WHERE tenant_id = $1 AND dimension = $2 AND finalization_status = 'PENDING'",
+            )
+            .bind(tenant_id)
+            .bind(dimension)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|error| store_error("traffic entitlement usage aggregate", error))?;
+            let value: i64 = row.try_get("usage_value").unwrap_or(0);
+            return Ok(value);
+        }
         let (aggregate_sql, table, status_filter) = match dimension {
             "active_apps" => ("COUNT(*)", "deploy_app", "AND app_status <> 'ARCHIVED'"),
             "platform_targets" => (

@@ -1213,6 +1213,51 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+  /backend/v3/api/usage/ingest:
+    post:
+      operationId: usage.ingestTrafficEvents
+      summary: Ingest Web Server traffic usage events (per-domain / per-server-IP)
+      description: >
+        Batch traffic usage facts submitted by Web Server nodes
+        (`traffic.requests`, `traffic.ingress_bytes`, `traffic.egress_bytes`).
+        Every event is deduplicated on (tenant, deduplicationKey); binding and
+        site uuids are resolved to internal ids and tenant attribution is
+        derived from the binding when the node could not attribute it.
+      tags:
+        - usage
+      security:
+        - AuthToken: []
+          AccessToken: []
+      x-sdkwork-permission: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestUsageEventsRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SdkWorkApiResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        type: object
+                        required: [item]
+                        properties:
+                          item:
+                            $ref: '#/components/schemas/UsageIngestResult'
+        '422':
+          description: "校验错误"
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /backend/v3/api/usage/reconcile:
     post:
       operationId: usage.reconcileDaily
@@ -2296,6 +2341,86 @@ components:
           type: integer
           format: int64
         buildLogRetentionDays:
+          type: integer
+          format: int64
+    UsageEventAttribution:
+      type: object
+      additionalProperties: false
+      properties:
+        hostname:
+          type: string
+        serverIp:
+          type: string
+        serverPort:
+          type: integer
+        listenerId:
+          type: string
+        appId:
+          type: string
+        appSlug:
+          type: string
+        siteUuid:
+          type: string
+        bindingUuid:
+          type: string
+        statusClass:
+          type: string
+    UsageEventIngestItem:
+      type: object
+      additionalProperties: false
+      required: [tenantId, periodStart, dimension, quantity, unit, deduplicationKey, attribution]
+      properties:
+        tenantId:
+          type: integer
+          format: int64
+        organizationId:
+          type: integer
+          format: int64
+        siteUuid:
+          type: string
+        bindingUuid:
+          type: string
+        periodStart:
+          type: string
+          format: date-time
+        dimension:
+          type: string
+        quantity:
+          type: integer
+          format: int64
+        unit:
+          type: string
+        deduplicationKey:
+          type: string
+        attribution:
+          $ref: '#/components/schemas/UsageEventAttribution'
+        observedAt:
+          type: string
+          format: date-time
+    IngestUsageEventsRequest:
+      type: object
+      additionalProperties: false
+      required: [events]
+      properties:
+        nodeUuid:
+          type: string
+        events:
+          type: array
+          maxItems: 10000
+          items:
+            $ref: '#/components/schemas/UsageEventIngestItem'
+    UsageIngestResult:
+      type: object
+      additionalProperties: false
+      required: [ingested, duplicates, rejected]
+      properties:
+        ingested:
+          type: integer
+          format: int64
+        duplicates:
+          type: integer
+          format: int64
+        rejected:
           type: integer
           format: int64
     UsageReconciliationRequest:

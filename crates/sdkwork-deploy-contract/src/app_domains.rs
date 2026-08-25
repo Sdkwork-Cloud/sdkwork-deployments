@@ -1,0 +1,76 @@
+//! App publishing domain contract shared by the Deploy control plane and the
+//! Web Server fallback resolver.
+//!
+//! The control plane provisions every app's default publishable hostnames
+//! (`<slug>.app[-<env>].<suffix>`, `sdkwork-deploy-core::app_domains`) and
+//! resolves unmatched Web Server hosts to a compiled site revision descriptor
+//! (`ResolvedDeployServer`).
+
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+/// One resolved Deploy server for a Web Server fallback lookup: the site
+/// whose active binding owns the requested hostname, together with its
+/// latest compiled website runtime descriptor (`deploy_site_revision`).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ResolvedDeployServer {
+    /// The owning site's public uuid.
+    #[serde(rename = "siteUuid")]
+    pub site_uuid: String,
+    /// The site's slug (app id for default app domains).
+    #[serde(rename = "siteSlug")]
+    pub site_slug: String,
+    /// The matched binding hostname (normalized lowercase ASCII).
+    #[serde(rename = "hostname")]
+    pub hostname: String,
+    /// The binding's path prefix (`/` for default app bindings).
+    #[serde(rename = "pathPrefix")]
+    pub path_prefix: String,
+    /// Binding action: `SERVE` or `REDIRECT`.
+    #[serde(rename = "actionType")]
+    pub action_type: String,
+    /// The owning tenant (usage metering attribution).
+    #[serde(rename = "tenantId")]
+    pub tenant_id: i64,
+    /// The owning app's public uuid when the site belongs to an app
+    /// (usage metering attribution).
+    #[serde(rename = "appId", default, skip_serializing_if = "Option::is_none")]
+    pub app_id: Option<String>,
+    /// The matched binding's public uuid (per-domain usage attribution).
+    #[serde(rename = "bindingId", default, skip_serializing_if = "Option::is_none")]
+    pub binding_id: Option<String>,
+    /// The compiled `sdkwork.website-runtime.descriptor` document
+    /// (`deploy_site_revision.descriptor_json`), which the Web Server
+    /// activates as a fallback site.
+    #[serde(rename = "descriptorJson")]
+    pub descriptor_json: Value,
+    /// SHA-256 of the compiled descriptor.
+    #[serde(rename = "descriptorSha256")]
+    pub descriptor_sha256: String,
+    /// The descriptor's revision number in the site's revision chain.
+    #[serde(rename = "revisionNo")]
+    pub revision_no: i64,
+    /// Lifecycle environment of the binding (`development|test|staging|production`).
+    #[serde(rename = "environment")]
+    pub environment: String,
+}
+
+/// Result of idempotently provisioning an app's default publishing domains:
+/// platform DNS zones, EXACT `deploy_domain` rows (auto-verified because the
+/// platform owns the apex domains) and `deploy_site_binding` rows.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct ProvisionAppDomainsResult {
+    #[serde(rename = "createdZones")]
+    pub created_zones: usize,
+    #[serde(rename = "createdDomains")]
+    pub created_domains: usize,
+    #[serde(rename = "existingDomains")]
+    pub existing_domains: usize,
+    #[serde(rename = "createdBindings")]
+    pub created_bindings: usize,
+    #[serde(rename = "existingBindings")]
+    pub existing_bindings: usize,
+    /// Every provisioned hostname (`<slug>.app[-<env>].<suffix>`).
+    #[serde(rename = "hostnames")]
+    pub hostnames: Vec<String>,
+}

@@ -2,6 +2,7 @@
 
 pub mod app;
 pub mod app_delivery;
+pub mod app_domains;
 pub mod backend;
 pub mod domain_verification;
 pub mod entitlement;

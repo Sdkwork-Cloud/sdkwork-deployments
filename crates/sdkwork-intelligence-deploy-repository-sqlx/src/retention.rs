@@ -169,18 +169,19 @@ impl DeployRepository {
         }
         let result = sqlx::query(
             "INSERT INTO deploy_site_usage_daily
-                (id, uuid, tenant_id, organization_id, site_id, usage_date, dimension,
-                 quantity, unit, source_revision, finalization_status, created_at, updated_at)
+                (id, uuid, tenant_id, organization_id, site_id, binding_id, usage_date,
+                 dimension, quantity, unit, source_revision, finalization_status,
+                 created_at, updated_at)
              SELECT sdkwork_next_bigint(), gen_random_uuid(), u.tenant_id,
-                    MAX(u.organization_id), u.site_id,
+                    MAX(u.organization_id), u.site_id, u.binding_id,
                     (u.period_start AT TIME ZONE 'UTC')::date, u.dimension,
                     SUM(u.quantity), u.unit, 'rebuild:' || to_char(MAX(u.ingested_at), 'YYYYMMDDHH24MISS'),
                     'PENDING', NOW(), NOW()
              FROM deploy_usage_event u
              WHERE u.period_start >= $1 AND u.period_start < $2
-             GROUP BY u.tenant_id, u.site_id, (u.period_start AT TIME ZONE 'UTC')::date,
-                      u.dimension, u.unit
-             ON CONFLICT (tenant_id, site_id, usage_date, dimension, unit)
+             GROUP BY u.tenant_id, u.site_id, u.binding_id,
+                      (u.period_start AT TIME ZONE 'UTC')::date, u.dimension, u.unit
+             ON CONFLICT (tenant_id, site_id, binding_id, usage_date, dimension, unit)
              DO UPDATE SET quantity = EXCLUDED.quantity, source_revision = EXCLUDED.source_revision,
                            updated_at = NOW()",
         )
@@ -189,8 +190,34 @@ impl DeployRepository {
         .execute(&self.pool)
         .await
         .map_err(|error| store_error("rebuild deploy_site_usage_daily", error))?;
+        let site_rows = result.rows_affected() as i64;
+        // Tenant-level daily rollup (SaaS billing): one row per tenant,
+        // dimension and day, including unmanaged traffic (tenant 0).
+        let tenant_result = sqlx::query(
+            "INSERT INTO deploy_tenant_usage_daily
+                (id, uuid, tenant_id, organization_id, usage_date, dimension,
+                 quantity, unit, source_revision, finalization_status, created_at, updated_at)
+             SELECT sdkwork_next_bigint(), gen_random_uuid(), u.tenant_id,
+                    MAX(u.organization_id),
+                    (u.period_start AT TIME ZONE 'UTC')::date, u.dimension,
+                    SUM(u.quantity), u.unit,
+                    'rebuild:' || to_char(MAX(u.ingested_at), 'YYYYMMDDHH24MISS'),
+                    'PENDING', NOW(), NOW()
+             FROM deploy_usage_event u
+             WHERE u.period_start >= $1 AND u.period_start < $2
+             GROUP BY u.tenant_id, (u.period_start AT TIME ZONE 'UTC')::date,
+                      u.dimension, u.unit
+             ON CONFLICT (tenant_id, dimension, usage_date, unit)
+             DO UPDATE SET quantity = EXCLUDED.quantity, source_revision = EXCLUDED.source_revision,
+                           updated_at = NOW()",
+        )
+        .bind(&window_start)
+        .bind(&window_end)
+        .execute(&self.pool)
+        .await
+        .map_err(|error| store_error("rebuild deploy_tenant_usage_daily", error))?;
         Ok(UsageReconciliationResponse {
-            rebuilt_rows: result.rows_affected() as i64,
+            rebuilt_rows: site_rows + tenant_result.rows_affected() as i64,
             window_start,
             window_end,
         })

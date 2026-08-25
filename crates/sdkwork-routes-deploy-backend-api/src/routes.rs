@@ -9,7 +9,7 @@ use sdkwork_deploy_contract::{
     CreateNodeClusterRequest, CreateServerRequest, DeployBackendApi, DeployBackendRequestContext,
     FailCertificateOrderRequest, ListNginxConfigsQuery, RequestCertificateOrderRequest,
     RetentionRunRequest, StoreCertificateVersionRequest, UpdateNginxConfigRequest,
-    UpdateNodeClusterRequest, UpdateServerRequest, UsageReconciliationRequest,
+    UpdateNodeClusterRequest, UpdateServerRequest, UsageReconciliationRequest, IngestUsageEventsRequest,
 };
 use sdkwork_routes_deploy_common::{envelope, finish_api_json, finish_created_api_json, ok_json};
 use sdkwork_web_core::WebRequestContext;
@@ -73,6 +73,7 @@ pub fn build_router_with_shared_backend_api(api: Arc<dyn DeployBackendApi>) -> R
         )
         .route(paths::CERTIFICATE_ORDERS, get(list_certificate_orders))
         .route(paths::RETENTION_RUN, post(run_retention))
+        .route(paths::USAGE_INGEST, post(ingest_usage_events))
         .route(paths::USAGE_RECONCILE, post(reconcile_usage_daily))
         .route(
             paths::SIGNING_IDENTITY_HEALTH,
@@ -667,6 +668,23 @@ async fn run_retention(
         async {
             let context = require_backend_context(context)?;
             let result = state.api.run_retention(&context, &request).await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
+
+async fn ingest_usage_events(
+    ctx: WebRequestContext,
+    State(state): State<BackendState>,
+    context: Option<Extension<DeployBackendRequestContext>>,
+    Json(request): Json<IngestUsageEventsRequest>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_backend_context(context)?;
+            let result = state.api.ingest_usage_events(&context, &request).await?;
             ok_json(envelope::resource(result))
         }
         .await,

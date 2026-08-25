@@ -35,7 +35,10 @@ use sdkwork_deploy_contract::{
     UpdateServerRequest, UpdateSiteRequest, UsageEventPage, UsageEventResponse,
     UsageReconciliationResponse,
 };
-use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
+use sdkwork_deploy_contract::{
+    DeployServiceError, DeployServiceResult, ProvisionAppDomainsResult, ResolvedDeployServer,
+    UsageEventIngestItem, UsageEventQuery, UsageIngestResult,
+};
 use sdkwork_deploy_web_port::RuntimeAssignmentReceipt;
 use sdkwork_intelligence_deploy_service::repository::{
     InsertAuditLogCommand, InsertUsageEventCommand,
@@ -1031,11 +1034,16 @@ impl DeployRepositoryPort for DeployRepository {
     async fn list_usage_events(
         &self,
         tenant_id: i64,
-        page: i32,
-        page_size: i32,
+        query: &UsageEventQuery,
     ) -> DeployServiceResult<UsageEventPage> {
-        self.list_usage_events_repo(tenant_id, page, page_size)
-            .await
+        self.list_usage_events_repo(tenant_id, query).await
+    }
+
+    async fn insert_usage_events_batch(
+        &self,
+        events: &[UsageEventIngestItem],
+    ) -> DeployServiceResult<UsageIngestResult> {
+        self.insert_usage_events_batch_repo(events).await
     }
 
     async fn create_app_database_profile(
@@ -1456,6 +1464,45 @@ impl DeployRepositoryPort for DeployRepository {
         page_size: i32,
     ) -> DeployServiceResult<SourceEventPage> {
         self.list_source_events_repo(tenant_id, page, page_size)
+            .await
+    }
+
+    async fn ensure_platform_app_zones(
+        &self,
+        tenant_id: i64,
+        organization_id: i64,
+        actor_id: Option<i64>,
+    ) -> DeployServiceResult<usize> {
+        self.ensure_platform_app_zones_repo(tenant_id, organization_id, actor_id)
+            .await
+    }
+
+    async fn provision_app_default_domains(
+        &self,
+        tenant_id: i64,
+        organization_id: i64,
+        actor_id: Option<i64>,
+        site_id: &str,
+        app_slug: &str,
+        environment: &str,
+    ) -> DeployServiceResult<ProvisionAppDomainsResult> {
+        self.provision_app_default_domains_repo(
+            tenant_id,
+            organization_id,
+            actor_id,
+            site_id,
+            app_slug,
+            environment,
+        )
+        .await
+    }
+
+    async fn resolve_server_by_hostname(
+        &self,
+        hostname: &str,
+        environment: &str,
+    ) -> DeployServiceResult<Option<ResolvedDeployServer>> {
+        self.resolve_active_site_by_hostname_repo(hostname, environment)
             .await
     }
 }

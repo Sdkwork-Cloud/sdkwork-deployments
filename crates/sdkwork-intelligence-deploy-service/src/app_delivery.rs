@@ -22,6 +22,7 @@ use sdkwork_deploy_contract::{
     ENTITLEMENT_DIMENSION_PLATFORM_TARGETS, ENTITLEMENT_DIMENSION_RELEASE_COUNT,
     USAGE_DIMENSION_BUILD_MINUTES, USAGE_DIMENSION_DEPLOYMENT_COUNT,
     USAGE_DIMENSION_PACKAGE_STORAGE_BYTES,
+    UsageEventQuery
 };
 use sdkwork_deploy_core::{
     required_identity_field, validate_app_kind_platform, validate_catalog_name,
@@ -126,6 +127,14 @@ impl DeployService {
             .await?;
         self.audit_app_action(context, "app.create", &app.id)
             .await?;
+        // Auto-apply the app's default publishing domains
+        // (`<slug>.app[-<env>].<suffix>`) when the app already carries a
+        // site; apps without a site provision lazily through
+        // `provision_app_default_domains` once the site is linked.
+        if app.site_id.is_some() {
+            self.provision_app_default_domains(context, &app.id, &app.default_environment)
+                .await?;
+        }
         Ok(app)
     }
 
@@ -464,6 +473,8 @@ impl DeployService {
                 tenant_id: context.tenant_id,
                 organization_id: context.organization_id.unwrap_or(0),
                 site_id: None,
+                binding_id: None,
+                attribution: None,
                 period_start,
                 dimension: USAGE_DIMENSION_BUILD_MINUTES.to_owned(),
                 quantity: minutes,
@@ -523,6 +534,8 @@ impl DeployService {
             tenant_id: context.tenant_id,
             organization_id: context.organization_id.unwrap_or(0),
             site_id: None,
+                binding_id: None,
+                attribution: None,
             period_start: Self::billing_period_start(None),
             dimension: USAGE_DIMENSION_PACKAGE_STORAGE_BYTES.to_owned(),
             quantity: package.package_size_bytes.max(0),
@@ -706,6 +719,8 @@ impl DeployService {
             tenant_id: context.tenant_id,
             organization_id: context.organization_id.unwrap_or(0),
             site_id: None,
+                binding_id: None,
+                attribution: None,
             period_start: Self::billing_period_start(None),
             dimension: USAGE_DIMENSION_DEPLOYMENT_COUNT.to_owned(),
             quantity: 1,
@@ -817,13 +832,10 @@ impl DeployService {
     pub async fn list_usage_events(
         &self,
         context: &DeployAppRequestContext,
-        page: i32,
-        page_size: i32,
+        query: &UsageEventQuery,
     ) -> DeployServiceResult<UsageEventPage> {
         let tenant_id = Self::tenant_id(context)?;
-        self.repository
-            .list_usage_events(tenant_id, page, page_size)
-            .await
+        self.repository.list_usage_events(tenant_id, query).await
     }
 
     // -- application database structure contract -------------------------------

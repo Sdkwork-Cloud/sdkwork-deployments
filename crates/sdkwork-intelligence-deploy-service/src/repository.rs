@@ -26,8 +26,9 @@ use sdkwork_deploy_contract::{
     NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
     NodeClusterPage, NodeClusterResponse, PackagePage, PackageResponse, PlatformTargetPage,
     PlatformTargetResponse, PromoteChannelRequest, PromoteEnvironmentRequest,
-    RegisterPackageRequest, ReleasePage, ReleaseResponse, ReleaseStatus,
-    RequestCertificateOrderRequest, RetentionRunResponse, RunnerHealthPage, ServerPage,
+    ProvisionAppDomainsResult, RegisterPackageRequest, ReleasePage, ReleaseResponse,
+    ReleaseStatus, RequestCertificateOrderRequest, ResolvedDeployServer, RetentionRunResponse,
+    RunnerHealthPage, ServerPage,
     ServerResponse, SigningIdentityHealthPage, SigningIdentityPage, SigningIdentityResponse,
     SitePage, SiteResponse, SourceEventPage, SourceEventResponse, SourceRepositoryPage,
     SourceRepositoryResponse, UpdateAppDatabaseProfileRequest, UpdateAppEnvironmentRequest,
@@ -37,6 +38,9 @@ use sdkwork_deploy_contract::{
 };
 
 use crate::DomainVerificationChallenge;
+use sdkwork_deploy_contract::{
+    UsageEventIngestItem, UsageEventQuery, UsageIngestResult,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InsertAuditLogCommand {
@@ -76,6 +80,9 @@ pub struct InsertUsageEventCommand {
     pub tenant_id: i64,
     pub organization_id: i64,
     pub site_id: Option<i64>,
+    /// Binding public internal id (`deploy_site_binding.id`) for per-domain
+    /// traffic attribution.
+    pub binding_id: Option<i64>,
     pub period_start: String,
     pub dimension: String,
     pub quantity: i64,
@@ -83,6 +90,8 @@ pub struct InsertUsageEventCommand {
     pub source_target_uuid: Option<String>,
     pub source_window_id: Option<String>,
     pub deduplication_key: String,
+    /// Traffic attribution (hostname, server IP, app id, status class, …).
+    pub attribution: Option<serde_json::Value>,
 }
 
 #[async_trait]
@@ -780,9 +789,17 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
     async fn list_usage_events(
         &self,
         tenant_id: i64,
-        page: i32,
-        page_size: i32,
+        query: &UsageEventQuery,
     ) -> DeployServiceResult<UsageEventPage>;
+
+    /// Batch-ingest traffic usage events submitted by a Web Server node.
+    /// Each event is deduplicated; binding/site uuids are resolved to
+    /// internal ids and tenant attribution is derived from the binding when
+    /// the node could not attribute it.
+    async fn insert_usage_events_batch(
+        &self,
+        events: &[UsageEventIngestItem],
+    ) -> DeployServiceResult<UsageIngestResult>;
 
     async fn create_app_database_profile(
         &self,
@@ -1054,4 +1071,37 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         page: i32,
         page_size: i32,
     ) -> DeployServiceResult<SourceEventPage>;
+
+    // -- app publishing domains -------------------------------------------------
+
+    /// Create the platform app-domain DNS zones for a tenant (idempotent);
+    /// returns the number of newly created zones.
+    async fn ensure_platform_app_zones(
+        &self,
+        tenant_id: i64,
+        organization_id: i64,
+        actor_id: Option<i64>,
+    ) -> DeployServiceResult<usize>;
+
+    /// Idempotently provision an app's default publishing domains
+    /// (`<slug>.app[-<env>].<suffix>` domains + site bindings) for one
+    /// lifecycle environment. `site_id` is the site's public uuid.
+    async fn provision_app_default_domains(
+        &self,
+        tenant_id: i64,
+        organization_id: i64,
+        actor_id: Option<i64>,
+        site_id: &str,
+        app_slug: &str,
+        environment: &str,
+    ) -> DeployServiceResult<ProvisionAppDomainsResult>;
+
+    /// Resolve an active site binding by its exact hostname in one lifecycle
+    /// environment and return the site's latest compiled runtime descriptor
+    /// (Web Server fallback lookup).
+    async fn resolve_server_by_hostname(
+        &self,
+        hostname: &str,
+        environment: &str,
+    ) -> DeployServiceResult<Option<ResolvedDeployServer>>;
 }

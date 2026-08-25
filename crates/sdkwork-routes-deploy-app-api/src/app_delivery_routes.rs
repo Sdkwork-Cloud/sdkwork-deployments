@@ -14,7 +14,7 @@ use sdkwork_deploy_contract::{
     CreateBuildTemplateRequest, CreatePlatformTargetRequest, CreateSigningIdentityRequest,
     CreateSourceRepositoryRequest, DeployAppRequestContext, PromoteChannelRequest,
     PromoteEnvironmentRequest, RegisterPackageRequest, UpdateAppDatabaseProfileRequest,
-    UpdateAppEnvironmentRequest, UpdateAppRequest, UpdateBuildStateRequest,
+    UpdateAppEnvironmentRequest, UpdateAppRequest, UpdateBuildStateRequest, UsageEventQuery,
 };
 use sdkwork_routes_deploy_common::{envelope, finish_api_json, finish_created_api_json, ok_json};
 use sdkwork_web_core::WebRequestContext;
@@ -784,17 +784,13 @@ async fn list_usage_events(
     ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
-    Query(query): Query<PageQuery>,
+    Query(query): Query<UsageEventQuery>,
 ) -> Response {
     finish_api_json(
         &ctx,
         async {
             let context = require_app_context(context)?;
-            let (page, page_size) = page_values(&query);
-            let result = state
-                .api
-                .list_usage_events(&context, page, page_size)
-                .await?;
+            let result = state.api.list_usage_events(&context, &query).await?;
             ok_json(envelope::usage_event_page(result))
         }
         .await,

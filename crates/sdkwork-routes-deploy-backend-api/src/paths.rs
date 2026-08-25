@@ -24,6 +24,7 @@ pub const TLS_ORDER_VERSIONS: &str = "/backend/v3/api/tls/orders/{orderId}/versi
 pub const TLS_ORDER_CHALLENGES: &str = "/backend/v3/api/tls/orders/{orderId}/challenges";
 pub const CERTIFICATE_ORDERS: &str = "/backend/v3/api/certificates/{certificateId}/orders";
 pub const RETENTION_RUN: &str = "/backend/v3/api/retention/run";
+pub const USAGE_INGEST: &str = "/backend/v3/api/usage/ingest";
 pub const USAGE_RECONCILE: &str = "/backend/v3/api/usage/reconcile";
 pub const SIGNING_IDENTITY_HEALTH: &str = "/backend/v3/api/signing_identity_health";
 pub const SOURCE_EVENTS: &str = "/backend/v3/api/source_events";
