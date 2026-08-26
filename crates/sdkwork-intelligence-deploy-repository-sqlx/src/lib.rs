@@ -1,6 +1,7 @@
 use sdkwork_database_id::{NodeLease, SnowflakeIdGenerator};
 use sqlx::PgPool;
 
+mod app_composition;
 mod app_deployments;
 mod app_releases;
 mod apps;
@@ -9,7 +10,6 @@ mod audit;
 mod builds;
 mod certificates;
 mod database_profiles;
-mod deployments;
 mod domain_zones;
 mod entitlement;
 mod env_variables;
@@ -21,12 +21,10 @@ mod nginx_security;
 mod node_clusters;
 mod platform_app_domains;
 mod port;
-mod releases;
 mod retention;
 mod runtime_assignments;
 mod servers;
-mod site_composition;
-mod sites;
+
 mod source_events;
 mod support;
 mod tls_control;

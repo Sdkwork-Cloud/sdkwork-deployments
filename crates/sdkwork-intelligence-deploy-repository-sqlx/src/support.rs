@@ -84,82 +84,23 @@ pub(crate) fn optional_datetime_from_row(
         .map(|value| value.map(|value| value.to_rfc3339_opts(SecondsFormat::Millis, true)))
 }
 
-pub(crate) async fn resolve_site_internal_id(
+pub(crate) async fn resolve_app_uuid(
     pool: &PgPool,
     tenant_id: i64,
-    site_uuid: &str,
-) -> Result<i64, DeployServiceError> {
-    let row = sqlx::query(
-        "SELECT id FROM deploy_site
-         WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL",
-    )
-    .bind(tenant_id)
-    .bind(site_uuid)
-    .fetch_optional(pool)
-    .await
-    .map_err(|error| store_error("resolve deploy_site id", error))?;
-
-    row.and_then(|row| row.try_get::<i64, _>("id").ok())
-        .ok_or_else(|| DeployServiceError::not_found("site not found"))
-}
-
-pub(crate) async fn resolve_site_uuid(
-    pool: &PgPool,
-    tenant_id: i64,
-    site_internal_id: i64,
+    app_internal_id: i64,
 ) -> Result<String, DeployServiceError> {
     let row = sqlx::query(
-        "SELECT uuid FROM deploy_site
+        "SELECT uuid FROM deploy_app
          WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL",
     )
     .bind(tenant_id)
-    .bind(site_internal_id)
+    .bind(app_internal_id)
     .fetch_optional(pool)
     .await
-    .map_err(|error| store_error("resolve deploy_site uuid", error))?;
+    .map_err(|error| store_error("resolve deploy_app uuid", error))?;
 
     row.and_then(|row| row.try_get::<String, _>("uuid").ok())
-        .ok_or_else(|| DeployServiceError::not_found("site not found"))
-}
-
-pub(crate) async fn resolve_artifact_internal_id(
-    pool: &PgPool,
-    tenant_id: i64,
-    artifact_uuid: &str,
-) -> Result<i64, DeployServiceError> {
-    let row = sqlx::query(
-        "SELECT id FROM deploy_artifact
-         WHERE tenant_id = $1 AND uuid = $2 AND status <> 2",
-    )
-    .bind(tenant_id)
-    .bind(artifact_uuid)
-    .fetch_optional(pool)
-    .await
-    .map_err(|error| store_error("resolve deploy_artifact id", error))?;
-
-    row.and_then(|row| row.try_get::<i64, _>("id").ok())
-        .ok_or_else(|| DeployServiceError::not_found("artifact not found"))
-}
-
-pub(crate) async fn resolve_release_internal_id(
-    pool: &PgPool,
-    tenant_id: i64,
-    site_internal_id: i64,
-    release_uuid: &str,
-) -> Result<i64, DeployServiceError> {
-    let row = sqlx::query(
-        "SELECT id FROM deploy_release
-         WHERE tenant_id = $1 AND site_id = $2 AND uuid = $3 AND status = 1",
-    )
-    .bind(tenant_id)
-    .bind(site_internal_id)
-    .bind(release_uuid)
-    .fetch_optional(pool)
-    .await
-    .map_err(|error| store_error("resolve deploy_release id", error))?;
-
-    row.and_then(|row| row.try_get::<i64, _>("id").ok())
-        .ok_or_else(|| DeployServiceError::not_found("release not found"))
+        .ok_or_else(|| DeployServiceError::not_found("app not found"))
 }
 
 pub(crate) async fn resolve_node_cluster_internal_id(

@@ -9,9 +9,6 @@ engines:
   - postgres
 table_prefix: deploy_
 tables:
-  - name: deploy_site
-    lifecycle_status: active
-    owner: deploy-platform
   - name: deploy_dns_zone
     lifecycle_status: active
     owner: deploy-platform
@@ -63,19 +60,19 @@ tables:
   - name: deploy_release
     lifecycle_status: active
     owner: deploy-platform
-  - name: deploy_site_resource
+  - name: deploy_app_resource
     lifecycle_status: active
     owner: deploy-platform
-  - name: deploy_site_variant
+  - name: deploy_app_variant
     lifecycle_status: active
     owner: deploy-platform
-  - name: deploy_site_variant_rule
+  - name: deploy_app_variant_rule
     lifecycle_status: active
     owner: deploy-platform
-  - name: deploy_site_mount
+  - name: deploy_app_mount
     lifecycle_status: active
     owner: deploy-platform
-  - name: deploy_site_binding
+  - name: deploy_app_binding
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_tls_policy
@@ -84,7 +81,7 @@ tables:
   - name: deploy_listener_certificate_binding
     lifecycle_status: active
     owner: deploy-platform
-  - name: deploy_site_revision
+  - name: deploy_app_revision
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_web_node_target
@@ -93,7 +90,7 @@ tables:
   - name: deploy_runtime_assignment
     lifecycle_status: active
     owner: deploy-platform
-  - name: deploy_site_target_observation
+  - name: deploy_app_target_observation
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_acme_account
@@ -150,7 +147,10 @@ tables:
   - name: deploy_tenant_entitlement_projection
     lifecycle_status: active
     owner: deploy-platform
-  - name: deploy_site_usage_daily
+  - name: deploy_app_usage_daily
+    lifecycle_status: active
+    owner: deploy-platform
+  - name: deploy_tenant_usage_daily
     lifecycle_status: active
     owner: deploy-platform
   - name: deploy_app_database_profile

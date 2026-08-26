@@ -9,8 +9,8 @@ pub mod util;
 pub mod versioning;
 
 pub use app_domains::{
-    app_domain_label, default_app_domain_pattern, default_app_hostname,
-    parse_default_app_hostname, DefaultAppHostname, PLATFORM_APP_DOMAIN_SUFFIXES,
+    app_domain_label, default_app_domain_pattern, default_app_hostname, parse_default_app_hostname,
+    DefaultAppHostname, PLATFORM_APP_DOMAIN_SUFFIXES,
 };
 pub use app_kind_rules::{
     package_size_ceiling, required_identity_field, validate_app_kind_platform,

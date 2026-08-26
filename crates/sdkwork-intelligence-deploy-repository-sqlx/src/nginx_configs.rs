@@ -1,4 +1,4 @@
-use sdkwork_deploy_contract::{
+﻿use sdkwork_deploy_contract::{
     CreateNginxConfigRequest, DeployServiceError, DeployServiceResult, ListNginxConfigsQuery,
     NginxConfigPage, NginxConfigResponse, NginxReloadResponse, NginxStatusResponse,
     NginxValidateResponse, UpdateNginxConfigRequest,
@@ -11,7 +11,7 @@ use crate::nginx_security::{
 };
 use crate::support::{
     bool_from_row, json_from_row, new_uuid, next_id, now_rfc3339, pagination,
-    resolve_site_internal_id, resolve_site_uuid, sha256_hex, store_error,
+    resolve_app_internal_id, resolve_app_uuid, sha256_hex, store_error,
 };
 use crate::DeployRepository;
 
@@ -25,7 +25,7 @@ impl DeployRepository {
         let mut count_sql =
             String::from("SELECT COUNT(*) AS total FROM deploy_nginx_config WHERE 1=1");
         let mut list_sql = String::from(
-            "SELECT uuid, site_id, config_name, config_type, is_active, status
+            "SELECT uuid, app_id, config_name, config_type, is_active, status
              FROM deploy_nginx_config WHERE 1=1",
         );
         let mut binds: Vec<BindValue> = Vec::new();
@@ -37,15 +37,15 @@ impl DeployRepository {
             list_sql.push_str(&clause);
             binds.push(BindValue::I64(tenant_id));
         }
-        if let Some(site_uuid) = query.site_id.as_deref() {
+        if let Some(app_uuid) = query.app_id.as_deref() {
             if let Some(tenant_id) = tenant_id {
-                let site_internal_id =
-                    resolve_site_internal_id(&self.pool, tenant_id, site_uuid).await?;
+                let app_internal_id =
+                    resolve_app_internal_id(&self.pool, tenant_id, app_uuid).await?;
                 let index = binds.len() + 1;
-                let clause = format!(" AND site_id = ${index}");
+                let clause = format!(" AND app_id = ${index}");
                 count_sql.push_str(&clause);
                 list_sql.push_str(&clause);
-                binds.push(BindValue::I64(site_internal_id));
+                binds.push(BindValue::I64(app_internal_id));
             }
         }
         if let Some(config_type) = query.config_type {
@@ -108,8 +108,8 @@ impl DeployRepository {
         tenant_id: i64,
         request: &CreateNginxConfigRequest,
     ) -> DeployServiceResult<NginxConfigResponse> {
-        let site_internal_id =
-            resolve_site_internal_id(&self.pool, tenant_id, &request.site_id).await?;
+        let app_internal_id =
+            resolve_app_internal_id(&self.pool, tenant_id, &request.app_id).await?;
         let id = next_id(self.id_generator())?;
         let uuid = new_uuid();
         let now = now_rfc3339();
@@ -117,7 +117,7 @@ impl DeployRepository {
 
         sqlx::query(
             "INSERT INTO deploy_nginx_config (
-                id, uuid, tenant_id, site_id, config_type, config_name, config_content, config_hash,
+                id, uuid, tenant_id, app_id, config_type, config_name, config_content, config_hash,
                 is_active, status, metadata, created_at, updated_at, version
              ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, 0, 0, '{}', CAST($9 AS TIMESTAMPTZ), CAST($9 AS TIMESTAMPTZ), 0
@@ -126,7 +126,7 @@ impl DeployRepository {
         .bind(id)
         .bind(&uuid)
         .bind(tenant_id)
-        .bind(site_internal_id)
+        .bind(app_internal_id)
         .bind(request.config_type)
         .bind(&request.config_name)
         .bind(&request.config_content)
@@ -147,7 +147,7 @@ impl DeployRepository {
     ) -> DeployServiceResult<NginxConfigResponse> {
         let row = if let Some(tenant_id) = tenant_id {
             sqlx::query(
-                "SELECT uuid, tenant_id, site_id, config_name, config_type, is_active, status
+                "SELECT uuid, tenant_id, app_id, config_name, config_type, is_active, status
                  FROM deploy_nginx_config WHERE tenant_id = $1 AND uuid = $2",
             )
             .bind(tenant_id)
@@ -157,7 +157,7 @@ impl DeployRepository {
             .map_err(|error| store_error("retrieve deploy_nginx_config", error))?
         } else {
             sqlx::query(
-                "SELECT uuid, tenant_id, site_id, config_name, config_type, is_active, status
+                "SELECT uuid, tenant_id, app_id, config_name, config_type, is_active, status
                  FROM deploy_nginx_config WHERE uuid = $1",
             )
             .bind(config_id)
@@ -311,15 +311,15 @@ impl DeployRepository {
         let existing = self
             .retrieve_nginx_config_repo(tenant_id, config_id)
             .await?;
-        let site_internal_id =
-            resolve_site_internal_id(&self.pool, tenant_id.unwrap_or(0), &existing.site_id).await?;
+        let app_internal_id =
+            resolve_app_internal_id(&self.pool, tenant_id.unwrap_or(0), &existing.app_id).await?;
         let now = now_rfc3339();
 
         sqlx::query(
             "UPDATE deploy_nginx_config SET is_active = 0, updated_at = CAST($2 AS TIMESTAMPTZ), version = version + 1
-             WHERE site_id = $1 AND is_active = 1",
+             WHERE app_id = $1 AND is_active = 1",
         )
-        .bind(site_internal_id)
+        .bind(app_internal_id)
         .bind(&now)
         .execute(&self.pool)
         .await
@@ -364,11 +364,11 @@ impl DeployRepository {
     ) -> DeployServiceResult<(String, String, serde_json::Value, Option<String>)> {
         let row = if let Some(tenant_id) = tenant_id {
             sqlx::query(
-                "SELECT nc.config_content, s.uuid AS site_uuid, s.runtime_config,
+                "SELECT nc.config_content, s.uuid AS app_uuid, s.runtime_config,
                         (
                             SELECT d.hostname
                             FROM deploy_domain d
-                            WHERE d.site_id = s.id
+                            WHERE d.app_id = s.id
                               AND d.tenant_id = s.tenant_id
                               AND d.deleted_at IS NULL
                               AND d.is_primary = 1
@@ -376,7 +376,7 @@ impl DeployRepository {
                             LIMIT 1
                         ) AS primary_domain
                  FROM deploy_nginx_config nc
-                 INNER JOIN deploy_site s ON s.id = nc.site_id
+                 INNER JOIN deploy_app s ON s.id = nc.app_id
                  WHERE nc.tenant_id = $1 AND nc.uuid = $2 AND s.deleted_at IS NULL",
             )
             .bind(tenant_id)
@@ -386,11 +386,11 @@ impl DeployRepository {
             .map_err(|error| store_error("load nginx publish context", error))?
         } else {
             sqlx::query(
-                "SELECT nc.config_content, s.uuid AS site_uuid, s.runtime_config,
+                "SELECT nc.config_content, s.uuid AS app_uuid, s.runtime_config,
                         (
                             SELECT d.hostname
                             FROM deploy_domain d
-                            WHERE d.site_id = s.id
+                            WHERE d.app_id = s.id
                               AND d.tenant_id = s.tenant_id
                               AND d.deleted_at IS NULL
                               AND d.is_primary = 1
@@ -398,7 +398,7 @@ impl DeployRepository {
                             LIMIT 1
                         ) AS primary_domain
                  FROM deploy_nginx_config nc
-                 INNER JOIN deploy_site s ON s.id = nc.site_id
+                 INNER JOIN deploy_app s ON s.id = nc.app_id
                  WHERE nc.uuid = $1 AND s.deleted_at IS NULL",
             )
             .bind(config_id)
@@ -411,15 +411,15 @@ impl DeployRepository {
         let config_content: String = row
             .try_get("config_content")
             .map_err(|error| store_error("load nginx publish content", error))?;
-        let site_uuid: String = row
-            .try_get("site_uuid")
-            .map_err(|error| store_error("load nginx publish site uuid", error))?;
+        let app_uuid: String = row
+            .try_get("app_uuid")
+            .map_err(|error| store_error("load nginx publish app uuid", error))?;
         let runtime_config = json_from_row(&row, "runtime_config")
             .map_err(|error| store_error("load nginx publish runtime_config", error))?
             .unwrap_or_else(|| serde_json::json!({}));
         let primary_domain: Option<String> = row.try_get("primary_domain").ok();
 
-        Ok((config_content, site_uuid, runtime_config, primary_domain))
+        Ok((config_content, app_uuid, runtime_config, primary_domain))
     }
 
     pub(super) async fn reload_nginx_repo(&self) -> DeployServiceResult<NginxReloadResponse> {
@@ -488,14 +488,14 @@ async fn map_nginx_config_row(
     tenant_id: i64,
     row: &PgRow,
 ) -> Result<NginxConfigResponse, sqlx::Error> {
-    let site_internal_id: i64 = row.try_get("site_id")?;
-    let site_uuid = resolve_site_uuid(pool, tenant_id, site_internal_id)
+    let app_internal_id: i64 = row.try_get("app_id")?;
+    let app_uuid = resolve_app_uuid(pool, tenant_id, app_internal_id)
         .await
         .map_err(|error| sqlx::Error::Decode(error.to_string().into()))?;
 
     Ok(NginxConfigResponse {
         id: row.try_get("uuid")?,
-        site_id: site_uuid,
+        app_id: app_uuid,
         config_name: row.try_get("config_name")?,
         config_type: row.try_get("config_type")?,
         is_active: bool_from_row(row, "is_active")?,

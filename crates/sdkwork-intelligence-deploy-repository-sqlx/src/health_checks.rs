@@ -1,10 +1,10 @@
-use sdkwork_deploy_contract::{
+﻿use sdkwork_deploy_contract::{
     CreateHealthCheckRequest, DeployServiceError, DeployServiceResult, HealthCheckPage,
     HealthCheckResponse,
 };
 use sqlx::{postgres::PgRow, Row};
 
-use crate::support::{new_uuid, next_id, now_rfc3339, resolve_site_internal_id, store_error};
+use crate::support::{new_uuid, next_id, now_rfc3339, resolve_app_internal_id, store_error};
 use crate::DeployRepository;
 
 /// 单个站点的健康检查集合上限；列表内存与响应体积保持 O(上限)。
@@ -14,16 +14,16 @@ impl DeployRepository {
     pub(super) async fn list_health_checks_repo(
         &self,
         tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
     ) -> DeployServiceResult<HealthCheckPage> {
-        let site_internal_id = resolve_site_internal_id(&self.pool, tenant_id, site_id).await?;
+        let app_internal_id = resolve_app_internal_id(&self.pool, tenant_id, app_id).await?;
 
         let count_row = sqlx::query(
             "SELECT COUNT(*) AS total FROM deploy_health_check
-             WHERE tenant_id = $1 AND site_id = $2",
+             WHERE tenant_id = $1 AND app_id = $2",
         )
         .bind(tenant_id)
-        .bind(site_internal_id)
+        .bind(app_internal_id)
         .fetch_one(&self.pool)
         .await
         .map_err(|error| store_error("count deploy_health_check", error))?;
@@ -33,7 +33,7 @@ impl DeployRepository {
         if total > MAX_SITE_HEALTH_CHECKS {
             tracing::error!(
                 tenant_id,
-                site_id,
+                app_id,
                 total,
                 maximum = MAX_SITE_HEALTH_CHECKS,
                 "deploy health-check cardinality invariant violated"
@@ -46,12 +46,12 @@ impl DeployRepository {
         let rows = sqlx::query(
             "SELECT uuid, check_type, check_url, status
              FROM deploy_health_check
-             WHERE tenant_id = $1 AND site_id = $2
+             WHERE tenant_id = $1 AND app_id = $2
              ORDER BY created_at DESC, id DESC
              LIMIT 100",
         )
         .bind(tenant_id)
-        .bind(site_internal_id)
+        .bind(app_internal_id)
         .fetch_all(&self.pool)
         .await
         .map_err(|error| store_error("list deploy_health_check", error))?;
@@ -69,17 +69,17 @@ impl DeployRepository {
     pub(super) async fn create_health_check_repo(
         &self,
         tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
         request: &CreateHealthCheckRequest,
     ) -> DeployServiceResult<HealthCheckResponse> {
-        let site_internal_id = resolve_site_internal_id(&self.pool, tenant_id, site_id).await?;
+        let app_internal_id = resolve_app_internal_id(&self.pool, tenant_id, app_id).await?;
         let id = next_id(self.id_generator())?;
         let uuid = new_uuid();
         let now = now_rfc3339();
 
         sqlx::query(
             "INSERT INTO deploy_health_check (
-                id, uuid, tenant_id, site_id, check_type, check_url, status,
+                id, uuid, tenant_id, app_id, check_type, check_url, status,
                 created_at, updated_at, version
              ) VALUES (
                 $1, $2, $3, $4, $5, $6, 1, CAST($7 AS TIMESTAMPTZ), CAST($7 AS TIMESTAMPTZ), 0
@@ -88,7 +88,7 @@ impl DeployRepository {
         .bind(id)
         .bind(&uuid)
         .bind(tenant_id)
-        .bind(site_internal_id)
+        .bind(app_internal_id)
         .bind(request.check_type)
         .bind(&request.url)
         .bind(&now)

@@ -1,4 +1,4 @@
-//! Retention enforcement, usage daily reconciliation, and signing identity
+﻿//! Retention enforcement, usage daily reconciliation, and signing identity
 //! health (PRD §5.8, TECH §8): bounded housekeeping over packages, releases,
 //! and build logs, the rebuildable daily usage aggregate, and the signing
 //! expiry management surface.
@@ -137,8 +137,8 @@ impl DeployRepository {
     }
 
     /// Rebuilds the reconcilable daily usage aggregate from retained usage
-    /// facts (design contract: `deploy_site_usage_daily` is rebuildable).
-    /// Idempotent: the unique (tenant, site, date, dimension, unit) scope is
+    /// facts (design contract: `deploy_app_usage_daily` is rebuildable).
+    /// Idempotent: the unique (tenant, app, date, dimension, unit) scope is
     /// upserted, never duplicated. `window_start`/`window_end` bound the
     /// rebuild; `None` rebuilds the trailing 90 days.
     pub(super) async fn rebuild_usage_daily_repo(
@@ -168,20 +168,20 @@ impl DeployRepository {
             ));
         }
         let result = sqlx::query(
-            "INSERT INTO deploy_site_usage_daily
-                (id, uuid, tenant_id, organization_id, site_id, binding_id, usage_date,
+            "INSERT INTO deploy_app_usage_daily
+                (id, uuid, tenant_id, organization_id, app_id, binding_id, usage_date,
                  dimension, quantity, unit, source_revision, finalization_status,
                  created_at, updated_at)
              SELECT sdkwork_next_bigint(), gen_random_uuid(), u.tenant_id,
-                    MAX(u.organization_id), u.site_id, u.binding_id,
+                    MAX(u.organization_id), u.app_id, u.binding_id,
                     (u.period_start AT TIME ZONE 'UTC')::date, u.dimension,
                     SUM(u.quantity), u.unit, 'rebuild:' || to_char(MAX(u.ingested_at), 'YYYYMMDDHH24MISS'),
                     'PENDING', NOW(), NOW()
              FROM deploy_usage_event u
              WHERE u.period_start >= $1 AND u.period_start < $2
-             GROUP BY u.tenant_id, u.site_id, u.binding_id,
+             GROUP BY u.tenant_id, u.app_id, u.binding_id,
                       (u.period_start AT TIME ZONE 'UTC')::date, u.dimension, u.unit
-             ON CONFLICT (tenant_id, site_id, binding_id, usage_date, dimension, unit)
+             ON CONFLICT (tenant_id, app_id, COALESCE(binding_id, 0), usage_date, dimension, unit)
              DO UPDATE SET quantity = EXCLUDED.quantity, source_revision = EXCLUDED.source_revision,
                            updated_at = NOW()",
         )
@@ -189,7 +189,7 @@ impl DeployRepository {
         .bind(&window_end)
         .execute(&self.pool)
         .await
-        .map_err(|error| store_error("rebuild deploy_site_usage_daily", error))?;
+        .map_err(|error| store_error("rebuild deploy_app_usage_daily", error))?;
         let site_rows = result.rows_affected() as i64;
         // Tenant-level daily rollup (SaaS billing): one row per tenant,
         // dimension and day, including unmanaged traffic (tenant 0).

@@ -6,11 +6,11 @@ use sdkwork_deploy_contract::{
 use sqlx::{postgres::PgRow, AssertSqlSafe, PgPool, Row};
 
 use crate::support::{
-    datetime_from_row, new_uuid, next_id, now_rfc3339, pagination, resolve_site_uuid, store_error,
+    datetime_from_row, new_uuid, next_id, now_rfc3339, pagination, resolve_app_uuid, store_error,
 };
 use crate::DeployRepository;
 
-const ARTIFACT_SELECT: &str = "a.uuid, a.site_id, a.package_type, a.file_name, a.content_type,
+const ARTIFACT_SELECT: &str = "a.uuid, a.app_id, a.package_type, a.file_name, a.content_type,
     a.content_length, a.checksum_sha256, a.drive_node_id, a.status, a.created_at,
     u.uuid AS upload_session_uuid";
 
@@ -109,10 +109,10 @@ impl DeployRepository {
                 .await;
         }
 
-        let site_internal_id = match request.site_id.as_deref() {
-            Some(site_id) => Some(
-                crate::support::resolve_site_internal_id(&self.pool, tenant_id, site_id).await?,
-            ),
+        let app_internal_id = match request.app_id.as_deref() {
+            Some(app_id) => {
+                Some(crate::support::resolve_app_internal_id(&self.pool, tenant_id, app_id).await?)
+            }
             None => None,
         };
         let reference_id = next_id(self.id_generator())?;
@@ -120,7 +120,7 @@ impl DeployRepository {
         let now = now_rfc3339();
         sqlx::query(
             "INSERT INTO deploy_upload_session_ref
-             (id, uuid, tenant_id, site_id, drive_upload_session_id, drive_upload_item_id,
+             (id, uuid, tenant_id, app_id, drive_upload_session_id, drive_upload_item_id,
               drive_space_id, drive_node_id, package_type, file_name, content_type,
               content_length, checksum, status, idempotency_key, created_at, updated_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CAST($16 AS TIMESTAMPTZ), CAST($16 AS TIMESTAMPTZ))",
@@ -128,7 +128,7 @@ impl DeployRepository {
         .bind(reference_id)
         .bind(&reference_uuid)
         .bind(tenant_id)
-        .bind(site_internal_id)
+        .bind(app_internal_id)
         .bind(request.drive_upload_session_id.trim())
         .bind(request.drive_upload_item_id.as_deref())
         .bind(request.drive_space_id.trim())
@@ -186,7 +186,7 @@ impl DeployRepository {
         checksum_sha256: &str,
     ) -> DeployServiceResult<ArtifactResponse> {
         let session_row = sqlx::query(
-            "SELECT id, uuid, site_id, package_type, file_name, content_type, content_length,
+            "SELECT id, uuid, app_id, package_type, file_name, content_type, content_length,
                     status, drive_node_id, drive_space_id
              FROM deploy_upload_session_ref
              WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL",
@@ -234,7 +234,7 @@ impl DeployRepository {
             DeployServiceError::validation("completed upload session has no drive node")
         })?;
         let drive_space_id: Option<String> = session_row.try_get("drive_space_id").ok();
-        let site_internal_id: Option<i64> = session_row.try_get("site_id").ok();
+        let app_internal_id: Option<i64> = session_row.try_get("app_id").ok();
         let file_name: String = session_row.try_get("file_name").unwrap_or_default();
         let content_type: String = session_row.try_get("content_type").unwrap_or_default();
         let content_length: i64 = session_row.try_get("content_length").unwrap_or(0);
@@ -246,7 +246,7 @@ impl DeployRepository {
 
         sqlx::query(
             "INSERT INTO deploy_artifact (
-                id, uuid, tenant_id, site_id, upload_session_ref_id, package_type,
+                id, uuid, tenant_id, app_id, upload_session_ref_id, package_type,
                 file_name, content_type, content_length, checksum_sha256, drive_node_id,
                 drive_space_id, drive_path, status, metadata, created_at, updated_at, version
              ) VALUES (
@@ -256,7 +256,7 @@ impl DeployRepository {
         .bind(id)
         .bind(&uuid)
         .bind(tenant_id)
-        .bind(site_internal_id)
+        .bind(app_internal_id)
         .bind(session_internal_id)
         .bind(package_type)
         .bind(&file_name)
@@ -274,18 +274,6 @@ impl DeployRepository {
 
         self.retrieve_artifact_repo(tenant_id, &uuid).await
     }
-
-    pub(super) async fn load_artifact_for_release_repo(
-        &self,
-        tenant_id: i64,
-        artifact_id: &str,
-    ) -> DeployServiceResult<(i64, ArtifactResponse)> {
-        let internal_id =
-            crate::support::resolve_artifact_internal_id(&self.pool, tenant_id, artifact_id)
-                .await?;
-        let artifact = self.retrieve_artifact_repo(tenant_id, artifact_id).await?;
-        Ok((internal_id, artifact))
-    }
 }
 
 async fn map_artifact_row(
@@ -293,9 +281,9 @@ async fn map_artifact_row(
     tenant_id: i64,
     row: &PgRow,
 ) -> Result<ArtifactResponse, sqlx::Error> {
-    let site_id = match row.try_get::<Option<i64>, _>("site_id").ok().flatten() {
-        Some(site_internal_id) => Some(
-            resolve_site_uuid(pool, tenant_id, site_internal_id)
+    let app_id = match row.try_get::<Option<i64>, _>("app_id").ok().flatten() {
+        Some(app_internal_id) => Some(
+            resolve_app_uuid(pool, tenant_id, app_internal_id)
                 .await
                 .map_err(|error| sqlx::Error::Decode(error.to_string().into()))?,
         ),
@@ -304,7 +292,7 @@ async fn map_artifact_row(
 
     Ok(ArtifactResponse {
         id: row.try_get("uuid")?,
-        site_id,
+        app_id,
         package_type: row.try_get("package_type")?,
         file_name: row.try_get("file_name")?,
         content_type: row.try_get("content_type")?,

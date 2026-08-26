@@ -1,55 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct SiteResponse {
-    pub id: String,
-    pub name: String,
-    pub slug: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
-    #[serde(rename = "siteType")]
-    pub site_type: i32,
-    pub status: i32,
-    #[serde(rename = "runtimeConfig", skip_serializing_if = "Option::is_none")]
-    pub runtime_config: Option<Value>,
-    #[serde(rename = "createdAt")]
-    pub created_at: String,
-    #[serde(rename = "updatedAt")]
-    pub updated_at: String,
-    pub version: String,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct SitePage {
-    pub items: Vec<SiteResponse>,
-    pub total: i64,
-    pub page: i32,
-    pub page_size: i32,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CreateSiteRequest {
-    pub name: String,
-    #[serde(default)]
-    pub slug: Option<String>,
-    #[serde(default)]
-    pub description: Option<String>,
-    #[serde(rename = "siteType")]
-    pub site_type: i32,
-    #[serde(rename = "runtimeConfig", default)]
-    pub runtime_config: Option<Value>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct UpdateSiteRequest {
-    #[serde(default)]
-    pub name: Option<String>,
-    #[serde(default)]
-    pub description: Option<String>,
-    #[serde(rename = "runtimeConfig", default)]
-    pub runtime_config: Option<Value>,
-}
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct DomainZoneResponse {
@@ -175,51 +124,6 @@ pub struct DomainVerifyResponse {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct DeploymentResponse {
-    pub id: String,
-    #[serde(rename = "siteId")]
-    pub site_id: String,
-    pub status: i32,
-    #[serde(rename = "deployType")]
-    pub deploy_type: i32,
-    #[serde(rename = "releaseId", skip_serializing_if = "Option::is_none")]
-    pub release_id: Option<String>,
-    #[serde(rename = "createdAt")]
-    pub created_at: String,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct DeploymentPage {
-    pub items: Vec<DeploymentResponse>,
-    pub total: i64,
-    pub page: i32,
-    pub page_size: i32,
-    /// Opaque keyset continuation for cursor mode;  in offset mode or on
-    /// the last page (PAGINATION_SPEC §6).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub next_cursor: Option<String>,
-    /// Exact page continuation flag for cursor mode;  in offset mode.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub has_more: Option<bool>,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct CreateDeploymentRequest {
-    #[serde(rename = "deployType", default = "default_deploy_type")]
-    pub deploy_type: i32,
-    #[serde(default)]
-    pub environment: Option<String>,
-    #[serde(rename = "releaseId", default)]
-    pub release_id: Option<String>,
-    #[serde(rename = "idempotencyKey", default)]
-    pub idempotency_key: Option<String>,
-}
-
-fn default_deploy_type() -> i32 {
-    1
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct EnvVariableResponse {
     pub id: String,
     pub key: String,
@@ -319,12 +223,10 @@ pub fn is_deploy_package_artifact_type(package_type: i32) -> bool {
 pub const ARTIFACT_STATUS_ACTIVE: i32 = 1;
 pub const ARTIFACT_STATUS_RETAINED: i32 = 2;
 
-pub const RELEASE_STATUS_ACTIVE: i32 = 1;
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CreateArtifactRequest {
-    #[serde(rename = "siteId", default)]
-    pub site_id: Option<String>,
+    #[serde(rename = "appId", default)]
+    pub app_id: Option<String>,
     #[serde(rename = "packageType")]
     pub package_type: i32,
     #[serde(rename = "fileName")]
@@ -350,8 +252,8 @@ pub struct CreateArtifactRequest {
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct ArtifactResponse {
     pub id: String,
-    #[serde(rename = "siteId", skip_serializing_if = "Option::is_none")]
-    pub site_id: Option<String>,
+    #[serde(rename = "appId", skip_serializing_if = "Option::is_none")]
+    pub app_id: Option<String>,
     #[serde(rename = "packageType")]
     pub package_type: i32,
     #[serde(rename = "fileName")]
@@ -375,38 +277,6 @@ pub struct ArtifactResponse {
 pub struct ArtifactPage {
     pub items: Vec<ArtifactResponse>,
     pub total: i64,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct ReleaseResponse {
-    pub id: String,
-    #[serde(rename = "siteId")]
-    pub site_id: String,
-    #[serde(rename = "artifactId")]
-    pub artifact_id: String,
-    #[serde(rename = "versionTag", skip_serializing_if = "Option::is_none")]
-    pub version_tag: Option<String>,
-    pub status: i32,
-    #[serde(rename = "createdAt")]
-    pub created_at: String,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct ReleasePage {
-    pub items: Vec<ReleaseResponse>,
-    pub total: i64,
-    pub page: i32,
-    pub page_size: i32,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CreateReleaseRequest {
-    #[serde(rename = "artifactId")]
-    pub artifact_id: String,
-    #[serde(rename = "versionTag", default)]
-    pub version_tag: Option<String>,
-    #[serde(rename = "idempotencyKey")]
-    pub idempotency_key: String,
 }
 
 pub const UPLOAD_SESSION_STATUS_COMPLETED: i32 = 1;
@@ -443,8 +313,8 @@ pub struct CreateHealthCheckRequest {
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct NginxConfigResponse {
     pub id: String,
-    #[serde(rename = "siteId")]
-    pub site_id: String,
+    #[serde(rename = "appId")]
+    pub app_id: String,
     #[serde(rename = "configName")]
     pub config_name: String,
     #[serde(rename = "configType")]
@@ -470,7 +340,7 @@ pub struct ListNginxConfigsQuery {
     pub page_size: i32,
     // PAGINATION_SPEC §3：query 参数使用 lower_snake_case 规范词汇。
     #[serde(default)]
-    pub site_id: Option<String>,
+    pub app_id: Option<String>,
     #[serde(default)]
     pub config_type: Option<i32>,
     #[serde(default)]
@@ -479,8 +349,8 @@ pub struct ListNginxConfigsQuery {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CreateNginxConfigRequest {
-    #[serde(rename = "siteId")]
-    pub site_id: String,
+    #[serde(rename = "appId")]
+    pub app_id: String,
     #[serde(rename = "configName")]
     pub config_name: String,
     #[serde(rename = "configType")]
@@ -672,8 +542,8 @@ pub struct AuditLogPage {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CreateDeployUploadSessionRequest {
-    #[serde(rename = "siteId", default)]
-    pub site_id: Option<String>,
+    #[serde(rename = "appId", default)]
+    pub app_id: Option<String>,
     #[serde(rename = "packageType")]
     pub package_type: i32,
     #[serde(rename = "fileName")]
@@ -691,8 +561,8 @@ pub struct CreateDeployUploadSessionRequest {
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct DeployUploadSessionResponse {
     pub id: String,
-    #[serde(rename = "siteId", skip_serializing_if = "Option::is_none")]
-    pub site_id: Option<String>,
+    #[serde(rename = "appId", skip_serializing_if = "Option::is_none")]
+    pub app_id: Option<String>,
     #[serde(rename = "packageType")]
     pub package_type: i32,
     #[serde(rename = "fileName")]

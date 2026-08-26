@@ -8,17 +8,16 @@ use sdkwork_deploy_contract::{
     BuildQueueItemResponse, BuildQueuePage, BuildResponse, BuildTemplatePage,
     BuildTemplateResponse, CertificateChallengePage, CertificateChallengeResponse,
     CertificateOrderPage, CertificateOrderResponse, CertificatePage, CertificateResponse,
-    ChannelPage, ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse, DeploymentPage,
-    DeploymentResponse, DomainHostnamePage, DomainHostnameResponse, DomainVerifyResponse,
-    DomainZonePage, DomainZoneResponse, EntitlementProjectionPage, EntitlementProjectionResponse,
-    EnvVariablePage, EnvVariableResponse, EnvironmentPromotionPage, EnvironmentPromotionResponse,
-    HealthCheckPage, HealthCheckResponse, NginxConfigPage, NginxConfigResponse,
-    NginxReloadResponse, NginxStatusResponse, NginxValidateResponse, NodeClusterPage,
-    NodeClusterResponse, PackagePage, PackageResponse, PlatformTargetPage, PlatformTargetResponse,
-    ReleasePage, ReleaseResponse, RunnerHealthPage, RunnerHealthResponse, ServerPage,
+    ChannelPage, ChannelResponse, ChannelRolloutPage, ChannelRolloutResponse, DomainHostnamePage,
+    DomainHostnameResponse, DomainVerifyResponse, DomainZonePage, DomainZoneResponse,
+    EntitlementProjectionPage, EntitlementProjectionResponse, EnvVariablePage, EnvVariableResponse,
+    EnvironmentPromotionPage, EnvironmentPromotionResponse, HealthCheckPage, HealthCheckResponse,
+    NginxConfigPage, NginxConfigResponse, NginxReloadResponse, NginxStatusResponse,
+    NginxValidateResponse, NodeClusterPage, NodeClusterResponse, PackagePage, PackageResponse,
+    PlatformTargetPage, PlatformTargetResponse, RunnerHealthPage, RunnerHealthResponse, ServerPage,
     ServerResponse, SigningIdentityHealthPage, SigningIdentityHealthResponse, SigningIdentityPage,
-    SigningIdentityResponse, SitePage, SiteResponse, SourceEventPage, SourceEventResponse,
-    SourceRepositoryPage, SourceRepositoryResponse, UsageEventPage, UsageEventResponse,
+    SigningIdentityResponse, SourceEventPage, SourceEventResponse, SourceRepositoryPage,
+    SourceRepositoryResponse, UsageEventPage, UsageEventResponse,
 };
 use sdkwork_deploy_core::normalize_pagination;
 use sdkwork_utils_rust::{PageInfo, PageMode, SdkWorkPageData, SdkWorkResourceData};
@@ -141,19 +140,11 @@ pub fn source_event_page(page: SourceEventPage) -> SdkWorkPageData<SourceEventRe
     offset_page(page.items, page.page, page.page_size, page.total)
 }
 
-pub fn site_page(page: SitePage) -> SdkWorkPageData<SiteResponse> {
-    offset_page(page.items, page.page, page.page_size, page.total)
-}
-
 pub fn domain_zone_page(page: DomainZonePage) -> SdkWorkPageData<DomainZoneResponse> {
     offset_page(page.items, page.page, page.page_size, page.total)
 }
 
 pub fn domain_hostname_page(page: DomainHostnamePage) -> SdkWorkPageData<DomainHostnameResponse> {
-    offset_page(page.items, page.page, page.page_size, page.total)
-}
-
-pub fn deployment_page(page: DeploymentPage) -> SdkWorkPageData<DeploymentResponse> {
     offset_page(page.items, page.page, page.page_size, page.total)
 }
 
@@ -176,10 +167,6 @@ pub fn artifact_page(
     page_size: i32,
 ) -> SdkWorkPageData<ArtifactResponse> {
     offset_page(page.items, page_num, page_size, page.total)
-}
-
-pub fn release_page(page: ReleasePage) -> SdkWorkPageData<ReleaseResponse> {
-    offset_page(page.items, page.page, page.page_size, page.total)
 }
 
 pub fn health_check_page(data: HealthCheckPage) -> SdkWorkPageData<HealthCheckResponse> {

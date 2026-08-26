@@ -1,4 +1,4 @@
-//! Deterministic producer for Web Server website runtime descriptors and runtime sets.
+﻿//! Deterministic producer for Web Server website runtime descriptors and runtime sets.
 
 use std::collections::HashSet;
 
@@ -44,13 +44,13 @@ impl RuntimeEnvironment {
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SiteRuntimeCompilationInput {
+pub struct AppRuntimeCompilationInput {
     pub revision_uuid: String,
-    pub site_uuid: String,
+    pub app_uuid: String,
     pub tenant_scope_hash: String,
     pub environment: RuntimeEnvironment,
     pub generated_at: String,
-    pub site_default_variant_uuid: String,
+    pub app_default_variant_uuid: String,
     pub bindings: Vec<RuntimeBinding>,
     pub variants: Vec<RuntimeVariant>,
     pub variant_rules: Vec<RuntimeVariantRule>,
@@ -339,11 +339,11 @@ pub enum RuntimeCompilationError {
     Serialization(String),
 }
 
-pub fn compile_site_revision(
-    mut input: SiteRuntimeCompilationInput,
+pub fn compile_app_revision(
+    mut input: AppRuntimeCompilationInput,
 ) -> Result<CompiledSiteRevision, RuntimeCompilationError> {
-    normalize_site_input(&mut input);
-    validate_site_input(&input)?;
+    normalize_app_input(&mut input);
+    validate_app_input(&input)?;
 
     let mut descriptor = serde_json::to_value(&input)
         .map_err(|error| RuntimeCompilationError::Serialization(error.to_string()))?;
@@ -401,12 +401,12 @@ pub fn compile_runtime_set(
         ));
     }
     normalize_runtime_descriptors(&mut input.descriptors);
-    let mut site_ids = HashSet::new();
+    let mut app_ids = HashSet::new();
     for descriptor in &input.descriptors {
-        let site_uuid = descriptor_site_uuid(descriptor);
-        if site_uuid.is_empty() || !site_ids.insert(site_uuid) {
+        let app_uuid = descriptor_app_uuid(descriptor);
+        if app_uuid.is_empty() || !app_ids.insert(app_uuid) {
             return Err(RuntimeCompilationError::Validation(
-                "descriptors require unique non-empty siteUuid values".into(),
+                "descriptors require unique non-empty appUuid values".into(),
             ));
         }
         let environment = descriptor
@@ -464,7 +464,7 @@ fn runtime_set_size_bytes_with_limit(
 
 /// Orders runtime descriptors exactly as they are represented in a compiled runtime set.
 pub fn normalize_runtime_descriptors(descriptors: &mut [Value]) {
-    descriptors.sort_by(|left, right| descriptor_site_uuid(left).cmp(descriptor_site_uuid(right)));
+    descriptors.sort_by(|left, right| descriptor_app_uuid(left).cmp(descriptor_app_uuid(right)));
 }
 
 pub fn canonical_sha256_excluding_field(
@@ -483,7 +483,7 @@ pub fn canonical_sha256_excluding_field(
     Ok(sdkwork_utils_rust::sha256_hash(canonical.as_bytes()))
 }
 
-fn normalize_site_input(input: &mut SiteRuntimeCompilationInput) {
+fn normalize_app_input(input: &mut AppRuntimeCompilationInput) {
     input
         .bindings
         .sort_by(|left, right| left.binding_uuid.cmp(&right.binding_uuid));
@@ -502,9 +502,9 @@ fn normalize_site_input(input: &mut SiteRuntimeCompilationInput) {
     input.security_policy.denied_path_prefixes.sort();
 }
 
-fn validate_site_input(input: &SiteRuntimeCompilationInput) -> Result<(), RuntimeCompilationError> {
+fn validate_app_input(input: &AppRuntimeCompilationInput) -> Result<(), RuntimeCompilationError> {
     validate_opaque_id(&input.revision_uuid, "revisionUuid")?;
-    validate_opaque_id(&input.site_uuid, "siteUuid")?;
+    validate_opaque_id(&input.app_uuid, "appUuid")?;
     validate_sha256(&input.tenant_scope_hash, "tenantScopeHash")?;
     validate_canonical_timestamp(&input.generated_at, "generatedAt")?;
     validate_collection_size(input.bindings.len(), 1, MAXIMUM_BINDINGS, "bindings")?;
@@ -545,9 +545,9 @@ fn validate_site_input(input: &SiteRuntimeCompilationInput) -> Result<(), Runtim
         input.mounts.iter().map(|item| item.mount_uuid.as_str()),
         "mounts",
     )?;
-    if !variants.contains(input.site_default_variant_uuid.as_str()) {
+    if !variants.contains(input.app_default_variant_uuid.as_str()) {
         return Err(RuntimeCompilationError::Validation(
-            "siteDefaultVariantUuid does not reference a Variant".into(),
+            "appDefaultVariantUuid does not reference a Variant".into(),
         ));
     }
     for binding in &input.bindings {
@@ -768,9 +768,9 @@ fn validate_path(value: &str, field: &str) -> Result<(), RuntimeCompilationError
     Ok(())
 }
 
-fn descriptor_site_uuid(value: &Value) -> &str {
+fn descriptor_app_uuid(value: &Value) -> &str {
     value
-        .get("siteUuid")
+        .get("appUuid")
         .and_then(Value::as_str)
         .unwrap_or_default()
 }
@@ -839,17 +839,17 @@ mod tests {
 
     use super::*;
 
-    fn site_input(site_uuid: &str) -> SiteRuntimeCompilationInput {
-        SiteRuntimeCompilationInput {
-            revision_uuid: format!("revision-{site_uuid}"),
-            site_uuid: site_uuid.to_owned(),
+    fn app_input(app_uuid: &str) -> AppRuntimeCompilationInput {
+        AppRuntimeCompilationInput {
+            revision_uuid: format!("revision-{app_uuid}"),
+            app_uuid: app_uuid.to_owned(),
             tenant_scope_hash: "1".repeat(64),
             environment: RuntimeEnvironment::Production,
             generated_at: "2026-07-22T00:00:00Z".to_owned(),
-            site_default_variant_uuid: "variant-default".to_owned(),
+            app_default_variant_uuid: "variant-default".to_owned(),
             bindings: vec![RuntimeBinding {
-                binding_uuid: format!("binding-{site_uuid}"),
-                hostname: format!("{site_uuid}.example.com"),
+                binding_uuid: format!("binding-{app_uuid}"),
+                hostname: format!("{app_uuid}.example.com"),
                 path_prefix: "/".to_owned(),
                 action: RuntimeBindingAction::serve(None, None),
             }],
@@ -894,16 +894,16 @@ mod tests {
 
     #[test]
     fn descriptor_is_accepted_by_the_web_server_consumer() {
-        let compiled = compile_site_revision(site_input("site-a")).expect("compile descriptor");
+        let compiled = compile_app_revision(app_input("site-a")).expect("compile descriptor");
         let bytes = serde_json::to_vec(&compiled.descriptor).expect("encode descriptor");
         let web = compile_website_runtime_descriptor(&bytes).expect("Web consumer accepts output");
-        assert_eq!(web.descriptor().site_uuid, "site-a");
+        assert_eq!(web.descriptor().app_uuid, "site-a");
         assert_eq!(web.descriptor_sha256(), compiled.descriptor_sha256);
     }
 
     #[test]
     fn tv_client_class_is_serialized_for_the_web_server_consumer() {
-        let mut input = site_input("site-tv");
+        let mut input = app_input("site-tv");
         input.variant_rules.push(RuntimeVariantRule {
             rule_uuid: "rule-tv-client".to_owned(),
             variant_uuid: "variant-default".to_owned(),
@@ -913,7 +913,7 @@ mod tests {
             },
         });
 
-        let compiled = compile_site_revision(input).expect("compile TV descriptor");
+        let compiled = compile_app_revision(input).expect("compile TV descriptor");
         assert_eq!(
             compiled.descriptor["variantRules"][0]["match"]["clientClass"],
             "TV"
@@ -924,8 +924,8 @@ mod tests {
 
     #[test]
     fn runtime_set_is_stably_sorted_and_accepted_by_the_web_server_consumer() {
-        let site_b = compile_site_revision(site_input("site-b")).unwrap();
-        let site_a = compile_site_revision(site_input("site-a")).unwrap();
+        let site_b = compile_app_revision(app_input("site-b")).unwrap();
+        let site_a = compile_app_revision(app_input("site-a")).unwrap();
         let compiled = compile_runtime_set(RuntimeSetCompilationInput {
             snapshot_uuid: "snapshot-1".to_owned(),
             node_uuid: "node-1".to_owned(),
@@ -936,7 +936,7 @@ mod tests {
             descriptors: vec![site_b.descriptor, site_a.descriptor],
         })
         .expect("compile runtime set");
-        assert_eq!(compiled.snapshot["descriptors"][0]["siteUuid"], "site-a");
+        assert_eq!(compiled.snapshot["descriptors"][0]["appUuid"], "site-a");
         let bytes = serde_json::to_vec(&compiled.snapshot).expect("encode runtime set");
         let web =
             compile_website_runtime_set_snapshot(&bytes).expect("Web consumer accepts output");
@@ -960,7 +960,7 @@ mod tests {
 
     #[test]
     fn content_changes_do_not_enter_the_compiler_contract() {
-        let value = serde_json::to_value(site_input("site-a")).unwrap();
+        let value = serde_json::to_value(app_input("site-a")).unwrap();
         let encoded = serde_json::to_string(&value).unwrap();
         for forbidden in [
             "objectKey",

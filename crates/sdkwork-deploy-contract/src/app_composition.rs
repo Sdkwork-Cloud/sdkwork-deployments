@@ -1,15 +1,15 @@
-use serde::{Deserialize, Serialize};
+﻿use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum SiteEnvironment {
+pub enum AppPublishEnvironment {
     Development,
     Test,
     Staging,
     Production,
 }
 
-impl SiteEnvironment {
+impl AppPublishEnvironment {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Development => "development",
@@ -22,28 +22,28 @@ impl SiteEnvironment {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UpdateSiteCompositionRequest {
-    pub environment: SiteEnvironment,
+pub struct UpdateAppCompositionRequest {
+    pub environment: AppPublishEnvironment,
     pub default_variant_key: String,
-    pub resources: Vec<SiteResourceDefinition>,
-    pub variants: Vec<SiteVariantDefinition>,
+    pub resources: Vec<AppResourceDefinition>,
+    pub variants: Vec<AppVariantDefinition>,
     #[serde(default)]
-    pub variant_rules: Vec<SiteVariantRuleDefinition>,
-    pub mounts: Vec<SiteMountDefinition>,
-    pub bindings: Vec<SiteBindingDefinition>,
+    pub variant_rules: Vec<AppVariantRuleDefinition>,
+    pub mounts: Vec<AppMountDefinition>,
+    pub bindings: Vec<AppBindingDefinition>,
     #[serde(default)]
-    pub delivery_policy: SiteDeliveryPolicy,
+    pub delivery_policy: AppDeliveryPolicy,
     #[serde(default)]
-    pub security_policy: SiteSecurityPolicy,
+    pub security_policy: AppSecurityPolicy,
     #[serde(default)]
-    pub limits: SiteRuntimeLimits,
+    pub limits: AppRuntimeLimits,
     #[serde(default)]
-    pub observability_policy: SiteObservabilityPolicy,
+    pub observability_policy: AppObservabilityPolicy,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SiteResourceDefinition {
+pub struct AppResourceDefinition {
     pub key: String,
     pub source: ContentProviderResourceSource,
 }
@@ -110,18 +110,18 @@ impl DriveWebsiteContentMode {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SiteVariantDefinition {
+pub struct AppVariantDefinition {
     pub key: String,
     pub label: String,
     #[serde(default)]
-    pub client_class: SiteClientClass,
+    pub client_class: AppClientClass,
     #[serde(default)]
     pub priority: u16,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum SiteClientClass {
+pub enum AppClientClass {
     Desktop,
     Mobile,
     Tablet,
@@ -133,37 +133,37 @@ pub enum SiteClientClass {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SiteVariantRuleDefinition {
+pub struct AppVariantRuleDefinition {
     pub key: String,
     pub target_variant_key: String,
     pub priority: u16,
     #[serde(rename = "match")]
-    pub matcher: SiteVariantRuleMatcher,
+    pub matcher: AppVariantRuleMatcher,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum SiteVariantRuleMatcher {
+pub enum AppVariantRuleMatcher {
     PathPrefix {
         #[serde(rename = "pathPrefix")]
         path_prefix: String,
     },
     ClientClass {
         #[serde(rename = "clientClass")]
-        client_class: SiteClientClass,
+        client_class: AppClientClass,
     },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SiteMountDefinition {
+pub struct AppMountDefinition {
     pub key: String,
     pub variant_key: String,
     pub resource_key: String,
     pub path_prefix: String,
     pub resource_subpath: String,
-    pub mode: SiteMountMode,
-    pub handler: SiteMountHandler,
+    pub mode: AppMountMode,
+    pub handler: AppMountHandler,
     #[serde(default)]
     pub index_files: Vec<String>,
     #[serde(default)]
@@ -174,14 +174,14 @@ pub struct SiteMountDefinition {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum SiteMountMode {
+pub enum AppMountMode {
     Root,
     Alias,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum SiteMountHandler {
+pub enum AppMountHandler {
     Static,
     Spa,
     Wiki,
@@ -189,17 +189,17 @@ pub enum SiteMountHandler {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SiteBindingDefinition {
+pub struct AppBindingDefinition {
     pub key: String,
     pub domain_id: String,
     #[serde(default = "root_path")]
     pub path_prefix: String,
-    pub action: SiteBindingAction,
+    pub action: AppBindingAction,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum SiteBindingAction {
+pub enum AppBindingAction {
     Serve {
         #[serde(default, rename = "defaultVariantKey")]
         default_variant_key: Option<String>,
@@ -209,7 +209,7 @@ pub enum SiteBindingAction {
     Redirect {
         #[serde(rename = "statusCode")]
         status_code: u16,
-        scheme: SiteRedirectScheme,
+        scheme: AppRedirectScheme,
         hostname: String,
         #[serde(rename = "pathPrefix")]
         path_prefix: String,
@@ -222,14 +222,14 @@ pub enum SiteBindingAction {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum SiteRedirectScheme {
+pub enum AppRedirectScheme {
     Http,
     Https,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SiteDeliveryPolicy {
+pub struct AppDeliveryPolicy {
     pub provider_timeout_ms: u64,
     pub metadata_cache_ttl_seconds: u32,
     pub negative_cache_ttl_seconds: u32,
@@ -237,7 +237,7 @@ pub struct SiteDeliveryPolicy {
     pub maximum_object_bytes: u64,
 }
 
-impl Default for SiteDeliveryPolicy {
+impl Default for AppDeliveryPolicy {
     fn default() -> Self {
         Self {
             provider_timeout_ms: 5_000,
@@ -251,13 +251,13 @@ impl Default for SiteDeliveryPolicy {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SiteSecurityPolicy {
+pub struct AppSecurityPolicy {
     pub force_https: bool,
     pub deny_dot_files: bool,
     pub denied_path_prefixes: Vec<String>,
 }
 
-impl Default for SiteSecurityPolicy {
+impl Default for AppSecurityPolicy {
     fn default() -> Self {
         Self {
             force_https: true,
@@ -269,7 +269,7 @@ impl Default for SiteSecurityPolicy {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SiteRuntimeLimits {
+pub struct AppRuntimeLimits {
     pub maximum_bindings: usize,
     pub maximum_variants: usize,
     pub maximum_variant_rules: usize,
@@ -280,7 +280,7 @@ pub struct SiteRuntimeLimits {
     pub maximum_path_segments: usize,
 }
 
-impl Default for SiteRuntimeLimits {
+impl Default for AppRuntimeLimits {
     fn default() -> Self {
         Self {
             maximum_bindings: 64,
@@ -297,13 +297,13 @@ impl Default for SiteRuntimeLimits {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SiteObservabilityPolicy {
+pub struct AppObservabilityPolicy {
     pub access_log_enabled: bool,
     pub usage_metering_enabled: bool,
     pub trace_sample_rate_per_mille: u16,
 }
 
-impl Default for SiteObservabilityPolicy {
+impl Default for AppObservabilityPolicy {
     fn default() -> Self {
         Self {
             access_log_enabled: true,
@@ -315,16 +315,16 @@ impl Default for SiteObservabilityPolicy {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SiteCompositionResponse {
-    pub site_id: String,
-    pub site_version: String,
-    pub revision: SiteRevisionResponse,
-    pub runtime_assignments: Vec<SiteRuntimeAssignmentResponse>,
+pub struct AppCompositionResponse {
+    pub app_id: String,
+    pub app_version: String,
+    pub revision: AppRevisionResponse,
+    pub runtime_assignments: Vec<AppRuntimeAssignmentResponse>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SiteRevisionResponse {
+pub struct AppRevisionResponse {
     pub id: String,
     pub number: String,
     pub descriptor_sha256: String,
@@ -333,7 +333,7 @@ pub struct SiteRevisionResponse {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SiteRuntimeAssignmentResponse {
+pub struct AppRuntimeAssignmentResponse {
     pub target_id: String,
     pub assignment_id: String,
     pub generation: String,

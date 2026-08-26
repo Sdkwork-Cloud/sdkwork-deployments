@@ -13,7 +13,7 @@
   "tablePrefix": "deploy_",
   "contractVersion": "1.0.0",
   "baselineStrategy": "baseline-plus-migrations",
-  "baselineAnchorTable": "deploy_site",
+  "baselineAnchorTable": "deploy_app",
   "modules": [],
   "lifecycle": {
     "autoMigrate": false,

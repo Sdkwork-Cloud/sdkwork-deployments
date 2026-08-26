@@ -1,4 +1,4 @@
-//! Traffic usage metering contract shared by the Web Server data plane and
+﻿//! Traffic usage metering contract shared by the Web Server data plane and
 //! the Deploy control plane.
 //!
 //! The Web Server records per-domain / per-server-IP traffic facts
@@ -16,7 +16,7 @@ pub const USAGE_DIMENSION_TRAFFIC_EGRESS_BYTES: &str = "traffic.egress_bytes";
 
 /// Traffic attribution recorded with every usage event: the serving domain,
 /// the server's local IP/port, and — when the request was served through the
-/// Deploy control plane — the app identity and site/binding references.
+/// Deploy control plane — the app identity and app/binding references.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UsageEventAttribution {
@@ -36,10 +36,10 @@ pub struct UsageEventAttribution {
     /// App slug when attributable.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub app_slug: Option<String>,
-    /// Site public uuid (`deploy_site.uuid`) when attributable.
+    /// Site public uuid (`deploy_app.uuid`) when attributable.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub site_uuid: Option<String>,
-    /// Binding public uuid (`deploy_site_binding.uuid`) when attributable.
+    pub app_uuid: Option<String>,
+    /// Binding public uuid (`deploy_app_binding.uuid`) when attributable.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub binding_uuid: Option<String>,
     /// Response status class (`2xx`, `3xx`, `4xx`, `5xx`) when known.
@@ -58,13 +58,17 @@ pub struct UsageEventIngestItem {
     pub tenant_id: i64,
     #[serde(rename = "organizationId", default)]
     pub organization_id: i64,
-    /// Site public uuid when attributable; resolved to `site_id` by the
+    /// Site public uuid when attributable; resolved to `app_id` by the
     /// control plane.
-    #[serde(rename = "siteUuid", default, skip_serializing_if = "Option::is_none")]
-    pub site_uuid: Option<String>,
+    #[serde(rename = "appUuid", default, skip_serializing_if = "Option::is_none")]
+    pub app_uuid: Option<String>,
     /// Binding public uuid when attributable; resolved to `binding_id` and
     /// used for tenant attribution by the control plane.
-    #[serde(rename = "bindingUuid", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "bindingUuid",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub binding_uuid: Option<String>,
     /// Aggregation window start (RFC 3339).
     #[serde(rename = "periodStart")]
@@ -75,7 +79,7 @@ pub struct UsageEventIngestItem {
     /// Aggregated quantity over the window.
     pub quantity: i64,
     pub unit: String,
-    /// Idempotency key (`traffic:<window>:<tenant>:<site>:<binding>:<host>:<ip>:<dim>`).
+    /// Idempotency key (`traffic:<window>:<tenant>:<app>:<binding>:<host>:<ip>:<dim>`).
     #[serde(rename = "deduplicationKey")]
     pub deduplication_key: String,
     /// Traffic attribution (domain, server IP, app, status class).

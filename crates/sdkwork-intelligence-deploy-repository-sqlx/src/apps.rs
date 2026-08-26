@@ -11,13 +11,13 @@ use sdkwork_deploy_contract::{
 use sqlx::{postgres::PgRow, AssertSqlSafe, Row};
 
 use crate::support::{
-    new_uuid, next_id, pagination, required_datetime, resolve_app_internal_id,
-    resolve_site_internal_id, store_error,
+    new_uuid, next_id, pagination, required_datetime, resolve_app_internal_id, store_error,
 };
 use crate::DeployRepository;
 
-const APP_SELECT: &str = "a.uuid, a.name, a.slug, a.app_kind, a.app_status, a.description,
-    a.site_id, s.uuid AS site_uuid, a.default_environment,
+const APP_SELECT: &str = "a.uuid, a.name, a.slug, a.app_kind, a.app_status, a.type,
+    a.description, a.runtime_config, a.current_revision_id, a.desired_revision_id,
+    a.default_environment,
     (SELECT COUNT(*) FROM deploy_app_platform_target t
       WHERE t.app_id = a.id AND t.deleted_at IS NULL) AS platform_target_count,
     (SELECT r.semantic_version FROM deploy_release r
@@ -28,15 +28,17 @@ const APP_SELECT: &str = "a.uuid, a.name, a.slug, a.app_kind, a.app_status, a.de
 fn map_app_row(row: &PgRow) -> Result<AppResponse, DeployServiceError> {
     let created_at = required_datetime(row, "created_at")?;
     let updated_at = required_datetime(row, "updated_at")?;
-    let site_id: Option<String> = row.try_get("site_uuid").ok();
     Ok(AppResponse {
         id: row.try_get("uuid").unwrap_or_default(),
         name: row.try_get("name").unwrap_or_default(),
         slug: row.try_get("slug").unwrap_or_default(),
         app_kind: row.try_get("app_kind").unwrap_or_default(),
         app_status: row.try_get("app_status").unwrap_or_default(),
+        app_type: row.try_get("type").unwrap_or(1),
         description: row.try_get("description").ok(),
-        site_id: site_id.filter(|value| !value.is_empty()),
+        runtime_config: row.try_get("runtime_config").ok(),
+        current_revision_id: row.try_get("current_revision_id").ok(),
+        desired_revision_id: row.try_get("desired_revision_id").ok(),
         default_environment: row.try_get("default_environment").unwrap_or_default(),
         platform_target_count: row.try_get("platform_target_count").unwrap_or(0),
         latest_release_tag: row.try_get("latest_release_tag").ok(),
@@ -61,10 +63,6 @@ impl DeployRepository {
             .clone()
             .unwrap_or_else(|| sdkwork_utils_rust::slugify(&request.name));
         let app_kind = request.app_kind.as_str();
-        let site_internal_id = match request.site_id.as_deref() {
-            Some(site_id) => Some(resolve_site_internal_id(&self.pool, tenant_id, site_id).await?),
-            None => None,
-        };
         let default_environment = request
             .default_environment
             .as_deref()
@@ -74,7 +72,7 @@ impl DeployRepository {
         let result = sqlx::query(
             "INSERT INTO deploy_app
                 (id, uuid, tenant_id, organization_id, name, slug, app_kind, description,
-                 app_status, site_id, default_environment, created_by, updated_by,
+                 app_status, type, default_environment, created_by, updated_by,
                  created_at, updated_at, version)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW(), 1)
              ON CONFLICT (tenant_id, slug) WHERE deleted_at IS NULL DO NOTHING
@@ -89,7 +87,7 @@ impl DeployRepository {
         .bind(app_kind)
         .bind(request.description.as_deref())
         .bind(AppStatus::Draft.as_str())
-        .bind(site_internal_id)
+        .bind(request.app_type)
         .bind(&default_environment)
         .bind(actor_id)
         .bind(actor_id)
@@ -128,7 +126,6 @@ impl DeployRepository {
         let query = format!(
             "SELECT {APP_SELECT}
              FROM deploy_app a
-             LEFT JOIN deploy_site s ON s.id = a.site_id
              WHERE a.tenant_id = $1 AND a.deleted_at IS NULL
              ORDER BY a.created_at DESC, a.id DESC LIMIT $2 OFFSET $3"
         );
@@ -160,7 +157,6 @@ impl DeployRepository {
         let query = format!(
             "SELECT {APP_SELECT}
              FROM deploy_app a
-             LEFT JOIN deploy_site s ON s.id = a.site_id
              WHERE a.tenant_id = $1 AND a.uuid = $2 AND a.deleted_at IS NULL"
         );
         let row = sqlx::query(AssertSqlSafe(&*query))
@@ -210,6 +206,47 @@ impl DeployRepository {
         .await
         .map_err(|error| store_error("update deploy_app", error))?;
 
+        if updated.is_none() {
+            return Err(DeployServiceError::not_found("app not found"));
+        }
+        self.retrieve_app_repo(tenant_id, app_id).await
+    }
+
+    pub(super) async fn set_app_status_repo(
+        &self,
+        tenant_id: i64,
+        app_id: &str,
+        status: i32,
+    ) -> DeployServiceResult<AppResponse> {
+        let app_status = match status {
+            1 => "ACTIVE",
+            2 => "PAUSED",
+            3 => "ARCHIVED",
+            _ => {
+                return Err(DeployServiceError::validation(
+                    "unsupported app status; use 1=ACTIVE, 2=PAUSED, 3=ARCHIVED",
+                ))
+            }
+        };
+        let now_expr = if status == 1 {
+            ", activated_at = NOW()"
+        } else if status == 2 {
+            ", paused_at = NOW()"
+        } else {
+            ", archived_at = NOW()"
+        };
+        let sql = format!(
+            "UPDATE deploy_app SET app_status = $3, updated_at = NOW(), version = version + 1{now_expr}
+             WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL
+             RETURNING uuid"
+        );
+        let updated = sqlx::query(AssertSqlSafe(&*sql))
+            .bind(tenant_id)
+            .bind(app_id)
+            .bind(app_status)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(|error| store_error("set deploy_app status", error))?;
         if updated.is_none() {
             return Err(DeployServiceError::not_found("app not found"));
         }

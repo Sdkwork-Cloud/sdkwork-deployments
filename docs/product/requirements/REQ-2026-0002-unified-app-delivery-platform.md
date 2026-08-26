@@ -1,4 +1,4 @@
-# REQ-2026-0002 Unified App Delivery Platform
+﻿# REQ-2026-0002 Unified App Delivery Platform
 
 ```yaml
 id: REQ-2026-0002
@@ -44,7 +44,7 @@ RELEASE_SPEC.md, MIGRATION_SPEC.md
 
 ## Current Deficiencies
 
-1. **Web-only top-level model.** `deploy_site.site_kind` covers only `STATIC`, `SPA`, `WIKI`, and
+1. **Web-only top-level model.** `deploy_app.site_kind` covers only `STATIC`, `SPA`, `WIKI`, and
    `HYBRID`. There is no tenant `App` aggregate and no platform-target abstraction, so one business
    application cannot express "same source, multiple platforms" (for example Flutter producing iOS
    and Android, or an H5 web plus a WeChat mini-program sharing a codebase).
@@ -84,7 +84,7 @@ RELEASE_SPEC.md, MIGRATION_SPEC.md
    (`FLUTTER`, `NATIVE`, `UNI_APP`, or web/API stacks), the platform identity (bundle id, package
    name, app id, bundle name), and its allowed delivery channels. One source repository may feed
    multiple platform targets.
-3. An App whose delivery is a web Site shall link its `deploy_site` configuration; existing Sites
+3. An App whose delivery is a web Site shall link its `deploy_app` configuration; existing Sites
    keep working without an explicit App and get an implicit App of kind `STATIC_WEB`/`SPA_WEB`.
 4. `deploy_source_repository` shall bind a Git repository (URL, provider, default branch, clone
    policy) to an App. Repository credentials are stored only as opaque secret references; Deploy
@@ -153,5 +153,5 @@ RELEASE_SPEC.md, MIGRATION_SPEC.md
   platform has review), completion, and rollback linkage; audit rows exist for every transition.
 - The full trace source commit -> build -> package -> release -> channel assignment -> deployment
   resolves in one bounded query without exposing secrets.
-- The legacy `deploy_deployment`, `deploy_artifact`, and `deploy_site` rows remain readable and
+- The legacy `deploy_deployment`, `deploy_artifact`, and `deploy_app` rows remain readable and
   compatible; no destructive migration is introduced.

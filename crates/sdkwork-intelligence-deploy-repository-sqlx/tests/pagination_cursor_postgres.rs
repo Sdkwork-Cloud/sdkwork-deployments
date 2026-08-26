@@ -7,8 +7,7 @@ mod common;
 
 use sdkwork_database_id::SnowflakeIdGenerator;
 use sdkwork_deploy_contract::{
-    AuditLogQuery, CreateDeploymentRequest, CreateEnvVariableRequest, CreateSiteRequest,
-    DeployServiceErrorKind,
+    AppKind, AuditLogQuery, CreateAppRequest, CreateEnvVariableRequest, DeployServiceErrorKind,
 };
 use sdkwork_intelligence_deploy_repository_sqlx::DeployRepository;
 use sdkwork_intelligence_deploy_service::repository::InsertAuditLogCommand;
@@ -23,22 +22,25 @@ fn repository(pool: PgPool) -> DeployRepository {
     )
 }
 
-async fn create_site(repo: &DeployRepository, tenant_id: i64, name: &str) -> String {
+async fn create_app(repo: &DeployRepository, tenant_id: i64, name: &str) -> String {
     let response = repo
-        .create_site(
+        .create_app(
             tenant_id,
             Some(0),
             Some(1),
-            &CreateSiteRequest {
+            &CreateAppRequest {
                 name: name.to_string(),
                 slug: None,
-                description: None,
-                site_type: 1,
+                app_kind: AppKind::StaticWeb,
+                app_type: Some(2),
                 runtime_config: None,
+                description: None,
+                default_environment: None,
+                idempotency_key: None,
             },
         )
         .await
-        .expect("create site");
+        .expect("create app");
     response.id
 }
 
@@ -48,12 +50,12 @@ async fn create_site(repo: &DeployRepository, tenant_id: i64, name: &str) -> Str
 async fn secret_env_variable_is_encrypted_at_rest_and_masked_in_responses() {
     let pool = common::postgres_pool().await;
     let repo = repository(pool.clone());
-    let site_id = create_site(&repo, 7, "secret-site").await;
+    let app_id = create_app(&repo, 7, "secret-app").await;
 
     let created = repo
         .create_env_variable(
             7,
-            &site_id,
+            &app_id,
             &CreateEnvVariableRequest {
                 environment: "production".to_string(),
                 key: "API_TOKEN".to_string(),
@@ -80,7 +82,7 @@ async fn secret_env_variable_is_encrypted_at_rest_and_masked_in_responses() {
 
     // 列表返回掩码。
     let page = repo
-        .list_env_variables(7, &site_id, Some("production"))
+        .list_env_variables(7, &app_id, Some("production"))
         .await
         .expect("list env variables");
     let listed = page
@@ -89,49 +91,6 @@ async fn secret_env_variable_is_encrypted_at_rest_and_masked_in_responses() {
         .find(|item| item.id == created.id)
         .expect("created variable listed");
     assert_eq!(listed.value, "***", "listed secret must be masked");
-}
-
-/// 部署记录 keyset 翻页必须无重复、无遗漏、无深 OFFSET（PAGINATION_SPEC §6）。
-#[tokio::test]
-#[ignore = "requires SDKWORK_DATABASE_TEST_POSTGRES_URL"]
-async fn deployments_keyset_cursor_pages_without_duplicates_or_gaps() {
-    let pool = common::postgres_pool().await;
-    let repo = repository(pool.clone());
-    let site_id = create_site(&repo, 7, "cursor-site").await;
-
-    for index in 0..7 {
-        repo.create_deployment(
-            7,
-            &site_id,
-            None,
-            &CreateDeploymentRequest {
-                deploy_type: 1,
-                environment: Some("production".to_string()),
-                release_id: None,
-                idempotency_key: Some(format!("cursor-{index}")),
-            },
-        )
-        .await
-        .expect("create deployment");
-    }
-
-    let mut collected = Vec::new();
-    let mut cursor: Option<String> = None;
-    loop {
-        let page = repo
-            .list_deployments(7, &site_id, 1, 3, None, cursor.as_deref())
-            .await
-            .expect("list deployments page");
-        collected.extend(page.items.iter().map(|item| item.id.clone()));
-        match (page.has_more, page.next_cursor) {
-            (Some(true), Some(next)) => cursor = Some(next),
-            _ => break,
-        }
-    }
-
-    assert_eq!(collected.len(), 7, "all deployments collected");
-    let unique: std::collections::HashSet<_> = collected.iter().collect();
-    assert_eq!(unique.len(), 7, "no duplicate rows across cursor pages");
 }
 
 /// 审计日志 keyset 翻页与无租户拒绝（fail-closed）。
@@ -147,7 +106,7 @@ async fn audit_logs_keyset_pages_and_requires_tenant() {
             organization_id: 0,
             operator_id: 1,
             action: format!("action-{index}"),
-            target_type: "site".to_string(),
+            target_type: "app".to_string(),
             target_id: None,
             target_uuid: None,
         })

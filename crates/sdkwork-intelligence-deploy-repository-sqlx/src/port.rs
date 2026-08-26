@@ -12,28 +12,24 @@ use sdkwork_deploy_contract::{
     CreateAcmeAccountRequest, CreateAppDatabaseMigrationRequest, CreateAppDatabaseProfileRequest,
     CreateAppDeploymentRequest, CreateAppEnvironmentRequest, CreateAppReleaseRequest,
     CreateAppRequest, CreateArtifactRequest, CreateBuildRequest, CreateBuildTemplateRequest,
-    CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDeploymentRequest,
-    CreateDomainHostnameRequest, CreateDomainZoneRequest, CreateEnvVariableRequest,
-    CreateHealthCheckRequest, CreateNginxConfigRequest, CreateNodeClusterRequest,
-    CreatePlatformTargetRequest, CreateReleaseRequest, CreateServerRequest,
-    CreateSigningIdentityRequest, CreateSiteRequest, CreateSourceRepositoryRequest,
-    DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
-    DeploymentStatus, DomainHostnamePage, DomainHostnameResponse, DomainZonePage,
-    DomainZoneResponse, EntitlementProjectionPage, EnvVariablePage, EnvVariableResponse,
-    EnvironmentPromotionPage, EnvironmentPromotionResponse, HealthCheckPage, HealthCheckResponse,
-    ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
-    NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
-    NodeClusterPage, NodeClusterResponse, PackagePage, PackageResponse, PlatformTargetPage,
-    PlatformTargetResponse, PromoteChannelRequest, PromoteEnvironmentRequest,
-    RegisterPackageRequest, ReleasePage, ReleaseResponse, ReleaseStatus,
-    RequestCertificateOrderRequest, RetentionRunResponse, RunnerHealthPage, ServerPage,
-    ServerResponse, SigningIdentityHealthPage, SigningIdentityPage, SigningIdentityResponse,
-    SitePage, SiteResponse, SourceEventPage, SourceEventResponse, SourceRepositoryPage,
+    CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDomainHostnameRequest,
+    CreateDomainZoneRequest, CreateEnvVariableRequest, CreateHealthCheckRequest,
+    CreateNginxConfigRequest, CreateNodeClusterRequest, CreatePlatformTargetRequest,
+    CreateServerRequest, CreateSigningIdentityRequest, CreateSourceRepositoryRequest,
+    DeployAppRequestContext, DeployUploadSessionResponse, DeploymentStatus, DomainHostnamePage,
+    DomainHostnameResponse, DomainZonePage, DomainZoneResponse, EntitlementProjectionPage,
+    EnvVariablePage, EnvVariableResponse, EnvironmentPromotionPage, EnvironmentPromotionResponse,
+    HealthCheckPage, HealthCheckResponse, ListDomainZonesQuery, ListNginxConfigsQuery,
+    NginxConfigPage, NginxConfigResponse, NginxReloadResponse, NginxStatusResponse,
+    NginxValidateResponse, NodeClusterPage, NodeClusterResponse, PackagePage, PackageResponse,
+    PlatformTargetPage, PlatformTargetResponse, PromoteChannelRequest, PromoteEnvironmentRequest,
+    RegisterPackageRequest, ReleaseStatus, RequestCertificateOrderRequest, RetentionRunResponse,
+    RunnerHealthPage, ServerPage, ServerResponse, SigningIdentityHealthPage, SigningIdentityPage,
+    SigningIdentityResponse, SourceEventPage, SourceEventResponse, SourceRepositoryPage,
     SourceRepositoryResponse, UpdateAppDatabaseProfileRequest, UpdateAppEnvironmentRequest,
     UpdateAppRequest, UpdateBuildStateRequest, UpdateDomainHostnameRequest,
     UpdateDomainZoneRequest, UpdateNginxConfigRequest, UpdateNodeClusterRequest,
-    UpdateServerRequest, UpdateSiteRequest, UsageEventPage, UsageEventResponse,
-    UsageReconciliationResponse,
+    UpdateServerRequest, UsageEventPage, UsageEventResponse, UsageReconciliationResponse,
 };
 use sdkwork_deploy_contract::{
     DeployServiceError, DeployServiceResult, ProvisionAppDomainsResult, ResolvedDeployServer,
@@ -188,103 +184,13 @@ impl DeployRepositoryPort for DeployRepository {
         .await
     }
 
-    async fn list_sites(
+    async fn set_app_status(
         &self,
         tenant_id: i64,
-        query: &ListSitesQuery,
-    ) -> DeployServiceResult<SitePage> {
-        self.list_sites_repo(tenant_id, query).await
-    }
-
-    async fn create_site(
-        &self,
-        tenant_id: i64,
-        organization_id: Option<i64>,
-        actor_id: Option<i64>,
-        request: &CreateSiteRequest,
-    ) -> DeployServiceResult<SiteResponse> {
-        self.create_site_repo(tenant_id, organization_id, actor_id, request)
-            .await
-    }
-
-    async fn retrieve_site(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-    ) -> DeployServiceResult<SiteResponse> {
-        self.retrieve_site_repo(tenant_id, site_id).await
-    }
-
-    async fn update_site(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        request: &UpdateSiteRequest,
-    ) -> DeployServiceResult<SiteResponse> {
-        self.update_site_repo(tenant_id, site_id, request).await
-    }
-
-    async fn delete_site(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        actor_id: Option<i64>,
-    ) -> DeployServiceResult<()> {
-        self.delete_site_repo(tenant_id, site_id, actor_id).await
-    }
-
-    async fn set_site_status(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
         status: i32,
-    ) -> DeployServiceResult<SiteResponse> {
-        self.set_site_status_repo(tenant_id, site_id, status).await
-    }
-
-    async fn list_deployments(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        page: i32,
-        page_size: i32,
-        status: Option<i32>,
-        cursor: Option<&str>,
-    ) -> DeployServiceResult<DeploymentPage> {
-        self.list_deployments_repo(tenant_id, site_id, page, page_size, status, cursor)
-            .await
-    }
-
-    async fn create_deployment(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        actor_id: Option<i64>,
-        request: &CreateDeploymentRequest,
-    ) -> DeployServiceResult<DeploymentResponse> {
-        self.create_deployment_repo(tenant_id, site_id, actor_id, request)
-            .await
-    }
-
-    async fn retrieve_deployment(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        deployment_id: &str,
-    ) -> DeployServiceResult<DeploymentResponse> {
-        self.retrieve_deployment_repo(tenant_id, site_id, deployment_id)
-            .await
-    }
-
-    async fn rollback_deployment(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        deployment_id: &str,
-        actor_id: Option<i64>,
-    ) -> DeployServiceResult<DeploymentResponse> {
-        self.rollback_deployment_repo(tenant_id, site_id, deployment_id, actor_id)
-            .await
+    ) -> DeployServiceResult<AppResponse> {
+        self.set_app_status_repo(tenant_id, app_id, status).await
     }
 
     async fn list_artifacts(
@@ -327,63 +233,23 @@ impl DeployRepositoryPort for DeployRepository {
             .await
     }
 
-    async fn list_releases(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        page: i32,
-        page_size: i32,
-    ) -> DeployServiceResult<ReleasePage> {
-        self.list_releases_repo(tenant_id, site_id, page, page_size)
-            .await
-    }
-
-    async fn retrieve_release(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        release_id: &str,
-    ) -> DeployServiceResult<ReleaseResponse> {
-        self.retrieve_release_repo(tenant_id, site_id, release_id)
-            .await
-    }
-
-    async fn create_release(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        request: &CreateReleaseRequest,
-    ) -> DeployServiceResult<ReleaseResponse> {
-        self.create_release_repo(tenant_id, site_id, request).await
-    }
-
-    async fn find_release_by_idempotency_key(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        idempotency_key: &str,
-    ) -> DeployServiceResult<Option<ReleaseResponse>> {
-        self.find_release_by_idempotency_key_repo(tenant_id, site_id, idempotency_key)
-            .await
-    }
-
     async fn list_env_variables(
         &self,
         tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
         environment: Option<&str>,
     ) -> DeployServiceResult<EnvVariablePage> {
-        self.list_env_variables_repo(tenant_id, site_id, environment)
+        self.list_env_variables_repo(tenant_id, app_id, environment)
             .await
     }
 
     async fn create_env_variable(
         &self,
         tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
         request: &CreateEnvVariableRequest,
     ) -> DeployServiceResult<EnvVariableResponse> {
-        self.create_env_variable_repo(tenant_id, site_id, request)
+        self.create_env_variable_repo(tenant_id, app_id, request)
             .await
     }
 
@@ -444,18 +310,18 @@ impl DeployRepositoryPort for DeployRepository {
     async fn list_health_checks(
         &self,
         tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
     ) -> DeployServiceResult<HealthCheckPage> {
-        self.list_health_checks_repo(tenant_id, site_id).await
+        self.list_health_checks_repo(tenant_id, app_id).await
     }
 
     async fn create_health_check(
         &self,
         tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
         request: &CreateHealthCheckRequest,
     ) -> DeployServiceResult<HealthCheckResponse> {
-        self.create_health_check_repo(tenant_id, site_id, request)
+        self.create_health_check_repo(tenant_id, app_id, request)
             .await
     }
 
@@ -1482,7 +1348,7 @@ impl DeployRepositoryPort for DeployRepository {
         tenant_id: i64,
         organization_id: i64,
         actor_id: Option<i64>,
-        site_id: &str,
+        app_id: &str,
         app_slug: &str,
         environment: &str,
     ) -> DeployServiceResult<ProvisionAppDomainsResult> {
@@ -1490,7 +1356,7 @@ impl DeployRepositoryPort for DeployRepository {
             tenant_id,
             organization_id,
             actor_id,
-            site_id,
+            app_id,
             app_slug,
             environment,
         )
@@ -1502,7 +1368,7 @@ impl DeployRepositoryPort for DeployRepository {
         hostname: &str,
         environment: &str,
     ) -> DeployServiceResult<Option<ResolvedDeployServer>> {
-        self.resolve_active_site_by_hostname_repo(hostname, environment)
+        self.resolve_active_app_by_hostname_repo(hostname, environment)
             .await
     }
 }

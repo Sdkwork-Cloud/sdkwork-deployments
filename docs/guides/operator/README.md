@@ -1,4 +1,4 @@
-# Operator Guide
+﻿# Operator Guide
 
 ## Deployment Manifest
 
@@ -32,15 +32,15 @@ files fail closed and provider transport errors are redacted.
 
 ## Composition And Rollout
 
-`sites.composition.update` commits desired state only. A successful response proves the normalized
+`apps.composition.update` commits desired state only. A successful response proves the normalized
 composition, immutable SiteRevision, desired pointer, assignments, idempotency result, and audit
 record committed together. It does not prove Web Nodes activated the revision.
 
 | Signal | Meaning |
 | --- | --- |
-| `deploy_site.desired_revision_id` | Latest committed configuration desired by the control plane |
+| `deploy_app.desired_revision_id` | Latest committed configuration desired by the control plane |
 | `deploy_runtime_assignment.publish_status` | Pending, claimed, or published assignment delivery state |
-| `deploy_site.current_revision_id` | Revision confirmed active after Web observation/quorum |
+| `deploy_app.current_revision_id` | Revision confirmed active after Web observation/quorum |
 
 Observation ingestion and strict all-frozen-target quorum are enabled: `current_revision_id`
 advances only after every frozen target reports an authenticated matching `ACTIVE` observation.

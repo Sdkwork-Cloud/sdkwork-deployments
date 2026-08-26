@@ -1,4 +1,4 @@
-# MIG-2026-0001 Cloud Site Control-Plane Convergence
+﻿# MIG-2026-0001 Cloud Site Control-Plane Convergence
 
 Status: active prelaunch convergence
 Requirement: REQ-2026-0001
@@ -21,9 +21,9 @@ Frozen package/Git artifacts continue to use `deploy_release`; live Drive/Wiki c
 
 ## 2. Implemented Prelaunch Baseline
 
-- `deploy_site_resource`, `deploy_site_variant`, `deploy_site_variant_rule`,
-  `deploy_site_mount`, and `deploy_site_binding` own normalized Site composition.
-- `deploy_site_revision` owns immutable, hash-addressed Web runtime descriptors.
+- `deploy_app_resource`, `deploy_app_variant`, `deploy_app_variant_rule`,
+  `deploy_app_mount`, and `deploy_app_binding` own normalized Site composition.
+- `deploy_app_revision` owns immutable, hash-addressed Web runtime descriptors.
 - `deploy_web_node_target` owns Deploy's tenant/environment target inventory.
 - `deploy_runtime_assignment` is the durable desired-state/outbox record; it does not replace Web
   Server's delivery projection or Node observation store.

@@ -40,7 +40,7 @@ pub struct RuntimeAssignmentState {
     pub tenant_id: i64,
     pub node_uuid: String,
     pub environment: RuntimeEnvironment,
-    pub trigger_site_revision_id: Option<i64>,
+    pub trigger_app_revision_id: Option<i64>,
     pub generation: u64,
     pub snapshot_uuid: String,
     pub snapshot_sha256: String,

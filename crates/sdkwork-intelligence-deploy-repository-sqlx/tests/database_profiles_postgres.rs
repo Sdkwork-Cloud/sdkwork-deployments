@@ -1,4 +1,4 @@
-//! Application database structure contract integration tests: profile
+﻿//! Application database structure contract integration tests: profile
 //! lifecycle (create/retrieve/update), migration definition binding with
 //! checksum validation, and tenant scoping on the forward-migrated schema.
 //!
@@ -68,8 +68,9 @@ async fn create_app(repository: &DeployRepository, tenant_id: i64, slug: &str) -
                 name: format!("db-profile-app-{slug}"),
                 slug: Some(slug.to_owned()),
                 app_kind: sdkwork_deploy_contract::AppKind::ApiService,
+                app_type: Some(2),
+                runtime_config: None,
                 description: None,
-                site_id: None,
                 default_environment: None,
                 idempotency_key: None,
             },

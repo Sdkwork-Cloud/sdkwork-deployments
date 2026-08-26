@@ -1,18 +1,18 @@
-use std::{
+﻿use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
 
 use async_trait::async_trait;
 use sdkwork_deploy_runtime_compiler::{
-    compile_runtime_set, compile_site_revision, RuntimeBinding, RuntimeBindingAction,
-    RuntimeClientClass, RuntimeDeliveryPolicy, RuntimeEnvironment, RuntimeHandler, RuntimeLimits,
-    RuntimeMount, RuntimeMountMode, RuntimeMountTranslation, RuntimeObservabilityPolicy,
-    RuntimeProviderReference, RuntimeProviderType, RuntimeResource, RuntimeResourceCapabilities,
-    RuntimeSecurityPolicy, RuntimeSetCompilationInput, RuntimeVariant, RuntimeVariantRule,
-    RuntimeVariantRuleMatcher, SiteRuntimeCompilationInput,
+    compile_app_revision, compile_runtime_set, AppRuntimeCompilationInput, RuntimeBinding,
+    RuntimeBindingAction, RuntimeClientClass, RuntimeDeliveryPolicy, RuntimeEnvironment,
+    RuntimeHandler, RuntimeLimits, RuntimeMount, RuntimeMountMode, RuntimeMountTranslation,
+    RuntimeObservabilityPolicy, RuntimeProviderReference, RuntimeProviderType, RuntimeResource,
+    RuntimeResourceCapabilities, RuntimeSecurityPolicy, RuntimeSetCompilationInput, RuntimeVariant,
+    RuntimeVariantRule, RuntimeVariantRuleMatcher,
 };
-use sdkwork_knowledgebase_internal_sdk_generated_rust::{
+use sdkwork_knowledgebase_internal_sdk::{
     models::{
         ResolveWikiRouteRequest, WikiPublicPageListData, WikiPublicPageMetadata, WikiPublication,
         WikiRouteResolution,
@@ -214,7 +214,7 @@ impl KnowledgebaseWikiSdkClient for FakeKnowledgebaseSdk {
 
 #[tokio::test]
 async fn deploy_compiler_output_delivers_live_device_specific_wiki_content() {
-    let site = compile_site_revision(site_input()).expect("Deploy compiles the Site revision");
+    let app = compile_app_revision(app_input()).expect("Deploy compiles the app revision");
     let runtime_set = compile_runtime_set(RuntimeSetCompilationInput {
         snapshot_uuid: "snapshot-contract-0001".to_owned(),
         node_uuid: NODE_UUID.to_owned(),
@@ -222,7 +222,7 @@ async fn deploy_compiler_output_delivers_live_device_specific_wiki_content() {
         generation: 41,
         generated_at: "2026-07-23T00:00:00Z".to_owned(),
         maximum_sites: 8,
-        descriptors: vec![site.descriptor],
+        descriptors: vec![app.descriptor],
     })
     .expect("Deploy compiles the runtime set");
     let runtime_bytes = serde_json::to_vec(&runtime_set.snapshot).expect("serialize runtime set");
@@ -347,14 +347,14 @@ fn knowledgebase_route_changed_event() -> Vec<u8> {
     .expect("serialize Knowledgebase route change event")
 }
 
-fn site_input() -> SiteRuntimeCompilationInput {
-    SiteRuntimeCompilationInput {
+fn app_input() -> AppRuntimeCompilationInput {
+    AppRuntimeCompilationInput {
         revision_uuid: "revision-contract-0001".to_owned(),
-        site_uuid: "site-contract-0001".to_owned(),
+        app_uuid: "site-contract-0001".to_owned(),
         tenant_scope_hash: TENANT_SCOPE_HASH.to_owned(),
         environment: RuntimeEnvironment::Production,
         generated_at: "2026-07-23T00:00:00Z".to_owned(),
-        site_default_variant_uuid: "variant-desktop".to_owned(),
+        app_default_variant_uuid: "variant-desktop".to_owned(),
         bindings: vec![RuntimeBinding {
             binding_uuid: "binding-docs".to_owned(),
             hostname: "docs.example.com".to_owned(),

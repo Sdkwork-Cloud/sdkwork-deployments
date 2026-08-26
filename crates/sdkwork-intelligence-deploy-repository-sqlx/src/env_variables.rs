@@ -1,11 +1,11 @@
-use sdkwork_deploy_contract::{
+﻿use sdkwork_deploy_contract::{
     CreateEnvVariableRequest, DeployServiceError, DeployServiceResult, EnvVariablePage,
     EnvVariableResponse,
 };
 use sqlx::{postgres::PgRow, Row};
 
 use crate::support::{
-    bool_from_row, new_uuid, next_id, now_rfc3339, resolve_site_internal_id, store_error,
+    bool_from_row, new_uuid, next_id, now_rfc3339, resolve_app_internal_id, store_error,
 };
 use crate::DeployRepository;
 
@@ -18,18 +18,18 @@ impl DeployRepository {
     pub(super) async fn list_env_variables_repo(
         &self,
         tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
         environment: Option<&str>,
     ) -> DeployServiceResult<EnvVariablePage> {
-        let site_internal_id = resolve_site_internal_id(&self.pool, tenant_id, site_id).await?;
+        let app_internal_id = resolve_app_internal_id(&self.pool, tenant_id, app_id).await?;
 
         let (count_row, rows) = if let Some(environment) = environment {
             let count_row = sqlx::query(
                 "SELECT COUNT(*) AS total FROM deploy_env_variable
-                 WHERE tenant_id = $1 AND site_id = $2 AND environment = $3 AND status = 1",
+                 WHERE tenant_id = $1 AND app_id = $2 AND environment = $3 AND status = 1",
             )
             .bind(tenant_id)
-            .bind(site_internal_id)
+            .bind(app_internal_id)
             .bind(environment)
             .fetch_one(&self.pool)
             .await
@@ -38,12 +38,12 @@ impl DeployRepository {
             let rows = sqlx::query(
                 "SELECT uuid, key, value_encrypted, environment, is_secret
                  FROM deploy_env_variable
-                 WHERE tenant_id = $1 AND site_id = $2 AND environment = $3 AND status = 1
+                 WHERE tenant_id = $1 AND app_id = $2 AND environment = $3 AND status = 1
                  ORDER BY key ASC
                  LIMIT 100",
             )
             .bind(tenant_id)
-            .bind(site_internal_id)
+            .bind(app_internal_id)
             .bind(environment)
             .fetch_all(&self.pool)
             .await
@@ -53,10 +53,10 @@ impl DeployRepository {
         } else {
             let count_row = sqlx::query(
                 "SELECT COUNT(*) AS total FROM deploy_env_variable
-                 WHERE tenant_id = $1 AND site_id = $2 AND status = 1",
+                 WHERE tenant_id = $1 AND app_id = $2 AND status = 1",
             )
             .bind(tenant_id)
-            .bind(site_internal_id)
+            .bind(app_internal_id)
             .fetch_one(&self.pool)
             .await
             .map_err(|error| store_error("count deploy_env_variable", error))?;
@@ -64,12 +64,12 @@ impl DeployRepository {
             let rows = sqlx::query(
                 "SELECT uuid, key, value_encrypted, environment, is_secret
                  FROM deploy_env_variable
-                 WHERE tenant_id = $1 AND site_id = $2 AND status = 1
+                 WHERE tenant_id = $1 AND app_id = $2 AND status = 1
                  ORDER BY environment ASC, key ASC
                  LIMIT 100",
             )
             .bind(tenant_id)
-            .bind(site_internal_id)
+            .bind(app_internal_id)
             .fetch_all(&self.pool)
             .await
             .map_err(|error| store_error("list deploy_env_variable", error))?;
@@ -83,7 +83,7 @@ impl DeployRepository {
         if total > MAX_SITE_ENV_VARIABLES {
             tracing::error!(
                 tenant_id,
-                site_id,
+                app_id,
                 total,
                 maximum = MAX_SITE_ENV_VARIABLES,
                 "deploy environment-variable cardinality invariant violated"
@@ -105,10 +105,10 @@ impl DeployRepository {
     pub(super) async fn create_env_variable_repo(
         &self,
         tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
         request: &CreateEnvVariableRequest,
     ) -> DeployServiceResult<EnvVariableResponse> {
-        let site_internal_id = resolve_site_internal_id(&self.pool, tenant_id, site_id).await?;
+        let app_internal_id = resolve_app_internal_id(&self.pool, tenant_id, app_id).await?;
         let id = next_id(self.id_generator())?;
         let uuid = new_uuid();
         let now = now_rfc3339();
@@ -128,24 +128,24 @@ impl DeployRepository {
                 store_error("begin create deploy_env_variable transaction", error)
             })?;
         let locked = sqlx::query(
-            "UPDATE deploy_site SET version = version
+            "UPDATE deploy_app SET version = version
              WHERE tenant_id = $1 AND id = $2 AND deleted_at IS NULL",
         )
         .bind(tenant_id)
-        .bind(site_internal_id)
+        .bind(app_internal_id)
         .execute(&mut *transaction)
         .await
-        .map_err(|error| store_error("lock deploy_env_variable site capacity", error))?;
+        .map_err(|error| store_error("lock deploy_env_variable app capacity", error))?;
         if locked.rows_affected() != 1 {
-            return Err(DeployServiceError::not_found("site not found"));
+            return Err(DeployServiceError::not_found("app not found"));
         }
 
         let count_row = sqlx::query(
             "SELECT COUNT(*) AS total FROM deploy_env_variable
-             WHERE tenant_id = $1 AND site_id = $2 AND status = 1",
+             WHERE tenant_id = $1 AND app_id = $2 AND status = 1",
         )
         .bind(tenant_id)
-        .bind(site_internal_id)
+        .bind(app_internal_id)
         .fetch_one(&mut *transaction)
         .await
         .map_err(|error| store_error("count deploy_env_variable capacity", error))?;
@@ -157,13 +157,13 @@ impl DeployRepository {
                 store_error("rollback full deploy_env_variable collection", error)
             })?;
             return Err(DeployServiceError::conflict(
-                "a site supports at most 100 active environment variables",
+                "an app supports at most 100 active environment variables",
             ));
         }
 
         sqlx::query(
             "INSERT INTO deploy_env_variable (
-                id, uuid, tenant_id, site_id, environment, key, value_encrypted, is_secret,
+                id, uuid, tenant_id, app_id, environment, key, value_encrypted, is_secret,
                 status, created_at, updated_at, version
              ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, 1, CAST($9 AS TIMESTAMPTZ), CAST($9 AS TIMESTAMPTZ), 0
@@ -172,7 +172,7 @@ impl DeployRepository {
         .bind(id)
         .bind(&uuid)
         .bind(tenant_id)
-        .bind(site_internal_id)
+        .bind(app_internal_id)
         .bind(&request.environment)
         .bind(&request.key)
         .bind(&stored_value)

@@ -98,7 +98,7 @@ fn response_from_prepare(
     let now = timestamp_now();
     DeployUploadSessionResponse {
         id: upload_item_id.to_string(),
-        site_id: request.site_id.clone(),
+        app_id: request.app_id.clone(),
         package_type: request.package_type,
         file_name: request.file_name.clone(),
         content_type: request.content_type.clone(),
@@ -140,7 +140,7 @@ impl DeployDrivePort for SdkDriveAppFacade {
         let request = &command.request;
         let upload_item_id = request.idempotency_key.clone();
         let resource_id = request
-            .site_id
+            .app_id
             .clone()
             .unwrap_or_else(|| format!("tenant-{}", command.tenant_id));
         let body = PrepareUploaderUploadRequest {
@@ -191,7 +191,7 @@ impl DeployDrivePort for SdkDriveAppFacade {
             .map_err(map_drive_error)?;
         let fallback = DeployUploadSessionResponse {
             id: drive_session_id.to_string(),
-            site_id: None,
+            app_id: None,
             package_type: 1,
             file_name: "package.bin".to_string(),
             content_type: "application/octet-stream".to_string(),
@@ -241,7 +241,7 @@ impl DeployDrivePort for SdkDriveAppFacade {
             .map_err(map_drive_error)?;
         let fallback = DeployUploadSessionResponse {
             id: drive_session_id.to_string(),
-            site_id: None,
+            app_id: None,
             package_type: 1,
             file_name: "package.bin".to_string(),
             content_type: body.content_type.clone(),
@@ -272,7 +272,7 @@ impl DeployDrivePort for SdkDriveAppFacade {
             .map_err(map_drive_error)?;
         let fallback = DeployUploadSessionResponse {
             id: drive_session_id.to_string(),
-            site_id: None,
+            app_id: None,
             package_type: 1,
             file_name: "package.bin".to_string(),
             content_type: "application/octet-stream".to_string(),

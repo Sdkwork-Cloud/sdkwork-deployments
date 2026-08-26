@@ -6,16 +6,13 @@ pub const DOMAIN_ZONE_HOSTNAMES: &str = "/app/v3/api/domain_zones/{zoneId}/hostn
 pub const DOMAIN_ZONE_HOSTNAME: &str = "/app/v3/api/domain_zones/{zoneId}/hostnames/{hostnameId}";
 pub const DOMAIN_ZONE_HOSTNAME_VERIFY: &str =
     "/app/v3/api/domain_zones/{zoneId}/hostnames/{hostnameId}/verify";
-pub const SITES: &str = "/app/v3/api/sites";
-pub const SITE: &str = "/app/v3/api/sites/{siteId}";
-pub const SITE_COMPOSITION: &str = "/app/v3/api/sites/{siteId}/composition";
-pub const SITE_ACTIVATE: &str = "/app/v3/api/sites/{siteId}/activate";
-pub const SITE_PAUSE: &str = "/app/v3/api/sites/{siteId}/pause";
-pub const SITE_DEPLOYMENTS: &str = "/app/v3/api/sites/{siteId}/deployments";
-pub const SITE_DEPLOYMENT: &str = "/app/v3/api/sites/{siteId}/deployments/{deploymentId}";
-pub const SITE_DEPLOYMENT_ROLLBACK: &str =
-    "/app/v3/api/sites/{siteId}/deployments/{deploymentId}/rollback";
-pub const SITE_ENV_VARIABLES: &str = "/app/v3/api/sites/{siteId}/env_variables";
+
+pub const APP_COMPOSITION: &str = "/app/v3/api/apps/{appId}/composition";
+pub const APP_ACTIVATE: &str = "/app/v3/api/apps/{appId}/activate";
+pub const APP_PAUSE: &str = "/app/v3/api/apps/{appId}/pause";
+pub const APP_ENV_VARIABLES: &str = "/app/v3/api/apps/{appId}/env_variables";
+
+pub const APP_HEALTH_CHECKS: &str = "/app/v3/api/apps/{appId}/health_checks";
 pub const CERTIFICATES: &str = "/app/v3/api/certificates";
 pub const CERTIFICATE: &str = "/app/v3/api/certificates/{certificateId}";
 pub const CERTIFICATE_RENEW: &str = "/app/v3/api/certificates/{certificateId}/renew";
@@ -25,9 +22,6 @@ pub const UPLOAD_SESSION_COMPLETE: &str = "/app/v3/api/upload_sessions/{uploadSe
 pub const UPLOAD_SESSION_CANCEL: &str = "/app/v3/api/upload_sessions/{uploadSessionId}/cancel";
 pub const ARTIFACTS: &str = "/app/v3/api/artifacts";
 pub const ARTIFACT: &str = "/app/v3/api/artifacts/{artifactId}";
-pub const SITE_RELEASES: &str = "/app/v3/api/sites/{siteId}/releases";
-pub const SITE_RELEASE: &str = "/app/v3/api/sites/{siteId}/releases/{releaseId}";
-pub const SITE_HEALTH_CHECKS: &str = "/app/v3/api/sites/{siteId}/health_checks";
 
 pub const APPS: &str = "/app/v3/api/apps";
 pub const APP: &str = "/app/v3/api/apps/{appId}";

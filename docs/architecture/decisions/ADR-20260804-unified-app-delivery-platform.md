@@ -1,4 +1,4 @@
-# ADR-20260804 Unified App Delivery Platform
+﻿# ADR-20260804 Unified App Delivery Platform
 
 Status: accepted
 Requirement: REQ-2026-0002
@@ -36,9 +36,11 @@ The existing model cannot express:
    app id, bundle name), build template reference, and allowed channels. A Flutter App has two
    platform targets (iOS, Android) sharing one source repository; an H5 App may also have a WeChat
    mini-program target when the source supports it.
-3. Web delivery remains owned by the Site model. A web-kind App links its `deploy_site`
-   configuration; existing Sites are not migrated destructively and receive an implicit App
-   (`STATIC_WEB` or `SPA_WEB`) so every deployable belongs to an App without a data migration.
+3. Web delivery is unified into the App model. `deploy_app` owns web publishing
+   configuration directly through `deploy_app_resource`, `deploy_app_variant`,
+   `deploy_app_variant_rule`, `deploy_app_mount`, `deploy_app_binding`, and
+   `deploy_app_revision`. The legacy `deploy_app` aggregate has been removed;
+   every deployable belongs to exactly one App.
 4. `deploy_source_repository` binds Git repositories to an App with secret-reference credentials.
    Deploy never stores tokens or private keys; the build runner receives credentials through
    rotatable secret files injected by the executor host.
@@ -60,11 +62,11 @@ The existing model cannot express:
    `deploy_release_channel` holds the current pointer per channel key; `deploy_channel_rollout`
    records immutable assignment/promotion history with strategy (immediate, percentage gray
    rollout, manual approval). Rollback is re-release of a prior immutable release.
-8. `deploy_deployment` is extended with deployment kinds for `ARTIFACT_RELEASE`, `SITE_CONFIG`,
+8. `deploy_deployment` is extended with deployment kinds for `ARTIFACT_RELEASE`, `APP_CONFIG`,
    `TLS_CONFIG`, `MINIPROGRAM_REVIEW`, `STORE_SUBMISSION`, `OTA_DISTRIBUTION`,
    `ENTERPRISE_DISTRIBUTION`, and `CONTAINER_ROLLOUT`, plus target, strategy, platform review
-   reference, percentage, and rollback linkage. Legacy numeric values remain readable; no
-   destructive migration is introduced.
+   reference, percentage, and rollback linkage. The legacy integer status model is replaced by
+   string enumerations (`deployment_status`, `deployment_kind`, `strategy`).
 9. `deploy_signing_identity` models signing identities (iOS signing, Android keystore,
    HarmonyOS certificate profile, mini-program upload key) as opaque secret references with
    bounded metadata only. Signing executes inside the build runner host; key material never
@@ -96,7 +98,7 @@ flowchart LR
 
 ## Alternatives
 
-1. **Extend `deploy_site` to cover every application type.** Rejected: "Site" is web delivery
+1. **Extend `deploy_app` to cover every application type.** Rejected: "Site" is web delivery
    vocabulary; mini-programs and mobile applications have no mounts, bindings, or variants, and a
    multi-platform product cannot be represented as one Site without distorting the delivery model.
 2. **Parallel disjoint models (Site for web, separate tables for mobile).** Rejected: two

@@ -23,7 +23,7 @@ impl MemoryDeployDrivePort {
     ) -> DeployUploadSessionResponse {
         DeployUploadSessionResponse {
             id: uuid_v4(),
-            site_id: request.site_id.clone(),
+            app_id: request.app_id.clone(),
             package_type: request.package_type,
             file_name: request.file_name.clone(),
             content_type: request.content_type.clone(),
@@ -62,7 +62,7 @@ impl DeployDrivePort for MemoryDeployDrivePort {
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         Ok(DeployUploadSessionResponse {
             id: uuid_v4(),
-            site_id: None,
+            app_id: None,
             package_type: 1,
             file_name: "package.zip".to_string(),
             content_type: "application/zip".to_string(),
@@ -86,7 +86,7 @@ impl DeployDrivePort for MemoryDeployDrivePort {
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         Ok(DeployUploadSessionResponse {
             id: uuid_v4(),
-            site_id: None,
+            app_id: None,
             package_type: 1,
             file_name: "package.zip".to_string(),
             content_type: "application/zip".to_string(),
@@ -109,7 +109,7 @@ impl DeployDrivePort for MemoryDeployDrivePort {
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         Ok(DeployUploadSessionResponse {
             id: uuid_v4(),
-            site_id: None,
+            app_id: None,
             package_type: 1,
             file_name: "package.zip".to_string(),
             content_type: "application/zip".to_string(),

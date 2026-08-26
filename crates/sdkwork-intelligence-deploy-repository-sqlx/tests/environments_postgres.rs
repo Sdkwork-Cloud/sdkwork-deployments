@@ -1,4 +1,4 @@
-//! Environment promotion chain and CI source event integration tests:
+﻿//! Environment promotion chain and CI source event integration tests:
 //! environment CRUD, chain-enforced promotion with immutable history, and
 //! webhook event ingestion deduplicated per commit with default-branch build
 //! triggering.
@@ -69,8 +69,9 @@ async fn create_app(repository: &DeployRepository, slug: &str) -> String {
                 name: format!("env-app-{slug}"),
                 slug: Some(slug.to_owned()),
                 app_kind: sdkwork_deploy_contract::AppKind::ApiService,
+                app_type: Some(2),
+                runtime_config: None,
                 description: None,
-                site_id: None,
                 default_environment: None,
                 idempotency_key: None,
             },

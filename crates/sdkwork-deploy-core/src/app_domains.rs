@@ -115,10 +115,7 @@ fn labels_are_sane(suffix: &str) -> bool {
 }
 
 fn label_is_sane(label: &str) -> bool {
-    !label.is_empty()
-        && label.len() <= 63
-        && !label.starts_with('-')
-        && !label.ends_with('-')
+    !label.is_empty() && label.len() <= 63 && !label.starts_with('-') && !label.ends_with('-')
 }
 
 #[cfg(test)]
@@ -164,7 +161,12 @@ mod tests {
     #[test]
     fn parse_round_trips_default_hostnames() {
         for (hostname, slug, environment, suffix) in [
-            ("myapp.app.sdkwork.com", "myapp", "production", "sdkwork.com"),
+            (
+                "myapp.app.sdkwork.com",
+                "myapp",
+                "production",
+                "sdkwork.com",
+            ),
             (
                 "myapp.app-dev.sdkwork.cn",
                 "myapp",

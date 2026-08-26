@@ -1,4 +1,4 @@
-//! Unified application delivery DTOs: apps, platform targets, source
+﻿//! Unified application delivery DTOs: apps, platform targets, source
 //! repositories, build templates, builds, packages, releases, channels,
 //! rollouts, deployments, and signing identities (REQ-2026-0002).
 
@@ -282,6 +282,13 @@ pub enum ReleaseStatus {
     Archived,
 }
 
+/// Release status transition request (`PATCH /apps/{appId}/releases/{releaseId}`).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UpdateAppReleaseStatusRequest {
+    #[serde(rename = "releaseStatus")]
+    pub release_status: ReleaseStatus,
+}
+
 impl ReleaseStatus {
     pub fn as_str(self) -> &'static str {
         match self {
@@ -371,7 +378,7 @@ impl RolloutStatus {
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DeploymentKind {
     ArtifactRelease,
-    SiteConfig,
+    AppPublishConfig,
     TlsConfig,
     MiniprogramReview,
     StoreSubmission,
@@ -384,7 +391,7 @@ impl DeploymentKind {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::ArtifactRelease => "ARTIFACT_RELEASE",
-            Self::SiteConfig => "SITE_CONFIG",
+            Self::AppPublishConfig => "SITE_CONFIG",
             Self::TlsConfig => "TLS_CONFIG",
             Self::MiniprogramReview => "MINIPROGRAM_REVIEW",
             Self::StoreSubmission => "STORE_SUBMISSION",
@@ -528,8 +535,11 @@ pub struct CreateAppRequest {
     pub app_kind: AppKind,
     #[serde(default)]
     pub description: Option<String>,
-    #[serde(rename = "siteId", default)]
-    pub site_id: Option<String>,
+    /// Web publishing type (1..6, was `deploy_app.type`).
+    #[serde(rename = "type", default)]
+    pub app_type: Option<i32>,
+    #[serde(rename = "runtimeConfig", default)]
+    pub runtime_config: Option<Value>,
     #[serde(rename = "defaultEnvironment", default)]
     pub default_environment: Option<String>,
     #[serde(rename = "idempotencyKey", default)]
@@ -542,6 +552,10 @@ pub struct UpdateAppRequest {
     pub name: Option<String>,
     #[serde(default)]
     pub description: Option<String>,
+    #[serde(rename = "type", default)]
+    pub app_type: Option<i32>,
+    #[serde(rename = "runtimeConfig", default)]
+    pub runtime_config: Option<Value>,
     #[serde(rename = "appStatus", default)]
     pub app_status: Option<AppStatus>,
     #[serde(rename = "defaultEnvironment", default)]
@@ -557,10 +571,16 @@ pub struct AppResponse {
     pub app_kind: String,
     #[serde(rename = "appStatus")]
     pub app_status: String,
+    #[serde(rename = "type")]
+    pub app_type: i32,
     #[serde(rename = "description", skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    #[serde(rename = "siteId", skip_serializing_if = "Option::is_none")]
-    pub site_id: Option<String>,
+    #[serde(rename = "runtimeConfig", skip_serializing_if = "Option::is_none")]
+    pub runtime_config: Option<Value>,
+    #[serde(rename = "currentRevisionId", skip_serializing_if = "Option::is_none")]
+    pub current_revision_id: Option<String>,
+    #[serde(rename = "desiredRevisionId", skip_serializing_if = "Option::is_none")]
+    pub desired_revision_id: Option<String>,
     #[serde(rename = "defaultEnvironment")]
     pub default_environment: String,
     #[serde(rename = "platformTargetCount")]
@@ -1107,8 +1127,6 @@ pub struct AppDeploymentResponse {
     pub app_id: String,
     #[serde(rename = "platformTargetId", skip_serializing_if = "Option::is_none")]
     pub platform_target_id: Option<String>,
-    #[serde(rename = "siteId", skip_serializing_if = "Option::is_none")]
-    pub site_id: Option<String>,
     #[serde(rename = "releaseId", skip_serializing_if = "Option::is_none")]
     pub release_id: Option<String>,
     #[serde(rename = "deploymentKind", skip_serializing_if = "Option::is_none")]
@@ -1217,8 +1235,8 @@ pub struct UsageEventResponse {
     pub id: String,
     #[serde(rename = "tenantId")]
     pub tenant_id: i64,
-    #[serde(rename = "siteId", skip_serializing_if = "Option::is_none")]
-    pub site_id: Option<String>,
+    #[serde(rename = "appId", skip_serializing_if = "Option::is_none")]
+    pub app_id: Option<String>,
     #[serde(rename = "bindingId", skip_serializing_if = "Option::is_none")]
     pub binding_id: Option<String>,
     #[serde(rename = "periodStart")]
@@ -1232,7 +1250,11 @@ pub struct UsageEventResponse {
     pub source_window_id: Option<String>,
     #[serde(rename = "deduplicationKey")]
     pub deduplication_key: String,
-    #[serde(rename = "attribution", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "attribution",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub attribution: Option<crate::usage::UsageEventAttribution>,
     #[serde(rename = "observedAt")]
     pub observed_at: String,
@@ -1533,7 +1555,7 @@ pub struct RunnerHealthPage {
 }
 
 // ---------------------------------------------------------------------------
-// TLS control plane (TECH-cloud-site-publishing §4.5): ACME account, order,
+// TLS control plane (TECH-cloud-app-publishing §4.5): ACME account, order,
 // challenge, and certificate version orchestration read models
 // ---------------------------------------------------------------------------
 

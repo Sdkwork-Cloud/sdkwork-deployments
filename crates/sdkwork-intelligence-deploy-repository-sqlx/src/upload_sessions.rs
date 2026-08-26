@@ -6,7 +6,7 @@ use sdkwork_deploy_contract::{
 };
 
 use crate::support::{
-    datetime_from_row, new_uuid, next_id, now_rfc3339, resolve_site_internal_id, store_error,
+    datetime_from_row, new_uuid, next_id, now_rfc3339, resolve_app_internal_id, store_error,
 };
 use crate::DeployRepository;
 
@@ -18,10 +18,8 @@ impl DeployRepository {
         request: &CreateDeployUploadSessionRequest,
         drive: &DeployUploadSessionResponse,
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
-        let site_internal_id = match request.site_id.as_deref() {
-            Some(site_uuid) => {
-                Some(resolve_site_internal_id(&self.pool, tenant_id, site_uuid).await?)
-            }
+        let app_internal_id = match request.app_id.as_deref() {
+            Some(app_uuid) => Some(resolve_app_internal_id(&self.pool, tenant_id, app_uuid).await?),
             None => None,
         };
         let id = next_id(&self.id_generator)?;
@@ -29,7 +27,7 @@ impl DeployRepository {
         let now = now_rfc3339();
         sqlx::query(
             "INSERT INTO deploy_upload_session_ref
-             (id, uuid, tenant_id, site_id, drive_upload_session_id, drive_upload_item_id,
+             (id, uuid, tenant_id, app_id, drive_upload_session_id, drive_upload_item_id,
               drive_space_id, drive_node_id, package_type, file_name, content_type,
               content_length, checksum, status, idempotency_key, created_at, updated_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CAST($16 AS TIMESTAMPTZ), CAST($17 AS TIMESTAMPTZ))",
@@ -37,7 +35,7 @@ impl DeployRepository {
         .bind(id)
         .bind(&uuid)
         .bind(tenant_id)
-        .bind(site_internal_id)
+        .bind(app_internal_id)
         .bind(&drive.drive_upload_session_id)
         .bind(drive.drive_upload_item_id.as_deref())
         .bind(drive.drive_space_id.as_deref())
@@ -58,7 +56,7 @@ impl DeployRepository {
         let _ = context;
         Ok(DeployUploadSessionResponse {
             id: uuid,
-            site_id: request.site_id.clone(),
+            app_id: request.app_id.clone(),
             package_type: request.package_type,
             file_name: request.file_name.clone(),
             content_type: request.content_type.clone(),
@@ -80,7 +78,7 @@ impl DeployRepository {
         upload_session_id: &str,
     ) -> DeployServiceResult<DeployUploadSessionResponse> {
         let row = sqlx::query(
-            "SELECT uuid, site_id, package_type, file_name, content_type, content_length,
+            "SELECT uuid, app_id, package_type, file_name, content_type, content_length,
                     checksum, status, drive_upload_session_id, drive_upload_item_id,
                     drive_space_id, drive_node_id, created_at, updated_at
              FROM deploy_upload_session_ref
@@ -93,14 +91,14 @@ impl DeployRepository {
         .map_err(|error| store_error("retrieve deploy upload session ref", error))?
         .ok_or_else(|| DeployServiceError::not_found("upload session not found"))?;
 
-        let site_uuid = match row.try_get::<Option<i64>, _>("site_id").ok().flatten() {
-            Some(site_id) => {
-                Some(crate::support::resolve_site_uuid(&self.pool, tenant_id, site_id).await?)
+        let app_uuid = match row.try_get::<Option<i64>, _>("app_id").ok().flatten() {
+            Some(app_id) => {
+                Some(crate::support::resolve_app_uuid(&self.pool, tenant_id, app_id).await?)
             }
             None => None,
         };
 
-        map_upload_session_row(&row, site_uuid).map_err(|error| {
+        map_upload_session_row(&row, app_uuid).map_err(|error| {
             DeployServiceError::Internal(format!("map deploy upload session ref: {error}"))
         })
     }
@@ -111,7 +109,7 @@ impl DeployRepository {
         idempotency_key: &str,
     ) -> DeployServiceResult<Option<DeployUploadSessionResponse>> {
         let row = sqlx::query(
-            "SELECT uuid, site_id, package_type, file_name, content_type, content_length,
+            "SELECT uuid, app_id, package_type, file_name, content_type, content_length,
                     checksum, status, drive_upload_session_id, drive_upload_item_id,
                     drive_space_id, drive_node_id, created_at, updated_at
              FROM deploy_upload_session_ref
@@ -127,14 +125,14 @@ impl DeployRepository {
             return Ok(None);
         };
 
-        let site_uuid = match row.try_get::<Option<i64>, _>("site_id").ok().flatten() {
-            Some(site_id) => {
-                Some(crate::support::resolve_site_uuid(&self.pool, tenant_id, site_id).await?)
+        let app_uuid = match row.try_get::<Option<i64>, _>("app_id").ok().flatten() {
+            Some(app_id) => {
+                Some(crate::support::resolve_app_uuid(&self.pool, tenant_id, app_id).await?)
             }
             None => None,
         };
 
-        map_upload_session_row(&row, site_uuid)
+        map_upload_session_row(&row, app_uuid)
             .map(Some)
             .map_err(|error| {
                 DeployServiceError::Internal(format!("map deploy upload session ref: {error}"))
@@ -171,11 +169,11 @@ impl DeployRepository {
 
 fn map_upload_session_row(
     row: &sqlx::postgres::PgRow,
-    site_id: Option<String>,
+    app_id: Option<String>,
 ) -> Result<DeployUploadSessionResponse, sqlx::Error> {
     Ok(DeployUploadSessionResponse {
         id: row.try_get("uuid")?,
-        site_id,
+        app_id,
         package_type: row.try_get("package_type")?,
         file_name: row.try_get("file_name")?,
         content_type: row.try_get("content_type")?,

@@ -1,4 +1,4 @@
-# SDKWork Unified App Delivery Control-Plane Architecture
+﻿# SDKWork Unified App Delivery Control-Plane Architecture
 
 Status: implementation in progress
 Owner: SDKWork Deploy maintainers
@@ -15,7 +15,7 @@ RELEASE_SPEC.md, MIGRATION_SPEC.md
 | Bounded context | System of record | Write owner | Public responsibility |
 | --- | --- | --- | --- |
 | Application delivery | `deploy_app*`, `deploy_build*`, `deploy_package`, `deploy_release*`, `deploy_deployment`, `deploy_signing_identity` | sdkwork-deployments | apps, platforms, source binding, builds, packages, versions, channels, deployments |
-| Site publishing | `deploy_site*` | sdkwork-deployments | web Site delivery configuration (existing model) |
+| Site publishing | `deploy_app*` | sdkwork-deployments | web Site delivery configuration (existing model) |
 | Source repositories | external Git hosts | external | repository hosting, commit history |
 | Files and directories | `dr_*` | sdkwork-drive | package bytes, build log bytes, storage, retention |
 | HTTP/TLS runtime | runtime snapshots and observations | sdkwork-webserver | request routing/static/proxy/Wiki streaming/TLS |
@@ -121,7 +121,7 @@ The tables below extend the PostgreSQL/SQLite portable contract. All runtime bus
 SDKWork-generated `BIGINT id`, stable `uuid`, tenant scope, audit timestamps/actors, lifecycle
 state, and optimistic `version` per `DATABASE_SPEC.md`. Enum strings are canonical API/storage
 vocabulary centralized in validation; no ad hoc integer meanings are introduced for new columns.
-Legacy `deploy_deployment`/`deploy_artifact`/`deploy_release`/`deploy_site` numeric columns are
+Legacy `deploy_deployment`/`deploy_artifact`/`deploy_release`/`deploy_app` numeric columns are
 left readable; new state uses string enums.
 
 ### 4.1 `deploy_app`
@@ -134,7 +134,7 @@ Purpose: tenant-owned application aggregate.
 | `app_kind` | `STATIC_WEB`, `SPA_WEB`, `API_SERVICE`, `WECHAT_MINIPROGRAM`, `DOUYIN_MINIPROGRAM`, `IOS_APP`, `ANDROID_APP`, `HARMONYOS_APP` |
 | `description` | bounded description |
 | `app_status` | `DRAFT`, `READY`, `ACTIVE`, `PAUSED`, `ARCHIVED`, `FAILED` |
-| `site_id` | nullable link to `deploy_site` for web-kind Apps |
+| `app_id` | nullable link to `deploy_app` for web-kind Apps |
 | `default_environment` | `development`, `test`, `staging`, `production` |
 | `activated_at`, `paused_at`, `archived_at` | lifecycle observations |
 
@@ -283,7 +283,7 @@ Additive columns on the existing table:
 
 | Column | Contract |
 | --- | --- |
-| `app_id`, `platform_target_id`, `release_id` | new-model references (existing `site_id`/`release_id` remain) |
+| `app_id`, `platform_target_id`, `release_id` | new-model references (existing `app_id`/`release_id` remain) |
 | `deployment_kind` | `ARTIFACT_RELEASE`, `SITE_CONFIG`, `TLS_CONFIG`, `MINIPROGRAM_REVIEW`, `STORE_SUBMISSION`, `OTA_DISTRIBUTION`, `ENTERPRISE_DISTRIBUTION`, `CONTAINER_ROLLOUT` |
 | `deployment_target` | `WEB_NODE`, `CONTAINER`, `WECHAT_REVIEW`, `DOUYIN_REVIEW`, `APP_STORE_CONNECT`, `TESTFLIGHT`, `OTA`, `ENTERPRISE`, `HARMONYOS_STORE` |
 | `strategy` | `IMMEDIATE`, `PERCENTAGE`, `MANUAL_APPROVAL` |
@@ -317,7 +317,7 @@ Implemented as migration `0008` (portable contract in `database/contract/schema.
 | --- | --- |
 | `deploy_usage_event` | append-only usage fact; unique `(tenant_id, deduplication_key)` makes delivery idempotent; `period_start`, `dimension`, `quantity`, `unit`, `source_target_uuid`, `source_window_id`, `attribution_json`; never updated or deleted |
 | `deploy_tenant_entitlement_projection` | Commerce-backed read model; unique `(tenant_id, source_system, source_subscription_uuid)`; stale/absent projections fail closed for new capacity |
-| `deploy_site_usage_daily` | reconcilable daily aggregate; unique `(tenant_id, site_id, usage_date, dimension, unit)`; rebuildable from retained facts |
+| `deploy_app_usage_daily` | reconcilable daily aggregate; unique `(tenant_id, app_id, usage_date, dimension, unit)`; rebuildable from retained facts |
 
 Entitlement enforcement is implemented in the service layer (`enforce_entitlement`), gated by
 `SDKWORK_DEPLOY_ENTITLEMENT_ENFORCEMENT` (off by default until the Commerce projection feed is

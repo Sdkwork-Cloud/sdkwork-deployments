@@ -196,6 +196,12 @@ const HTTP_ROUTES: &[HttpRoute] = &[
     ),
     HttpRoute::dual_token(
         HttpMethod::Post,
+        "/backend/v3/api/usage/ingest",
+        "usage",
+        "usage.ingestTrafficEvents",
+    ),
+    HttpRoute::dual_token(
+        HttpMethod::Post,
         "/backend/v3/api/usage/reconcile",
         "usage",
         "usage.reconcileDaily",

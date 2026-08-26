@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+﻿use std::path::{Path, PathBuf};
 
 use serde_json::Value;
 
@@ -151,19 +151,19 @@ pub fn apply_stored_nginx_config(
 
     if let Some(parent) = site_file.parent() {
         std::fs::create_dir_all(parent)
-            .map_err(|error| format!("create nginx site directory failed: {error}"))?;
+            .map_err(|error| format!("create nginx app directory failed: {error}"))?;
     }
 
     let backup_path = site_file.with_extension("conf.bak");
     let mut backup_created = None;
     if site_file.is_file() {
         std::fs::copy(site_file, &backup_path)
-            .map_err(|error| format!("backup nginx site file failed: {error}"))?;
+            .map_err(|error| format!("backup nginx app file failed: {error}"))?;
         backup_created = Some(backup_path);
     }
 
     std::fs::write(site_file, content)
-        .map_err(|error| format!("write nginx site file failed: {error}"))?;
+        .map_err(|error| format!("write nginx app file failed: {error}"))?;
 
     Ok(backup_created)
 }
@@ -193,7 +193,7 @@ pub fn publish_nginx_config(
                 .or(fallback_domain)
                 .map(default_site_file)
         })
-        .ok_or_else(|| "nginx site file target could not be resolved".to_string())?;
+        .ok_or_else(|| "nginx app file target could not be resolved".to_string())?;
 
     apply_stored_nginx_config(content, &site_file)?;
     if nginx_reload_enabled() {

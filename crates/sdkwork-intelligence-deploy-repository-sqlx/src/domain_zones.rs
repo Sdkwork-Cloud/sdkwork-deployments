@@ -1,4 +1,4 @@
-use sdkwork_deploy_contract::{
+﻿use sdkwork_deploy_contract::{
     CreateDomainHostnameRequest, CreateDomainZoneRequest, DeployServiceError, DeployServiceResult,
     DomainHostnamePage, DomainHostnameResponse, DomainZonePage, DomainZoneResponse,
     ListDomainZonesQuery, UpdateDomainHostnameRequest, UpdateDomainZoneRequest,
@@ -17,13 +17,13 @@ const ZONE_SELECT: &str =
      (SELECT COUNT(*) FROM deploy_domain d WHERE d.zone_id = z.id AND d.deleted_at IS NULL) AS hostname_count,
      (SELECT COUNT(*) FROM deploy_domain d WHERE d.zone_id = z.id AND d.verification_status = 'VERIFIED' AND d.deleted_at IS NULL) AS verified_hostname_count,
      (SELECT COUNT(DISTINCT ci.certificate_id) FROM deploy_certificate_identifier ci JOIN deploy_domain d ON d.id = ci.domain_id WHERE d.zone_id = z.id AND d.deleted_at IS NULL) AS certificate_count,
-     (SELECT COUNT(*) FROM deploy_site_binding b JOIN deploy_domain d ON d.id = b.domain_id WHERE d.zone_id = z.id AND d.deleted_at IS NULL AND b.deleted_at IS NULL) AS binding_count";
+     (SELECT COUNT(*) FROM deploy_app_binding b JOIN deploy_domain d ON d.id = b.domain_id WHERE d.zone_id = z.id AND d.deleted_at IS NULL AND b.deleted_at IS NULL) AS binding_count";
 
 const HOSTNAME_SELECT: &str =
     "d.uuid, z.uuid AS zone_uuid, z.apex_hostname, d.hostname_ascii, d.hostname_type,
      d.verification_status, d.verified_at, d.status, d.created_at, d.updated_at, d.version,
      (SELECT COUNT(DISTINCT ci.certificate_id) FROM deploy_certificate_identifier ci WHERE ci.domain_id = d.id) AS certificate_count,
-     (SELECT COUNT(*) FROM deploy_site_binding b WHERE b.domain_id = d.id AND b.deleted_at IS NULL) AS binding_count";
+     (SELECT COUNT(*) FROM deploy_app_binding b WHERE b.domain_id = d.id AND b.deleted_at IS NULL) AS binding_count";
 
 impl DeployRepository {
     pub(super) async fn list_domain_zones_repo(
@@ -238,12 +238,12 @@ impl DeployRepository {
                 "domain zone still contains hostnames",
             ));
         }
-        // Any hostname (including the apex) referenced by a site binding or a
+        // Any hostname (including the apex) referenced by an app binding or a
         // certificate identifier must be released before the zone is removed.
         let reference_count: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM deploy_domain d JOIN deploy_dns_zone z ON z.id = d.zone_id
              WHERE z.tenant_id = $1 AND z.uuid = $2 AND z.deleted_at IS NULL AND d.deleted_at IS NULL
-               AND ((SELECT COUNT(*) FROM deploy_site_binding b
+               AND ((SELECT COUNT(*) FROM deploy_app_binding b
                      WHERE b.domain_id = d.id AND b.deleted_at IS NULL) > 0
                  OR (SELECT COUNT(*) FROM deploy_certificate_identifier ci
                      WHERE ci.domain_id = d.id) > 0)",
@@ -686,7 +686,7 @@ impl DeployRepository {
     ) -> DeployServiceResult<()> {
         let (references, is_apex): (i64, bool) = sqlx::query_as(
             "SELECT
-                (SELECT COUNT(*) FROM deploy_site_binding b WHERE b.domain_id = d.id AND b.deleted_at IS NULL)
+                (SELECT COUNT(*) FROM deploy_app_binding b WHERE b.domain_id = d.id AND b.deleted_at IS NULL)
                 + (SELECT COUNT(*) FROM deploy_certificate_identifier ci WHERE ci.domain_id = d.id),
                 d.hostname_ascii = z.apex_hostname
              FROM deploy_domain d JOIN deploy_dns_zone z ON z.id = d.zone_id
@@ -744,7 +744,7 @@ impl DeployRepository {
             "SELECT
                 z.apex_hostname,
                 d.hostname_ascii = z.apex_hostname,
-                (SELECT COUNT(*) FROM deploy_site_binding b WHERE b.domain_id = d.id AND b.deleted_at IS NULL)
+                (SELECT COUNT(*) FROM deploy_app_binding b WHERE b.domain_id = d.id AND b.deleted_at IS NULL)
                 + (SELECT COUNT(*) FROM deploy_certificate_identifier ci WHERE ci.domain_id = d.id)
              FROM deploy_domain d JOIN deploy_dns_zone z ON z.id = d.zone_id
              WHERE z.tenant_id = $1 AND z.uuid = $2 AND d.uuid = $3

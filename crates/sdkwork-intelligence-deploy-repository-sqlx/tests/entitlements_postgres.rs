@@ -1,4 +1,4 @@
-//! Entitlement enforcement and backend fleet administration integration
+﻿//! Entitlement enforcement and backend fleet administration integration
 //! tests: capacity creation is gated by the Commerce-backed projection when
 //! enforcement is enabled, and the platform management read surfaces
 //! (projections, build queue, runner health) return tenant-scoped data.
@@ -94,8 +94,9 @@ async fn entitlement_enforcement_blocks_capacity_over_the_limit() {
                 name: "first-app".to_owned(),
                 slug: Some("first-app".to_owned()),
                 app_kind: sdkwork_deploy_contract::AppKind::ApiService,
+                app_type: Some(2),
+                runtime_config: None,
                 description: None,
-                site_id: None,
                 default_environment: None,
                 idempotency_key: None,
             },
@@ -113,8 +114,9 @@ async fn entitlement_enforcement_blocks_capacity_over_the_limit() {
                 name: "second-app".to_owned(),
                 slug: Some("second-app".to_owned()),
                 app_kind: sdkwork_deploy_contract::AppKind::ApiService,
+                app_type: Some(2),
+                runtime_config: None,
                 description: None,
-                site_id: None,
                 default_environment: None,
                 idempotency_key: None,
             },
@@ -134,8 +136,9 @@ async fn entitlement_enforcement_blocks_capacity_over_the_limit() {
                 name: "unplanned-app".to_owned(),
                 slug: Some("unplanned-app".to_owned()),
                 app_kind: sdkwork_deploy_contract::AppKind::ApiService,
+                app_type: Some(2),
+                runtime_config: None,
                 description: None,
-                site_id: None,
                 default_environment: None,
                 idempotency_key: None,
             },
@@ -165,8 +168,9 @@ async fn entitlement_usage_aggregates_and_management_surfaces_work() {
                 name: "usage-app".to_owned(),
                 slug: Some("usage-app".to_owned()),
                 app_kind: sdkwork_deploy_contract::AppKind::ApiService,
+                app_type: Some(2),
+                runtime_config: None,
                 description: None,
-                site_id: None,
                 default_environment: None,
                 idempotency_key: None,
             },

@@ -11,52 +11,29 @@ use sdkwork_deploy_contract::{
     CreateAppDatabaseProfileRequest, CreateAppDeploymentRequest, CreateAppEnvironmentRequest,
     CreateAppReleaseRequest, CreateAppRequest, CreateArtifactRequest, CreateBuildRequest,
     CreateBuildTemplateRequest, CreateCertificateRequest, CreateDeployUploadSessionRequest,
-    CreateDeploymentRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
-    CreateEnvVariableRequest, CreateHealthCheckRequest, CreatePlatformTargetRequest,
-    CreateReleaseRequest, CreateSigningIdentityRequest, CreateSiteRequest,
+    CreateDomainHostnameRequest, CreateDomainZoneRequest, CreateEnvVariableRequest,
+    CreateHealthCheckRequest, CreatePlatformTargetRequest, CreateSigningIdentityRequest,
     CreateSourceRepositoryRequest, DeployAppApi, DeployAppRequestContext, DeployServiceResult,
     DeployUploadSessionResponse, EnvironmentPromotionPage, EnvironmentPromotionResponse,
-    ListDomainZonesQuery, ListSitesQuery, PackagePage, PackageResponse, PlatformTargetPage,
-    PlatformTargetResponse, PromoteChannelRequest, PromoteEnvironmentRequest,
-    RegisterPackageRequest, ReleaseStatus, SigningIdentityPage, SigningIdentityResponse,
-    SourceRepositoryPage, SourceRepositoryResponse, UpdateAppDatabaseProfileRequest,
-    UpdateAppEnvironmentRequest, UpdateAppRequest, UpdateBuildStateRequest,
-    UpdateDomainHostnameRequest, UpdateDomainZoneRequest, UpdateSiteRequest, UsageEventPage,
-    UPLOAD_SESSION_STATUS_CANCELLED, UPLOAD_SESSION_STATUS_COMPLETED,
-    UsageEventQuery,
+    ListDomainZonesQuery, PackagePage, PackageResponse, PlatformTargetPage, PlatformTargetResponse,
+    PromoteChannelRequest, PromoteEnvironmentRequest, RegisterPackageRequest, ReleaseStatus,
+    SigningIdentityPage, SigningIdentityResponse, SourceRepositoryPage, SourceRepositoryResponse,
+    UpdateAppDatabaseProfileRequest, UpdateAppEnvironmentRequest, UpdateAppRequest,
+    UpdateBuildStateRequest, UpdateDomainHostnameRequest, UpdateDomainZoneRequest, UsageEventPage,
+    UsageEventQuery, UPLOAD_SESSION_STATUS_CANCELLED, UPLOAD_SESSION_STATUS_COMPLETED,
 };
 use sdkwork_deploy_drive_port::{DriveRequestCredentials, PrepareDeployUploadCommand};
 
-use crate::{repository::InsertAuditLogCommand, DeployService};
+use crate::DeployService;
 
 impl DeployService {
     pub(crate) fn require_tenant(context: &DeployAppRequestContext) -> DeployServiceResult<i64> {
         if context.tenant_id <= 0 {
             return Err(sdkwork_deploy_contract::DeployServiceError::forbidden(
-                "site operations require tenant authorization",
+                "app operations require tenant authorization",
             ));
         }
         Ok(context.tenant_id)
-    }
-
-    async fn audit_site_action(
-        &self,
-        context: &DeployAppRequestContext,
-        action: &str,
-        target_uuid: &str,
-    ) -> DeployServiceResult<()> {
-        let operator_id = context.actor_id.unwrap_or(0);
-        self.repository
-            .insert_audit_log(InsertAuditLogCommand {
-                tenant_id: context.tenant_id,
-                organization_id: context.organization_id.unwrap_or(0),
-                operator_id,
-                action: action.to_owned(),
-                target_type: "site".to_owned(),
-                target_id: None,
-                target_uuid: Some(target_uuid.to_owned()),
-            })
-            .await
     }
 
     fn drive_credentials(context: &DeployAppRequestContext) -> DriveRequestCredentials {
@@ -119,7 +96,7 @@ impl DeployService {
         request: &CreateDeployUploadSessionRequest,
         stored: &DeployUploadSessionResponse,
     ) -> bool {
-        stored.site_id == request.site_id
+        stored.app_id == request.app_id
             && stored.package_type == request.package_type
             && stored.file_name == request.file_name
             && stored.content_type == request.content_type
@@ -411,176 +388,44 @@ impl DeployAppApi for DeployService {
         }
     }
 
-    async fn list_sites(
+    async fn update_app_composition(
         &self,
         context: &DeployAppRequestContext,
-        query: &ListSitesQuery,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::SitePage> {
-        let tenant_id = Self::require_tenant(context)?;
-        self.repository.list_sites(tenant_id, query).await
-    }
-
-    async fn create_site(
-        &self,
-        context: &DeployAppRequestContext,
-        request: &CreateSiteRequest,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::SiteResponse> {
-        let tenant_id = Self::require_tenant(context)?;
-        let site = self
-            .repository
-            .create_site(
-                tenant_id,
-                context.organization_id,
-                context.actor_id,
-                request,
-            )
-            .await?;
-        let _ = self
-            .audit_site_action(context, "sites.create", &site.id)
-            .await;
-        Ok(site)
-    }
-
-    async fn retrieve_site(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::SiteResponse> {
-        let tenant_id = Self::require_tenant(context)?;
-        self.repository.retrieve_site(tenant_id, site_id).await
-    }
-
-    async fn update_site(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        request: &UpdateSiteRequest,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::SiteResponse> {
-        let tenant_id = Self::require_tenant(context)?;
-        let site = self
-            .repository
-            .update_site(tenant_id, site_id, request)
-            .await?;
-        let _ = self
-            .audit_site_action(context, "sites.update", site_id)
-            .await;
-        Ok(site)
-    }
-
-    async fn update_site_composition(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        expected_site_version: i64,
+        app_id: &str,
+        expected_app_version: i64,
         idempotency_key: &str,
-        request: &sdkwork_deploy_contract::UpdateSiteCompositionRequest,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::SiteCompositionResponse> {
+        request: &sdkwork_deploy_contract::UpdateAppCompositionRequest,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::AppCompositionResponse> {
         self.update_composition(
             context,
-            site_id,
-            expected_site_version,
+            app_id,
+            expected_app_version,
             idempotency_key,
             request,
         )
         .await
     }
 
-    async fn delete_site(
+    async fn activate_app(
         &self,
         context: &DeployAppRequestContext,
-        site_id: &str,
-    ) -> DeployServiceResult<()> {
+        app_id: &str,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::AppResponse> {
         let tenant_id = Self::require_tenant(context)?;
-        self.repository
-            .delete_site(tenant_id, site_id, context.actor_id)
-            .await?;
-        let _ = self
-            .audit_site_action(context, "sites.delete", site_id)
-            .await;
-        Ok(())
+        let app = self.repository.set_app_status(tenant_id, app_id, 1).await?;
+        let _ = self.audit_app_action(context, "app.activate", app_id).await;
+        Ok(app)
     }
 
-    async fn activate_site(
+    async fn pause_app(
         &self,
         context: &DeployAppRequestContext,
-        site_id: &str,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::SiteResponse> {
+        app_id: &str,
+    ) -> DeployServiceResult<sdkwork_deploy_contract::AppResponse> {
         let tenant_id = Self::require_tenant(context)?;
-        let site = self
-            .repository
-            .set_site_status(tenant_id, site_id, 1)
-            .await?;
-        let _ = self
-            .audit_site_action(context, "sites.activate", site_id)
-            .await;
-        Ok(site)
-    }
-
-    async fn pause_site(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::SiteResponse> {
-        let tenant_id = Self::require_tenant(context)?;
-        let site = self
-            .repository
-            .set_site_status(tenant_id, site_id, 2)
-            .await?;
-        let _ = self
-            .audit_site_action(context, "sites.pause", site_id)
-            .await;
-        Ok(site)
-    }
-
-    async fn list_deployments(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        page: i32,
-        page_size: i32,
-        status: Option<i32>,
-        cursor: Option<&str>,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::DeploymentPage> {
-        let tenant_id = Self::require_tenant(context)?;
-        self.repository
-            .list_deployments(tenant_id, site_id, page, page_size, status, cursor)
-            .await
-    }
-
-    async fn create_deployment(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        request: &CreateDeploymentRequest,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::DeploymentResponse> {
-        let tenant_id = Self::require_tenant(context)?;
-        self.repository
-            .create_deployment(tenant_id, site_id, context.actor_id, request)
-            .await
-    }
-
-    async fn retrieve_deployment(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        deployment_id: &str,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::DeploymentResponse> {
-        let tenant_id = Self::require_tenant(context)?;
-        self.repository
-            .retrieve_deployment(tenant_id, site_id, deployment_id)
-            .await
-    }
-
-    async fn rollback_deployment(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        deployment_id: &str,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::DeploymentResponse> {
-        let tenant_id = Self::require_tenant(context)?;
-        self.repository
-            .rollback_deployment(tenant_id, site_id, deployment_id, context.actor_id)
-            .await
+        let app = self.repository.set_app_status(tenant_id, app_id, 2).await?;
+        let _ = self.audit_app_action(context, "app.pause", app_id).await;
+        Ok(app)
     }
 
     async fn list_artifacts(
@@ -645,96 +490,27 @@ impl DeployAppApi for DeployService {
             .await
     }
 
-    async fn list_releases(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        page: i32,
-        page_size: i32,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::ReleasePage> {
-        let tenant_id = Self::require_tenant(context)?;
-        self.repository
-            .list_releases(tenant_id, site_id, page, page_size)
-            .await
-    }
-
-    async fn retrieve_release(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        release_id: &str,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::ReleaseResponse> {
-        let tenant_id = Self::require_tenant(context)?;
-        self.repository
-            .retrieve_release(tenant_id, site_id, release_id)
-            .await
-    }
-
-    async fn create_release(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        request: &CreateReleaseRequest,
-    ) -> DeployServiceResult<sdkwork_deploy_contract::ReleaseResponse> {
-        let tenant_id = Self::require_tenant(context)?;
-        if request.artifact_id.trim().is_empty() {
-            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
-                "artifactId is required",
-            ));
-        }
-        if request.idempotency_key.trim().is_empty() {
-            return Err(sdkwork_deploy_contract::DeployServiceError::validation(
-                "idempotencyKey is required",
-            ));
-        }
-        if let Some(existing) = self
-            .repository
-            .find_release_by_idempotency_key(tenant_id, site_id, &request.idempotency_key)
-            .await?
-        {
-            return Ok(existing);
-        }
-        match self
-            .repository
-            .create_release(tenant_id, site_id, request)
-            .await
-        {
-            Ok(response) => Ok(response),
-            Err(error @ sdkwork_deploy_contract::DeployServiceError::Conflict(_)) => {
-                if let Some(existing) = self
-                    .repository
-                    .find_release_by_idempotency_key(tenant_id, site_id, &request.idempotency_key)
-                    .await?
-                {
-                    return Ok(existing);
-                }
-                Err(error)
-            }
-            Err(error) => Err(error),
-        }
-    }
-
     async fn list_env_variables(
         &self,
         context: &DeployAppRequestContext,
-        site_id: &str,
+        app_id: &str,
         environment: Option<&str>,
     ) -> DeployServiceResult<sdkwork_deploy_contract::EnvVariablePage> {
         let tenant_id = Self::require_tenant(context)?;
         self.repository
-            .list_env_variables(tenant_id, site_id, environment)
+            .list_env_variables(tenant_id, app_id, environment)
             .await
     }
 
     async fn create_env_variable(
         &self,
         context: &DeployAppRequestContext,
-        site_id: &str,
+        app_id: &str,
         request: &CreateEnvVariableRequest,
     ) -> DeployServiceResult<sdkwork_deploy_contract::EnvVariableResponse> {
         let tenant_id = Self::require_tenant(context)?;
         self.repository
-            .create_env_variable(tenant_id, site_id, request)
+            .create_env_variable(tenant_id, app_id, request)
             .await
     }
 
@@ -804,21 +580,21 @@ impl DeployAppApi for DeployService {
     async fn list_health_checks(
         &self,
         context: &DeployAppRequestContext,
-        site_id: &str,
+        app_id: &str,
     ) -> DeployServiceResult<sdkwork_deploy_contract::HealthCheckPage> {
         let tenant_id = Self::require_tenant(context)?;
-        self.repository.list_health_checks(tenant_id, site_id).await
+        self.repository.list_health_checks(tenant_id, app_id).await
     }
 
     async fn create_health_check(
         &self,
         context: &DeployAppRequestContext,
-        site_id: &str,
+        app_id: &str,
         request: &CreateHealthCheckRequest,
     ) -> DeployServiceResult<sdkwork_deploy_contract::HealthCheckResponse> {
         let tenant_id = Self::require_tenant(context)?;
         self.repository
-            .create_health_check(tenant_id, site_id, request)
+            .create_health_check(tenant_id, app_id, request)
             .await
     }
 
@@ -1446,7 +1222,7 @@ mod upload_session_tests {
 
     fn sample_request() -> CreateDeployUploadSessionRequest {
         CreateDeployUploadSessionRequest {
-            site_id: None,
+            app_id: None,
             package_type: 1,
             file_name: "app.zip".to_string(),
             content_type: "application/zip".to_string(),
@@ -1468,7 +1244,7 @@ mod upload_session_tests {
         let request = sample_request();
         let stored = DeployUploadSessionResponse {
             id: "sess-1".to_string(),
-            site_id: None,
+            app_id: None,
             package_type: 1,
             file_name: "app.zip".to_string(),
             content_type: "application/zip".to_string(),
@@ -1491,7 +1267,7 @@ mod upload_session_tests {
     fn ensure_upload_session_mutable_rejects_terminal_states() {
         let completed = DeployUploadSessionResponse {
             id: "sess-1".to_string(),
-            site_id: None,
+            app_id: None,
             package_type: 1,
             file_name: "app.zip".to_string(),
             content_type: "application/zip".to_string(),

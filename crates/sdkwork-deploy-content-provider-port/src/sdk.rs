@@ -131,7 +131,7 @@ impl ContentProviderPort for SdkContentProviderPort {
                     .website_roots_create(
                         website_space_id,
                         &CreateWebsiteRootRequest {
-                            root_key: stable_root_key(command.tenant_id, &command.site_uuid, &key),
+                            root_key: stable_root_key(command.tenant_id, &command.app_uuid, &key),
                             display_name: format!("SDKWork Deploy {key}"),
                             source_root: drive_selector(root)?,
                             content_mode: content_mode.as_str().to_owned(),
@@ -318,9 +318,9 @@ fn validate_observed_drive_root(
     Ok(())
 }
 
-fn stable_root_key(tenant_id: i64, site_uuid: &str, resource_key: &str) -> String {
+fn stable_root_key(tenant_id: i64, app_uuid: &str, resource_key: &str) -> String {
     let digest = sdkwork_utils_rust::sha256_hash(
-        format!("{tenant_id}:{site_uuid}:{resource_key}").as_bytes(),
+        format!("{tenant_id}:{app_uuid}:{resource_key}").as_bytes(),
     );
     format!("deploy-{}", &digest[..32])
 }

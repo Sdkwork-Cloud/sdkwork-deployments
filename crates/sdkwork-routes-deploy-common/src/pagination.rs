@@ -22,7 +22,7 @@ const MAXIMUM_PAGE_SIZE: i64 = 200;
 /// their OpenAPI contract. `cursor` on any other endpoint fails closed.
 const CURSOR_PAGINATED_PATH_PATTERNS: [&str; 2] = [
     "/backend/v3/api/audit_logs",
-    "/app/v3/api/sites/{siteId}/deployments",
+    "/app/v3/api/sites/{appId}/deployments",
 ];
 
 /// Reject malformed or non-canonical pagination query parameters before handlers run.

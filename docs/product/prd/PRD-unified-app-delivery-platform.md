@@ -1,4 +1,4 @@
-# SDKWork Unified App Delivery Platform PRD
+﻿# SDKWork Unified App Delivery Platform PRD
 
 Status: implementation in progress
 Owner: SDKWork Deploy maintainers
@@ -93,7 +93,7 @@ template reference, and allowed channels. Desktop targets are per-operating-syst
 `architectures` field. One source repository can feed multiple targets; each target keeps its own
 monotonic `build_number` and semantic version sequence.
 
-Web-kind Apps link a `deploy_site`; existing Sites continue to work and are treated as implicit
+Web-kind Apps link a `deploy_app`; existing Sites continue to work and are treated as implicit
 `STATIC_WEB`/`SPA_WEB` Apps.
 
 ### 5.1.1 Application Database Structure Contract
@@ -344,7 +344,7 @@ backup/restore drills, staged rollout, external security/load review.
 - Every deployment kind records start, platform review reference, completion, and rollback
   linkage with audit.
 - Source -> build -> package -> release -> channel -> deployment resolves in one bounded query.
-- Legacy `deploy_site`/`deploy_artifact`/`deploy_release`/`deploy_deployment` rows remain
+- Legacy `deploy_app`/`deploy_artifact`/`deploy_release`/`deploy_deployment` rows remain
   readable; no destructive migration exists.
 
 ## 14. Linked Documents

@@ -85,7 +85,7 @@ async fn seed_old_package_and_release(pool: &PgPool) -> (i64, i64, i64) {
     .expect("insert old package");
     let release_id: i64 = 5003;
     sqlx::query(
-        "INSERT INTO deploy_release (id, uuid, tenant_id, organization_id, site_id, package_id,
+        "INSERT INTO deploy_release (id, uuid, tenant_id, organization_id, app_id, package_id,
              semantic_version, release_status, created_at, updated_at)
          VALUES ($1, '00000000-0000-4000-8000-000000000004', 7, 9, NULL, $2, '1.0.0', 'ACTIVE',
                  NOW() - INTERVAL '400 days', NOW() - INTERVAL '400 days')",
@@ -180,7 +180,7 @@ async fn usage_daily_rebuild_is_idempotent_and_reconcilable() {
 
     // The aggregate summed both facts into one row.
     let quantity: i64 = sqlx::query_scalar(
-        "SELECT quantity FROM deploy_site_usage_daily
+        "SELECT quantity FROM deploy_app_usage_daily
          WHERE tenant_id = 7 AND dimension = 'build_minutes' AND usage_date = (NOW() - INTERVAL '1 day')::date",
     )
     .fetch_one(repository.pool())
@@ -195,7 +195,7 @@ async fn usage_daily_rebuild_is_idempotent_and_reconcilable() {
         .expect("rebuild daily again");
     assert_eq!(second.rebuilt_rows, 1);
     let count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM deploy_site_usage_daily WHERE tenant_id = 7")
+        sqlx::query_scalar("SELECT COUNT(*) FROM deploy_app_usage_daily WHERE tenant_id = 7")
             .fetch_one(repository.pool())
             .await
             .expect("daily row count");

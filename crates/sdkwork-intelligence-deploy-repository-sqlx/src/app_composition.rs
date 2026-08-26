@@ -3,22 +3,22 @@ use std::collections::BTreeMap;
 use async_trait::async_trait;
 use sdkwork_deploy_content_provider_port::ValidatedContentProviderResource;
 use sdkwork_deploy_contract::{
-    DeployServiceError, DeployServiceResult, SiteBindingAction, SiteClientClass,
-    SiteCompositionResponse, SiteMountHandler, SiteMountMode, SiteRedirectScheme,
-    SiteRevisionResponse, SiteRuntimeAssignmentResponse, SiteVariantRuleMatcher,
+    AppBindingAction, AppClientClass, AppCompositionResponse, AppMountHandler, AppMountMode,
+    AppRedirectScheme, AppRevisionResponse, AppRuntimeAssignmentResponse, AppVariantRuleMatcher,
+    DeployServiceError, DeployServiceResult,
 };
 use sdkwork_deploy_runtime_compiler::{
-    canonical_sha256_excluding_field, compile_runtime_set, compile_site_revision,
-    normalize_runtime_descriptors, runtime_set_size_bytes, RuntimeBinding, RuntimeBindingAction,
-    RuntimeClientClass, RuntimeDeliveryPolicy, RuntimeEnvironment, RuntimeHandler, RuntimeLimits,
-    RuntimeMount, RuntimeMountMode, RuntimeMountTranslation, RuntimeObservabilityPolicy,
-    RuntimeProviderReference, RuntimeProviderType, RuntimeRedirectScheme, RuntimeResource,
-    RuntimeSecurityPolicy, RuntimeSetCompilationInput, RuntimeVariant, RuntimeVariantRule,
-    RuntimeVariantRuleMatcher, SiteRuntimeCompilationInput, DESCRIPTOR_COMPILER_VERSION,
-    WEBSITE_RUNTIME_SCHEMA_VERSION,
+    canonical_sha256_excluding_field, compile_app_revision, compile_runtime_set,
+    normalize_runtime_descriptors, runtime_set_size_bytes, AppRuntimeCompilationInput,
+    RuntimeBinding, RuntimeBindingAction, RuntimeClientClass, RuntimeDeliveryPolicy,
+    RuntimeEnvironment, RuntimeHandler, RuntimeLimits, RuntimeMount, RuntimeMountMode,
+    RuntimeMountTranslation, RuntimeObservabilityPolicy, RuntimeProviderReference,
+    RuntimeProviderType, RuntimeRedirectScheme, RuntimeResource, RuntimeSecurityPolicy,
+    RuntimeSetCompilationInput, RuntimeVariant, RuntimeVariantRule, RuntimeVariantRuleMatcher,
+    DESCRIPTOR_COMPILER_VERSION, WEBSITE_RUNTIME_SCHEMA_VERSION,
 };
 use sdkwork_intelligence_deploy_service::{
-    ReplaceSiteCompositionCommand, SiteCompositionRepositoryPort,
+    AppCompositionRepositoryPort, ReplaceAppCompositionCommand,
 };
 use sqlx::{AssertSqlSafe, PgPool, Postgres, Row, Transaction};
 
@@ -29,7 +29,7 @@ const MAXIMUM_RUNTIME_GENERATION: i64 = 9_007_199_254_740_991;
 const MAXIMUM_RUNTIME_SITES: usize = 10_000;
 
 #[derive(Clone, Debug)]
-struct StoredSite {
+struct StoredApp {
     id: i64,
     organization_id: i64,
     version: i64,
@@ -63,11 +63,11 @@ struct StoredTarget {
 }
 
 #[async_trait]
-impl SiteCompositionRepositoryPort for DeployRepository {
-    async fn replace_site_composition(
+impl AppCompositionRepositoryPort for DeployRepository {
+    async fn replace_app_composition(
         &self,
-        command: ReplaceSiteCompositionCommand,
-    ) -> DeployServiceResult<SiteCompositionResponse> {
+        command: ReplaceAppCompositionCommand,
+    ) -> DeployServiceResult<AppCompositionResponse> {
         self.replace_site_composition_repo(command).await
     }
 }
@@ -75,8 +75,8 @@ impl SiteCompositionRepositoryPort for DeployRepository {
 impl DeployRepository {
     async fn replace_site_composition_repo(
         &self,
-        command: ReplaceSiteCompositionCommand,
-    ) -> DeployServiceResult<SiteCompositionResponse> {
+        command: ReplaceAppCompositionCommand,
+    ) -> DeployServiceResult<AppCompositionResponse> {
         let mut transaction = begin_transaction(&self.pool).await?;
         if let Some(response) = load_idempotent_result(&mut transaction, &command).await? {
             transaction
@@ -86,9 +86,9 @@ impl DeployRepository {
             return Ok(response);
         }
 
-        let site = lock_site(&mut transaction, &command).await?;
-        reserve_site_version(&mut transaction, &command, &site).await?;
-        let new_site_version = site.version + 1;
+        let app = lock_app(&mut transaction, &command).await?;
+        reserve_app_version(&mut transaction, &command, &app).await?;
+        let new_app_version = app.version + 1;
         let targets = load_targets(
             &mut transaction,
             command.tenant_id,
@@ -97,30 +97,30 @@ impl DeployRepository {
         .await?;
         let tenant_scope_hash = consistent_tenant_scope_hash(&targets)?;
 
-        delete_current_composition(&mut transaction, site.id).await?;
-        let resources = insert_resources(self, &mut transaction, &command, &site).await?;
-        let variants = insert_variants(self, &mut transaction, &command, &site).await?;
+        delete_current_composition(&mut transaction, app.id).await?;
+        let resources = insert_resources(self, &mut transaction, &command, &app).await?;
+        let variants = insert_variants(self, &mut transaction, &command, &app).await?;
         let default_variant = variants
             .get(&command.request.default_variant_key)
             .ok_or_else(|| DeployServiceError::validation("default variant is missing"))?
             .clone();
         let runtime_rules =
-            insert_variant_rules(self, &mut transaction, &command, &site, &variants).await?;
+            insert_variant_rules(self, &mut transaction, &command, &app, &variants).await?;
         let runtime_mounts = insert_mounts(
             self,
             &mut transaction,
             &command,
-            &site,
+            &app,
             &variants,
             &resources,
         )
         .await?;
         let runtime_bindings =
-            insert_bindings(self, &mut transaction, &command, &site, &variants).await?;
+            insert_bindings(self, &mut transaction, &command, &app, &variants).await?;
 
         let revision_id = next_id(self.id_generator())?;
         let revision_uuid = new_uuid();
-        let revision_number = next_revision_number(&mut transaction, site.id).await?;
+        let revision_number = next_revision_number(&mut transaction, app.id).await?;
         let runtime_resources = command
             .resources
             .iter()
@@ -135,13 +135,13 @@ impl DeployRepository {
                 label: variant.label.clone(),
             })
             .collect();
-        let compiled = compile_site_revision(SiteRuntimeCompilationInput {
+        let compiled = compile_app_revision(AppRuntimeCompilationInput {
             revision_uuid: revision_uuid.clone(),
-            site_uuid: command.site_uuid.clone(),
+            app_uuid: command.app_uuid.clone(),
             tenant_scope_hash,
             environment: runtime_environment(command.request.environment),
             generated_at: command.generated_at.clone(),
-            site_default_variant_uuid: default_variant.uuid.clone(),
+            app_default_variant_uuid: default_variant.uuid.clone(),
             bindings: runtime_bindings,
             variants: runtime_variants,
             variant_rules: runtime_rules,
@@ -191,11 +191,11 @@ impl DeployRepository {
         insert_revision(
             &mut transaction,
             &command,
-            &site,
+            &app,
             revision_id,
             &revision_uuid,
             revision_number,
-            new_site_version,
+            new_app_version,
             &compiled.descriptor,
             &compiled.descriptor_sha256,
         )
@@ -203,7 +203,7 @@ impl DeployRepository {
         update_site_revision_pointers(
             &mut transaction,
             &command,
-            site.id,
+            app.id,
             default_variant.id,
             revision_id,
         )
@@ -212,7 +212,7 @@ impl DeployRepository {
         let mut descriptors = load_other_descriptors(
             &mut transaction,
             command.tenant_id,
-            site.id,
+            app.id,
             command.request.environment.as_str(),
         )
         .await?;
@@ -227,10 +227,10 @@ impl DeployRepository {
             &descriptors,
         )
         .await?;
-        let response = SiteCompositionResponse {
-            site_id: command.site_uuid.clone(),
-            site_version: new_site_version.to_string(),
-            revision: SiteRevisionResponse {
+        let response = AppCompositionResponse {
+            app_id: command.app_uuid.clone(),
+            app_version: new_app_version.to_string(),
+            revision: AppRevisionResponse {
                 id: revision_uuid.clone(),
                 number: revision_number.to_string(),
                 descriptor_sha256: compiled.descriptor_sha256,
@@ -239,11 +239,11 @@ impl DeployRepository {
             runtime_assignments: assignments,
         };
         persist_command_result(&mut transaction, revision_id, &response).await?;
-        insert_composition_audit(self, &mut transaction, &command, site.id, revision_id).await?;
+        insert_composition_audit(self, &mut transaction, &command, app.id, revision_id).await?;
         transaction
             .commit()
             .await
-            .map_err(|error| composition_store_error("commit site composition", error))?;
+            .map_err(|error| composition_store_error("commit app composition", error))?;
         Ok(response)
     }
 }
@@ -251,25 +251,25 @@ impl DeployRepository {
 async fn begin_transaction(pool: &PgPool) -> DeployServiceResult<Transaction<'static, Postgres>> {
     pool.begin()
         .await
-        .map_err(|error| composition_store_error("begin site composition transaction", error))
+        .map_err(|error| composition_store_error("begin app composition transaction", error))
 }
 
 async fn load_idempotent_result(
     transaction: &mut Transaction<'static, Postgres>,
-    command: &ReplaceSiteCompositionCommand,
-) -> DeployServiceResult<Option<SiteCompositionResponse>> {
+    command: &ReplaceAppCompositionCommand,
+) -> DeployServiceResult<Option<AppCompositionResponse>> {
     let row = sqlx::query(
         "SELECT r.request_sha256, CAST(r.result_json AS TEXT) AS result_json
-         FROM deploy_site_revision r
-         INNER JOIN deploy_site s ON s.id = r.site_id
+         FROM deploy_app_revision r
+         INNER JOIN deploy_app s ON s.id = r.app_id
          WHERE r.tenant_id = $1 AND s.uuid = $2 AND r.idempotency_key = $3",
     )
     .bind(command.tenant_id)
-    .bind(&command.site_uuid)
+    .bind(&command.app_uuid)
     .bind(&command.idempotency_key)
     .fetch_optional(&mut **transaction)
     .await
-    .map_err(|error| composition_store_error("load site composition idempotency", error))?;
+    .map_err(|error| composition_store_error("load app composition idempotency", error))?;
     let Some(row) = row else {
         return Ok(None);
     };
@@ -278,7 +278,7 @@ async fn load_idempotent_result(
         .map_err(|_| DeployServiceError::Internal("invalid idempotency record".to_owned()))?;
     if request_sha256 != command.request_sha256 {
         return Err(DeployServiceError::conflict(
-            "Idempotency-Key was already used with another site composition",
+            "Idempotency-Key was already used with another app composition",
         ));
     }
     let result_json: String = row
@@ -289,58 +289,58 @@ async fn load_idempotent_result(
         .map_err(|_| DeployServiceError::Internal("invalid idempotency result".to_owned()))
 }
 
-async fn lock_site(
+async fn lock_app(
     transaction: &mut Transaction<'static, Postgres>,
-    command: &ReplaceSiteCompositionCommand,
-) -> DeployServiceResult<StoredSite> {
+    command: &ReplaceAppCompositionCommand,
+) -> DeployServiceResult<StoredApp> {
     let row = sqlx::query(
         "SELECT id, organization_id, version, desired_revision_id
-         FROM deploy_site
+         FROM deploy_app
          WHERE tenant_id = $1 AND uuid = $2 AND deleted_at IS NULL
          FOR UPDATE",
     )
     .bind(command.tenant_id)
-    .bind(&command.site_uuid)
+    .bind(&command.app_uuid)
     .fetch_optional(&mut **transaction)
     .await
-    .map_err(|error| composition_store_error("lock site composition", error))?
-    .ok_or_else(|| DeployServiceError::not_found("site not found"))?;
-    let site = StoredSite {
+    .map_err(|error| composition_store_error("lock app composition", error))?
+    .ok_or_else(|| DeployServiceError::not_found("app not found"))?;
+    let app = StoredApp {
         id: row
             .try_get("id")
-            .map_err(|_| DeployServiceError::Internal("invalid site record".to_owned()))?,
+            .map_err(|_| DeployServiceError::Internal("invalid app record".to_owned()))?,
         organization_id: row.try_get("organization_id").unwrap_or(0),
         version: row
             .try_get("version")
-            .map_err(|_| DeployServiceError::Internal("invalid site version".to_owned()))?,
+            .map_err(|_| DeployServiceError::Internal("invalid app version".to_owned()))?,
         desired_revision_id: row.try_get("desired_revision_id").ok(),
     };
-    if site.version != command.expected_site_version {
+    if app.version != command.expected_app_version {
         return Err(DeployServiceError::conflict(
-            "site composition version changed; refresh and retry",
+            "app composition version changed; refresh and retry",
         ));
     }
-    Ok(site)
+    Ok(app)
 }
 
-async fn reserve_site_version(
+async fn reserve_app_version(
     transaction: &mut Transaction<'static, Postgres>,
-    command: &ReplaceSiteCompositionCommand,
-    site: &StoredSite,
+    command: &ReplaceAppCompositionCommand,
+    app: &StoredApp,
 ) -> DeployServiceResult<()> {
     let result = sqlx::query(
-        "UPDATE deploy_site SET version = version + 1, updated_at = CAST($3 AS TIMESTAMPTZ)
+        "UPDATE deploy_app SET version = version + 1, updated_at = CAST($3 AS TIMESTAMPTZ)
          WHERE id = $1 AND version = $2",
     )
-    .bind(site.id)
-    .bind(command.expected_site_version)
+    .bind(app.id)
+    .bind(command.expected_app_version)
     .bind(&command.generated_at)
     .execute(&mut **transaction)
     .await
-    .map_err(|error| composition_store_error("reserve site composition version", error))?;
+    .map_err(|error| composition_store_error("reserve app composition version", error))?;
     if result.rows_affected() != 1 {
         return Err(DeployServiceError::conflict(
-            "site composition version changed; refresh and retry",
+            "app composition version changed; refresh and retry",
         ));
     }
     Ok(())
@@ -406,18 +406,18 @@ fn consistent_tenant_scope_hash(targets: &[StoredTarget]) -> DeployServiceResult
 
 async fn delete_current_composition(
     transaction: &mut Transaction<'static, Postgres>,
-    site_id: i64,
+    app_id: i64,
 ) -> DeployServiceResult<()> {
     for (table, context) in [
-        ("deploy_site_binding", "delete site bindings"),
-        ("deploy_site_variant_rule", "delete site variant rules"),
-        ("deploy_site_mount", "delete site mounts"),
-        ("deploy_site_variant", "delete site variants"),
-        ("deploy_site_resource", "delete site resources"),
+        ("deploy_app_binding", "delete app bindings"),
+        ("deploy_app_variant_rule", "delete app variant rules"),
+        ("deploy_app_mount", "delete app mounts"),
+        ("deploy_app_variant", "delete app variants"),
+        ("deploy_app_resource", "delete app resources"),
     ] {
-        let query = format!("DELETE FROM {table} WHERE site_id = $1");
+        let query = format!("DELETE FROM {table} WHERE app_id = $1");
         sqlx::query(AssertSqlSafe(&*query))
-            .bind(site_id)
+            .bind(app_id)
             .execute(&mut **transaction)
             .await
             .map_err(|error| composition_store_error(context, error))?;
@@ -428,8 +428,8 @@ async fn delete_current_composition(
 async fn insert_resources(
     repository: &DeployRepository,
     transaction: &mut Transaction<'static, Postgres>,
-    command: &ReplaceSiteCompositionCommand,
-    site: &StoredSite,
+    command: &ReplaceAppCompositionCommand,
+    app: &StoredApp,
 ) -> DeployServiceResult<BTreeMap<String, StoredResource>> {
     let mut stored = BTreeMap::new();
     for resource in &command.resources {
@@ -439,8 +439,8 @@ async fn insert_resources(
             DeployServiceError::Internal("serialize capabilities failed".to_owned())
         })?;
         sqlx::query(
-            "INSERT INTO deploy_site_resource (
-                id, uuid, tenant_id, organization_id, site_id, resource_key, provider_type,
+            "INSERT INTO deploy_app_resource (
+                id, uuid, tenant_id, organization_id, app_id, resource_key, provider_type,
                 provider_resource_uuid, provider_contract_version, capabilities_json, status,
                 last_validated_at, metadata, created_by, updated_by, created_at, updated_at, version
              ) VALUES (
@@ -451,8 +451,8 @@ async fn insert_resources(
         .bind(id)
         .bind(&uuid)
         .bind(command.tenant_id)
-        .bind(site.organization_id)
-        .bind(site.id)
+        .bind(app.organization_id)
+        .bind(app.id)
         .bind(&resource.key)
         .bind(provider_type_name(resource.provider_type))
         .bind(&resource.provider_resource_uuid)
@@ -462,7 +462,7 @@ async fn insert_resources(
         .bind(command.actor_id)
         .execute(&mut **transaction)
         .await
-        .map_err(|error| composition_store_error("insert site resource", error))?;
+        .map_err(|error| composition_store_error("insert app resource", error))?;
         stored.insert(resource.key.clone(), StoredResource { id, uuid });
     }
     Ok(stored)
@@ -471,16 +471,16 @@ async fn insert_resources(
 async fn insert_variants(
     repository: &DeployRepository,
     transaction: &mut Transaction<'static, Postgres>,
-    command: &ReplaceSiteCompositionCommand,
-    site: &StoredSite,
+    command: &ReplaceAppCompositionCommand,
+    app: &StoredApp,
 ) -> DeployServiceResult<BTreeMap<String, StoredVariant>> {
     let mut stored = BTreeMap::new();
     for variant in &command.request.variants {
         let id = next_id(repository.id_generator())?;
         let uuid = new_uuid();
         sqlx::query(
-            "INSERT INTO deploy_site_variant (
-                id,uuid,tenant_id,site_id,variant_key,label,client_class,is_default,priority,
+            "INSERT INTO deploy_app_variant (
+                id,uuid,tenant_id,app_id,variant_key,label,client_class,is_default,priority,
                 status,metadata,created_by,updated_by,created_at,updated_at,version
              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ACTIVE','{}',$10,$10,
                 CAST($11 AS TIMESTAMPTZ),CAST($11 AS TIMESTAMPTZ),1)",
@@ -488,7 +488,7 @@ async fn insert_variants(
         .bind(id)
         .bind(&uuid)
         .bind(command.tenant_id)
-        .bind(site.id)
+        .bind(app.id)
         .bind(&variant.key)
         .bind(&variant.label)
         .bind(client_class_name(variant.client_class))
@@ -498,7 +498,7 @@ async fn insert_variants(
         .bind(&command.generated_at)
         .execute(&mut **transaction)
         .await
-        .map_err(|error| composition_store_error("insert site variant", error))?;
+        .map_err(|error| composition_store_error("insert app variant", error))?;
         stored.insert(variant.key.clone(), StoredVariant { id, uuid });
     }
     Ok(stored)
@@ -507,8 +507,8 @@ async fn insert_variants(
 async fn insert_variant_rules(
     repository: &DeployRepository,
     transaction: &mut Transaction<'static, Postgres>,
-    command: &ReplaceSiteCompositionCommand,
-    site: &StoredSite,
+    command: &ReplaceAppCompositionCommand,
+    app: &StoredApp,
     variants: &BTreeMap<String, StoredVariant>,
 ) -> DeployServiceResult<Vec<RuntimeVariantRule>> {
     let mut runtime = Vec::with_capacity(command.request.variant_rules.len());
@@ -519,14 +519,14 @@ async fn insert_variant_rules(
             .get(&rule.target_variant_key)
             .ok_or_else(|| DeployServiceError::validation("unknown variant rule target"))?;
         let (rule_type, match_value, matcher) = match &rule.matcher {
-            SiteVariantRuleMatcher::PathPrefix { path_prefix } => (
+            AppVariantRuleMatcher::PathPrefix { path_prefix } => (
                 "PATH_PREFIX",
                 path_prefix.clone(),
                 RuntimeVariantRuleMatcher::PathPrefix {
                     path_prefix: path_prefix.clone(),
                 },
             ),
-            SiteVariantRuleMatcher::ClientClass { client_class } => (
+            AppVariantRuleMatcher::ClientClass { client_class } => (
                 "CLIENT_CLASS",
                 client_class_name(*client_class).to_owned(),
                 RuntimeVariantRuleMatcher::ClientClass {
@@ -535,8 +535,8 @@ async fn insert_variant_rules(
             ),
         };
         sqlx::query(
-            "INSERT INTO deploy_site_variant_rule (
-                id,uuid,tenant_id,site_id,rule_key,target_variant_id,rule_type,match_value,
+            "INSERT INTO deploy_app_variant_rule (
+                id,uuid,tenant_id,app_id,rule_key,target_variant_id,rule_type,match_value,
                 priority,status,created_by,updated_by,created_at,updated_at,version
              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'ACTIVE',$10,$10,
                 CAST($11 AS TIMESTAMPTZ),CAST($11 AS TIMESTAMPTZ),1)",
@@ -544,7 +544,7 @@ async fn insert_variant_rules(
         .bind(id)
         .bind(&uuid)
         .bind(command.tenant_id)
-        .bind(site.id)
+        .bind(app.id)
         .bind(&rule.key)
         .bind(variant.id)
         .bind(rule_type)
@@ -554,7 +554,7 @@ async fn insert_variant_rules(
         .bind(&command.generated_at)
         .execute(&mut **transaction)
         .await
-        .map_err(|error| composition_store_error("insert site variant rule", error))?;
+        .map_err(|error| composition_store_error("insert app variant rule", error))?;
         runtime.push(RuntimeVariantRule {
             rule_uuid: uuid,
             variant_uuid: variant.uuid.clone(),
@@ -568,8 +568,8 @@ async fn insert_variant_rules(
 async fn insert_mounts(
     repository: &DeployRepository,
     transaction: &mut Transaction<'static, Postgres>,
-    command: &ReplaceSiteCompositionCommand,
-    site: &StoredSite,
+    command: &ReplaceAppCompositionCommand,
+    app: &StoredApp,
     variants: &BTreeMap<String, StoredVariant>,
     resources: &BTreeMap<String, StoredResource>,
 ) -> DeployServiceResult<Vec<RuntimeMount>> {
@@ -586,8 +586,8 @@ async fn insert_mounts(
         let index_files = serde_json::to_string(&mount.index_files)
             .map_err(|_| DeployServiceError::Internal("serialize index files failed".to_owned()))?;
         sqlx::query(
-            "INSERT INTO deploy_site_mount (
-                id,uuid,tenant_id,site_id,mount_key,variant_id,resource_id,path_prefix,
+            "INSERT INTO deploy_app_mount (
+                id,uuid,tenant_id,app_id,mount_key,variant_id,resource_id,path_prefix,
                 resource_subpath,mount_mode,handler_type,index_files_json,spa_fallback_path,
                 priority,status,created_by,updated_by,created_at,updated_at,version
              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,CAST($12 AS JSONB),$13,$14,
@@ -596,7 +596,7 @@ async fn insert_mounts(
         .bind(id)
         .bind(&uuid)
         .bind(command.tenant_id)
-        .bind(site.id)
+        .bind(app.id)
         .bind(&mount.key)
         .bind(variant.id)
         .bind(resource.id)
@@ -611,7 +611,7 @@ async fn insert_mounts(
         .bind(&command.generated_at)
         .execute(&mut **transaction)
         .await
-        .map_err(|error| composition_store_error("insert site mount", error))?;
+        .map_err(|error| composition_store_error("insert app mount", error))?;
         runtime.push(RuntimeMount {
             mount_uuid: uuid,
             variant_uuid: variant.uuid.clone(),
@@ -632,8 +632,8 @@ async fn insert_mounts(
 async fn insert_bindings(
     repository: &DeployRepository,
     transaction: &mut Transaction<'static, Postgres>,
-    command: &ReplaceSiteCompositionCommand,
-    site: &StoredSite,
+    command: &ReplaceAppCompositionCommand,
+    app: &StoredApp,
     variants: &BTreeMap<String, StoredVariant>,
 ) -> DeployServiceResult<Vec<RuntimeBinding>> {
     let mut domains: BTreeMap<String, StoredDomain> = BTreeMap::new();
@@ -651,8 +651,8 @@ async fn insert_bindings(
         let uuid = new_uuid();
         let persisted = binding_action(&binding.action, variants)?;
         sqlx::query(
-            "INSERT INTO deploy_site_binding (
-                id,uuid,tenant_id,organization_id,site_id,binding_key,domain_id,hostname_ascii,
+            "INSERT INTO deploy_app_binding (
+                id,uuid,tenant_id,organization_id,app_id,binding_key,domain_id,hostname_ascii,
                 environment,path_prefix,action_type,default_variant_id,forced_variant_id,
                 redirect_scheme,redirect_hostname,redirect_path_prefix,redirect_status_code,
                 preserve_path,preserve_query,status,verified_at,activated_at,created_by,updated_by,
@@ -664,8 +664,8 @@ async fn insert_bindings(
         .bind(id)
         .bind(&uuid)
         .bind(command.tenant_id)
-        .bind(site.organization_id)
-        .bind(site.id)
+        .bind(app.organization_id)
+        .bind(app.id)
         .bind(&binding.key)
         .bind(domain.id)
         .bind(&domain.hostname)
@@ -684,7 +684,7 @@ async fn insert_bindings(
         .bind(command.actor_id)
         .execute(&mut **transaction)
         .await
-        .map_err(|error| composition_store_error("insert site binding", error))?;
+        .map_err(|error| composition_store_error("insert app binding", error))?;
         runtime.push(RuntimeBinding {
             binding_uuid: uuid,
             hostname: domain.hostname,
@@ -710,11 +710,11 @@ struct PersistedBindingAction {
 }
 
 fn binding_action(
-    action: &SiteBindingAction,
+    action: &AppBindingAction,
     variants: &BTreeMap<String, StoredVariant>,
 ) -> DeployServiceResult<PersistedBindingAction> {
     match action {
-        SiteBindingAction::Serve {
+        AppBindingAction::Serve {
             default_variant_key,
             forced_variant_key,
         } => {
@@ -736,7 +736,7 @@ fn binding_action(
                 ),
             })
         }
-        SiteBindingAction::Redirect {
+        AppBindingAction::Redirect {
             status_code,
             scheme,
             hostname,
@@ -756,8 +756,8 @@ fn binding_action(
             runtime_action: RuntimeBindingAction::Redirect {
                 status_code: *status_code,
                 scheme: match scheme {
-                    SiteRedirectScheme::Http => RuntimeRedirectScheme::Http,
-                    SiteRedirectScheme::Https => RuntimeRedirectScheme::Https,
+                    AppRedirectScheme::Http => RuntimeRedirectScheme::Http,
+                    AppRedirectScheme::Https => RuntimeRedirectScheme::Https,
                 },
                 hostname: hostname.clone(),
                 path_prefix: path_prefix.clone(),
@@ -795,8 +795,8 @@ async fn load_verified_domain(
     .bind(domain_uuid)
     .fetch_optional(&mut **transaction)
     .await
-    .map_err(|error| composition_store_error("load site binding domain", error))?
-    .ok_or_else(|| DeployServiceError::not_found("domain not found for site"))?;
+    .map_err(|error| composition_store_error("load app binding domain", error))?
+    .ok_or_else(|| DeployServiceError::not_found("domain not found for app"))?;
     Ok(StoredDomain {
         id: row
             .try_get("id")
@@ -827,25 +827,25 @@ fn runtime_resource(
 
 async fn next_revision_number(
     transaction: &mut Transaction<'static, Postgres>,
-    site_id: i64,
+    app_id: i64,
 ) -> DeployServiceResult<i64> {
     let row = sqlx::query(
         "SELECT COALESCE(MAX(revision_no), 0) + 1 AS revision_no
-         FROM deploy_site_revision WHERE site_id = $1",
+         FROM deploy_app_revision WHERE app_id = $1",
     )
-    .bind(site_id)
+    .bind(app_id)
     .fetch_one(&mut **transaction)
     .await
-    .map_err(|error| composition_store_error("reserve site revision number", error))?;
+    .map_err(|error| composition_store_error("reserve app revision number", error))?;
     row.try_get("revision_no")
-        .map_err(|_| DeployServiceError::Internal("invalid site revision number".to_owned()))
+        .map_err(|_| DeployServiceError::Internal("invalid app revision number".to_owned()))
 }
 
 #[allow(clippy::too_many_arguments)]
 async fn insert_revision(
     transaction: &mut Transaction<'static, Postgres>,
-    command: &ReplaceSiteCompositionCommand,
-    site: &StoredSite,
+    command: &ReplaceAppCompositionCommand,
+    app: &StoredApp,
     revision_id: i64,
     revision_uuid: &str,
     revision_number: i64,
@@ -854,10 +854,10 @@ async fn insert_revision(
     descriptor_sha256: &str,
 ) -> DeployServiceResult<()> {
     let descriptor_json = serde_json::to_string(descriptor)
-        .map_err(|_| DeployServiceError::Internal("serialize site revision failed".to_owned()))?;
+        .map_err(|_| DeployServiceError::Internal("serialize app revision failed".to_owned()))?;
     sqlx::query(
-        "INSERT INTO deploy_site_revision (
-            id,uuid,tenant_id,organization_id,site_id,revision_no,environment,
+        "INSERT INTO deploy_app_revision (
+            id,uuid,tenant_id,organization_id,app_id,revision_no,environment,
             descriptor_schema_version,descriptor_json,descriptor_sha256,compiler_version,
             source_config_version,idempotency_key,request_sha256,result_json,validation_status,
             validation_report_json,supersedes_revision_id,created_by,created_at
@@ -867,8 +867,8 @@ async fn insert_revision(
     .bind(revision_id)
     .bind(revision_uuid)
     .bind(command.tenant_id)
-    .bind(site.organization_id)
-    .bind(site.id)
+    .bind(app.organization_id)
+    .bind(app.id)
     .bind(revision_number)
     .bind(command.request.environment.as_str())
     .bind(WEBSITE_RUNTIME_SCHEMA_VERSION)
@@ -878,63 +878,63 @@ async fn insert_revision(
     .bind(source_config_version)
     .bind(&command.idempotency_key)
     .bind(&command.request_sha256)
-    .bind(site.desired_revision_id)
+    .bind(app.desired_revision_id)
     .bind(command.actor_id)
     .bind(&command.generated_at)
     .execute(&mut **transaction)
     .await
-    .map_err(|error| composition_store_error("insert site revision", error))?;
+    .map_err(|error| composition_store_error("insert app revision", error))?;
     Ok(())
 }
 
 async fn update_site_revision_pointers(
     transaction: &mut Transaction<'static, Postgres>,
-    command: &ReplaceSiteCompositionCommand,
-    site_id: i64,
+    command: &ReplaceAppCompositionCommand,
+    app_id: i64,
     default_variant_id: i64,
     revision_id: i64,
 ) -> DeployServiceResult<()> {
     sqlx::query(
-        "UPDATE deploy_site SET default_variant_id = $2, desired_revision_id = $3,
+        "UPDATE deploy_app SET default_variant_id = $2, desired_revision_id = $3,
             updated_at = CAST($4 AS TIMESTAMPTZ) WHERE id = $1",
     )
-    .bind(site_id)
+    .bind(app_id)
     .bind(default_variant_id)
     .bind(revision_id)
     .bind(&command.generated_at)
     .execute(&mut **transaction)
     .await
-    .map_err(|error| composition_store_error("update site revision pointers", error))?;
+    .map_err(|error| composition_store_error("update app revision pointers", error))?;
     Ok(())
 }
 
 async fn load_other_descriptors(
     transaction: &mut Transaction<'static, Postgres>,
     tenant_id: i64,
-    excluded_site_id: i64,
+    excluded_app_id: i64,
     environment: &str,
 ) -> DeployServiceResult<Vec<serde_json::Value>> {
     let rows = sqlx::query(
         "SELECT CAST(r.descriptor_json AS TEXT) AS descriptor_json
-         FROM deploy_site s
-         INNER JOIN deploy_site_revision r ON r.id = s.desired_revision_id
-         WHERE s.tenant_id = $1 AND s.id <> $2 AND s.status = 1
+         FROM deploy_app s
+         INNER JOIN deploy_app_revision r ON r.id = s.desired_revision_id
+         WHERE s.tenant_id = $1 AND s.id <> $2 AND s.app_status = 'ACTIVE'
            AND s.deleted_at IS NULL AND r.environment = $3
          ORDER BY s.uuid",
     )
     .bind(tenant_id)
-    .bind(excluded_site_id)
+    .bind(excluded_app_id)
     .bind(environment)
     .fetch_all(&mut **transaction)
     .await
-    .map_err(|error| composition_store_error("load desired site descriptors", error))?;
+    .map_err(|error| composition_store_error("load desired app descriptors", error))?;
     rows.into_iter()
         .map(|row| {
             let text: String = row.try_get("descriptor_json").map_err(|_| {
-                DeployServiceError::Internal("invalid desired site descriptor".to_owned())
+                DeployServiceError::Internal("invalid desired app descriptor".to_owned())
             })?;
             serde_json::from_str(&text).map_err(|_| {
-                DeployServiceError::Internal("invalid desired site descriptor".to_owned())
+                DeployServiceError::Internal("invalid desired app descriptor".to_owned())
             })
         })
         .collect()
@@ -944,11 +944,11 @@ async fn load_other_descriptors(
 async fn insert_runtime_assignments(
     repository: &DeployRepository,
     transaction: &mut Transaction<'static, Postgres>,
-    command: &ReplaceSiteCompositionCommand,
+    command: &ReplaceAppCompositionCommand,
     revision_id: i64,
     targets: &[StoredTarget],
     descriptors: &[serde_json::Value],
-) -> DeployServiceResult<Vec<SiteRuntimeAssignmentResponse>> {
+) -> DeployServiceResult<Vec<AppRuntimeAssignmentResponse>> {
     let desired_state_sha256 = canonical_sha256_excluding_field(
         &serde_json::json!({"descriptors": descriptors}),
         "__no_excluded_field",
@@ -982,7 +982,7 @@ async fn insert_runtime_assignments(
         let assignment_uuid = new_uuid();
         sqlx::query(
             "INSERT INTO deploy_runtime_assignment (
-                id,uuid,tenant_id,node_target_id,trigger_site_revision_id,generation,
+                id,uuid,tenant_id,node_target_id,trigger_app_revision_id,generation,
                 snapshot_uuid,snapshot_sha256,desired_state_sha256,runtime_set_json,
                 runtime_set_bytes,publish_status,attempt_count,created_at,updated_at,version
              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,CAST($10 AS JSONB),$11,'PENDING',0,
@@ -1016,7 +1016,7 @@ async fn insert_runtime_assignments(
         .execute(&mut **transaction)
         .await
         .map_err(|error| composition_store_error("supersede runtime assignments", error))?;
-        responses.push(SiteRuntimeAssignmentResponse {
+        responses.push(AppRuntimeAssignmentResponse {
             target_id: target.uuid.clone(),
             assignment_id: assignment_uuid,
             generation: generation.to_string(),
@@ -1045,12 +1045,12 @@ async fn next_target_generation(
 async fn persist_command_result(
     transaction: &mut Transaction<'static, Postgres>,
     revision_id: i64,
-    response: &SiteCompositionResponse,
+    response: &AppCompositionResponse,
 ) -> DeployServiceResult<()> {
     let result_json = serde_json::to_string(response).map_err(|_| {
         DeployServiceError::Internal("serialize composition result failed".to_owned())
     })?;
-    sqlx::query("UPDATE deploy_site_revision SET result_json = CAST($2 AS JSONB) WHERE id = $1")
+    sqlx::query("UPDATE deploy_app_revision SET result_json = CAST($2 AS JSONB) WHERE id = $1")
         .bind(revision_id)
         .bind(result_json)
         .execute(&mut **transaction)
@@ -1062,8 +1062,8 @@ async fn persist_command_result(
 async fn insert_composition_audit(
     repository: &DeployRepository,
     transaction: &mut Transaction<'static, Postgres>,
-    command: &ReplaceSiteCompositionCommand,
-    site_id: i64,
+    command: &ReplaceAppCompositionCommand,
+    app_id: i64,
     revision_id: i64,
 ) -> DeployServiceResult<()> {
     let audit_id = next_id(repository.id_generator())?;
@@ -1078,7 +1078,7 @@ async fn insert_composition_audit(
         "INSERT INTO deploy_audit_log (
             id,uuid,tenant_id,organization_id,operator_id,operator_type,action,target_type,
             target_id,target_uuid,metadata,created_at
-         ) VALUES ($1,$2,$3,$4,$5,'USER','sites.composition.update','site',$6,$7,
+         ) VALUES ($1,$2,$3,$4,$5,'USER','sites.composition.update','app',$6,$7,
             CAST($8 AS JSONB),CAST($9 AS TIMESTAMPTZ))",
     )
     .bind(audit_id)
@@ -1086,24 +1086,28 @@ async fn insert_composition_audit(
     .bind(command.tenant_id)
     .bind(command.organization_id)
     .bind(command.actor_id)
-    .bind(site_id)
-    .bind(&command.site_uuid)
+    .bind(app_id)
+    .bind(&command.app_uuid)
     .bind(metadata)
     .bind(&command.generated_at)
     .execute(&mut **transaction)
     .await
-    .map_err(|error| composition_store_error("insert site composition audit", error))?;
+    .map_err(|error| composition_store_error("insert app composition audit", error))?;
     Ok(())
 }
 
 fn runtime_environment(
-    environment: sdkwork_deploy_contract::SiteEnvironment,
+    environment: sdkwork_deploy_contract::AppPublishEnvironment,
 ) -> RuntimeEnvironment {
     match environment {
-        sdkwork_deploy_contract::SiteEnvironment::Development => RuntimeEnvironment::Development,
-        sdkwork_deploy_contract::SiteEnvironment::Test => RuntimeEnvironment::Test,
-        sdkwork_deploy_contract::SiteEnvironment::Staging => RuntimeEnvironment::Staging,
-        sdkwork_deploy_contract::SiteEnvironment::Production => RuntimeEnvironment::Production,
+        sdkwork_deploy_contract::AppPublishEnvironment::Development => {
+            RuntimeEnvironment::Development
+        }
+        sdkwork_deploy_contract::AppPublishEnvironment::Test => RuntimeEnvironment::Test,
+        sdkwork_deploy_contract::AppPublishEnvironment::Staging => RuntimeEnvironment::Staging,
+        sdkwork_deploy_contract::AppPublishEnvironment::Production => {
+            RuntimeEnvironment::Production
+        }
     }
 }
 
@@ -1114,62 +1118,62 @@ fn provider_type_name(provider_type: RuntimeProviderType) -> &'static str {
     }
 }
 
-fn client_class_name(client_class: SiteClientClass) -> &'static str {
+fn client_class_name(client_class: AppClientClass) -> &'static str {
     match client_class {
-        SiteClientClass::Desktop => "DESKTOP",
-        SiteClientClass::Mobile => "MOBILE",
-        SiteClientClass::Tablet => "TABLET",
-        SiteClientClass::Tv => "TV",
-        SiteClientClass::Bot => "BOT",
-        SiteClientClass::Other => "OTHER",
+        AppClientClass::Desktop => "DESKTOP",
+        AppClientClass::Mobile => "MOBILE",
+        AppClientClass::Tablet => "TABLET",
+        AppClientClass::Tv => "TV",
+        AppClientClass::Bot => "BOT",
+        AppClientClass::Other => "OTHER",
     }
 }
 
-fn runtime_client_class(client_class: SiteClientClass) -> RuntimeClientClass {
+fn runtime_client_class(client_class: AppClientClass) -> RuntimeClientClass {
     match client_class {
-        SiteClientClass::Desktop => RuntimeClientClass::Desktop,
-        SiteClientClass::Mobile => RuntimeClientClass::Mobile,
-        SiteClientClass::Tablet => RuntimeClientClass::Tablet,
-        SiteClientClass::Tv => RuntimeClientClass::Tv,
-        SiteClientClass::Bot => RuntimeClientClass::Bot,
-        SiteClientClass::Other => RuntimeClientClass::Other,
+        AppClientClass::Desktop => RuntimeClientClass::Desktop,
+        AppClientClass::Mobile => RuntimeClientClass::Mobile,
+        AppClientClass::Tablet => RuntimeClientClass::Tablet,
+        AppClientClass::Tv => RuntimeClientClass::Tv,
+        AppClientClass::Bot => RuntimeClientClass::Bot,
+        AppClientClass::Other => RuntimeClientClass::Other,
     }
 }
 
-fn mount_mode_name(mode: SiteMountMode) -> &'static str {
+fn mount_mode_name(mode: AppMountMode) -> &'static str {
     match mode {
-        SiteMountMode::Root => "ROOT",
-        SiteMountMode::Alias => "ALIAS",
+        AppMountMode::Root => "ROOT",
+        AppMountMode::Alias => "ALIAS",
     }
 }
 
-fn runtime_mount_mode(mode: SiteMountMode) -> RuntimeMountMode {
+fn runtime_mount_mode(mode: AppMountMode) -> RuntimeMountMode {
     match mode {
-        SiteMountMode::Root => RuntimeMountMode::Root,
-        SiteMountMode::Alias => RuntimeMountMode::Alias,
+        AppMountMode::Root => RuntimeMountMode::Root,
+        AppMountMode::Alias => RuntimeMountMode::Alias,
     }
 }
 
-fn mount_handler_name(handler: SiteMountHandler) -> &'static str {
+fn mount_handler_name(handler: AppMountHandler) -> &'static str {
     match handler {
-        SiteMountHandler::Static => "STATIC",
-        SiteMountHandler::Spa => "SPA",
-        SiteMountHandler::Wiki => "WIKI",
+        AppMountHandler::Static => "STATIC",
+        AppMountHandler::Spa => "SPA",
+        AppMountHandler::Wiki => "WIKI",
     }
 }
 
-fn runtime_handler(handler: SiteMountHandler) -> RuntimeHandler {
+fn runtime_handler(handler: AppMountHandler) -> RuntimeHandler {
     match handler {
-        SiteMountHandler::Static => RuntimeHandler::Static,
-        SiteMountHandler::Spa => RuntimeHandler::Spa,
-        SiteMountHandler::Wiki => RuntimeHandler::Wiki,
+        AppMountHandler::Static => RuntimeHandler::Static,
+        AppMountHandler::Spa => RuntimeHandler::Spa,
+        AppMountHandler::Wiki => RuntimeHandler::Wiki,
     }
 }
 
-fn redirect_scheme_name(scheme: SiteRedirectScheme) -> &'static str {
+fn redirect_scheme_name(scheme: AppRedirectScheme) -> &'static str {
     match scheme {
-        SiteRedirectScheme::Http => "http",
-        SiteRedirectScheme::Https => "https",
+        AppRedirectScheme::Http => "http",
+        AppRedirectScheme::Https => "https",
     }
 }
 
@@ -1181,7 +1185,7 @@ fn composition_store_error(context: &str, error: sqlx::Error) -> DeployServiceEr
     tracing::error!(error = %error, "{context}");
     match &error {
         sqlx::Error::Database(database) if database.is_unique_violation() => {
-            DeployServiceError::conflict("site composition conflicts with current state")
+            DeployServiceError::conflict("app composition conflicts with current state")
         }
         _ => DeployServiceError::Internal(format!("{context} failed")),
     }

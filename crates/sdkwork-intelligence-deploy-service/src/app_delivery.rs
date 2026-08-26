@@ -17,12 +17,11 @@ use sdkwork_deploy_contract::{
     RegisterPackageRequest, ReleaseStatus, SigningIdentityPage, SigningIdentityResponse,
     SourceRepositoryPage, SourceRepositoryResponse, UpdateAppDatabaseProfileRequest,
     UpdateAppEnvironmentRequest, UpdateAppRequest, UpdateBuildStateRequest, UsageEventPage,
-    ENTITLEMENT_DIMENSION_ACTIVE_APPS, ENTITLEMENT_DIMENSION_BUILD_CONCURRENCY,
+    UsageEventQuery, ENTITLEMENT_DIMENSION_ACTIVE_APPS, ENTITLEMENT_DIMENSION_BUILD_CONCURRENCY,
     ENTITLEMENT_DIMENSION_DEPLOYMENT_COUNT, ENTITLEMENT_DIMENSION_PACKAGE_STORAGE_BYTES,
     ENTITLEMENT_DIMENSION_PLATFORM_TARGETS, ENTITLEMENT_DIMENSION_RELEASE_COUNT,
     USAGE_DIMENSION_BUILD_MINUTES, USAGE_DIMENSION_DEPLOYMENT_COUNT,
     USAGE_DIMENSION_PACKAGE_STORAGE_BYTES,
-    UsageEventQuery
 };
 use sdkwork_deploy_core::{
     required_identity_field, validate_app_kind_platform, validate_catalog_name,
@@ -49,7 +48,7 @@ impl DeployService {
         Ok(context.tenant_id)
     }
 
-    async fn audit_app_action(
+    pub(crate) async fn audit_app_action(
         &self,
         context: &DeployAppRequestContext,
         action: &str,
@@ -127,14 +126,10 @@ impl DeployService {
             .await?;
         self.audit_app_action(context, "app.create", &app.id)
             .await?;
-        // Auto-apply the app's default publishing domains
-        // (`<slug>.app[-<env>].<suffix>`) when the app already carries a
-        // site; apps without a site provision lazily through
-        // `provision_app_default_domains` once the site is linked.
-        if app.site_id.is_some() {
-            self.provision_app_default_domains(context, &app.id, &app.default_environment)
-                .await?;
-        }
+        // Every app is a publishable surface: auto-apply the app's default
+        // publishing domains (`<slug>.app[-<env>].<suffix>`).
+        self.provision_app_default_domains(context, &app.id, &app.default_environment)
+            .await?;
         Ok(app)
     }
 
@@ -472,7 +467,7 @@ impl DeployService {
             self.record_usage(InsertUsageEventCommand {
                 tenant_id: context.tenant_id,
                 organization_id: context.organization_id.unwrap_or(0),
-                site_id: None,
+                app_id: None,
                 binding_id: None,
                 attribution: None,
                 period_start,
@@ -533,9 +528,9 @@ impl DeployService {
         self.record_usage(InsertUsageEventCommand {
             tenant_id: context.tenant_id,
             organization_id: context.organization_id.unwrap_or(0),
-            site_id: None,
-                binding_id: None,
-                attribution: None,
+            app_id: None,
+            binding_id: None,
+            attribution: None,
             period_start: Self::billing_period_start(None),
             dimension: USAGE_DIMENSION_PACKAGE_STORAGE_BYTES.to_owned(),
             quantity: package.package_size_bytes.max(0),
@@ -706,7 +701,7 @@ impl DeployService {
         if request.idempotency_key.trim().is_empty() {
             return Err(DeployServiceError::validation("idempotencyKey is required"));
         }
-        validate_deployment_pair(&request)?;
+        validate_deployment_pair(request)?;
         let deployment = self
             .repository
             .create_app_deployment(tenant_id, context.actor_id, request)
@@ -718,9 +713,9 @@ impl DeployService {
         self.record_usage(InsertUsageEventCommand {
             tenant_id: context.tenant_id,
             organization_id: context.organization_id.unwrap_or(0),
-            site_id: None,
-                binding_id: None,
-                attribution: None,
+            app_id: None,
+            binding_id: None,
+            attribution: None,
             period_start: Self::billing_period_start(None),
             dimension: USAGE_DIMENSION_DEPLOYMENT_COUNT.to_owned(),
             quantity: 1,

@@ -1,6 +1,6 @@
-//! Platform app publishing domains: idempotent provisioning of every app's
+﻿//! Platform app publishing domains: idempotent provisioning of every app's
 //! default publishable hostnames (`<slug>.app[-<env>].<suffix>`) and the
-//! hostname → site resolution the Web Server fallback uses.
+//! hostname → app resolution the Web Server fallback uses.
 //!
 //! The platform owns the apex domains (`app.<suffix>`), so provisioned
 //! hostnames are automatically `VERIFIED`; custom domains keep the regular
@@ -9,9 +9,7 @@
 use sdkwork_deploy_contract::{
     DeployServiceError, DeployServiceResult, ProvisionAppDomainsResult, ResolvedDeployServer,
 };
-use sdkwork_deploy_core::{
-    app_domain_label, default_app_hostname, PLATFORM_APP_DOMAIN_SUFFIXES,
-};
+use sdkwork_deploy_core::{app_domain_label, default_app_hostname, PLATFORM_APP_DOMAIN_SUFFIXES};
 use sqlx::Row;
 
 use crate::support::{new_uuid, next_id, now_rfc3339, store_error};
@@ -23,9 +21,8 @@ impl DeployRepository {
     pub async fn ingest_usage_events_lookup(
         &self,
         events: &[sdkwork_deploy_contract::UsageEventIngestItem],
-    ) -> sdkwork_deploy_contract::DeployServiceResult<
-        sdkwork_deploy_contract::UsageIngestResult,
-    > {
+    ) -> sdkwork_deploy_contract::DeployServiceResult<sdkwork_deploy_contract::UsageIngestResult>
+    {
         self.insert_usage_events_batch_repo(events).await
     }
 }
@@ -40,7 +37,7 @@ impl DeployRepository {
         hostname: &str,
         environment: &str,
     ) -> DeployServiceResult<Option<ResolvedDeployServer>> {
-        self.resolve_active_site_by_hostname_repo(hostname, environment)
+        self.resolve_active_app_by_hostname_repo(hostname, environment)
             .await
     }
 }
@@ -132,18 +129,18 @@ impl DeployRepository {
     /// Idempotently provision an app's default publishing domains for one
     /// lifecycle environment: for every platform suffix, an EXACT
     /// `deploy_domain` (`<slug>.app[-<env>].<suffix>`, auto-verified) and a
-    /// `SERVE` binding on the app's site. The first suffix (`sdkwork.com`)
+    /// `SERVE` binding on the app's binding. The first suffix (`sdkwork.com`)
     /// binding is the canonical one.
     pub(super) async fn provision_app_default_domains_repo(
         &self,
         tenant_id: i64,
         organization_id: i64,
         actor_id: Option<i64>,
-        site_id: &str,
+        app_id: &str,
         app_slug: &str,
         environment: &str,
     ) -> DeployServiceResult<ProvisionAppDomainsResult> {
-        let site_id = crate::support::resolve_site_internal_id(&self.pool, tenant_id, site_id).await?;
+        let app_id = crate::support::resolve_app_internal_id(&self.pool, tenant_id, app_id).await?;
         let mut result = ProvisionAppDomainsResult::default();
         let label = app_domain_label(environment);
         let mut transaction = self
@@ -222,10 +219,10 @@ impl DeployRepository {
                 }
             };
             let binding_exists: Option<i64> = sqlx::query_scalar(
-                "SELECT id FROM deploy_site_binding
-                 WHERE site_id = $1 AND hostname_ascii = $2 AND deleted_at IS NULL",
+                "SELECT id FROM deploy_app_binding
+                 WHERE app_id = $1 AND hostname_ascii = $2 AND deleted_at IS NULL",
             )
-            .bind(site_id)
+            .bind(app_id)
             .bind(&hostname)
             .fetch_optional(&mut *transaction)
             .await
@@ -239,8 +236,8 @@ impl DeployRepository {
             let now = now_rfc3339();
             let binding_key = format!("appd-{label}-{index}");
             sqlx::query(
-                "INSERT INTO deploy_site_binding (
-                    id, uuid, tenant_id, organization_id, site_id, binding_key, domain_id,
+                "INSERT INTO deploy_app_binding (
+                    id, uuid, tenant_id, organization_id, app_id, binding_key, domain_id,
                     hostname_ascii, environment, path_prefix, action_type, is_canonical,
                     status, verified_at, activated_at, created_by, updated_by,
                     created_at, updated_at, version
@@ -251,7 +248,7 @@ impl DeployRepository {
             .bind(new_uuid())
             .bind(tenant_id)
             .bind(organization_id)
-            .bind(site_id)
+            .bind(app_id)
             .bind(&binding_key)
             .bind(domain_id)
             .bind(&hostname)
@@ -272,12 +269,12 @@ impl DeployRepository {
         Ok(result)
     }
 
-    /// Resolve an active site binding by its exact hostname in one lifecycle
+    /// Resolve an active app binding by its exact hostname in one lifecycle
     /// environment and return the site's latest compiled website runtime
-    /// descriptor (`deploy_site_revision.descriptor_json`). This is the Web
+    /// descriptor (`deploy_app_revision.descriptor_json`). This is the Web
     /// Server fallback lookup: custom domains and default app domains both
     /// land here (default app bindings are explicit rows).
-    pub(super) async fn resolve_active_site_by_hostname_repo(
+    pub(super) async fn resolve_active_app_by_hostname_repo(
         &self,
         hostname: &str,
         environment: &str,
@@ -289,14 +286,12 @@ impl DeployRepository {
             ));
         }
         let row = sqlx::query(
-            "SELECT s.uuid AS site_uuid, s.slug AS site_slug, b.tenant_id,
+            "SELECT s.uuid AS app_uuid, s.slug AS app_slug, b.tenant_id,
                     b.hostname_ascii, b.path_prefix, b.action_type, b.uuid AS binding_uuid,
-                    app.uuid AS app_uuid,
                     r.descriptor_json, r.descriptor_sha256, r.revision_no, b.environment
-             FROM deploy_site_binding b
-             JOIN deploy_site s ON s.id = b.site_id AND s.deleted_at IS NULL
-             JOIN deploy_site_revision r ON r.id = s.current_revision_id
-             LEFT JOIN deploy_app app ON app.site_id = s.id AND app.deleted_at IS NULL
+             FROM deploy_app_binding b
+             JOIN deploy_app s ON s.id = b.app_id AND s.deleted_at IS NULL
+             JOIN deploy_app_revision r ON r.id = s.current_revision_id
              WHERE b.hostname_ascii = $1 AND b.environment = $2
                AND b.status = 'ACTIVE' AND b.deleted_at IS NULL
                AND r.validation_status = 'VALID'
@@ -307,21 +302,20 @@ impl DeployRepository {
         .bind(environment)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|error| store_error("resolve active site by hostname", error))?;
+        .map_err(|error| store_error("resolve active app by hostname", error))?;
         let Some(row) = row else {
             return Ok(None);
         };
-        let site_uuid: String = row
-            .try_get("site_uuid")
-            .map_err(|error| DeployServiceError::Internal(format!("read site uuid: {error}")))?;
-        let site_slug: String = row
-            .try_get("site_slug")
-            .map_err(|error| DeployServiceError::Internal(format!("read site slug: {error}")))?;
+        let app_uuid: String = row
+            .try_get("app_uuid")
+            .map_err(|error| DeployServiceError::Internal(format!("read app uuid: {error}")))?;
+        let app_slug: String = row
+            .try_get("app_slug")
+            .map_err(|error| DeployServiceError::Internal(format!("read app slug: {error}")))?;
         let tenant_id: i64 = row
             .try_get("tenant_id")
             .map_err(|error| DeployServiceError::Internal(format!("read tenant id: {error}")))?;
         let binding_uuid: Option<String> = row.try_get("binding_uuid").ok();
-        let app_uuid: Option<String> = row.try_get("app_uuid").ok();
         let hostname: String = row
             .try_get("hostname_ascii")
             .map_err(|error| DeployServiceError::Internal(format!("read hostname: {error}")))?;
@@ -334,9 +328,9 @@ impl DeployRepository {
         let descriptor_json: serde_json::Value = row
             .try_get("descriptor_json")
             .map_err(|error| DeployServiceError::Internal(format!("read descriptor: {error}")))?;
-        let descriptor_sha256: String = row
-            .try_get("descriptor_sha256")
-            .map_err(|error| DeployServiceError::Internal(format!("read descriptor hash: {error}")))?;
+        let descriptor_sha256: String = row.try_get("descriptor_sha256").map_err(|error| {
+            DeployServiceError::Internal(format!("read descriptor hash: {error}"))
+        })?;
         let revision_no: i64 = row
             .try_get("revision_no")
             .map_err(|error| DeployServiceError::Internal(format!("read revision no: {error}")))?;
@@ -344,13 +338,13 @@ impl DeployRepository {
             .try_get("environment")
             .map_err(|error| DeployServiceError::Internal(format!("read environment: {error}")))?;
         Ok(Some(ResolvedDeployServer {
-            site_uuid,
-            site_slug,
+            app_uuid: app_uuid.clone(),
+            app_slug,
             hostname,
             path_prefix,
             action_type,
             tenant_id,
-            app_id: app_uuid,
+            app_id: Some(app_uuid),
             binding_id: binding_uuid,
             descriptor_json,
             descriptor_sha256,

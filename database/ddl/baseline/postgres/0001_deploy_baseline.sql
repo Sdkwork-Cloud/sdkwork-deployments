@@ -12,57 +12,17 @@
 -- Author: SDKWork Deploy Server
 -- Date: 2026-06-14
 
-CREATE TABLE IF NOT EXISTS deploy_site (
-    id              BIGINT       NOT NULL,
-    uuid            VARCHAR(64)  NOT NULL,
-    tenant_id       BIGINT       NOT NULL DEFAULT 0,
-    organization_id BIGINT       NOT NULL DEFAULT 0,
-    data_scope      INTEGER      NOT NULL DEFAULT 1,
-    user_id         BIGINT,
-    name            VARCHAR(100) NOT NULL,
-    slug            VARCHAR(100) NOT NULL,
-    description     VARCHAR(500),
-    site_type       INTEGER      NOT NULL DEFAULT 1,
-    status          INTEGER      NOT NULL DEFAULT 0,
-    runtime_config  JSONB        NOT NULL DEFAULT '{}',
-    metadata        JSONB        NOT NULL DEFAULT '{}',
-    default_variant_id BIGINT,
-    current_revision_id BIGINT,
-    desired_revision_id BIGINT,
-    created_at      TIMESTAMPTZ  NOT NULL,
-    updated_at      TIMESTAMPTZ  NOT NULL,
-    version         BIGINT       NOT NULL DEFAULT 0,
-    deleted_at      TIMESTAMPTZ,
-    deleted_by      BIGINT,
-    PRIMARY KEY (id),
-    CONSTRAINT uk_deploy_site_uuid UNIQUE (uuid),
-    CONSTRAINT uk_deploy_site_slug UNIQUE (tenant_id, slug),
-    CONSTRAINT chk_deploy_site_type CHECK (site_type BETWEEN 1 AND 6),
-    CONSTRAINT chk_deploy_site_status CHECK (status BETWEEN 0 AND 3)
-);
 
-COMMENT ON TABLE deploy_site IS '站点主表';
-COMMENT ON COLUMN deploy_site.id IS '雪花ID主键';
-COMMENT ON COLUMN deploy_site.uuid IS '外部稳定标识';
-COMMENT ON COLUMN deploy_site.tenant_id IS '租户ID';
-COMMENT ON COLUMN deploy_site.organization_id IS '组织ID，0表示租户级';
-COMMENT ON COLUMN deploy_site.data_scope IS '数据可见范围：1=私有，2=组织，3=租户';
-COMMENT ON COLUMN deploy_site.user_id IS '创建者用户ID';
-COMMENT ON COLUMN deploy_site.name IS '站点名称';
-COMMENT ON COLUMN deploy_site.slug IS 'URL友好标识，租户内唯一';
-COMMENT ON COLUMN deploy_site.site_type IS '站点类型：1=静态，2=SPA，3=Node，4=PHP，5=Python，6=自定义';
-COMMENT ON COLUMN deploy_site.status IS '状态：0=草稿，1=活跃，2=暂停，3=归档';
-COMMENT ON COLUMN deploy_site.runtime_config IS '运行时配置JSON';
-COMMENT ON COLUMN deploy_site.version IS '乐观锁版本号';
 
-CREATE INDEX IF NOT EXISTS idx_deploy_site_tenant_status_updated
-    ON deploy_site (tenant_id, organization_id, status, updated_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_deploy_site_user_updated
-    ON deploy_site (tenant_id, user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_deploy_app_tenant_status_updated
+    ON deploy_app (tenant_id, organization_id, status, updated_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_deploy_site_slug
-    ON deploy_site (tenant_id, slug);
+CREATE INDEX IF NOT EXISTS idx_deploy_app_user_updated
+    ON deploy_app (tenant_id, user_id, updated_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_app_slug
+    ON deploy_app (tenant_id, slug);
 
 CREATE TABLE IF NOT EXISTS deploy_dns_zone (
     id              BIGINT       NOT NULL,
@@ -198,7 +158,7 @@ CREATE TABLE IF NOT EXISTS deploy_nginx_config (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(64)  NOT NULL,
     tenant_id       BIGINT       NOT NULL DEFAULT 0,
-    site_id         BIGINT       NOT NULL,
+    app_id         BIGINT       NOT NULL,
     domain_id       BIGINT,
     config_type     INTEGER      NOT NULL DEFAULT 1,
     config_name     VARCHAR(200) NOT NULL,
@@ -214,7 +174,7 @@ CREATE TABLE IF NOT EXISTS deploy_nginx_config (
     version         BIGINT       NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     CONSTRAINT uk_deploy_nginx_config_uuid UNIQUE (uuid),
-    CONSTRAINT fk_deploy_nginx_config_site FOREIGN KEY (site_id) REFERENCES deploy_site(id)
+    CONSTRAINT fk_deploy_nginx_config_app FOREIGN KEY (app_id) REFERENCES deploy_app(id)
 );
 
 COMMENT ON TABLE deploy_nginx_config IS 'Nginx配置版本表';
@@ -226,8 +186,8 @@ COMMENT ON COLUMN deploy_nginx_config.version_no IS '配置版本号';
 COMMENT ON COLUMN deploy_nginx_config.deployed_at IS '部署时间';
 COMMENT ON COLUMN deploy_nginx_config.status IS '状态：0=草稿，1=活跃，2=归档';
 
-CREATE INDEX IF NOT EXISTS idx_deploy_nginx_config_site_active
-    ON deploy_nginx_config (site_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_deploy_nginx_config_app_active
+    ON deploy_nginx_config (app_id, is_active);
 
 CREATE INDEX IF NOT EXISTS idx_deploy_nginx_config_type_status
     ON deploy_nginx_config (config_type, status);
@@ -372,55 +332,55 @@ END $$;
 -- Date: 2026-06-14
 
 CREATE TABLE IF NOT EXISTS deploy_deployment (
-    id              BIGINT       NOT NULL,
-    uuid            VARCHAR(64)  NOT NULL,
-    tenant_id       BIGINT       NOT NULL DEFAULT 0,
-    organization_id BIGINT       NOT NULL DEFAULT 0,
-    user_id         BIGINT,
-    site_id         BIGINT       NOT NULL,
-    deploy_type     INTEGER      NOT NULL DEFAULT 1,
-    version_tag     VARCHAR(100),
-    commit_hash     VARCHAR(64),
-    source_ref      VARCHAR(500),
-    build_log       TEXT,
-    deploy_log      TEXT,
-    artifact_path   VARCHAR(500),
-    artifact_size   BIGINT,
-    artifact_hash   VARCHAR(64),
-    environment     VARCHAR(32)  NOT NULL DEFAULT 'production',
-    status          INTEGER      NOT NULL DEFAULT 0,
-    started_at      TIMESTAMPTZ,
-    completed_at    TIMESTAMPTZ,
-    duration_ms     BIGINT,
-    rollback_from   BIGINT,
-    idempotency_key VARCHAR(200),
-    request_id      VARCHAR(128),
-    metadata        JSONB        NOT NULL DEFAULT '{}',
-    created_at      TIMESTAMPTZ  NOT NULL,
-    updated_at      TIMESTAMPTZ  NOT NULL,
-    version         BIGINT       NOT NULL DEFAULT 0,
+    id                          BIGINT       NOT NULL,
+    uuid                        VARCHAR(64)  NOT NULL,
+    tenant_id                   BIGINT       NOT NULL DEFAULT 0,
+    organization_id             BIGINT       NOT NULL DEFAULT 0,
+    app_id                      BIGINT       NOT NULL,
+    platform_target_id          BIGINT       NOT NULL,
+    release_id                  BIGINT       NULL,
+    deployment_kind             VARCHAR(32)  NOT NULL,
+    deployment_target           VARCHAR(32)  NOT NULL,
+    environment                 VARCHAR(32)  NOT NULL DEFAULT 'production',
+    strategy                    VARCHAR(24)  NOT NULL DEFAULT 'IMMEDIATE',
+    percentage                  INTEGER      NULL,
+    platform_review_ref         VARCHAR(255) NULL,
+    deployment_status           VARCHAR(24)  NOT NULL DEFAULT 'PENDING',
+    rollback_from_deployment_id BIGINT       NULL,
+    idempotency_key             VARCHAR(200) NOT NULL,
+    started_at                  TIMESTAMPTZ  NULL,
+    completed_at                TIMESTAMPTZ  NULL,
+    metadata                    JSONB        NOT NULL DEFAULT '{}',
+    created_by                  BIGINT       NULL,
+    created_at                  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at                  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    version                     BIGINT       NOT NULL DEFAULT 1,
     PRIMARY KEY (id),
     CONSTRAINT uk_deploy_deployment_uuid UNIQUE (uuid),
     CONSTRAINT uk_deploy_deployment_idempotency UNIQUE (tenant_id, idempotency_key),
-    CONSTRAINT fk_deploy_deployment_site FOREIGN KEY (site_id) REFERENCES deploy_site(id)
+    CONSTRAINT fk_deploy_deployment_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT fk_deploy_deployment_rollback FOREIGN KEY (rollback_from_deployment_id) REFERENCES deploy_deployment(id),
+    CONSTRAINT chk_deploy_deployment_percentage CHECK (percentage IS NULL OR (percentage >= 1 AND percentage <= 100))
 );
 
-COMMENT ON TABLE deploy_deployment IS '部署记录表';
-COMMENT ON COLUMN deploy_deployment.deploy_type IS '部署类型：1=上传，2=Git，3=CI/CD，4=API';
-COMMENT ON COLUMN deploy_deployment.status IS '状态：0=待处理，1=构建中，2=部署中，3=成功，4=失败，5=已回滚';
-COMMENT ON COLUMN deploy_deployment.duration_ms IS '部署耗时（毫秒）';
-COMMENT ON COLUMN deploy_deployment.rollback_from IS '回滚来源部署ID';
+COMMENT ON TABLE deploy_deployment IS '部署执行记录表（统一应用交付模型）';
+COMMENT ON COLUMN deploy_deployment.deployment_kind IS '部署类型：ARTIFACT_RELEASE/SITE_CONFIG/TLS_CONFIG/MINIPROGRAM_REVIEW/STORE_SUBMISSION/OTA_DISTRIBUTION/ENTERPRISE_DISTRIBUTION/CONTAINER_ROLLOUT';
+COMMENT ON COLUMN deploy_deployment.deployment_target IS '部署目标：WEB_NODE/CONTAINER/WECHAT_REVIEW/DOUYIN_REVIEW/APP_STORE_CONNECT/TESTFLIGHT/OTA/ENTERPRISE/HARMONYOS_STORE/MICROSOFT_STORE/MAC_APP_STORE';
+COMMENT ON COLUMN deploy_deployment.deployment_status IS '状态：PENDING/SUBMITTING/PENDING_REVIEW/IN_REVIEW/REJECTED/APPROVED/LIVE/ACTIVE/DEGRADED/FAILED/ROLLED_BACK/CANCELLED';
+COMMENT ON COLUMN deploy_deployment.strategy IS '发布策略：IMMEDIATE/PERCENTAGE/MANUAL_APPROVAL';
+COMMENT ON COLUMN deploy_deployment.percentage IS '灰度百分比（1-100），仅 PERCENTAGE 策略使用';
+COMMENT ON COLUMN deploy_deployment.rollback_from_deployment_id IS '回滚来源部署ID';
 COMMENT ON COLUMN deploy_deployment.idempotency_key IS '幂等键，租户内唯一';
 
-CREATE INDEX IF NOT EXISTS idx_deploy_deployment_site_created
-    ON deploy_deployment (site_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_deploy_deployment_app_created
+    ON deploy_deployment (app_id, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_deploy_deployment_tenant_status
-    ON deploy_deployment (tenant_id, status, created_at DESC);
+    ON deploy_deployment (tenant_id, deployment_status, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_deploy_deployment_status
-    ON deploy_deployment (status)
-    WHERE status IN (0, 1, 2);
+CREATE INDEX IF NOT EXISTS idx_deploy_deployment_status_active
+    ON deploy_deployment (deployment_status)
+    WHERE deployment_status IN ('PENDING', 'SUBMITTING', 'PENDING_REVIEW', 'IN_REVIEW', 'ROLLING');
 
 -- source: migrations/006_create_deploy_env_variable.sql
 -- Migration: 006_create_deploy_env_variable
@@ -432,7 +392,7 @@ CREATE TABLE IF NOT EXISTS deploy_env_variable (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(64)  NOT NULL,
     tenant_id       BIGINT       NOT NULL DEFAULT 0,
-    site_id         BIGINT       NOT NULL,
+    app_id         BIGINT       NOT NULL,
     environment     VARCHAR(32)  NOT NULL DEFAULT 'production',
     key             VARCHAR(200) NOT NULL,
     value_encrypted TEXT         NOT NULL,
@@ -443,7 +403,7 @@ CREATE TABLE IF NOT EXISTS deploy_env_variable (
     version         BIGINT       NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     CONSTRAINT uk_deploy_env_variable_uuid UNIQUE (uuid),
-    CONSTRAINT uk_deploy_env_variable_key UNIQUE (site_id, environment, key)
+    CONSTRAINT uk_deploy_env_variable_key UNIQUE (app_id, environment, key)
 );
 
 COMMENT ON TABLE deploy_env_variable IS '环境变量表';
@@ -452,8 +412,8 @@ COMMENT ON COLUMN deploy_env_variable.value_encrypted IS '加密存储的变量�
 COMMENT ON COLUMN deploy_env_variable.is_secret IS '是否为密钥类型';
 COMMENT ON COLUMN deploy_env_variable.environment IS '所属环境';
 
-CREATE INDEX IF NOT EXISTS idx_deploy_env_variable_site_env
-    ON deploy_env_variable (site_id, environment);
+CREATE INDEX IF NOT EXISTS idx_deploy_env_variable_app_env
+    ON deploy_env_variable (app_id, environment);
 
 -- source: migrations/007_create_deploy_health_check.sql
 -- Migration: 007_create_deploy_health_check
@@ -465,7 +425,7 @@ CREATE TABLE IF NOT EXISTS deploy_health_check (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(64)  NOT NULL,
     tenant_id       BIGINT       NOT NULL DEFAULT 0,
-    site_id         BIGINT       NOT NULL,
+    app_id         BIGINT       NOT NULL,
     domain_id       BIGINT,
     check_type      INTEGER      NOT NULL DEFAULT 1,
     check_url       VARCHAR(2000),
@@ -480,7 +440,7 @@ CREATE TABLE IF NOT EXISTS deploy_health_check (
     version         BIGINT       NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     CONSTRAINT uk_deploy_health_check_uuid UNIQUE (uuid),
-    CONSTRAINT fk_deploy_health_check_site FOREIGN KEY (site_id) REFERENCES deploy_site(id)
+    CONSTRAINT fk_deploy_health_check_app FOREIGN KEY (app_id) REFERENCES deploy_app(id)
 );
 
 COMMENT ON TABLE deploy_health_check IS '健康检查配置表';
@@ -489,8 +449,8 @@ COMMENT ON COLUMN deploy_health_check.check_interval IS '检查间隔（秒）';
 COMMENT ON COLUMN deploy_health_check.timeout_ms IS '超时时间（毫秒）';
 COMMENT ON COLUMN deploy_health_check.retry_count IS '重试次数';
 
-CREATE INDEX IF NOT EXISTS idx_deploy_health_check_site
-    ON deploy_health_check (site_id);
+CREATE INDEX IF NOT EXISTS idx_deploy_health_check_app
+    ON deploy_health_check (app_id);
 
 -- source: migrations/008_create_deploy_health_result.sql
 -- Migration: 008_create_deploy_health_result
@@ -503,7 +463,7 @@ CREATE TABLE IF NOT EXISTS deploy_health_result (
     uuid            VARCHAR(64)  NOT NULL,
     tenant_id       BIGINT       NOT NULL DEFAULT 0,
     health_check_id BIGINT       NOT NULL,
-    site_id         BIGINT       NOT NULL,
+    app_id         BIGINT       NOT NULL,
     is_healthy      BOOLEAN      NOT NULL,
     response_ms     INTEGER,
     status_code     INTEGER,
@@ -522,8 +482,8 @@ COMMENT ON COLUMN deploy_health_result.checked_at IS '检查时间';
 CREATE INDEX IF NOT EXISTS idx_deploy_health_result_check_time
     ON deploy_health_result (health_check_id, checked_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_deploy_health_result_site_time
-    ON deploy_health_result (site_id, checked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_deploy_health_result_app_time
+    ON deploy_health_result (app_id, checked_at DESC);
 
 -- source: migrations/009_create_deploy_audit_log.sql
 -- Migration: 009_create_deploy_audit_log
@@ -639,7 +599,7 @@ CREATE TABLE IF NOT EXISTS deploy_upload_session_ref (
     id BIGINT PRIMARY KEY NOT NULL,
     uuid VARCHAR(36) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    site_id BIGINT NULL,
+    app_id BIGINT NULL,
     drive_upload_session_id VARCHAR(128) NOT NULL,
     drive_upload_item_id VARCHAR(128) NULL,
     drive_space_id VARCHAR(128) NULL,
@@ -677,7 +637,7 @@ CREATE TABLE IF NOT EXISTS deploy_artifact (
     id BIGINT PRIMARY KEY NOT NULL,
     uuid VARCHAR(36) NOT NULL,
     tenant_id BIGINT NOT NULL,
-    site_id BIGINT NULL,
+    app_id BIGINT NULL,
     upload_session_ref_id BIGINT NOT NULL,
     package_type INTEGER NOT NULL,
     file_name VARCHAR(500) NOT NULL,
@@ -707,33 +667,44 @@ CREATE INDEX IF NOT EXISTS idx_deploy_artifact_tenant_created
 
 -- Immutable site releases referencing one artifact
 CREATE TABLE IF NOT EXISTS deploy_release (
-    id BIGINT PRIMARY KEY NOT NULL,
-    uuid VARCHAR(36) NOT NULL,
-    tenant_id BIGINT NOT NULL,
-    site_id BIGINT NOT NULL,
-    artifact_id BIGINT NOT NULL,
-    version_tag VARCHAR(100) NULL,
-    status INTEGER NOT NULL DEFAULT 1,
-    idempotency_key VARCHAR(128) NOT NULL,
-    metadata JSONB NOT NULL DEFAULT '{}',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    version BIGINT NOT NULL DEFAULT 0,
-    CONSTRAINT fk_deploy_release_site FOREIGN KEY (site_id) REFERENCES deploy_site(id),
-    CONSTRAINT fk_deploy_release_artifact FOREIGN KEY (artifact_id) REFERENCES deploy_artifact(id)
+    id                  BIGINT       NOT NULL,
+    uuid                VARCHAR(36)  NOT NULL,
+    tenant_id           BIGINT       NOT NULL,
+    organization_id     BIGINT       NOT NULL DEFAULT 0,
+    app_id              BIGINT       NOT NULL,
+    platform_target_id  BIGINT       NOT NULL,
+    package_id          BIGINT       NOT NULL,
+    semantic_version    VARCHAR(64)  NOT NULL,
+    build_number        BIGINT       NOT NULL DEFAULT 0,
+    release_status      VARCHAR(16)  NOT NULL DEFAULT 'DRAFT',
+    release_notes_json  JSONB        NOT NULL DEFAULT '{}',
+    idempotency_key     VARCHAR(128) NOT NULL,
+    metadata            JSONB        NOT NULL DEFAULT '{}',
+    created_by          BIGINT       NULL,
+    updated_by          BIGINT       NULL,
+    created_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    deleted_at          TIMESTAMPTZ  NULL,
+    version             BIGINT       NOT NULL DEFAULT 1,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_deploy_release_uuid UNIQUE (uuid),
+    CONSTRAINT fk_deploy_release_app FOREIGN KEY (app_id) REFERENCES deploy_app(id)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_release_uuid
-    ON deploy_release (uuid);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_release_app_target_version
+    ON deploy_release (app_id, platform_target_id, semantic_version)
+    WHERE deleted_at IS NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_release_idempotency
-    ON deploy_release (tenant_id, site_id, idempotency_key);
+    ON deploy_release (tenant_id, app_id, idempotency_key);
 
-CREATE INDEX IF NOT EXISTS idx_deploy_release_site_created
-    ON deploy_release (site_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_deploy_release_app_created
+    ON deploy_release (app_id, created_at DESC);
 
+-- Forward-reference FKs: deploy_deployment.release_id -> deploy_release.id
 ALTER TABLE deploy_deployment
-    ADD COLUMN IF NOT EXISTS release_id BIGINT NULL;
+    ADD CONSTRAINT fk_deploy_deployment_release
+    FOREIGN KEY (release_id) REFERENCES deploy_release(id);
 
 CREATE INDEX IF NOT EXISTS idx_deploy_deployment_release
     ON deploy_deployment (release_id)
@@ -741,12 +712,12 @@ CREATE INDEX IF NOT EXISTS idx_deploy_deployment_release
 
 -- Live website composition. Provider UUIDs are opaque owner-service identities; source content
 -- versions, object keys, URLs, and credentials never enter these configuration tables.
-CREATE TABLE IF NOT EXISTS deploy_site_resource (
+CREATE TABLE IF NOT EXISTS deploy_app_resource (
     id                        BIGINT PRIMARY KEY NOT NULL,
     uuid                      VARCHAR(36) NOT NULL,
     tenant_id                 BIGINT NOT NULL,
     organization_id           BIGINT NOT NULL DEFAULT 0,
-    site_id                   BIGINT NOT NULL,
+    app_id                   BIGINT NOT NULL,
     resource_key              VARCHAR(64) NOT NULL,
     provider_type             VARCHAR(32) NOT NULL,
     provider_resource_uuid    VARCHAR(128) NOT NULL,
@@ -762,26 +733,26 @@ CREATE TABLE IF NOT EXISTS deploy_site_resource (
     updated_at                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     version                   BIGINT NOT NULL DEFAULT 1,
     deleted_at                TIMESTAMPTZ NULL,
-    CONSTRAINT uk_deploy_site_resource_uuid UNIQUE (uuid),
-    CONSTRAINT uk_deploy_site_resource_key UNIQUE (site_id, resource_key),
-    CONSTRAINT fk_deploy_site_resource_site FOREIGN KEY (site_id) REFERENCES deploy_site(id),
-    CONSTRAINT chk_deploy_site_resource_provider CHECK (provider_type IN ('DRIVE', 'KNOWLEDGEBASE')),
-    CONSTRAINT chk_deploy_site_resource_status CHECK (status IN ('PENDING', 'VALID', 'INVALID', 'UNAVAILABLE', 'REVOKED'))
+    CONSTRAINT uk_deploy_app_resource_uuid UNIQUE (uuid),
+    CONSTRAINT uk_deploy_app_resource_key UNIQUE (app_id, resource_key),
+    CONSTRAINT fk_deploy_app_resource_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT chk_deploy_app_resource_provider CHECK (provider_type IN ('DRIVE', 'KNOWLEDGEBASE')),
+    CONSTRAINT chk_deploy_app_resource_status CHECK (status IN ('PENDING', 'VALID', 'INVALID', 'UNAVAILABLE', 'REVOKED'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_deploy_site_resource_site_status
-    ON deploy_site_resource (tenant_id, site_id, status)
+CREATE INDEX IF NOT EXISTS idx_deploy_app_resource_app_status
+    ON deploy_app_resource (tenant_id, app_id, status)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_deploy_site_resource_provider
-    ON deploy_site_resource (tenant_id, provider_type, provider_resource_uuid)
+CREATE INDEX IF NOT EXISTS idx_deploy_app_resource_provider
+    ON deploy_app_resource (tenant_id, provider_type, provider_resource_uuid)
     WHERE deleted_at IS NULL;
 
-CREATE TABLE IF NOT EXISTS deploy_site_variant (
+CREATE TABLE IF NOT EXISTS deploy_app_variant (
     id              BIGINT PRIMARY KEY NOT NULL,
     uuid            VARCHAR(36) NOT NULL,
     tenant_id       BIGINT NOT NULL,
-    site_id         BIGINT NOT NULL,
+    app_id         BIGINT NOT NULL,
     variant_key     VARCHAR(64) NOT NULL,
     label           VARCHAR(64) NOT NULL,
     client_class    VARCHAR(16) NOT NULL DEFAULT 'OTHER',
@@ -795,26 +766,26 @@ CREATE TABLE IF NOT EXISTS deploy_site_variant (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     version         BIGINT NOT NULL DEFAULT 1,
     deleted_at      TIMESTAMPTZ NULL,
-    CONSTRAINT uk_deploy_site_variant_uuid UNIQUE (uuid),
-    CONSTRAINT uk_deploy_site_variant_key UNIQUE (site_id, variant_key),
-    CONSTRAINT fk_deploy_site_variant_site FOREIGN KEY (site_id) REFERENCES deploy_site(id),
-    CONSTRAINT chk_deploy_site_variant_client CHECK (client_class IN ('DESKTOP', 'MOBILE', 'TABLET', 'TV', 'BOT', 'OTHER')),
-    CONSTRAINT chk_deploy_site_variant_status CHECK (status IN ('ACTIVE', 'DISABLED'))
+    CONSTRAINT uk_deploy_app_variant_uuid UNIQUE (uuid),
+    CONSTRAINT uk_deploy_app_variant_key UNIQUE (app_id, variant_key),
+    CONSTRAINT fk_deploy_app_variant_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT chk_deploy_app_variant_client CHECK (client_class IN ('DESKTOP', 'MOBILE', 'TABLET', 'TV', 'BOT', 'OTHER')),
+    CONSTRAINT chk_deploy_app_variant_status CHECK (status IN ('ACTIVE', 'DISABLED'))
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_site_variant_default
-    ON deploy_site_variant (site_id)
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_variant_default
+    ON deploy_app_variant (app_id)
     WHERE is_default = TRUE AND status = 'ACTIVE' AND deleted_at IS NULL;
 
-CREATE INDEX IF NOT EXISTS idx_deploy_site_variant_site_priority
-    ON deploy_site_variant (tenant_id, site_id, status, priority, uuid)
+CREATE INDEX IF NOT EXISTS idx_deploy_app_variant_app_priority
+    ON deploy_app_variant (tenant_id, app_id, status, priority, uuid)
     WHERE deleted_at IS NULL;
 
-CREATE TABLE IF NOT EXISTS deploy_site_variant_rule (
+CREATE TABLE IF NOT EXISTS deploy_app_variant_rule (
     id                BIGINT PRIMARY KEY NOT NULL,
     uuid              VARCHAR(36) NOT NULL,
     tenant_id         BIGINT NOT NULL,
-    site_id           BIGINT NOT NULL,
+    app_id           BIGINT NOT NULL,
     rule_key          VARCHAR(64) NOT NULL,
     target_variant_id BIGINT NOT NULL,
     rule_type         VARCHAR(16) NOT NULL,
@@ -827,24 +798,24 @@ CREATE TABLE IF NOT EXISTS deploy_site_variant_rule (
     updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     version           BIGINT NOT NULL DEFAULT 1,
     deleted_at        TIMESTAMPTZ NULL,
-    CONSTRAINT uk_deploy_site_variant_rule_uuid UNIQUE (uuid),
-    CONSTRAINT uk_deploy_site_variant_rule_key UNIQUE (site_id, rule_key),
-    CONSTRAINT fk_deploy_site_variant_rule_site FOREIGN KEY (site_id) REFERENCES deploy_site(id),
-    CONSTRAINT fk_deploy_site_variant_rule_variant FOREIGN KEY (target_variant_id) REFERENCES deploy_site_variant(id),
-    CONSTRAINT chk_deploy_site_variant_rule_type CHECK (rule_type IN ('PATH_PREFIX', 'CLIENT_CLASS')),
-    CONSTRAINT chk_deploy_site_variant_rule_status CHECK (status IN ('ACTIVE', 'DISABLED')),
-    CONSTRAINT chk_deploy_site_variant_rule_priority CHECK (priority BETWEEN 0 AND 65535)
+    CONSTRAINT uk_deploy_app_variant_rule_uuid UNIQUE (uuid),
+    CONSTRAINT uk_deploy_app_variant_rule_key UNIQUE (app_id, rule_key),
+    CONSTRAINT fk_deploy_app_variant_rule_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT fk_deploy_app_variant_rule_variant FOREIGN KEY (target_variant_id) REFERENCES deploy_app_variant(id),
+    CONSTRAINT chk_deploy_app_variant_rule_type CHECK (rule_type IN ('PATH_PREFIX', 'CLIENT_CLASS')),
+    CONSTRAINT chk_deploy_app_variant_rule_status CHECK (status IN ('ACTIVE', 'DISABLED')),
+    CONSTRAINT chk_deploy_app_variant_rule_priority CHECK (priority BETWEEN 0 AND 65535)
 );
 
-CREATE INDEX IF NOT EXISTS idx_deploy_site_variant_rule_order
-    ON deploy_site_variant_rule (tenant_id, site_id, status, priority, uuid)
+CREATE INDEX IF NOT EXISTS idx_deploy_app_variant_rule_order
+    ON deploy_app_variant_rule (tenant_id, app_id, status, priority, uuid)
     WHERE deleted_at IS NULL;
 
-CREATE TABLE IF NOT EXISTS deploy_site_mount (
+CREATE TABLE IF NOT EXISTS deploy_app_mount (
     id                BIGINT PRIMARY KEY NOT NULL,
     uuid              VARCHAR(36) NOT NULL,
     tenant_id         BIGINT NOT NULL,
-    site_id           BIGINT NOT NULL,
+    app_id           BIGINT NOT NULL,
     mount_key         VARCHAR(64) NOT NULL,
     variant_id        BIGINT NOT NULL,
     resource_id       BIGINT NOT NULL,
@@ -862,27 +833,27 @@ CREATE TABLE IF NOT EXISTS deploy_site_mount (
     updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     version           BIGINT NOT NULL DEFAULT 1,
     deleted_at        TIMESTAMPTZ NULL,
-    CONSTRAINT uk_deploy_site_mount_uuid UNIQUE (uuid),
-    CONSTRAINT uk_deploy_site_mount_key UNIQUE (site_id, mount_key),
-    CONSTRAINT uk_deploy_site_mount_prefix UNIQUE (variant_id, path_prefix),
-    CONSTRAINT fk_deploy_site_mount_site FOREIGN KEY (site_id) REFERENCES deploy_site(id),
-    CONSTRAINT fk_deploy_site_mount_variant FOREIGN KEY (variant_id) REFERENCES deploy_site_variant(id),
-    CONSTRAINT fk_deploy_site_mount_resource FOREIGN KEY (resource_id) REFERENCES deploy_site_resource(id),
-    CONSTRAINT chk_deploy_site_mount_mode CHECK (mount_mode IN ('ROOT', 'ALIAS')),
-    CONSTRAINT chk_deploy_site_mount_handler CHECK (handler_type IN ('STATIC', 'SPA', 'WIKI')),
-    CONSTRAINT chk_deploy_site_mount_status CHECK (status IN ('ACTIVE', 'DISABLED', 'INVALID'))
+    CONSTRAINT uk_deploy_app_mount_uuid UNIQUE (uuid),
+    CONSTRAINT uk_deploy_app_mount_key UNIQUE (app_id, mount_key),
+    CONSTRAINT uk_deploy_app_mount_prefix UNIQUE (variant_id, path_prefix),
+    CONSTRAINT fk_deploy_app_mount_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT fk_deploy_app_mount_variant FOREIGN KEY (variant_id) REFERENCES deploy_app_variant(id),
+    CONSTRAINT fk_deploy_app_mount_resource FOREIGN KEY (resource_id) REFERENCES deploy_app_resource(id),
+    CONSTRAINT chk_deploy_app_mount_mode CHECK (mount_mode IN ('ROOT', 'ALIAS')),
+    CONSTRAINT chk_deploy_app_mount_handler CHECK (handler_type IN ('STATIC', 'SPA', 'WIKI')),
+    CONSTRAINT chk_deploy_app_mount_status CHECK (status IN ('ACTIVE', 'DISABLED', 'INVALID'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_deploy_site_mount_route
-    ON deploy_site_mount (tenant_id, site_id, variant_id, status, path_prefix)
+CREATE INDEX IF NOT EXISTS idx_deploy_app_mount_route
+    ON deploy_app_mount (tenant_id, app_id, variant_id, status, path_prefix)
     WHERE deleted_at IS NULL;
 
-CREATE TABLE IF NOT EXISTS deploy_site_binding (
+CREATE TABLE IF NOT EXISTS deploy_app_binding (
     id                   BIGINT PRIMARY KEY NOT NULL,
     uuid                 VARCHAR(36) NOT NULL,
     tenant_id            BIGINT NOT NULL,
     organization_id      BIGINT NOT NULL DEFAULT 0,
-    site_id              BIGINT NOT NULL,
+    app_id              BIGINT NOT NULL,
     binding_key           VARCHAR(64) NOT NULL,
     domain_id            BIGINT NOT NULL,
     hostname_ascii       VARCHAR(255) NOT NULL,
@@ -907,38 +878,38 @@ CREATE TABLE IF NOT EXISTS deploy_site_binding (
     updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     version              BIGINT NOT NULL DEFAULT 1,
     deleted_at           TIMESTAMPTZ NULL,
-    CONSTRAINT uk_deploy_site_binding_uuid UNIQUE (uuid),
-    CONSTRAINT fk_deploy_site_binding_site FOREIGN KEY (site_id) REFERENCES deploy_site(id),
-    CONSTRAINT fk_deploy_site_binding_domain FOREIGN KEY (domain_id) REFERENCES deploy_domain(id),
-    CONSTRAINT fk_deploy_site_binding_default_variant FOREIGN KEY (default_variant_id) REFERENCES deploy_site_variant(id),
-    CONSTRAINT fk_deploy_site_binding_forced_variant FOREIGN KEY (forced_variant_id) REFERENCES deploy_site_variant(id),
-    CONSTRAINT chk_deploy_site_binding_environment CHECK (environment IN ('development', 'test', 'staging', 'production')),
-    CONSTRAINT chk_deploy_site_binding_action CHECK (action_type IN ('SERVE', 'REDIRECT')),
-    CONSTRAINT chk_deploy_site_binding_status CHECK (status IN ('PENDING', 'VERIFIED', 'ACTIVE', 'PAUSED', 'FAILED', 'ARCHIVED')),
-    CONSTRAINT chk_deploy_site_binding_redirect_status CHECK (redirect_status_code IS NULL OR redirect_status_code IN (301, 302, 307, 308))
+    CONSTRAINT uk_deploy_app_binding_uuid UNIQUE (uuid),
+    CONSTRAINT fk_deploy_app_binding_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT fk_deploy_app_binding_domain FOREIGN KEY (domain_id) REFERENCES deploy_domain(id),
+    CONSTRAINT fk_deploy_app_binding_default_variant FOREIGN KEY (default_variant_id) REFERENCES deploy_app_variant(id),
+    CONSTRAINT fk_deploy_app_binding_forced_variant FOREIGN KEY (forced_variant_id) REFERENCES deploy_app_variant(id),
+    CONSTRAINT chk_deploy_app_binding_environment CHECK (environment IN ('development', 'test', 'staging', 'production')),
+    CONSTRAINT chk_deploy_app_binding_action CHECK (action_type IN ('SERVE', 'REDIRECT')),
+    CONSTRAINT chk_deploy_app_binding_status CHECK (status IN ('PENDING', 'VERIFIED', 'ACTIVE', 'PAUSED', 'FAILED', 'ARCHIVED')),
+    CONSTRAINT chk_deploy_app_binding_redirect_status CHECK (redirect_status_code IS NULL OR redirect_status_code IN (301, 302, 307, 308))
 );
 
-CREATE INDEX IF NOT EXISTS idx_deploy_site_binding_site_status
-    ON deploy_site_binding (tenant_id, site_id, environment, status)
+CREATE INDEX IF NOT EXISTS idx_deploy_app_binding_app_status
+    ON deploy_app_binding (tenant_id, app_id, environment, status)
     WHERE deleted_at IS NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_site_binding_active_key
-    ON deploy_site_binding (site_id, binding_key)
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_binding_active_key
+    ON deploy_app_binding (app_id, binding_key)
     WHERE deleted_at IS NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_site_binding_active_route
-    ON deploy_site_binding (hostname_ascii, path_prefix, environment)
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_binding_active_route
+    ON deploy_app_binding (hostname_ascii, path_prefix, environment)
     WHERE deleted_at IS NULL;
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_site_binding_canonical
-    ON deploy_site_binding (site_id, environment)
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_binding_canonical
+    ON deploy_app_binding (app_id, environment)
     WHERE is_canonical = TRUE AND status = 'ACTIVE' AND deleted_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS deploy_tls_policy (
     id                    BIGINT       NOT NULL,
     uuid                  VARCHAR(36)  NOT NULL,
     tenant_id             BIGINT       NOT NULL,
-    site_binding_id       BIGINT       NOT NULL,
+    app_binding_id       BIGINT       NOT NULL,
     certificate_source    VARCHAR(16)  NOT NULL DEFAULT 'MANAGED',
     challenge_method      VARCHAR(16)  NOT NULL DEFAULT 'AUTO',
     minimum_tls_version   VARCHAR(8)   NOT NULL DEFAULT 'TLS1.2',
@@ -956,7 +927,7 @@ CREATE TABLE IF NOT EXISTS deploy_tls_policy (
     deleted_at            TIMESTAMPTZ,
     PRIMARY KEY (id),
     CONSTRAINT uk_deploy_tls_policy_uuid UNIQUE (uuid),
-    CONSTRAINT fk_deploy_tls_policy_binding FOREIGN KEY (site_binding_id) REFERENCES deploy_site_binding(id),
+    CONSTRAINT fk_deploy_tls_policy_binding FOREIGN KEY (app_binding_id) REFERENCES deploy_app_binding(id),
     CONSTRAINT chk_deploy_tls_policy_source CHECK (certificate_source IN ('MANAGED', 'CUSTOM', 'EXTERNAL')),
     CONSTRAINT chk_deploy_tls_policy_challenge CHECK (challenge_method IN ('AUTO', 'HTTP_01', 'DNS_01')),
     CONSTRAINT chk_deploy_tls_policy_versions CHECK (
@@ -970,14 +941,14 @@ CREATE TABLE IF NOT EXISTS deploy_tls_policy (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_tls_policy_active_binding
-    ON deploy_tls_policy (site_binding_id)
+    ON deploy_tls_policy (app_binding_id)
     WHERE status = 'ACTIVE' AND deleted_at IS NULL;
 
 CREATE TABLE IF NOT EXISTS deploy_listener_certificate_binding (
     id                    BIGINT      NOT NULL,
     uuid                  VARCHAR(36) NOT NULL,
     tenant_id             BIGINT      NOT NULL,
-    site_binding_id       BIGINT      NOT NULL,
+    app_binding_id       BIGINT      NOT NULL,
     certificate_id        BIGINT      NOT NULL,
     certificate_version_id BIGINT,
     key_algorithm         VARCHAR(16) NOT NULL,
@@ -993,8 +964,8 @@ CREATE TABLE IF NOT EXISTS deploy_listener_certificate_binding (
     deleted_at            TIMESTAMPTZ,
     PRIMARY KEY (id),
     CONSTRAINT uk_deploy_listener_certificate_binding_uuid UNIQUE (uuid),
-    CONSTRAINT uk_deploy_listener_certificate_binding_certificate UNIQUE (site_binding_id, certificate_id),
-    CONSTRAINT fk_deploy_listener_certificate_binding_route FOREIGN KEY (site_binding_id) REFERENCES deploy_site_binding(id),
+    CONSTRAINT uk_deploy_listener_certificate_binding_certificate UNIQUE (app_binding_id, certificate_id),
+    CONSTRAINT fk_deploy_listener_certificate_binding_route FOREIGN KEY (app_binding_id) REFERENCES deploy_app_binding(id),
     CONSTRAINT fk_deploy_listener_certificate_binding_certificate FOREIGN KEY (certificate_id) REFERENCES deploy_certificate(id),
     CONSTRAINT fk_deploy_listener_certificate_binding_version FOREIGN KEY (certificate_version_id) REFERENCES deploy_certificate_version(id),
     CONSTRAINT chk_deploy_listener_certificate_binding_algorithm CHECK (key_algorithm IN ('RSA', 'ECDSA')),
@@ -1003,19 +974,19 @@ CREATE TABLE IF NOT EXISTS deploy_listener_certificate_binding (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_listener_certificate_binding_active_algorithm
-    ON deploy_listener_certificate_binding (site_binding_id, key_algorithm)
+    ON deploy_listener_certificate_binding (app_binding_id, key_algorithm)
     WHERE status = 'ACTIVE' AND deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_deploy_listener_certificate_binding_certificate
     ON deploy_listener_certificate_binding (tenant_id, certificate_id, status)
     WHERE deleted_at IS NULL;
 
-CREATE TABLE IF NOT EXISTS deploy_site_revision (
+CREATE TABLE IF NOT EXISTS deploy_app_revision (
     id                        BIGINT PRIMARY KEY NOT NULL,
     uuid                      VARCHAR(36) NOT NULL,
     tenant_id                 BIGINT NOT NULL,
     organization_id           BIGINT NOT NULL DEFAULT 0,
-    site_id                   BIGINT NOT NULL,
+    app_id                   BIGINT NOT NULL,
     revision_no               BIGINT NOT NULL,
     environment               VARCHAR(16) NOT NULL,
     descriptor_schema_version VARCHAR(64) NOT NULL,
@@ -1031,18 +1002,18 @@ CREATE TABLE IF NOT EXISTS deploy_site_revision (
     supersedes_revision_id    BIGINT NULL,
     created_by                BIGINT NULL,
     created_at                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT uk_deploy_site_revision_uuid UNIQUE (uuid),
-    CONSTRAINT uk_deploy_site_revision_no UNIQUE (site_id, revision_no),
-    CONSTRAINT uk_deploy_site_revision_hash UNIQUE (site_id, descriptor_sha256),
-    CONSTRAINT uk_deploy_site_revision_idempotency UNIQUE (tenant_id, site_id, idempotency_key),
-    CONSTRAINT fk_deploy_site_revision_site FOREIGN KEY (site_id) REFERENCES deploy_site(id),
-    CONSTRAINT fk_deploy_site_revision_supersedes FOREIGN KEY (supersedes_revision_id) REFERENCES deploy_site_revision(id),
-    CONSTRAINT chk_deploy_site_revision_environment CHECK (environment IN ('development', 'test', 'staging', 'production')),
-    CONSTRAINT chk_deploy_site_revision_validation CHECK (validation_status IN ('VALID', 'INVALID'))
+    CONSTRAINT uk_deploy_app_revision_uuid UNIQUE (uuid),
+    CONSTRAINT uk_deploy_app_revision_no UNIQUE (app_id, revision_no),
+    CONSTRAINT uk_deploy_app_revision_hash UNIQUE (app_id, descriptor_sha256),
+    CONSTRAINT uk_deploy_app_revision_idempotency UNIQUE (tenant_id, app_id, idempotency_key),
+    CONSTRAINT fk_deploy_app_revision_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT fk_deploy_app_revision_supersedes FOREIGN KEY (supersedes_revision_id) REFERENCES deploy_app_revision(id),
+    CONSTRAINT chk_deploy_app_revision_environment CHECK (environment IN ('development', 'test', 'staging', 'production')),
+    CONSTRAINT chk_deploy_app_revision_validation CHECK (validation_status IN ('VALID', 'INVALID'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_deploy_site_revision_site_created
-    ON deploy_site_revision (tenant_id, site_id, revision_no DESC);
+CREATE INDEX IF NOT EXISTS idx_deploy_app_revision_app_created
+    ON deploy_app_revision (tenant_id, app_id, revision_no DESC);
 
 CREATE TABLE IF NOT EXISTS deploy_web_node_target (
     id                BIGINT PRIMARY KEY NOT NULL,
@@ -1074,7 +1045,7 @@ CREATE TABLE IF NOT EXISTS deploy_runtime_assignment (
     uuid                   VARCHAR(36) NOT NULL,
     tenant_id              BIGINT NOT NULL,
     node_target_id         BIGINT NOT NULL,
-    trigger_site_revision_id BIGINT NULL,
+    trigger_app_revision_id BIGINT NULL,
     generation             BIGINT NOT NULL,
     snapshot_uuid          VARCHAR(128) NOT NULL,
     snapshot_sha256        VARCHAR(64) NOT NULL,
@@ -1096,7 +1067,7 @@ CREATE TABLE IF NOT EXISTS deploy_runtime_assignment (
     CONSTRAINT uk_deploy_runtime_assignment_generation UNIQUE (node_target_id, generation),
     CONSTRAINT uk_deploy_runtime_assignment_snapshot UNIQUE (snapshot_uuid),
     CONSTRAINT fk_deploy_runtime_assignment_target FOREIGN KEY (node_target_id) REFERENCES deploy_web_node_target(id),
-    CONSTRAINT fk_deploy_runtime_assignment_revision FOREIGN KEY (trigger_site_revision_id) REFERENCES deploy_site_revision(id),
+    CONSTRAINT fk_deploy_runtime_assignment_revision FOREIGN KEY (trigger_app_revision_id) REFERENCES deploy_app_revision(id),
     CONSTRAINT chk_deploy_runtime_assignment_generation CHECK (generation BETWEEN 1 AND 9007199254740991),
     CONSTRAINT chk_deploy_runtime_assignment_bytes CHECK (runtime_set_bytes > 0 AND runtime_set_bytes <= 67108864),
     CONSTRAINT chk_deploy_runtime_assignment_status CHECK (publish_status IN ('PENDING', 'PUBLISHING', 'PUBLISHED', 'FAILED', 'SUPERSEDED')),
@@ -1114,11 +1085,11 @@ CREATE INDEX IF NOT EXISTS idx_deploy_runtime_assignment_target_latest
     ON deploy_runtime_assignment (tenant_id, node_target_id, generation DESC);
 
 -- Authenticated, append-only evidence read from the Web-owned runtime observation API.
-CREATE TABLE IF NOT EXISTS deploy_site_target_observation (
+CREATE TABLE IF NOT EXISTS deploy_app_target_observation (
     id                       BIGINT PRIMARY KEY NOT NULL,
     uuid                     VARCHAR(36) NOT NULL,
     tenant_id                BIGINT NOT NULL,
-    site_id                  BIGINT NULL,
+    app_id                  BIGINT NULL,
     site_revision_id         BIGINT NULL,
     node_target_id           BIGINT NOT NULL,
     runtime_assignment_id    BIGINT NOT NULL,
@@ -1135,32 +1106,32 @@ CREATE TABLE IF NOT EXISTS deploy_site_target_observation (
     observed_at              TIMESTAMPTZ NOT NULL,
     ingested_at              TIMESTAMPTZ NOT NULL,
     created_at               TIMESTAMPTZ NOT NULL,
-    CONSTRAINT uk_deploy_site_target_observation_uuid UNIQUE (uuid),
-    CONSTRAINT uk_deploy_site_target_observation_remote UNIQUE (remote_observation_uuid),
-    CONSTRAINT uk_deploy_site_target_observation_state UNIQUE (runtime_assignment_id, state),
-    CONSTRAINT fk_deploy_site_target_observation_site FOREIGN KEY (site_id) REFERENCES deploy_site(id),
-    CONSTRAINT fk_deploy_site_target_observation_revision FOREIGN KEY (site_revision_id) REFERENCES deploy_site_revision(id),
-    CONSTRAINT fk_deploy_site_target_observation_target FOREIGN KEY (node_target_id) REFERENCES deploy_web_node_target(id),
-    CONSTRAINT fk_deploy_site_target_observation_assignment FOREIGN KEY (runtime_assignment_id) REFERENCES deploy_runtime_assignment(id),
-    CONSTRAINT chk_deploy_site_target_observation_site_pair CHECK (
-        (site_id IS NULL AND site_revision_id IS NULL)
-        OR (site_id IS NOT NULL AND site_revision_id IS NOT NULL)
+    CONSTRAINT uk_deploy_app_target_observation_uuid UNIQUE (uuid),
+    CONSTRAINT uk_deploy_app_target_observation_remote UNIQUE (remote_observation_uuid),
+    CONSTRAINT uk_deploy_app_target_observation_state UNIQUE (runtime_assignment_id, state),
+    CONSTRAINT fk_deploy_app_target_observation_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
+    CONSTRAINT fk_deploy_app_target_observation_revision FOREIGN KEY (site_revision_id) REFERENCES deploy_app_revision(id),
+    CONSTRAINT fk_deploy_app_target_observation_target FOREIGN KEY (node_target_id) REFERENCES deploy_web_node_target(id),
+    CONSTRAINT fk_deploy_app_target_observation_assignment FOREIGN KEY (runtime_assignment_id) REFERENCES deploy_runtime_assignment(id),
+    CONSTRAINT chk_deploy_app_target_observation_site_pair CHECK (
+        (app_id IS NULL AND site_revision_id IS NULL)
+        OR (app_id IS NOT NULL AND site_revision_id IS NOT NULL)
     ),
-    CONSTRAINT chk_deploy_site_target_observation_generation CHECK (generation BETWEEN 1 AND 9007199254740991),
-    CONSTRAINT chk_deploy_site_target_observation_snapshot_sha256 CHECK (snapshot_sha256 ~ '^[0-9a-f]{64}$'),
-    CONSTRAINT chk_deploy_site_target_observation_environment CHECK (environment IN ('development', 'test', 'staging', 'production')),
-    CONSTRAINT chk_deploy_site_target_observation_state CHECK (state IN ('RECEIVED', 'VALIDATED', 'STAGED', 'ACTIVE', 'REJECTED')),
-    CONSTRAINT chk_deploy_site_target_observation_reason CHECK (
+    CONSTRAINT chk_deploy_app_target_observation_generation CHECK (generation BETWEEN 1 AND 9007199254740991),
+    CONSTRAINT chk_deploy_app_target_observation_snapshot_sha256 CHECK (snapshot_sha256 ~ '^[0-9a-f]{64}$'),
+    CONSTRAINT chk_deploy_app_target_observation_environment CHECK (environment IN ('development', 'test', 'staging', 'production')),
+    CONSTRAINT chk_deploy_app_target_observation_state CHECK (state IN ('RECEIVED', 'VALIDATED', 'STAGED', 'ACTIVE', 'REJECTED')),
+    CONSTRAINT chk_deploy_app_target_observation_reason CHECK (
         (state = 'REJECTED' AND reason_code IS NOT NULL)
         OR (state <> 'REJECTED' AND reason_code IS NULL AND detail IS NULL)
     )
 );
 
-CREATE INDEX IF NOT EXISTS idx_deploy_site_target_observation_rollout
-    ON deploy_site_target_observation (tenant_id, site_revision_id, state, node_target_id);
+CREATE INDEX IF NOT EXISTS idx_deploy_app_target_observation_rollout
+    ON deploy_app_target_observation (tenant_id, site_revision_id, state, node_target_id);
 
-CREATE INDEX IF NOT EXISTS idx_deploy_site_target_observation_assignment
-    ON deploy_site_target_observation (runtime_assignment_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_deploy_app_target_observation_assignment
+    ON deploy_app_target_observation (runtime_assignment_id, id DESC);
 
 CREATE TABLE IF NOT EXISTS deploy_acme_account (
     id                 BIGINT        NOT NULL,
@@ -1401,7 +1372,14 @@ CREATE TABLE IF NOT EXISTS deploy_app (
     app_kind        VARCHAR(32)  NOT NULL,
     description     VARCHAR(2000),
     app_status      VARCHAR(16)  NOT NULL DEFAULT 'DRAFT',
-    site_id         BIGINT       NULL,
+    type            INTEGER      NOT NULL DEFAULT 1,
+    runtime_config  JSONB        NOT NULL DEFAULT '{}',
+    metadata        JSONB        NOT NULL DEFAULT '{}',
+    data_scope      INTEGER      NOT NULL DEFAULT 1,
+    user_id         BIGINT,
+    default_variant_id BIGINT,
+    current_revision_id BIGINT,
+    desired_revision_id BIGINT,
     default_environment VARCHAR(16) NOT NULL DEFAULT 'production',
     activated_at    TIMESTAMPTZ,
     paused_at       TIMESTAMPTZ,
@@ -1413,7 +1391,14 @@ CREATE TABLE IF NOT EXISTS deploy_app (
     deleted_at      TIMESTAMPTZ,
     version         BIGINT       NOT NULL DEFAULT 1,
     CONSTRAINT pk_deploy_app PRIMARY KEY (id),
-    CONSTRAINT fk_deploy_app_site FOREIGN KEY (site_id) REFERENCES deploy_site(id)
+    CONSTRAINT fk_deploy_app_default_variant
+        FOREIGN KEY (default_variant_id) REFERENCES deploy_app_variant(id),
+    CONSTRAINT fk_deploy_app_current_revision
+        FOREIGN KEY (current_revision_id) REFERENCES deploy_app_revision(id),
+    CONSTRAINT fk_deploy_app_desired_revision
+        FOREIGN KEY (desired_revision_id) REFERENCES deploy_app_revision(id),
+    CONSTRAINT chk_deploy_app_type CHECK (type BETWEEN 1 AND 6),
+    CONSTRAINT chk_deploy_app_status CHECK (app_status IN ('DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED'))
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_uuid
@@ -1732,49 +1717,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_channel_rollout_uuid
 CREATE INDEX IF NOT EXISTS idx_deploy_channel_rollout_channel_created
     ON deploy_channel_rollout (channel_id, created_at DESC);
 
--- New-model linkage columns on existing tables (all nullable; legacy rows unchanged)
-ALTER TABLE deploy_site
-    ADD COLUMN IF NOT EXISTS app_id BIGINT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_deploy_site_app
-    ON deploy_site (app_id)
-    WHERE app_id IS NOT NULL;
-
-ALTER TABLE deploy_release
-    ADD COLUMN IF NOT EXISTS app_id BIGINT NULL,
-    ADD COLUMN IF NOT EXISTS platform_target_id BIGINT NULL,
-    ADD COLUMN IF NOT EXISTS semantic_version VARCHAR(64) NULL,
-    ADD COLUMN IF NOT EXISTS build_number BIGINT NULL,
-    ADD COLUMN IF NOT EXISTS release_status VARCHAR(16) NULL,
-    ADD COLUMN IF NOT EXISTS release_notes_json JSONB NOT NULL DEFAULT '{}';
-
-CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_release_app_target_version
-    ON deploy_release (app_id, platform_target_id, semantic_version)
-    WHERE app_id IS NOT NULL AND platform_target_id IS NOT NULL AND semantic_version IS NOT NULL;
-
--- Idempotency index required by the release creation ON CONFLICT inference.
-CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_release_app_idempotency
-    ON deploy_release (tenant_id, app_id, idempotency_key)
-    WHERE idempotency_key IS NOT NULL;
-
-ALTER TABLE deploy_deployment
-    ADD COLUMN IF NOT EXISTS app_id BIGINT NULL,
-    ADD COLUMN IF NOT EXISTS platform_target_id BIGINT NULL,
-    ADD COLUMN IF NOT EXISTS deployment_kind VARCHAR(32) NULL,
-    ADD COLUMN IF NOT EXISTS deployment_target VARCHAR(32) NULL,
-    ADD COLUMN IF NOT EXISTS strategy VARCHAR(24) NULL,
-    ADD COLUMN IF NOT EXISTS percentage INTEGER NULL,
-    ADD COLUMN IF NOT EXISTS platform_review_ref VARCHAR(255) NULL,
-    ADD COLUMN IF NOT EXISTS deployment_status VARCHAR(24) NULL,
-    ADD COLUMN IF NOT EXISTS rollback_from_deployment_id BIGINT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_deploy_deployment_app_created
-    ON deploy_deployment (app_id, created_at DESC)
-    WHERE app_id IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS idx_deploy_deployment_status_active
-    ON deploy_deployment (deployment_status)
-    WHERE deployment_status IN ('PENDING', 'SUBMITTING', 'PENDING_REVIEW', 'IN_REVIEW', 'ROLLING');
+-- Forward-reference FKs added after deploy_app_platform_target and deploy_package are defined.
+-- (See bottom of file for ALTER TABLE statements.)
 
 -- folded migration: database/migrations/postgres/0008_deploy_usage_metering.up.sql
 -- Append-only usage fact. The deduplication identity prevents double billing;
@@ -1784,7 +1728,7 @@ CREATE TABLE IF NOT EXISTS deploy_usage_event (
     uuid            VARCHAR(36)  NOT NULL,
     tenant_id       BIGINT       NOT NULL,
     organization_id BIGINT       NOT NULL DEFAULT 0,
-    site_id         BIGINT       NULL,
+    app_id         BIGINT       NULL,
     binding_id      BIGINT       NULL,
     period_start    TIMESTAMPTZ  NOT NULL,
     dimension       VARCHAR(64)  NOT NULL,
@@ -1798,8 +1742,8 @@ CREATE TABLE IF NOT EXISTS deploy_usage_event (
     ingested_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     CONSTRAINT pk_deploy_usage_event PRIMARY KEY (id),
-    CONSTRAINT fk_deploy_usage_event_site
-        FOREIGN KEY (site_id) REFERENCES deploy_site(id),
+    CONSTRAINT fk_deploy_usage_event_app
+        FOREIGN KEY (app_id) REFERENCES deploy_app(id),
     CONSTRAINT ck_deploy_usage_event_quantity
         CHECK (quantity >= 0),
     CONSTRAINT ck_deploy_usage_event_dimension
@@ -1852,12 +1796,13 @@ CREATE INDEX IF NOT EXISTS idx_deploy_entitlement_projection_tenant_status
     ON deploy_tenant_entitlement_projection (tenant_id, projection_status, expires_at);
 
 -- Reconcilable daily aggregate; rebuildable from retained usage facts.
-CREATE TABLE IF NOT EXISTS deploy_site_usage_daily (
+CREATE TABLE IF NOT EXISTS deploy_app_usage_daily (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(36)  NOT NULL,
     tenant_id       BIGINT       NOT NULL,
     organization_id BIGINT       NOT NULL DEFAULT 0,
-    site_id         BIGINT       NOT NULL,
+    app_id         BIGINT       NOT NULL,
+    binding_id      BIGINT,
     usage_date      DATE         NOT NULL,
     dimension       VARCHAR(64)  NOT NULL,
     quantity        BIGINT       NOT NULL DEFAULT 0,
@@ -1868,22 +1813,51 @@ CREATE TABLE IF NOT EXISTS deploy_site_usage_daily (
     created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     version         BIGINT       NOT NULL DEFAULT 1,
-    CONSTRAINT pk_deploy_site_usage_daily PRIMARY KEY (id),
-    CONSTRAINT fk_deploy_site_usage_daily_site
-        FOREIGN KEY (site_id) REFERENCES deploy_site(id)
+    CONSTRAINT pk_deploy_app_usage_daily PRIMARY KEY (id),
+    CONSTRAINT fk_deploy_app_usage_daily_app
+        FOREIGN KEY (app_id) REFERENCES deploy_app(id)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_site_usage_daily_uuid
-    ON deploy_site_usage_daily (uuid);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_usage_daily_uuid
+    ON deploy_app_usage_daily (uuid);
 
-CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_site_usage_daily_scope
-    ON deploy_site_usage_daily (tenant_id, site_id, usage_date, dimension, unit);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_usage_daily_scope
+    ON deploy_app_usage_daily (tenant_id, app_id, COALESCE(binding_id, 0), usage_date, dimension, unit);
 
-CREATE INDEX IF NOT EXISTS idx_deploy_site_usage_daily_period
-    ON deploy_site_usage_daily (tenant_id, usage_date DESC);
+CREATE INDEX IF NOT EXISTS idx_deploy_app_usage_daily_period
+    ON deploy_app_usage_daily (tenant_id, usage_date DESC);
 
 -- folded migration: database/migrations/postgres/0009_app_database_profile.up.sql
 -- Database structure contract of an App (at most one active profile per app).
+CREATE TABLE IF NOT EXISTS deploy_tenant_usage_daily (
+    id                 BIGINT PRIMARY KEY NOT NULL,
+    uuid               VARCHAR(36)  NOT NULL,
+    tenant_id          BIGINT       NOT NULL,
+    organization_id    BIGINT       NOT NULL DEFAULT 0,
+    usage_date         DATE         NOT NULL,
+    dimension          VARCHAR(64)  NOT NULL,
+    quantity           BIGINT       NOT NULL DEFAULT 0,
+    unit               VARCHAR(32)  NOT NULL,
+    source_revision    VARCHAR(64),
+    finalization_status VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+    finalized_at       TIMESTAMPTZ,
+    created_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    version            BIGINT       NOT NULL DEFAULT 1,
+    CONSTRAINT ck_deploy_tenant_usage_daily_quantity CHECK (quantity >= 0),
+    CONSTRAINT ck_deploy_tenant_usage_daily_status
+        CHECK (finalization_status IN ('PENDING', 'FINALIZED'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_tenant_usage_daily_uuid
+    ON deploy_tenant_usage_daily (uuid);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_tenant_usage_daily_scope
+    ON deploy_tenant_usage_daily (tenant_id, dimension, usage_date, unit);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_tenant_usage_daily_period
+    ON deploy_tenant_usage_daily (tenant_id, usage_date DESC);
+
 CREATE TABLE IF NOT EXISTS deploy_app_database_profile (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(36)  NOT NULL,
@@ -2067,3 +2041,26 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_environment_promotion_uuid
 
 CREATE INDEX IF NOT EXISTS idx_deploy_environment_promotion_env_created
     ON deploy_environment_promotion (environment_id, created_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- Forward-reference foreign keys (referenced tables defined earlier in file
+-- order: deploy_app_platform_target at ~line 1487, deploy_package at ~line 1601)
+-- ---------------------------------------------------------------------------
+ALTER TABLE deploy_deployment
+    ADD CONSTRAINT fk_deploy_deployment_target
+    FOREIGN KEY (platform_target_id) REFERENCES deploy_app_platform_target(id);
+
+ALTER TABLE deploy_release
+    ADD CONSTRAINT fk_deploy_release_target
+    FOREIGN KEY (platform_target_id) REFERENCES deploy_app_platform_target(id),
+    ADD CONSTRAINT fk_deploy_release_package
+    FOREIGN KEY (package_id) REFERENCES deploy_package(id);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_deployment_target
+    ON deploy_deployment (platform_target_id);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_release_target
+    ON deploy_release (platform_target_id);
+
+CREATE INDEX IF NOT EXISTS idx_deploy_release_package
+    ON deploy_release (package_id);

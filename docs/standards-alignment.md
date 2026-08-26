@@ -1,4 +1,4 @@
-# Standards Alignment
+﻿# Standards Alignment
 
 SDKWork Deploy standards alignment for `sdkwork-deployments`, updated 2026-07-23.
 
@@ -17,8 +17,8 @@ SDKWork Deploy standards alignment for `sdkwork-deployments`, updated 2026-07-23
 
 ## Live Composition Contract
 
-The active mutation is `sites.composition.update` on
-`PUT /app/v3/api/sites/{siteId}/composition`. It requires dual-token authentication,
+The active mutation is `apps.composition.update` on
+`PUT /app/v3/api/apps/{appId}/composition`. It requires dual-token authentication,
 `deploy.sites.write`, `If-Match`, and `Idempotency-Key`.
 
 Provider calls complete before database locking. PostgreSQL and SQLite then use the same atomic
@@ -29,13 +29,13 @@ The Site version is a decimal string. `current_revision_id` is reserved for veri
 observation/quorum and is not advanced by the composition transaction.
 
 Ordinary Drive and Knowledgebase content changes never call this mutation and do not create
-`deploy_release`, `deploy_deployment`, or `deploy_site_revision` records.
+`deploy_release`, `deploy_deployment`, or `deploy_app_revision` records.
 The runtime worker registers and renews referenced Drive WebsiteRoot channels through the generated
 Drive Internal SDK before Web publication. Drive then delivers ordinary events directly to the
 Node-qualified Web callback; Deploy is not the event relay or acknowledgement authority.
 
 Domain management starts with tenant-owned `domain_zones`. Opening a Zone lists its apex and child
-hostname resources; application association exists only through `deploy_site_binding`, so one Site
+hostname resources; application association exists only through `deploy_app_binding`, so one Site
 can use multiple hostnames and one verified hostname can participate in multiple non-conflicting
 application routes. `domainZones.hostnames.verify` exposes an expiring DNS TXT challenge at
 `_sdkwork-verification.<hostname>`; only an observed current token can atomically verify the
@@ -107,7 +107,7 @@ control plane:
   tenant-scoped deduplication idempotency (`build_minutes` on terminal builds,
   `package_storage_bytes` on package registration, `deployment_count` on deployment creation,
   emitted fire-and-warn), the Commerce-backed `deploy_tenant_entitlement_projection` read model,
-  and the reconcilable `deploy_site_usage_daily` aggregate. The tenant read surface is
+  and the reconcilable `deploy_app_usage_daily` aggregate. The tenant read surface is
   `GET /app/v3/api/usage_events`; the service layer and repository integration tests cover
   dedup replay, tenant scoping, and pagination.
 - Semantic versioning (SemVer 2.0.0), monotonic `build_number` per (App, platform target),

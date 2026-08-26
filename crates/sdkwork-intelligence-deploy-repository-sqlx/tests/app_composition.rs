@@ -3,16 +3,16 @@ mod common;
 use sdkwork_database_id::SnowflakeIdGenerator;
 use sdkwork_deploy_content_provider_port::ValidatedContentProviderResource;
 use sdkwork_deploy_contract::{
-    ContentProviderResourceSource, DriveWebsiteContentMode, DriveWebsiteRootSelector,
-    SiteBindingAction, SiteBindingDefinition, SiteClientClass, SiteDeliveryPolicy, SiteEnvironment,
-    SiteMountDefinition, SiteMountHandler, SiteMountMode, SiteObservabilityPolicy,
-    SiteResourceDefinition, SiteRuntimeLimits, SiteSecurityPolicy, SiteVariantDefinition,
-    SiteVariantRuleDefinition, SiteVariantRuleMatcher, UpdateSiteCompositionRequest,
+    AppBindingAction, AppBindingDefinition, AppClientClass, AppDeliveryPolicy, AppMountDefinition,
+    AppMountHandler, AppMountMode, AppObservabilityPolicy, AppPublishEnvironment,
+    AppResourceDefinition, AppRuntimeLimits, AppSecurityPolicy, AppVariantDefinition,
+    AppVariantRuleDefinition, AppVariantRuleMatcher, ContentProviderResourceSource,
+    DriveWebsiteContentMode, DriveWebsiteRootSelector, UpdateAppCompositionRequest,
 };
 use sdkwork_deploy_runtime_compiler::{RuntimeProviderType, RuntimeResourceCapabilities};
 use sdkwork_intelligence_deploy_repository_sqlx::DeployRepository;
 use sdkwork_intelligence_deploy_service::{
-    ReplaceSiteCompositionCommand, SiteCompositionRepositoryPort,
+    AppCompositionRepositoryPort, ReplaceAppCompositionCommand,
 };
 use sqlx::{PgPool, Row};
 
@@ -31,7 +31,7 @@ async fn test_repository() -> (DeployRepository, PgPool) {
 
 async fn seed_control_plane(pool: &PgPool) {
     sqlx::query(
-        "INSERT INTO deploy_site (
+        "INSERT INTO deploy_app (
             id,uuid,tenant_id,organization_id,name,slug,site_type,status,runtime_config,
             metadata,created_at,updated_at,version
          ) VALUES (10,'site-1',7,9,'Docs','docs',1,1,'{}','{}',
@@ -74,11 +74,11 @@ async fn seed_control_plane(pool: &PgPool) {
     .expect("insert target");
 }
 
-fn request(handler: SiteMountHandler) -> UpdateSiteCompositionRequest {
-    UpdateSiteCompositionRequest {
-        environment: SiteEnvironment::Production,
+fn request(handler: AppMountHandler) -> UpdateAppCompositionRequest {
+    UpdateAppCompositionRequest {
+        environment: AppPublishEnvironment::Production,
         default_variant_key: "default".to_owned(),
-        resources: vec![SiteResourceDefinition {
+        resources: vec![AppResourceDefinition {
             key: "content".to_owned(),
             source: ContentProviderResourceSource::drive_directory(
                 "space-1".to_owned(),
@@ -86,38 +86,38 @@ fn request(handler: SiteMountHandler) -> UpdateSiteCompositionRequest {
                 DriveWebsiteContentMode::LiveTree,
             ),
         }],
-        variants: vec![SiteVariantDefinition {
+        variants: vec![AppVariantDefinition {
             key: "default".to_owned(),
             label: "Default".to_owned(),
-            client_class: SiteClientClass::Other,
+            client_class: AppClientClass::Other,
             priority: 0,
         }],
         variant_rules: vec![],
-        mounts: vec![SiteMountDefinition {
+        mounts: vec![AppMountDefinition {
             key: "root".to_owned(),
             variant_key: "default".to_owned(),
             resource_key: "content".to_owned(),
             path_prefix: "/".to_owned(),
             resource_subpath: "/".to_owned(),
-            mode: SiteMountMode::Root,
+            mode: AppMountMode::Root,
             handler,
             index_files: vec!["index.html".to_owned()],
             spa_fallback: None,
             priority: 0,
         }],
-        bindings: vec![SiteBindingDefinition {
+        bindings: vec![AppBindingDefinition {
             key: "primary".to_owned(),
             domain_id: "domain-1".to_owned(),
             path_prefix: "/".to_owned(),
-            action: SiteBindingAction::Serve {
+            action: AppBindingAction::Serve {
                 default_variant_key: None,
                 forced_variant_key: None,
             },
         }],
-        delivery_policy: SiteDeliveryPolicy::default(),
-        security_policy: SiteSecurityPolicy::default(),
-        limits: SiteRuntimeLimits::default(),
-        observability_policy: SiteObservabilityPolicy::default(),
+        delivery_policy: AppDeliveryPolicy::default(),
+        security_policy: AppSecurityPolicy::default(),
+        limits: AppRuntimeLimits::default(),
+        observability_policy: AppObservabilityPolicy::default(),
     }
 }
 
@@ -125,15 +125,15 @@ fn command(
     expected_version: i64,
     idempotency_key: &str,
     request_sha256: &str,
-    handler: SiteMountHandler,
-) -> ReplaceSiteCompositionCommand {
+    handler: AppMountHandler,
+) -> ReplaceAppCompositionCommand {
     let request = request(handler);
-    ReplaceSiteCompositionCommand {
+    ReplaceAppCompositionCommand {
         tenant_id: 7,
         organization_id: 9,
         actor_id: 11,
-        site_uuid: "site-1".to_owned(),
-        expected_site_version: expected_version,
+        app_uuid: "site-1".to_owned(),
+        expected_app_version: expected_version,
         idempotency_key: idempotency_key.to_owned(),
         request_sha256: request_sha256.to_owned(),
         generated_at: "2026-07-22T00:00:01Z".to_owned(),
@@ -158,23 +158,23 @@ fn tv_command(
     expected_version: i64,
     idempotency_key: &str,
     request_sha256: &str,
-) -> ReplaceSiteCompositionCommand {
+) -> ReplaceAppCompositionCommand {
     let mut command = command(
         expected_version,
         idempotency_key,
         request_sha256,
-        SiteMountHandler::Static,
+        AppMountHandler::Static,
     );
-    command.request.variants[0].client_class = SiteClientClass::Tv;
+    command.request.variants[0].client_class = AppClientClass::Tv;
     command
         .request
         .variant_rules
-        .push(SiteVariantRuleDefinition {
+        .push(AppVariantRuleDefinition {
             key: "tv-client".to_owned(),
             target_variant_key: "default".to_owned(),
             priority: 100,
-            matcher: SiteVariantRuleMatcher::ClientClass {
-                client_class: SiteClientClass::Tv,
+            matcher: AppVariantRuleMatcher::ClientClass {
+                client_class: AppClientClass::Tv,
             },
         });
     command
@@ -185,25 +185,25 @@ fn tv_command(
 async fn composition_is_atomic_idempotent_and_does_not_create_releases() {
     let (repository, pool) = test_repository().await;
     let first = repository
-        .replace_site_composition(command(
+        .replace_app_composition(command(
             0,
             "composition-1",
             &"1".repeat(64),
-            SiteMountHandler::Static,
+            AppMountHandler::Static,
         ))
         .await
         .expect("publish first composition");
-    assert_eq!(first.site_version, "1");
+    assert_eq!(first.app_version, "1");
     assert_eq!(first.revision.number, "1");
     assert_eq!(first.runtime_assignments.len(), 1);
     assert_eq!(first.runtime_assignments[0].generation, "1");
 
     let replay = repository
-        .replace_site_composition(command(
+        .replace_app_composition(command(
             0,
             "composition-1",
             &"1".repeat(64),
-            SiteMountHandler::Static,
+            AppMountHandler::Static,
         ))
         .await
         .expect("replay composition");
@@ -214,38 +214,38 @@ async fn composition_is_atomic_idempotent_and_does_not_create_releases() {
     );
 
     let conflicting_key = repository
-        .replace_site_composition(command(
+        .replace_app_composition(command(
             0,
             "composition-1",
             &"2".repeat(64),
-            SiteMountHandler::Static,
+            AppMountHandler::Static,
         ))
         .await
         .expect_err("same key with another request must conflict");
     assert!(conflicting_key.to_string().contains("Idempotency-Key"));
 
     repository
-        .replace_site_composition(command(
+        .replace_app_composition(command(
             0,
             "composition-stale",
             &"3".repeat(64),
-            SiteMountHandler::Static,
+            AppMountHandler::Static,
         ))
         .await
         .expect_err("stale site version must conflict");
 
     repository
-        .replace_site_composition(command(
+        .replace_app_composition(command(
             1,
             "composition-invalid",
             &"4".repeat(64),
-            SiteMountHandler::Wiki,
+            AppMountHandler::Wiki,
         ))
         .await
         .expect_err("incompatible provider and handler must roll back");
 
     let site = sqlx::query(
-        "SELECT version, desired_revision_id, default_variant_id FROM deploy_site WHERE id = 10",
+        "SELECT version, desired_revision_id, default_variant_id FROM deploy_app WHERE id = 10",
     )
     .fetch_one(&pool)
     .await
@@ -256,7 +256,7 @@ async fn composition_is_atomic_idempotent_and_does_not_create_releases() {
 
     let counts = sqlx::query(
         "SELECT
-            (SELECT COUNT(*) FROM deploy_site_revision) AS revisions,
+            (SELECT COUNT(*) FROM deploy_app_revision) AS revisions,
             (SELECT COUNT(*) FROM deploy_runtime_assignment) AS assignments,
             (SELECT COUNT(*) FROM deploy_release) AS releases,
             (SELECT COUNT(*) FROM deploy_deployment) AS deployments",
@@ -275,18 +275,18 @@ async fn composition_is_atomic_idempotent_and_does_not_create_releases() {
 async fn composition_persists_tv_client_class_and_compiles_the_runtime_rule() {
     let (repository, pool) = test_repository().await;
     repository
-        .replace_site_composition(tv_command(0, "composition-tv", &"9".repeat(64)))
+        .replace_app_composition(tv_command(0, "composition-tv", &"9".repeat(64)))
         .await
         .expect("publish TV composition");
 
     let stored = sqlx::query(
         "SELECT v.client_class, r.match_value,
                 CAST(revision.descriptor_json AS TEXT) AS descriptor_json
-         FROM deploy_site_variant v
-         INNER JOIN deploy_site_variant_rule r ON r.site_id = v.site_id
-         INNER JOIN deploy_site site ON site.id = v.site_id
-         INNER JOIN deploy_site_revision revision ON revision.id = site.desired_revision_id
-         WHERE v.site_id = 10",
+         FROM deploy_app_variant v
+         INNER JOIN deploy_app_variant_rule r ON r.app_id = v.app_id
+         INNER JOIN deploy_app app ON app.id = v.app_id
+         INNER JOIN deploy_app_revision revision ON revision.id = site.desired_revision_id
+         WHERE v.app_id = 10",
     )
     .fetch_one(&pool)
     .await
@@ -329,11 +329,11 @@ async fn composition_rejects_a_domain_owned_by_another_tenant() {
         0,
         "composition-foreign-domain",
         &"6".repeat(64),
-        SiteMountHandler::Static,
+        AppMountHandler::Static,
     );
     command.request.bindings[0].domain_id = "domain-foreign".to_owned();
     let error = repository
-        .replace_site_composition(command)
+        .replace_app_composition(command)
         .await
         .expect_err("cross-tenant domain must not bind");
     assert!(error.to_string().contains("domain not found for site"));
@@ -350,11 +350,11 @@ async fn composition_requires_an_active_web_target() {
         .expect("remove Web target");
 
     let error = repository
-        .replace_site_composition(command(
+        .replace_app_composition(command(
             0,
             "composition-no-target",
             &"7".repeat(64),
-            SiteMountHandler::Static,
+            AppMountHandler::Static,
         ))
         .await
         .expect_err("composition without target must fail");
@@ -379,11 +379,11 @@ async fn composition_rejects_inconsistent_target_tenant_scope() {
     .expect("insert inconsistent Web target");
 
     let error = repository
-        .replace_site_composition(command(
+        .replace_app_composition(command(
             0,
             "composition-scope-conflict",
             &"8".repeat(64),
-            SiteMountHandler::Static,
+            AppMountHandler::Static,
         ))
         .await
         .expect_err("inconsistent target scope must fail");
@@ -396,9 +396,9 @@ async fn composition_rejects_inconsistent_target_tenant_scope() {
 async fn assert_composition_was_not_committed(pool: &PgPool) {
     let row = sqlx::query(
         "SELECT version,
-                (SELECT COUNT(*) FROM deploy_site_revision) AS revisions,
+                (SELECT COUNT(*) FROM deploy_app_revision) AS revisions,
                 (SELECT COUNT(*) FROM deploy_runtime_assignment) AS assignments
-         FROM deploy_site WHERE id = 10",
+         FROM deploy_app WHERE id = 10",
     )
     .fetch_one(pool)
     .await
@@ -420,13 +420,13 @@ async fn postgres_composition_is_atomic_and_idempotent() {
     );
 
     let first = repository
-        .replace_site_composition(tv_command(0, "composition-postgres-1", &"5".repeat(64)))
+        .replace_app_composition(tv_command(0, "composition-postgres-1", &"5".repeat(64)))
         .await
         .expect("publish PostgreSQL composition");
-    assert_eq!(first.site_version, "1");
+    assert_eq!(first.app_version, "1");
     assert_eq!(first.runtime_assignments[0].generation, "1");
     let replay = repository
-        .replace_site_composition(tv_command(0, "composition-postgres-1", &"5".repeat(64)))
+        .replace_app_composition(tv_command(0, "composition-postgres-1", &"5".repeat(64)))
         .await
         .expect("replay PostgreSQL composition");
     assert_eq!(replay.revision.id, first.revision.id);
@@ -434,11 +434,11 @@ async fn postgres_composition_is_atomic_and_idempotent() {
     let row = sqlx::query(
         "SELECT s.version, r.request_sha256, CAST(r.result_json AS TEXT) AS result_json,
                 a.generation, a.publish_status, v.client_class, vr.match_value
-         FROM deploy_site s
-         INNER JOIN deploy_site_revision r ON r.id = s.desired_revision_id
-         INNER JOIN deploy_runtime_assignment a ON a.trigger_site_revision_id = r.id
-         INNER JOIN deploy_site_variant v ON v.site_id = s.id
-         INNER JOIN deploy_site_variant_rule vr ON vr.site_id = s.id
+         FROM deploy_app s
+         INNER JOIN deploy_app_revision r ON r.id = s.desired_revision_id
+         INNER JOIN deploy_runtime_assignment a ON a.trigger_app_revision_id = r.id
+         INNER JOIN deploy_app_variant v ON v.app_id = s.id
+         INNER JOIN deploy_app_variant_rule vr ON vr.app_id = s.id
          WHERE s.id = 10",
     )
     .fetch_one(&pool)

@@ -7,20 +7,35 @@ use axum::{
 };
 use sdkwork_deploy_contract::{
     CompleteDeployUploadSessionRequest, CreateArtifactRequest, CreateCertificateRequest,
-    CreateDeployUploadSessionRequest, CreateDeploymentRequest, CreateDomainHostnameRequest,
-    CreateDomainZoneRequest, CreateEnvVariableRequest, CreateHealthCheckRequest,
-    CreateReleaseRequest, CreateSiteRequest, DeployAppApi, DeployAppRequestContext,
-    ListDomainZonesQuery, ListSitesQuery, UpdateDomainHostnameRequest, UpdateDomainZoneRequest,
-    UpdateSiteCompositionRequest, UpdateSiteRequest,
+    CreateDeployUploadSessionRequest, CreateDomainHostnameRequest, CreateDomainZoneRequest,
+    CreateEnvVariableRequest, CreateHealthCheckRequest, DeployAppApi, DeployAppRequestContext,
+    ListDomainZonesQuery, UpdateAppCompositionRequest, UpdateDomainHostnameRequest,
+    UpdateDomainZoneRequest,
 };
 use sdkwork_routes_deploy_common::{
     envelope, finish_api_json, finish_created_api_json, finish_no_content, ok_json, service_result,
 };
 use sdkwork_web_core::WebRequestContext;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::{auth::require_app_context, paths};
+
+fn required_header(
+    headers: &HeaderMap,
+    name: &str,
+) -> Result<String, sdkwork_deploy_contract::DeployServiceError> {
+    headers
+        .get(name)
+        .and_then(|value| value.to_str().ok())
+        .map(|value| value.to_owned())
+        .ok_or_else(|| {
+            sdkwork_deploy_contract::DeployServiceError::validation(format!(
+                "{name} header is required"
+            ))
+        })
+}
 
 #[derive(Clone)]
 pub struct AppState {
@@ -91,29 +106,6 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
         .merge(build_domain_management_router())
         .merge(build_certificate_management_router())
         .merge(crate::app_delivery_routes::build_app_delivery_router())
-        .route(paths::SITES, get(list_sites).post(create_site))
-        .route(
-            paths::SITE,
-            get(retrieve_site).patch(update_site).delete(delete_site),
-        )
-        .route(paths::SITE_COMPOSITION, put(update_site_composition))
-        .route(paths::SITE_ACTIVATE, post(activate_site))
-        .route(paths::SITE_PAUSE, post(pause_site))
-        .route(
-            paths::SITE_DEPLOYMENTS,
-            get(list_deployments).post(create_deployment),
-        )
-        .route(paths::SITE_DEPLOYMENT, get(retrieve_deployment))
-        .route(paths::SITE_DEPLOYMENT_ROLLBACK, post(rollback_deployment))
-        .route(
-            paths::SITE_RELEASES,
-            get(list_releases).post(create_release),
-        )
-        .route(paths::SITE_RELEASE, get(retrieve_release))
-        .route(
-            paths::SITE_ENV_VARIABLES,
-            get(list_env_variables).post(create_env_variable),
-        )
         .route(paths::UPLOAD_SESSIONS, post(create_upload_session))
         .route(paths::UPLOAD_SESSION, get(retrieve_upload_session))
         .route(
@@ -126,8 +118,15 @@ pub fn build_router_with_shared_app_api(api: Arc<dyn DeployAppApi>) -> Router {
             paths::ARTIFACT,
             get(retrieve_artifact).delete(retain_artifact),
         )
+        .route(paths::APP_COMPOSITION, put(update_app_composition))
+        .route(paths::APP_ACTIVATE, post(activate_app))
+        .route(paths::APP_PAUSE, post(pause_app))
         .route(
-            paths::SITE_HEALTH_CHECKS,
+            paths::APP_ENV_VARIABLES,
+            get(list_env_variables).post(create_env_variable),
+        )
+        .route(
+            paths::APP_HEALTH_CHECKS,
             get(list_health_checks).post(create_health_check),
         )
         .layer(axum::middleware::from_fn(
@@ -142,17 +141,6 @@ struct PageQuery {
     page: i32,
     #[serde(default = "default_page_size")]
     page_size: i32,
-}
-
-#[derive(Debug, Deserialize)]
-struct DeploymentListQuery {
-    #[serde(default = "default_page")]
-    page: i32,
-    #[serde(default = "default_page_size")]
-    page_size: i32,
-    status: Option<i32>,
-    #[serde(default)]
-    cursor: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -380,354 +368,92 @@ async fn verify_domain_hostname(
     )
 }
 
-async fn list_sites(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Query(query): Query<ListSitesQuery>,
-) -> Response {
-    finish_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let page = state.api.list_sites(&context, &query).await?;
-            ok_json(envelope::site_page(page))
-        }
-        .await,
-    )
-}
-
-async fn create_site(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Json(request): Json<CreateSiteRequest>,
-) -> Response {
-    finish_created_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let item = state.api.create_site(&context, &request).await?;
-            ok_json(envelope::resource(item))
-        }
-        .await,
-    )
-}
-
-async fn retrieve_site(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
-) -> Response {
-    finish_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let item = state.api.retrieve_site(&context, &site_id).await?;
-            ok_json(envelope::resource(item))
-        }
-        .await,
-    )
-}
-
-async fn update_site(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
-    Json(request): Json<UpdateSiteRequest>,
-) -> Response {
-    finish_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let item = state.api.update_site(&context, &site_id, &request).await?;
-            ok_json(envelope::resource(item))
-        }
-        .await,
-    )
-}
-
-async fn update_site_composition(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
-    headers: HeaderMap,
-    Json(request): Json<UpdateSiteCompositionRequest>,
-) -> Response {
-    finish_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let expected_site_version = parse_if_match(&headers)?;
-            let idempotency_key = required_header(&headers, "idempotency-key")?;
-            let item = state
-                .api
-                .update_site_composition(
-                    &context,
-                    &site_id,
-                    expected_site_version,
-                    &idempotency_key,
-                    &request,
-                )
-                .await?;
-            ok_json(envelope::resource(item))
-        }
-        .await,
-    )
-}
-
+/// Parse the `If-Match` header as a strong entity tag carrying a decimal
+/// version number. Rejects wildcards (`*`) and weak entity tags (`W/"..."`).
 fn parse_if_match(headers: &HeaderMap) -> Result<i64, sdkwork_deploy_contract::DeployServiceError> {
-    let value = required_header(headers, "if-match")?;
-    if value == "*" || value.starts_with("W/") {
-        return Err(sdkwork_deploy_contract::DeployServiceError::validation(
-            "If-Match must contain one strong decimal site version",
-        ));
-    }
-    let value = value
+    let raw = required_header(headers, "if-match")?;
+    let tagged = raw
         .strip_prefix('"')
         .and_then(|value| value.strip_suffix('"'))
-        .unwrap_or(&value);
-    if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
-        return Err(sdkwork_deploy_contract::DeployServiceError::validation(
-            "If-Match must contain one strong decimal site version",
-        ));
-    }
-    value.parse::<i64>().map_err(|_| {
+        .ok_or_else(|| {
+            sdkwork_deploy_contract::DeployServiceError::validation(
+                "If-Match must be a strong entity tag (quoted decimal version)",
+            )
+        })?;
+    tagged.parse::<i64>().map_err(|_| {
         sdkwork_deploy_contract::DeployServiceError::validation(
-            "If-Match site version is outside the supported range",
+            "If-Match must be a decimal version number",
         )
     })
 }
 
-fn required_header(
-    headers: &HeaderMap,
-    name: &'static str,
-) -> Result<String, sdkwork_deploy_contract::DeployServiceError> {
-    let value = headers
-        .get(name)
-        .and_then(|value| value.to_str().ok())
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .ok_or_else(|| {
-            sdkwork_deploy_contract::DeployServiceError::validation(format!(
-                "{name} header is required"
-            ))
-        })?;
-    if value.len() > 128 || value.bytes().any(|byte| byte.is_ascii_control()) {
-        return Err(sdkwork_deploy_contract::DeployServiceError::validation(
-            format!("{name} header is invalid"),
-        ));
-    }
-    Ok(value.to_owned())
-}
-
-async fn delete_site(
+async fn update_app_composition(
     ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
-) -> Response {
-    finish_no_content(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            service_result(state.api.delete_site(&context, &site_id).await)
-        }
-        .await,
-    )
-}
-
-async fn activate_site(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
+    Path(params): Path<HashMap<String, String>>,
+    headers: HeaderMap,
+    Json(request): Json<UpdateAppCompositionRequest>,
 ) -> Response {
     finish_api_json(
         &ctx,
         async {
             let context = require_app_context(context)?;
-            let item = state.api.activate_site(&context, &site_id).await?;
-            ok_json(envelope::resource(item))
-        }
-        .await,
-    )
-}
-
-async fn pause_site(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
-) -> Response {
-    finish_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let item = state.api.pause_site(&context, &site_id).await?;
-            ok_json(envelope::resource(item))
-        }
-        .await,
-    )
-}
-
-async fn list_deployments(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
-    Query(query): Query<DeploymentListQuery>,
-) -> Response {
-    finish_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let page = state
+            let app_id = params.get("appId").cloned().ok_or_else(|| {
+                sdkwork_deploy_contract::DeployServiceError::validation("appId is required")
+            })?;
+            let expected_version = parse_if_match(&headers)?;
+            let idempotency_key = required_header(&headers, "idempotency-key")?;
+            let result = state
                 .api
-                .list_deployments(
+                .update_app_composition(
                     &context,
-                    &site_id,
-                    query.page,
-                    query.page_size,
-                    query.status,
-                    query.cursor.as_deref(),
+                    &app_id,
+                    expected_version,
+                    &idempotency_key,
+                    &request,
                 )
                 .await?;
-            if page.next_cursor.is_some() || page.has_more.is_some() {
-                ok_json(envelope::cursor_page(
-                    page.items,
-                    page.page_size,
-                    page.next_cursor,
-                    page.has_more,
-                ))
-            } else {
-                ok_json(envelope::deployment_page(page))
-            }
+            ok_json(envelope::resource(result))
         }
         .await,
     )
 }
 
-async fn create_deployment(
+async fn activate_app(
     ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
-    Json(request): Json<CreateDeploymentRequest>,
+    Path(params): Path<HashMap<String, String>>,
 ) -> Response {
-    finish_created_api_json(
+    finish_api_json(
         &ctx,
         async {
             let context = require_app_context(context)?;
-            let item = state
-                .api
-                .create_deployment(&context, &site_id, &request)
-                .await?;
+            let app_id = params.get("appId").cloned().ok_or_else(|| {
+                sdkwork_deploy_contract::DeployServiceError::validation("appId is required")
+            })?;
+            let item = state.api.activate_app(&context, &app_id).await?;
             ok_json(envelope::resource(item))
         }
         .await,
     )
 }
 
-async fn retrieve_deployment(
+async fn pause_app(
     ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
-    Path((site_id, deployment_id)): Path<(String, String)>,
+    Path(params): Path<HashMap<String, String>>,
 ) -> Response {
     finish_api_json(
         &ctx,
         async {
             let context = require_app_context(context)?;
-            let item = state
-                .api
-                .retrieve_deployment(&context, &site_id, &deployment_id)
-                .await?;
-            ok_json(envelope::resource(item))
-        }
-        .await,
-    )
-}
-
-async fn rollback_deployment(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path((site_id, deployment_id)): Path<(String, String)>,
-) -> Response {
-    finish_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let item = state
-                .api
-                .rollback_deployment(&context, &site_id, &deployment_id)
-                .await?;
-            ok_json(envelope::resource(item))
-        }
-        .await,
-    )
-}
-
-async fn list_releases(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
-    Query(query): Query<PageQuery>,
-) -> Response {
-    finish_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let page = state
-                .api
-                .list_releases(&context, &site_id, query.page, query.page_size)
-                .await?;
-            ok_json(envelope::release_page(page))
-        }
-        .await,
-    )
-}
-
-async fn create_release(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
-    Json(request): Json<CreateReleaseRequest>,
-) -> Response {
-    finish_created_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let item = state
-                .api
-                .create_release(&context, &site_id, &request)
-                .await?;
-            ok_json(envelope::resource(item))
-        }
-        .await,
-    )
-}
-
-async fn retrieve_release(
-    ctx: WebRequestContext,
-    State(state): State<AppState>,
-    context: Option<Extension<DeployAppRequestContext>>,
-    Path((site_id, release_id)): Path<(String, String)>,
-) -> Response {
-    finish_api_json(
-        &ctx,
-        async {
-            let context = require_app_context(context)?;
-            let item = state
-                .api
-                .retrieve_release(&context, &site_id, &release_id)
-                .await?;
+            let app_id = params.get("appId").cloned().ok_or_else(|| {
+                sdkwork_deploy_contract::DeployServiceError::validation("appId is required")
+            })?;
+            let item = state.api.pause_app(&context, &app_id).await?;
             ok_json(envelope::resource(item))
         }
         .await,
@@ -808,7 +534,7 @@ async fn list_env_variables(
     ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
+    Path(app_id): Path<String>,
     Query(query): Query<EnvVariableListQuery>,
 ) -> Response {
     finish_api_json(
@@ -817,7 +543,7 @@ async fn list_env_variables(
             let context = require_app_context(context)?;
             let page = state
                 .api
-                .list_env_variables(&context, &site_id, query.environment.as_deref())
+                .list_env_variables(&context, &app_id, query.environment.as_deref())
                 .await?;
             ok_json(envelope::env_variable_page(page))
         }
@@ -829,7 +555,7 @@ async fn create_env_variable(
     ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
+    Path(app_id): Path<String>,
     Json(request): Json<CreateEnvVariableRequest>,
 ) -> Response {
     finish_created_api_json(
@@ -838,7 +564,7 @@ async fn create_env_variable(
             let context = require_app_context(context)?;
             let item = state
                 .api
-                .create_env_variable(&context, &site_id, &request)
+                .create_env_variable(&context, &app_id, &request)
                 .await?;
             ok_json(envelope::resource(item))
         }
@@ -957,13 +683,13 @@ async fn list_health_checks(
     ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
+    Path(app_id): Path<String>,
 ) -> Response {
     finish_api_json(
         &ctx,
         async {
             let context = require_app_context(context)?;
-            let page = state.api.list_health_checks(&context, &site_id).await?;
+            let page = state.api.list_health_checks(&context, &app_id).await?;
             ok_json(envelope::health_check_page(page))
         }
         .await,
@@ -974,7 +700,7 @@ async fn create_health_check(
     ctx: WebRequestContext,
     State(state): State<AppState>,
     context: Option<Extension<DeployAppRequestContext>>,
-    Path(site_id): Path<String>,
+    Path(app_id): Path<String>,
     Json(request): Json<CreateHealthCheckRequest>,
 ) -> Response {
     finish_created_api_json(
@@ -983,7 +709,7 @@ async fn create_health_check(
             let context = require_app_context(context)?;
             let item = state
                 .api
-                .create_health_check(&context, &site_id, &request)
+                .create_health_check(&context, &app_id, &request)
                 .await?;
             ok_json(envelope::resource(item))
         }

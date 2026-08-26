@@ -1,6 +1,7 @@
 //! Deploy business service orchestrating repository ports and HTTP API traits.
 
 pub mod app;
+pub mod app_composition;
 pub mod app_delivery;
 pub mod app_domains;
 pub mod backend;
@@ -8,8 +9,8 @@ pub mod domain_verification;
 pub mod entitlement;
 pub mod repository;
 pub mod runtime_publication;
-pub mod site_composition;
 
+pub use app_composition::{AppCompositionRepositoryPort, ReplaceAppCompositionCommand};
 pub use domain_verification::{
     dns_txt_record_name, normalize_domain_hostname, normalize_zone_apex,
     DomainOwnershipVerifierPort, DomainVerificationChallenge, DomainVerificationObservation,
@@ -21,7 +22,6 @@ pub use runtime_publication::{
     RuntimeObservationEvidence, RuntimeObservationPersistenceResult, RuntimeObservationState,
     RuntimePublicationBatchResult, RuntimePublicationService,
 };
-pub use site_composition::{ReplaceSiteCompositionCommand, SiteCompositionRepositoryPort};
 
 use std::sync::Arc;
 

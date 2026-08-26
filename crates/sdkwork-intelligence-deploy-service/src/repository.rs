@@ -13,34 +13,29 @@ use sdkwork_deploy_contract::{
     CreateAcmeAccountRequest, CreateAppDatabaseMigrationRequest, CreateAppDatabaseProfileRequest,
     CreateAppDeploymentRequest, CreateAppEnvironmentRequest, CreateAppReleaseRequest,
     CreateAppRequest, CreateArtifactRequest, CreateBuildRequest, CreateBuildTemplateRequest,
-    CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDeploymentRequest,
-    CreateDomainHostnameRequest, CreateDomainZoneRequest, CreateEnvVariableRequest,
-    CreateHealthCheckRequest, CreateNginxConfigRequest, CreateNodeClusterRequest,
-    CreatePlatformTargetRequest, CreateReleaseRequest, CreateServerRequest,
-    CreateSigningIdentityRequest, CreateSiteRequest, CreateSourceRepositoryRequest,
-    DeployAppRequestContext, DeployUploadSessionResponse, DeploymentPage, DeploymentResponse,
-    DeploymentStatus, DomainHostnamePage, DomainHostnameResponse, DomainZonePage,
-    DomainZoneResponse, EntitlementProjectionPage, EnvVariablePage, EnvVariableResponse,
-    EnvironmentPromotionPage, EnvironmentPromotionResponse, HealthCheckPage, HealthCheckResponse,
-    ListDomainZonesQuery, ListNginxConfigsQuery, ListSitesQuery, NginxConfigPage,
-    NginxConfigResponse, NginxReloadResponse, NginxStatusResponse, NginxValidateResponse,
-    NodeClusterPage, NodeClusterResponse, PackagePage, PackageResponse, PlatformTargetPage,
-    PlatformTargetResponse, PromoteChannelRequest, PromoteEnvironmentRequest,
-    ProvisionAppDomainsResult, RegisterPackageRequest, ReleasePage, ReleaseResponse,
-    ReleaseStatus, RequestCertificateOrderRequest, ResolvedDeployServer, RetentionRunResponse,
-    RunnerHealthPage, ServerPage,
-    ServerResponse, SigningIdentityHealthPage, SigningIdentityPage, SigningIdentityResponse,
-    SitePage, SiteResponse, SourceEventPage, SourceEventResponse, SourceRepositoryPage,
+    CreateCertificateRequest, CreateDeployUploadSessionRequest, CreateDomainHostnameRequest,
+    CreateDomainZoneRequest, CreateEnvVariableRequest, CreateHealthCheckRequest,
+    CreateNginxConfigRequest, CreateNodeClusterRequest, CreatePlatformTargetRequest,
+    CreateServerRequest, CreateSigningIdentityRequest, CreateSourceRepositoryRequest,
+    DeployAppRequestContext, DeployUploadSessionResponse, DeploymentStatus, DomainHostnamePage,
+    DomainHostnameResponse, DomainZonePage, DomainZoneResponse, EntitlementProjectionPage,
+    EnvVariablePage, EnvVariableResponse, EnvironmentPromotionPage, EnvironmentPromotionResponse,
+    HealthCheckPage, HealthCheckResponse, ListDomainZonesQuery, ListNginxConfigsQuery,
+    NginxConfigPage, NginxConfigResponse, NginxReloadResponse, NginxStatusResponse,
+    NginxValidateResponse, NodeClusterPage, NodeClusterResponse, PackagePage, PackageResponse,
+    PlatformTargetPage, PlatformTargetResponse, PromoteChannelRequest, PromoteEnvironmentRequest,
+    ProvisionAppDomainsResult, RegisterPackageRequest, ReleaseStatus,
+    RequestCertificateOrderRequest, ResolvedDeployServer, RetentionRunResponse, RunnerHealthPage,
+    ServerPage, ServerResponse, SigningIdentityHealthPage, SigningIdentityPage,
+    SigningIdentityResponse, SourceEventPage, SourceEventResponse, SourceRepositoryPage,
     SourceRepositoryResponse, UpdateAppDatabaseProfileRequest, UpdateAppEnvironmentRequest,
     UpdateAppRequest, UpdateBuildStateRequest, UpdateDomainZoneRequest, UpdateNginxConfigRequest,
-    UpdateNodeClusterRequest, UpdateServerRequest, UpdateSiteRequest, UsageEventPage,
-    UsageEventResponse, UsageReconciliationResponse,
+    UpdateNodeClusterRequest, UpdateServerRequest, UsageEventPage, UsageEventResponse,
+    UsageReconciliationResponse,
 };
 
 use crate::DomainVerificationChallenge;
-use sdkwork_deploy_contract::{
-    UsageEventIngestItem, UsageEventQuery, UsageIngestResult,
-};
+use sdkwork_deploy_contract::{UsageEventIngestItem, UsageEventQuery, UsageIngestResult};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InsertAuditLogCommand {
@@ -79,8 +74,8 @@ pub struct TriggerTarget {
 pub struct InsertUsageEventCommand {
     pub tenant_id: i64,
     pub organization_id: i64,
-    pub site_id: Option<i64>,
-    /// Binding public internal id (`deploy_site_binding.id`) for per-domain
+    pub app_id: Option<i64>,
+    /// Binding public internal id (`deploy_app_binding.id`) for per-domain
     /// traffic attribution.
     pub binding_id: Option<i64>,
     pub period_start: String,
@@ -95,7 +90,7 @@ pub struct InsertUsageEventCommand {
 }
 
 #[async_trait]
-pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sync {
+pub trait DeployRepositoryPort: crate::AppCompositionRepositoryPort + Send + Sync {
     async fn ready_check(&self) -> DeployServiceResult<()>;
 
     async fn list_domain_zones(
@@ -184,79 +179,12 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         verifier_identity: &str,
     ) -> DeployServiceResult<bool>;
 
-    async fn list_sites(
+    async fn set_app_status(
         &self,
         tenant_id: i64,
-        query: &ListSitesQuery,
-    ) -> DeployServiceResult<SitePage>;
-
-    async fn create_site(
-        &self,
-        tenant_id: i64,
-        organization_id: Option<i64>,
-        actor_id: Option<i64>,
-        request: &CreateSiteRequest,
-    ) -> DeployServiceResult<SiteResponse>;
-
-    async fn retrieve_site(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-    ) -> DeployServiceResult<SiteResponse>;
-
-    async fn update_site(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        request: &UpdateSiteRequest,
-    ) -> DeployServiceResult<SiteResponse>;
-
-    async fn delete_site(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        actor_id: Option<i64>,
-    ) -> DeployServiceResult<()>;
-
-    async fn set_site_status(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
         status: i32,
-    ) -> DeployServiceResult<SiteResponse>;
-
-    async fn list_deployments(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        page: i32,
-        page_size: i32,
-        status: Option<i32>,
-        cursor: Option<&str>,
-    ) -> DeployServiceResult<DeploymentPage>;
-
-    async fn create_deployment(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        actor_id: Option<i64>,
-        request: &CreateDeploymentRequest,
-    ) -> DeployServiceResult<DeploymentResponse>;
-
-    async fn retrieve_deployment(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        deployment_id: &str,
-    ) -> DeployServiceResult<DeploymentResponse>;
-
-    async fn rollback_deployment(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        deployment_id: &str,
-        actor_id: Option<i64>,
-    ) -> DeployServiceResult<DeploymentResponse>;
+    ) -> DeployServiceResult<AppResponse>;
 
     async fn list_artifacts(
         &self,
@@ -286,46 +214,17 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
         checksum_sha256: &str,
     ) -> DeployServiceResult<ArtifactResponse>;
 
-    async fn list_releases(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        page: i32,
-        page_size: i32,
-    ) -> DeployServiceResult<ReleasePage>;
-
-    async fn retrieve_release(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        release_id: &str,
-    ) -> DeployServiceResult<ReleaseResponse>;
-
-    async fn create_release(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        request: &CreateReleaseRequest,
-    ) -> DeployServiceResult<ReleaseResponse>;
-
-    async fn find_release_by_idempotency_key(
-        &self,
-        tenant_id: i64,
-        site_id: &str,
-        idempotency_key: &str,
-    ) -> DeployServiceResult<Option<ReleaseResponse>>;
-
     async fn list_env_variables(
         &self,
         tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
         environment: Option<&str>,
     ) -> DeployServiceResult<EnvVariablePage>;
 
     async fn create_env_variable(
         &self,
         tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
         request: &CreateEnvVariableRequest,
     ) -> DeployServiceResult<EnvVariableResponse>;
 
@@ -366,13 +265,13 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
     async fn list_health_checks(
         &self,
         tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
     ) -> DeployServiceResult<HealthCheckPage>;
 
     async fn create_health_check(
         &self,
         tenant_id: i64,
-        site_id: &str,
+        app_id: &str,
         request: &CreateHealthCheckRequest,
     ) -> DeployServiceResult<HealthCheckResponse>;
 
@@ -1085,13 +984,13 @@ pub trait DeployRepositoryPort: crate::SiteCompositionRepositoryPort + Send + Sy
 
     /// Idempotently provision an app's default publishing domains
     /// (`<slug>.app[-<env>].<suffix>` domains + site bindings) for one
-    /// lifecycle environment. `site_id` is the site's public uuid.
+    /// lifecycle environment. `app_id` is the site's public uuid.
     async fn provision_app_default_domains(
         &self,
         tenant_id: i64,
         organization_id: i64,
         actor_id: Option<i64>,
-        site_id: &str,
+        app_id: &str,
         app_slug: &str,
         environment: &str,
     ) -> DeployServiceResult<ProvisionAppDomainsResult>;

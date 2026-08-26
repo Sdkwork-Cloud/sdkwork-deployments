@@ -1,4 +1,4 @@
-# SDKWork Cloud Site Publishing Platform PRD
+﻿# SDKWork Cloud Site Publishing Platform PRD
 
 Status: implementation in progress
 Owner: SDKWork Deploy maintainers
@@ -47,7 +47,7 @@ and gated implementation sequence are recorded in ADR-20260723 and PLAN-2026-000
 ## 1. Product Summary
 
 SDKWork Cloud Site Publishing is a multi-tenant control plane for publishing live directory trees
-and live knowledgebase Wikis through SDKWork Web Server. It provides one governed model for sites,
+and live knowledgebase Wikis through SDKWork Web Server. It provides one governed model for apps,
 resources, URL mounts, domains, client variants, TLS certificates, configuration revisions,
 observability, quotas, and commercial operations.
 
@@ -75,10 +75,10 @@ products:
 - upload a built React directory and see the whole directory behave as one website;
 - upload governed multi-format sources and assets to a Wiki source tree and make eligible pages available quickly;
 - bind one or more custom domains;
-- route desktop, mobile, tablet, TV, or bot traffic to different site resources when required;
+- route desktop, mobile, tablet, TV, or bot traffic to different app resources when required;
 - obtain and renew managed certificates automatically, with reviewed custom secret ingest as a
   separate future capability;
-- preview, pause, recover, audit, and measure a site without rebuilding its content;
+- preview, pause, recover, audit, and measure an app without rebuilding its content;
 - buy capacity and features through clear, enforceable entitlements.
 
 ## 3. Target Users
@@ -87,11 +87,11 @@ products:
 | --- | --- |
 | Individual developer | Publish a static build from Drive with minimal operations work. |
 | Knowledge author | Publish a navigable Wiki from governed pages, documents, media, and static assets. |
-| Tenant site administrator | Govern sites, domains, variants, permissions, and quotas. |
+| Tenant site administrator | Govern apps, domains, variants, permissions, and quotas. |
 | Application operator | Inspect activation, cache, origin, and certificate health. |
 | Security administrator | Control public exposure, certificate keys, headers, and abuse response. |
 | Billing administrator | Understand plan limits, usage, overage, and cost attribution. |
-| SDK/API integrator | Automate site lifecycle through generated SDKs. |
+| SDK/API integrator | Automate app lifecycle through generated SDKs. |
 | Platform administrator/SRE | Operate the global domain, TLS, Web Node, and incident fleet. |
 | Anonymous reader | Receive fast, secure, device-appropriate public content. |
 
@@ -241,7 +241,7 @@ search, verification, pause/resume, binding inspection, certificate coverage, an
 The row operation menu exposes only state-valid commands: open, edit metadata, pause/resume, copy
 nameservers or verification data, and delete when impact analysis reports zero child references.
 
-A Site may bind one or more verified hostnames through `deploy_site_binding`; a hostname does not own
+A Site may bind one or more verified hostnames through `deploy_app_binding`; a hostname does not own
 a Site. One verified hostname may bind to multiple applications through non-overlapping path
 prefixes, or to one Site whose Variants point to different application directories. The same active
 `(hostname, pathPrefix, environment)` cannot be claimed by multiple tenants or Sites.
@@ -336,7 +336,7 @@ keep their generated transport under `generated/server-openapi`. Drive, Knowledg
 Server integrations use their owning generated SDK family or approved service port. Business
 modules shall not add raw HTTP wrappers or manual auth headers.
 
-The active composition mutation is `sites.composition.update` on the App API. It requires
+The active composition mutation is `apps.composition.update` on the App API. It requires
 `If-Match: <decimal-site-version>` and `Idempotency-Key`, validates every provider resource before
 opening the database transaction, and returns the new Site version as a decimal string. Backend
 composition mutation is absent by design until an approved privileged credential-delegation or
@@ -389,7 +389,7 @@ terminal error states. Destructive commands require resource identity and impact
 
 ### 8.1 Drive Views
 
-Drive adds Website Space creation, a site-aware file explorer, default whole-Space root, additional
+Drive adds Website Space creation, an app-aware file explorer, default whole-Space root, additional
 folder-root selector, content mode, current mounted root indicator,
 `ATOMIC_SYNC`, validation results, preview/open-site commands, file version rollback, and a link to
 the Deploy Site workspace. A normal Space does not show public-site controls.

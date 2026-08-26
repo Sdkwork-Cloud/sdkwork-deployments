@@ -1,4 +1,4 @@
-//! App publishing domain services: default-domain auto-provisioning and the
+﻿//! App publishing domain services: default-domain auto-provisioning and the
 //! hostname → server resolution the Web Server fallback consumes.
 
 use sdkwork_deploy_contract::{
@@ -29,11 +29,6 @@ impl DeployService {
         }
         let tenant_id = DeployService::require_tenant(context)?;
         let app = self.repository.retrieve_app(tenant_id, app_id).await?;
-        let Some(site_id) = app.site_id.as_deref() else {
-            return Err(DeployServiceError::validation(
-                "app has no site; create a site and link it to the app first",
-            ));
-        };
         let organization_id = context.organization_id.unwrap_or(0);
         self.repository
             .ensure_platform_app_zones(tenant_id, organization_id, context.actor_id)
@@ -44,7 +39,7 @@ impl DeployService {
                 tenant_id,
                 organization_id,
                 context.actor_id,
-                site_id,
+                &app.id,
                 &app.slug,
                 environment,
             )
@@ -52,7 +47,6 @@ impl DeployService {
         tracing::info!(
             tenant_id,
             app_id = %app.id,
-            site_id,
             environment,
             created_zones = result.created_zones,
             created_domains = result.created_domains,
@@ -62,8 +56,8 @@ impl DeployService {
         Ok(result)
     }
 
-    /// Resolve an active site binding by its exact hostname in one lifecycle
-    /// environment and return the site's latest compiled website runtime
+    /// Resolve an active app binding by its exact hostname in one lifecycle
+    /// environment and return the app's latest compiled website runtime
     /// descriptor. Both default app domains (`<slug>.app[-<env>].<suffix>`)
     /// and user custom domains are resolved here.
     pub async fn resolve_server_by_hostname(

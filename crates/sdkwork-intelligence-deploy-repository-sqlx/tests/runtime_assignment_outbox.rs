@@ -71,9 +71,9 @@ impl SelectiveActiveWebRuntime {
     }
 }
 
-fn runtime_descriptor(site_uuid: &str, tenant_scope_hash: &str) -> serde_json::Value {
+fn runtime_descriptor(app_uuid: &str, tenant_scope_hash: &str) -> serde_json::Value {
     let mut descriptor = serde_json::json!({
-        "siteUuid": site_uuid,
+        "appUuid": app_uuid,
         "environment": "production",
         "tenantScopeHash": tenant_scope_hash,
         "descriptorSha256": ""
@@ -254,7 +254,7 @@ impl DeployWebRuntimePort for SelectiveActiveWebRuntime {
 async fn site_revision_activates_only_after_all_frozen_targets_are_active() {
     let pool = common::postgres_pool().await;
     sqlx::query(
-        "INSERT INTO deploy_site (
+        "INSERT INTO deploy_app (
             id, uuid, tenant_id, name, slug, status, runtime_config, metadata,
             created_at, updated_at, version
          ) VALUES (100, 'site-100', 7, 'Site 100', 'site-100', 1, '{}', '{}',
@@ -264,8 +264,8 @@ async fn site_revision_activates_only_after_all_frozen_targets_are_active() {
     .await
     .expect("insert site");
     sqlx::query(
-        "INSERT INTO deploy_site_revision (
-            id, uuid, tenant_id, site_id, revision_no, environment,
+        "INSERT INTO deploy_app_revision (
+            id, uuid, tenant_id, app_id, revision_no, environment,
             descriptor_schema_version, descriptor_json, descriptor_sha256,
             compiler_version, source_config_version, idempotency_key, request_sha256,
             result_json, validation_status, validation_report_json, created_at
@@ -280,7 +280,7 @@ async fn site_revision_activates_only_after_all_frozen_targets_are_active() {
     .execute(&pool)
     .await
     .expect("insert site revision");
-    sqlx::query("UPDATE deploy_site SET desired_revision_id = 200 WHERE id = 100")
+    sqlx::query("UPDATE deploy_app SET desired_revision_id = 200 WHERE id = 100")
         .execute(&pool)
         .await
         .expect("set desired revision");
@@ -331,7 +331,7 @@ async fn site_revision_activates_only_after_all_frozen_targets_are_active() {
             .expect("enqueue target assignment");
     }
     sqlx::query(
-        "UPDATE deploy_runtime_assignment SET trigger_site_revision_id = 200
+        "UPDATE deploy_runtime_assignment SET trigger_app_revision_id = 200
          WHERE snapshot_uuid IN ('snapshot-a', 'snapshot-b')",
     )
     .execute(&pool)
@@ -347,7 +347,7 @@ async fn site_revision_activates_only_after_all_frozen_targets_are_active() {
     assert_eq!(first.observations_pending, 1);
     assert_eq!(first.revisions_activated, 0);
     let current_after_first: Option<i64> =
-        sqlx::query_scalar("SELECT current_revision_id FROM deploy_site WHERE id = 100")
+        sqlx::query_scalar("SELECT current_revision_id FROM deploy_app WHERE id = 100")
             .fetch_one(&pool)
             .await
             .expect("load partially converged site");
@@ -362,13 +362,13 @@ async fn site_revision_activates_only_after_all_frozen_targets_are_active() {
     assert_eq!(second.observations_ingested, 1);
     assert_eq!(second.revisions_activated, 1);
     let current_after_quorum: Option<i64> =
-        sqlx::query_scalar("SELECT current_revision_id FROM deploy_site WHERE id = 100")
+        sqlx::query_scalar("SELECT current_revision_id FROM deploy_app WHERE id = 100")
             .fetch_one(&pool)
             .await
             .expect("load converged site");
     assert_eq!(current_after_quorum, Some(200));
     let evidence_count: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM deploy_site_target_observation")
+        sqlx::query_scalar("SELECT COUNT(*) FROM deploy_app_target_observation")
             .fetch_one(&pool)
             .await
             .expect("count observation evidence");
@@ -1147,8 +1147,8 @@ async fn postgres_serializes_mutations_and_fences_assignment_leases() {
     .await
     .expect("mark PostgreSQL assignment published for renewal scan");
     sqlx::query(
-        "INSERT INTO deploy_site_target_observation (
-            id, uuid, tenant_id, site_id, site_revision_id, node_target_id,
+        "INSERT INTO deploy_app_target_observation (
+            id, uuid, tenant_id, app_id, site_revision_id, node_target_id,
             runtime_assignment_id, remote_observation_uuid, remote_assignment_uuid,
             generation, snapshot_uuid, snapshot_sha256, environment, state,
             node_version, reason_code, detail, observed_at, ingested_at, created_at

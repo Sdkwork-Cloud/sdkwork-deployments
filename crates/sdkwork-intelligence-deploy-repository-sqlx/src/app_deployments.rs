@@ -14,10 +14,10 @@ use crate::support::{
 };
 use crate::DeployRepository;
 
-const APP_DEPLOYMENT_SELECT: &str = "d.uuid, d.app_id, d.platform_target_id, d.site_id,
-    d.release_id, d.deployment_kind, d.deployment_target, d.environment, d.strategy,
-    d.percentage, d.platform_review_ref, d.deployment_status, d.rollback_from_deployment_id,
-    d.started_at, d.completed_at, d.created_at, d.updated_at, d.version";
+const APP_DEPLOYMENT_SELECT: &str = "d.uuid, d.deployment_kind, d.deployment_target,
+    d.environment, d.strategy, d.percentage, d.platform_review_ref, d.deployment_status,
+    d.rollback_from_deployment_id, d.started_at, d.completed_at, d.created_at, d.updated_at,
+    d.version";
 
 fn map_app_deployment_row(row: &PgRow) -> Result<AppDeploymentResponse, DeployServiceError> {
     let created_at = required_datetime(row, "created_at")?;
@@ -26,7 +26,6 @@ fn map_app_deployment_row(row: &PgRow) -> Result<AppDeploymentResponse, DeploySe
         id: row.try_get("uuid").unwrap_or_default(),
         app_id: row.try_get("app_uuid").unwrap_or_default(),
         platform_target_id: row.try_get("target_uuid").ok(),
-        site_id: row.try_get("site_uuid").ok(),
         release_id: row.try_get("release_uuid").ok(),
         deployment_kind: row.try_get("deployment_kind").ok(),
         deployment_target: row.try_get("deployment_target").ok(),
@@ -184,12 +183,10 @@ impl DeployRepository {
     ) -> DeployServiceResult<Option<AppDeploymentResponse>> {
         let query = format!(
             "SELECT {APP_DEPLOYMENT_SELECT}, a.uuid AS app_uuid, t.uuid AS target_uuid,
-                    s.uuid AS site_uuid, r.uuid AS release_uuid,
-                    d.rollback_from_deployment_id, rd.uuid AS rollback_from_uuid
+                    r.uuid AS release_uuid, rd.uuid AS rollback_from_uuid
              FROM deploy_deployment d
              JOIN deploy_app a ON a.id = d.app_id
              LEFT JOIN deploy_app_platform_target t ON t.id = d.platform_target_id
-             LEFT JOIN deploy_site s ON s.id = d.site_id
              LEFT JOIN deploy_release r ON r.id = d.release_id
              LEFT JOIN deploy_deployment rd ON rd.id = d.rollback_from_deployment_id
              WHERE d.tenant_id = $1 AND d.idempotency_key = $2
@@ -230,12 +227,10 @@ impl DeployRepository {
 
         let query = format!(
             "SELECT {APP_DEPLOYMENT_SELECT}, a.uuid AS app_uuid, t.uuid AS target_uuid,
-                    s.uuid AS site_uuid, r.uuid AS release_uuid,
-                    d.rollback_from_deployment_id, rd.uuid AS rollback_from_uuid
+                    r.uuid AS release_uuid, rd.uuid AS rollback_from_uuid
              FROM deploy_deployment d
              JOIN deploy_app a ON a.id = d.app_id
              LEFT JOIN deploy_app_platform_target t ON t.id = d.platform_target_id
-             LEFT JOIN deploy_site s ON s.id = d.site_id
              LEFT JOIN deploy_release r ON r.id = d.release_id
              LEFT JOIN deploy_deployment rd ON rd.id = d.rollback_from_deployment_id
              WHERE d.tenant_id = $1 AND d.app_id = $2
@@ -271,12 +266,10 @@ impl DeployRepository {
         let app_internal_id = resolve_app_internal_id(&self.pool, tenant_id, app_id).await?;
         let query = format!(
             "SELECT {APP_DEPLOYMENT_SELECT}, a.uuid AS app_uuid, t.uuid AS target_uuid,
-                    s.uuid AS site_uuid, r.uuid AS release_uuid,
-                    d.rollback_from_deployment_id, rd.uuid AS rollback_from_uuid
+                    r.uuid AS release_uuid, rd.uuid AS rollback_from_uuid
              FROM deploy_deployment d
              JOIN deploy_app a ON a.id = d.app_id
              LEFT JOIN deploy_app_platform_target t ON t.id = d.platform_target_id
-             LEFT JOIN deploy_site s ON s.id = d.site_id
              LEFT JOIN deploy_release r ON r.id = d.release_id
              LEFT JOIN deploy_deployment rd ON rd.id = d.rollback_from_deployment_id
              WHERE d.tenant_id = $1 AND d.app_id = $2 AND d.uuid = $3"
@@ -306,12 +299,10 @@ impl DeployRepository {
         let bounded_limit = limit.clamp(1, 100);
         let query = format!(
             "SELECT {APP_DEPLOYMENT_SELECT}, a.uuid AS app_uuid, t.uuid AS target_uuid,
-                    s.uuid AS site_uuid, r.uuid AS release_uuid,
-                    d.rollback_from_deployment_id, rd.uuid AS rollback_from_uuid
+                    r.uuid AS release_uuid, rd.uuid AS rollback_from_uuid
              FROM deploy_deployment d
              JOIN deploy_app a ON a.id = d.app_id
              LEFT JOIN deploy_app_platform_target t ON t.id = d.platform_target_id
-             LEFT JOIN deploy_site s ON s.id = d.site_id
              LEFT JOIN deploy_release r ON r.id = d.release_id
              LEFT JOIN deploy_deployment rd ON rd.id = d.rollback_from_deployment_id
              WHERE d.tenant_id = $1

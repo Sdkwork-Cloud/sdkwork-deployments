@@ -2,7 +2,7 @@
 
 Pre-launch the Deploy schema is consolidated on the single greenfield baseline:
 `database/ddl/baseline/postgres/0001_deploy_baseline.sql`. It contains the
-complete initial schema (site, DNS/domain, certificate/TLS lifecycle, node
+complete initial schema (apps, DNS/domain, certificate/TLS lifecycle, node
 cluster, upload session refs, artifacts and releases, unified application
 delivery — apps, platform targets, source repositories, build templates,
 builds, packages, release channels and rollouts, signing identities, usage

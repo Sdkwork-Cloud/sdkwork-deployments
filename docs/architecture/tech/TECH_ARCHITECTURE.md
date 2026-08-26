@@ -1,4 +1,4 @@
-# SDKWork Deploy Technical Architecture
+﻿# SDKWork Deploy Technical Architecture
 
 Status: active
 Owner: SDKWork maintainers
@@ -64,7 +64,7 @@ implementation.
 - Site pause is the reversible application-disable semantic; destructive deletion remains a
   separate confirmed operation.
 - `deploy_dns_zone` owns root-domain inventory; `deploy_domain` owns verified hostnames;
-  `deploy_site_binding` is the only Site/hostname association.
+  `deploy_app_binding` is the only Site/hostname association.
 - `deploy_certificate_identifier` provides certificate/hostname many-to-many coverage, and
   `deploy_listener_certificate_binding` permits parallel RSA/ECDSA versions per listener.
 

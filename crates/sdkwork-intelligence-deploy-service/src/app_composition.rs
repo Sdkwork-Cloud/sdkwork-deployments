@@ -7,43 +7,43 @@ use sdkwork_deploy_content_provider_port::{
     ValidatedContentProviderResource,
 };
 use sdkwork_deploy_contract::{
-    DeployAppRequestContext, DeployServiceError, DeployServiceResult, SiteCompositionResponse,
-    UpdateSiteCompositionRequest,
+    AppCompositionResponse, DeployAppRequestContext, DeployServiceError, DeployServiceResult,
+    UpdateAppCompositionRequest,
 };
 use sdkwork_deploy_runtime_compiler::canonical_sha256_excluding_field;
 
 #[derive(Clone, Debug)]
-pub struct ReplaceSiteCompositionCommand {
+pub struct ReplaceAppCompositionCommand {
     pub tenant_id: i64,
     pub organization_id: i64,
     pub actor_id: i64,
-    pub site_uuid: String,
-    pub expected_site_version: i64,
+    pub app_uuid: String,
+    pub expected_app_version: i64,
     pub idempotency_key: String,
     pub request_sha256: String,
     pub generated_at: String,
-    pub request: UpdateSiteCompositionRequest,
+    pub request: UpdateAppCompositionRequest,
     pub resources: Vec<ValidatedContentProviderResource>,
 }
 
 #[async_trait]
-pub trait SiteCompositionRepositoryPort: Send + Sync {
-    async fn replace_site_composition(
+pub trait AppCompositionRepositoryPort: Send + Sync {
+    async fn replace_app_composition(
         &self,
-        command: ReplaceSiteCompositionCommand,
-    ) -> DeployServiceResult<SiteCompositionResponse>;
+        command: ReplaceAppCompositionCommand,
+    ) -> DeployServiceResult<AppCompositionResponse>;
 }
 
 impl crate::DeployService {
     pub(crate) async fn update_composition(
         &self,
         context: &DeployAppRequestContext,
-        site_id: &str,
-        expected_site_version: i64,
+        app_id: &str,
+        expected_app_version: i64,
         idempotency_key: &str,
-        request: &UpdateSiteCompositionRequest,
-    ) -> DeployServiceResult<SiteCompositionResponse> {
-        validate_composition_request(site_id, expected_site_version, idempotency_key, request)?;
+        request: &UpdateAppCompositionRequest,
+    ) -> DeployServiceResult<AppCompositionResponse> {
+        validate_composition_request(app_id, expected_app_version, idempotency_key, request)?;
         let tenant_id = Self::require_tenant(context)?;
         execute_composition_update(
             self.repository.as_ref(),
@@ -51,8 +51,8 @@ impl crate::DeployService {
             CompositionUpdateInput {
                 context,
                 tenant_id,
-                site_id,
-                expected_site_version,
+                app_id,
+                expected_app_version,
                 idempotency_key,
                 request,
             },
@@ -64,19 +64,19 @@ impl crate::DeployService {
 struct CompositionUpdateInput<'a> {
     context: &'a DeployAppRequestContext,
     tenant_id: i64,
-    site_id: &'a str,
-    expected_site_version: i64,
+    app_id: &'a str,
+    expected_app_version: i64,
     idempotency_key: &'a str,
-    request: &'a UpdateSiteCompositionRequest,
+    request: &'a UpdateAppCompositionRequest,
 }
 
 async fn execute_composition_update<R, C>(
     repository: &R,
     content_provider: &C,
     input: CompositionUpdateInput<'_>,
-) -> DeployServiceResult<SiteCompositionResponse>
+) -> DeployServiceResult<AppCompositionResponse>
 where
-    R: SiteCompositionRepositoryPort + ?Sized,
+    R: AppCompositionRepositoryPort + ?Sized,
     C: sdkwork_deploy_content_provider_port::ContentProviderPort + ?Sized,
 {
     let credentials = ProviderRequestCredentials {
@@ -91,7 +91,7 @@ where
                     &credentials,
                     ValidateContentProviderResourceCommand {
                         tenant_id: input.tenant_id,
-                        site_uuid: input.site_id.to_owned(),
+                        app_uuid: input.app_id.to_owned(),
                         resource: resource.clone(),
                     },
                 )
@@ -103,12 +103,12 @@ where
     let request_sha256 = canonical_sha256_excluding_field(&request_value, "__no_excluded_field")
         .map_err(|error| DeployServiceError::Internal(error.to_string()))?;
     repository
-        .replace_site_composition(ReplaceSiteCompositionCommand {
+        .replace_app_composition(ReplaceAppCompositionCommand {
             tenant_id: input.tenant_id,
             organization_id: input.context.organization_id.unwrap_or(0),
             actor_id: input.context.actor_id.unwrap_or(0),
-            site_uuid: input.site_id.to_owned(),
-            expected_site_version: input.expected_site_version,
+            app_uuid: input.app_id.to_owned(),
+            expected_app_version: input.expected_app_version,
             idempotency_key: input.idempotency_key.to_owned(),
             request_sha256,
             generated_at: Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true),
@@ -119,13 +119,13 @@ where
 }
 
 fn validate_composition_request(
-    site_id: &str,
-    expected_site_version: i64,
+    app_id: &str,
+    expected_app_version: i64,
     idempotency_key: &str,
-    request: &UpdateSiteCompositionRequest,
+    request: &UpdateAppCompositionRequest,
 ) -> DeployServiceResult<()> {
-    validate_identifier(site_id, 128, "siteId")?;
-    if expected_site_version < 0 {
+    validate_identifier(app_id, 128, "appId")?;
+    if expected_app_version < 0 {
         return Err(DeployServiceError::validation(
             "If-Match site version must not be negative",
         ));
@@ -237,10 +237,10 @@ mod tests {
         ValidatedContentProviderResource,
     };
     use sdkwork_deploy_contract::{
-        ContentProviderResourceSource, DriveWebsiteContentMode, DriveWebsiteRootSelector,
-        SiteBindingAction, SiteBindingDefinition, SiteClientClass, SiteEnvironment,
-        SiteMountDefinition, SiteMountHandler, SiteMountMode, SiteResourceDefinition,
-        SiteVariantDefinition,
+        AppBindingAction, AppBindingDefinition, AppClientClass, AppMountDefinition,
+        AppMountHandler, AppMountMode, AppPublishEnvironment, AppResourceDefinition,
+        AppVariantDefinition, ContentProviderResourceSource, DriveWebsiteContentMode,
+        DriveWebsiteRootSelector,
     };
 
     use super::*;
@@ -266,11 +266,11 @@ mod tests {
     }
 
     #[async_trait]
-    impl SiteCompositionRepositoryPort for RecordingCompositionRepository {
-        async fn replace_site_composition(
+    impl AppCompositionRepositoryPort for RecordingCompositionRepository {
+        async fn replace_app_composition(
             &self,
-            _command: ReplaceSiteCompositionCommand,
-        ) -> DeployServiceResult<SiteCompositionResponse> {
+            _command: ReplaceAppCompositionCommand,
+        ) -> DeployServiceResult<AppCompositionResponse> {
             self.calls.fetch_add(1, Ordering::SeqCst);
             Err(DeployServiceError::Internal(
                 "repository should not be called".to_owned(),
@@ -278,11 +278,11 @@ mod tests {
         }
     }
 
-    fn request() -> UpdateSiteCompositionRequest {
-        UpdateSiteCompositionRequest {
-            environment: SiteEnvironment::Production,
+    fn request() -> UpdateAppCompositionRequest {
+        UpdateAppCompositionRequest {
+            environment: AppPublishEnvironment::Production,
             default_variant_key: "default".to_owned(),
-            resources: vec![SiteResourceDefinition {
+            resources: vec![AppResourceDefinition {
                 key: "content".to_owned(),
                 source: ContentProviderResourceSource::drive_directory(
                     "space-1".to_owned(),
@@ -290,30 +290,30 @@ mod tests {
                     DriveWebsiteContentMode::LiveTree,
                 ),
             }],
-            variants: vec![SiteVariantDefinition {
+            variants: vec![AppVariantDefinition {
                 key: "default".to_owned(),
                 label: "Default".to_owned(),
-                client_class: SiteClientClass::Other,
+                client_class: AppClientClass::Other,
                 priority: 0,
             }],
             variant_rules: vec![],
-            mounts: vec![SiteMountDefinition {
+            mounts: vec![AppMountDefinition {
                 key: "root".to_owned(),
                 variant_key: "default".to_owned(),
                 resource_key: "content".to_owned(),
                 path_prefix: "/".to_owned(),
                 resource_subpath: "/".to_owned(),
-                mode: SiteMountMode::Root,
-                handler: SiteMountHandler::Static,
+                mode: AppMountMode::Root,
+                handler: AppMountHandler::Static,
                 index_files: vec!["index.html".to_owned()],
                 spa_fallback: None,
                 priority: 0,
             }],
-            bindings: vec![SiteBindingDefinition {
+            bindings: vec![AppBindingDefinition {
                 key: "primary".to_owned(),
                 domain_id: "domain-1".to_owned(),
                 path_prefix: "/".to_owned(),
-                action: SiteBindingAction::Serve {
+                action: AppBindingAction::Serve {
                     default_variant_key: None,
                     forced_variant_key: None,
                 },
@@ -342,8 +342,8 @@ mod tests {
             CompositionUpdateInput {
                 context: &context,
                 tenant_id: 7,
-                site_id: "site-1",
-                expected_site_version: 0,
+                app_id: "site-1",
+                expected_app_version: 0,
                 idempotency_key: "composition-1",
                 request: &request(),
             },

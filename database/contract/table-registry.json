@@ -3,12 +3,6 @@
   "kind": "sdkwork.database.table-registry",
   "tables": [
     {
-      "table_name": "deploy_site",
-      "owner": "deploy-platform",
-      "compliance_level": "L2",
-      "lifecycle_status": "active"
-    },
-    {
       "table_name": "deploy_dns_zone",
       "owner": "deploy-platform",
       "compliance_level": "L2",
@@ -111,31 +105,31 @@
       "lifecycle_status": "active"
     },
     {
-      "table_name": "deploy_site_resource",
+      "table_name": "deploy_app_resource",
       "owner": "deploy-platform",
       "compliance_level": "L2",
       "lifecycle_status": "active"
     },
     {
-      "table_name": "deploy_site_variant",
+      "table_name": "deploy_app_variant",
       "owner": "deploy-platform",
       "compliance_level": "L2",
       "lifecycle_status": "active"
     },
     {
-      "table_name": "deploy_site_variant_rule",
+      "table_name": "deploy_app_variant_rule",
       "owner": "deploy-platform",
       "compliance_level": "L2",
       "lifecycle_status": "active"
     },
     {
-      "table_name": "deploy_site_mount",
+      "table_name": "deploy_app_mount",
       "owner": "deploy-platform",
       "compliance_level": "L2",
       "lifecycle_status": "active"
     },
     {
-      "table_name": "deploy_site_binding",
+      "table_name": "deploy_app_binding",
       "owner": "deploy-platform",
       "compliance_level": "L2",
       "lifecycle_status": "active"
@@ -153,7 +147,7 @@
       "lifecycle_status": "active"
     },
     {
-      "table_name": "deploy_site_revision",
+      "table_name": "deploy_app_revision",
       "owner": "deploy-platform",
       "compliance_level": "L2",
       "lifecycle_status": "active"
@@ -171,7 +165,7 @@
       "lifecycle_status": "active"
     },
     {
-      "table_name": "deploy_site_target_observation",
+      "table_name": "deploy_app_target_observation",
       "owner": "deploy-platform",
       "compliance_level": "L2",
       "lifecycle_status": "active"
@@ -285,7 +279,13 @@
       "lifecycle_status": "active"
     },
     {
-      "table_name": "deploy_site_usage_daily",
+      "table_name": "deploy_app_usage_daily",
+      "owner": "deploy-platform",
+      "compliance_level": "L2",
+      "lifecycle_status": "active"
+    },
+    {
+      "table_name": "deploy_tenant_usage_daily",
       "owner": "deploy-platform",
       "compliance_level": "L2",
       "lifecycle_status": "active"

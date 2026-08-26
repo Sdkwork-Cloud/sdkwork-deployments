@@ -1,4 +1,4 @@
-# REQ-2026-0001 Cloud Site Publishing Platform
+﻿# REQ-2026-0001 Cloud Site Publishing Platform
 
 ```yaml
 id: REQ-2026-0001
@@ -8,7 +8,7 @@ status: ready
 source: product
 problem: SDKWork has source, deployment, TLS, and delivery primitives but no single commercial control-plane contract for live directory and Wiki websites.
 users:
-  - tenant site administrators
+  - tenant app administrators
   - developers
   - knowledge authors
   - platform administrators
@@ -70,7 +70,7 @@ or resolved-resource administration contract is approved.
    enforcement. Deploy attaches the opaque `publicationUuid`; it does not infer eligibility from a
    Knowledgebase id or Drive directory.
 4. Ordinary source file changes shall not call the composition API and shall not create
-   `deploy_release`, `deploy_deployment`, or `deploy_site_revision` records. Provider change events
+   `deploy_release`, `deploy_deployment`, or `deploy_app_revision` records. Provider change events
    and read-through resolution shall make changes visible within the freshness target.
 5. `ATOMIC_SYNC` shall switch a complete Drive directory tree without exposing partial bundles and
    without creating a Deploy Release.
@@ -106,7 +106,7 @@ or resolved-resource administration contract is approved.
 17. Managed certificate renewal success shall require a completed ACME order/challenge, immutable
     certificate version, secure distribution, Web Node activation, and served-SNI verification.
     Setting `renewal_status=planned` is scheduling evidence only.
-18. `PUT /app/v3/api/sites/{siteId}/composition` shall require both `If-Match` and
+18. `PUT /app/v3/api/apps/{appId}/composition` shall require both `If-Match` and
     `Idempotency-Key`. `If-Match` and response Site versions are decimal strings. Replaying one key
     with the same request returns the committed result; reusing it with different content fails.
 19. A composition commit shall advance `desired_revision_id`. `current_revision_id` shall advance

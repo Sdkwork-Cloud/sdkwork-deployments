@@ -1,4 +1,4 @@
-# SDKWork Cloud Site Publishing Control-Plane Architecture
+﻿# SDKWork Cloud Site Publishing Control-Plane Architecture
 
 Status: implementation in progress
 Owner: SDKWork Deploy maintainers
@@ -29,7 +29,7 @@ The prelaunch control plane now has executable foundations rather than a Release
   generation, supersession, bounded retry, expiring multi-worker claims, exact receipt validation,
   bounded observation reconciliation, immutable observation evidence, strict all-frozen-target
   `ACTIVE` convergence, and concurrent SQLite transaction-path evidence;
-- `sites.composition.update` on the App API, with mandatory `If-Match` and `Idempotency-Key`, generated
+- `apps.composition.update` on the App API, with mandatory `If-Match` and `Idempotency-Key`, generated
   Drive/Knowledgebase provider validation before persistence, and one PostgreSQL/SQLite transaction
   for composition replacement, immutable revision, desired pointer, runtime assignments,
   idempotency result, and audit;
@@ -227,7 +227,7 @@ centralize validation and shall not assign ad hoc integer meanings.
 
 ### 4.2 Existing Aggregate Tables To Extend
 
-#### `deploy_site`
+#### `deploy_app`
 
 Purpose: tenant-owned Site aggregate and active configuration pointer.
 
@@ -272,11 +272,11 @@ Purpose remains frozen artifact/package/Git release. No live Drive or Wiki conte
 
 ### 4.3 Site Composition Tables
 
-#### `deploy_site_resource`
+#### `deploy_app_resource`
 
 | Column | Contract |
 | --- | --- |
-| `site_id` | owning Site |
+| `app_id` | owning Site |
 | `resource_key` | unique stable key inside Site |
 | `provider_type` | `DRIVE_DIRECTORY` or `KNOWLEDGEBASE_WIKI` |
 | `provider_resource_uuid` | stable Drive WebsiteRoot UUID or Knowledgebase Wiki publication UUID |
@@ -294,24 +294,24 @@ observations only. They cannot replace `provider_resource_uuid`, authorize a req
 retarget the provider. No uniqueness constraint prevents the same provider resource from serving
 multiple authorized Sites; tenant/provider validation remains mandatory for every attachment.
 
-#### `deploy_site_variant`
+#### `deploy_app_variant`
 
-Columns: `site_id`, `variant_key`, `variant_type`, `display_name`, `is_default`, `variant_status`,
-`priority`, and optional `metadata_json`. Unique `(site_id, variant_key)` and one active default per
+Columns: `app_id`, `variant_key`, `variant_type`, `display_name`, `is_default`, `variant_status`,
+`priority`, and optional `metadata_json`. Unique `(app_id, variant_key)` and one active default per
 Site are required.
 
-#### `deploy_site_variant_rule`
+#### `deploy_app_variant_rule`
 
-Columns: `site_id`, `target_variant_id`, `rule_type` (`PREFERENCE`, `PATH`, `CLIENT_HINT`,
+Columns: `app_id`, `target_variant_id`, `rule_type` (`PREFERENCE`, `PATH`, `CLIENT_HINT`,
 `USER_AGENT`, `BOT`), `operator`, bounded `match_value`, `priority`, `enabled`, and `expires_at`.
 Rules are declarative; arbitrary regular expressions/scripts are prohibited. Index by
-`(site_id, enabled, priority)`.
+`(app_id, enabled, priority)`.
 
-#### `deploy_site_mount`
+#### `deploy_app_mount`
 
 | Column | Contract |
 | --- | --- |
-| `site_id`, `variant_id`, `resource_id` | composition ownership |
+| `app_id`, `variant_id`, `resource_id` | composition ownership |
 | `url_prefix` | normalized absolute prefix beginning `/` |
 | `resource_subpath` | normalized provider-relative subpath or empty |
 | `mount_mode` | `ROOT` or `ALIAS` |
@@ -324,11 +324,11 @@ Rules are declarative; arbitrary regular expressions/scripts are prohibited. Ind
 
 Unique active `(variant_id, url_prefix)`; lookup index `(variant_id, mount_status, url_prefix)`.
 
-#### `deploy_site_binding`
+#### `deploy_app_binding`
 
 | Column | Contract |
 | --- | --- |
-| `site_id`, `domain_id` | association between independently owned Site and verified hostname |
+| `app_id`, `domain_id` | association between independently owned Site and verified hostname |
 | `hostname_ascii` | denormalized immutable comparison key for bounded hot lookup |
 | `path_prefix` | normalized binding prefix |
 | `binding_key` | stable Site-local identity |
@@ -343,9 +343,9 @@ Active global unique `(hostname_ascii, path_prefix, environment)` is enforced us
 claim strategy. Add Site list, domain list, and routing lookup indexes. The authoritative row is
 tenant-scoped even though conflict detection is global.
 
-#### `deploy_site_file_policy`
+#### `deploy_app_file_policy`
 
-Columns: `site_id`, nullable `mount_id`, `policy_name`, `cache_profile`, `html_max_age_seconds`,
+Columns: `app_id`, nullable `mount_id`, `policy_name`, `cache_profile`, `html_max_age_seconds`,
 `asset_max_age_seconds`, `stale_while_revalidate_seconds`, `compression_policy`, `mime_policy`,
 `security_headers_json`, `custom_headers_json`, `robots_policy`, `not_found_mode`, and `policy_status`.
 Header names/values are allowlisted and size-bounded; hop-by-hop, auth, cookie, CORS credential, and
@@ -353,16 +353,16 @@ security-weakening headers are rejected.
 
 ### 4.4 Revision And Runtime Assignment Tables
 
-#### `deploy_site_revision`
+#### `deploy_app_revision`
 
-Immutable columns: `site_id`, `revision_no`, `descriptor_schema_version`, `descriptor_json`,
+Immutable columns: `app_id`, `revision_no`, `descriptor_schema_version`, `descriptor_json`,
 `descriptor_sha256`, `compiler_version`, `source_config_version`, `validation_status`,
 `validation_report_json`, `created_by`, `created_at`, and optional `supersedes_revision_id`.
 
-Unique `(site_id, revision_no)` and `descriptor_sha256`. Rows are append-only. Descriptor JSON is
+Unique `(app_id, revision_no)` and `descriptor_sha256`. Rows are append-only. Descriptor JSON is
 bounded and contains no secrets.
 
-#### `deploy_site_target_observation`
+#### `deploy_app_target_observation`
 
 Implemented immutable evidence columns include tenant, optional Site/SiteRevision identity, Node
 target and runtime-assignment foreign keys, Web observation and assignment UUIDs, generation,
@@ -375,7 +375,7 @@ Deploy reads the latest observation by snapshot UUID only through the owner-gene
 SDK. Before insertion, the repository locks the durable assignment and revalidates tenant, Node,
 environment, remote assignment UUID, generation, snapshot UUID/hash, state, and timestamps. It does
 not read `web_*` tables. `REJECTED` and partial rollout never advance the active pointer. An `ACTIVE`
-observation advances `deploy_site.current_revision_id` only when every assignment frozen for the
+observation advances `deploy_app.current_revision_id` only when every assignment frozen for the
 same SiteRevision is published and has immutable `ACTIVE` evidence, and only while that revision is
 still the Site's desired revision.
 
@@ -462,15 +462,15 @@ requires suspension.
 
 #### `deploy_usage_event`
 
-Append-only columns: `event_uuid`, `tenant_id`, `site_id`, optional `binding_id`, `period_start`,
+Append-only columns: `event_uuid`, `tenant_id`, `app_id`, optional `binding_id`, `period_start`,
 `dimension`, `quantity`, `unit`, `source_target_uuid`, `source_window_id`, `deduplication_key`,
 `observed_at`, `ingested_at`, and bounded attribution JSON. Unique deduplication identity prevents
 double billing.
 
-#### `deploy_site_usage_daily`
+#### `deploy_app_usage_daily`
 
-Columns: `tenant_id`, `site_id`, `usage_date`, `dimension`, `quantity`, `unit`, `source_revision`,
-`finalization_status`, `finalized_at`, and timestamps. Unique `(tenant_id, site_id, usage_date,
+Columns: `tenant_id`, `app_id`, `usage_date`, `dimension`, `quantity`, `unit`, `source_revision`,
+`finalization_status`, `finalized_at`, and timestamps. Unique `(tenant_id, app_id, usage_date,
 dimension, unit)`. Aggregates are rebuildable from retained usage facts or an approved metering
 source.
 
@@ -483,7 +483,7 @@ source.
   "schemaVersion": "sdkwork.website-runtime.v1",
   "kind": "sdkwork.website-runtime.descriptor",
   "revisionUuid": "stable-revision-uuid",
-  "siteUuid": "stable-site-uuid",
+  "appUuid": "stable-app-uuid",
   "tenantScopeHash": "non-reversible-scope-hash",
   "environment": "production",
   "generatedAt": "2026-07-21T00:00:00Z",
@@ -534,7 +534,7 @@ does not stream independent map mutations to the Web Node:
 within the JSON safe-integer range. Reusing one generation with different bytes is a control-plane
 integrity error; a lower or replayed generation cannot reactivate after a newer generation or local
 rollback. `descriptors` contains complete, individually hash-verified WebsiteRuntimeDescriptors in
-unique ascending `siteUuid` order. `snapshotSha256` covers the canonical envelope excluding only
+unique ascending `appUuid` order. `snapshotSha256` covers the canonical envelope excluding only
 its own field and therefore includes every nested descriptor and descriptor hash. `nodeUuid` and
 `environment` are mandatory activation scope, not diagnostics. Cross-Site duplicate
 `(hostname,pathPrefix)` ownership fails the entire set. The executable consumer contract is
@@ -734,7 +734,7 @@ certificate renewal never creates a SiteRevision or content deployment.
 ## 10. API And SDK Boundaries
 
 The current owner OpenAPI exposes the App API composition mutation as
-`PUT /app/v3/api/sites/{siteId}/composition` (`sites.composition.update`). The generated
+`PUT /app/v3/api/apps/{appId}/composition` (`apps.composition.update`). The generated
 `@sdkwork/deployments-app-sdk` facade is the only supported user automation surface for it. The generated
 `@sdkwork/deployments-backend-sdk` contains the current Nginx/server/audit operator surface but does not
 offer composition mutation. Adding that mutation requires an approved privileged credential model;
@@ -742,8 +742,8 @@ an admin must not submit unvalidated provider identifiers on behalf of a tenant.
 
 Target resource groups as the remaining product surface is implemented:
 
-- app API: `sites`, `siteResources`, `siteVariants`, `siteVariantRules`, `siteMounts`,
-  `siteBindings`, `domainZones`, `domainHostnames`, `tlsPolicies`, `certificates`, `siteRevisions`, `siteAnalytics`,
+- app API: `sites`, `appResources`, `appVariants`, `appVariantRules`, `appMounts`,
+  `appBindings`, `domainZones`, `domainHostnames`, `tlsPolicies`, `certificates`, `siteRevisions`, `siteAnalytics`,
   `siteUsage`, and validation/preview/activation commands;
 - backend API: tenant publishing administration, domain conflicts/holds, certificate orders and
   challenges, runtime revisions/targets, provider health, entitlement projections, metering

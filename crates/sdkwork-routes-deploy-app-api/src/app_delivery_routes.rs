@@ -2,6 +2,8 @@
 //! targets, source repositories, build templates, builds, packages, releases,
 //! channels, rollouts, deployments, and signing identities.
 
+use std::collections::HashMap;
+
 use axum::{
     extract::{Path, Query, State},
     response::Response,
@@ -14,7 +16,8 @@ use sdkwork_deploy_contract::{
     CreateBuildTemplateRequest, CreatePlatformTargetRequest, CreateSigningIdentityRequest,
     CreateSourceRepositoryRequest, DeployAppRequestContext, PromoteChannelRequest,
     PromoteEnvironmentRequest, RegisterPackageRequest, UpdateAppDatabaseProfileRequest,
-    UpdateAppEnvironmentRequest, UpdateAppRequest, UpdateBuildStateRequest, UsageEventQuery,
+    UpdateAppEnvironmentRequest, UpdateAppReleaseStatusRequest, UpdateAppRequest,
+    UpdateBuildStateRequest, UsageEventQuery,
 };
 use sdkwork_routes_deploy_common::{envelope, finish_api_json, finish_created_api_json, ok_json};
 use sdkwork_web_core::WebRequestContext;
@@ -67,7 +70,10 @@ pub fn build_app_delivery_router() -> Router<AppState> {
             paths::APP_RELEASES,
             get(list_app_releases).post(create_app_release),
         )
-        .route(paths::APP_RELEASE, get(retrieve_app_release))
+        .route(
+            paths::APP_RELEASE,
+            get(retrieve_app_release).patch(update_app_release_status),
+        )
         .route(paths::APP_CHANNELS, get(list_channels))
         .route(paths::APP_CHANNEL, get(retrieve_channel))
         .route(paths::APP_CHANNEL_PROMOTIONS, post(promote_channel))
@@ -573,6 +579,33 @@ async fn retrieve_app_release(
 }
 
 // -- channels ---------------------------------------------------------------------
+
+async fn update_app_release_status(
+    ctx: WebRequestContext,
+    State(state): State<AppState>,
+    context: Option<Extension<DeployAppRequestContext>>,
+    Path(params): Path<HashMap<String, String>>,
+    Json(request): Json<UpdateAppReleaseStatusRequest>,
+) -> Response {
+    finish_api_json(
+        &ctx,
+        async {
+            let context = require_app_context(context)?;
+            let app_id = params.get("appId").cloned().ok_or_else(|| {
+                sdkwork_deploy_contract::DeployServiceError::validation("appId is required")
+            })?;
+            let release_id = params.get("releaseId").cloned().ok_or_else(|| {
+                sdkwork_deploy_contract::DeployServiceError::validation("releaseId is required")
+            })?;
+            let result = state
+                .api
+                .update_app_release_status(&context, &app_id, &release_id, request.release_status)
+                .await?;
+            ok_json(envelope::resource(result))
+        }
+        .await,
+    )
+}
 
 async fn list_channels(
     ctx: WebRequestContext,

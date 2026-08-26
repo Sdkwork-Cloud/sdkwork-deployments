@@ -1,4 +1,4 @@
-use async_trait::async_trait;
+﻿use async_trait::async_trait;
 use chrono::{DateTime, SecondsFormat, Utc};
 use sdkwork_database_id::SnowflakeIdGenerator;
 use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
@@ -41,7 +41,7 @@ impl DeployRepository {
     ) -> DeployServiceResult<Option<RuntimeAssignmentState>> {
         let row = sqlx::query(
             "SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
-                    t.node_uuid, t.environment, a.trigger_site_revision_id,
+                    t.node_uuid, t.environment, a.trigger_app_revision_id,
                     a.generation, a.snapshot_uuid, a.snapshot_sha256,
                     a.desired_state_sha256,
                     CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
@@ -135,7 +135,7 @@ impl DeployRepository {
                     RETURNING a.*
                  )
                  SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
-                         t.node_uuid, t.environment, a.trigger_site_revision_id,
+                         t.node_uuid, t.environment, a.trigger_app_revision_id,
                          a.generation, a.snapshot_uuid, a.snapshot_sha256,
                          a.desired_state_sha256,
                          CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
@@ -242,7 +242,7 @@ impl DeployRepository {
     ) -> DeployServiceResult<Vec<RuntimeAssignmentState>> {
         let rows = sqlx::query(
             "SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
-                    t.node_uuid, t.environment, a.trigger_site_revision_id,
+                    t.node_uuid, t.environment, a.trigger_app_revision_id,
                     a.generation, a.snapshot_uuid, a.snapshot_sha256,
                     a.desired_state_sha256,
                     CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
@@ -252,7 +252,7 @@ impl DeployRepository {
              WHERE a.publish_status = 'PUBLISHED' AND a.remote_assignment_uuid IS NOT NULL
                AND t.deleted_at IS NULL
                AND NOT EXISTS (
-                   SELECT 1 FROM deploy_site_target_observation o
+                   SELECT 1 FROM deploy_app_target_observation o
                    WHERE o.runtime_assignment_id = a.id
                      AND o.state IN ('ACTIVE', 'REJECTED')
                )
@@ -273,7 +273,7 @@ impl DeployRepository {
     ) -> DeployServiceResult<Vec<RuntimeAssignmentState>> {
         let rows = sqlx::query(
             "SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
-                    t.node_uuid, t.environment, a.trigger_site_revision_id,
+                    t.node_uuid, t.environment, a.trigger_app_revision_id,
                     a.generation, a.snapshot_uuid, a.snapshot_sha256,
                     a.desired_state_sha256,
                     CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
@@ -289,7 +289,7 @@ impl DeployRepository {
                      AND newer.generation > a.generation
                )
                AND EXISTS (
-                   SELECT 1 FROM deploy_site_target_observation observation
+                   SELECT 1 FROM deploy_app_target_observation observation
                    WHERE observation.runtime_assignment_id = a.id
                      AND observation.state = 'ACTIVE'
                )
@@ -316,15 +316,15 @@ impl DeployRepository {
         let mut transaction = begin_runtime_assignment_transaction(&self.pool).await?;
         let row = sqlx::query(
             "SELECT a.id AS runtime_assignment_id, a.node_target_id,
-                    r.site_id, a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
-                    t.node_uuid, t.environment, a.trigger_site_revision_id,
+                    r.app_id, a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
+                    t.node_uuid, t.environment, a.trigger_app_revision_id,
                     a.generation, a.snapshot_uuid, a.snapshot_sha256,
                     a.desired_state_sha256,
                     CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
                     a.remote_assignment_uuid, a.attempt_count, a.lease_owner
              FROM deploy_runtime_assignment a
              INNER JOIN deploy_web_node_target t ON t.id = a.node_target_id
-             LEFT JOIN deploy_site_revision r ON r.id = a.trigger_site_revision_id
+             LEFT JOIN deploy_app_revision r ON r.id = a.trigger_app_revision_id
              WHERE a.uuid = $1
              FOR UPDATE OF a",
         )
@@ -341,13 +341,13 @@ impl DeployRepository {
         let node_target_id: i64 = row
             .try_get("node_target_id")
             .map_err(|error| DeployServiceError::Internal(error.to_string()))?;
-        let site_id: Option<i64> = row
-            .try_get("site_id")
+        let app_id: Option<i64> = row
+            .try_get("app_id")
             .map_err(|error| DeployServiceError::Internal(error.to_string()))?;
 
         if let Some(existing) = sqlx::query(
             "SELECT runtime_assignment_id, state
-             FROM deploy_site_target_observation
+             FROM deploy_app_target_observation
              WHERE remote_observation_uuid = $1",
         )
         .bind(&observation.observation_uuid)
@@ -376,7 +376,7 @@ impl DeployRepository {
         }
 
         if sqlx::query(
-            "SELECT id FROM deploy_site_target_observation
+            "SELECT id FROM deploy_app_target_observation
              WHERE runtime_assignment_id = $1 AND state = $2",
         )
         .bind(runtime_assignment_id)
@@ -394,8 +394,8 @@ impl DeployRepository {
         let id = next_id(&self.id_generator)?;
         let uuid = new_uuid();
         sqlx::query(
-            "INSERT INTO deploy_site_target_observation (
-                id, uuid, tenant_id, site_id, site_revision_id, node_target_id,
+            "INSERT INTO deploy_app_target_observation (
+                id, uuid, tenant_id, app_id, site_revision_id, node_target_id,
                 runtime_assignment_id, remote_observation_uuid, remote_assignment_uuid,
                 generation, snapshot_uuid, snapshot_sha256, environment, state,
                 node_version, reason_code, detail, observed_at, ingested_at, created_at
@@ -407,8 +407,8 @@ impl DeployRepository {
         .bind(id)
         .bind(uuid)
         .bind(observation.tenant_id)
-        .bind(site_id)
-        .bind(assignment.trigger_site_revision_id)
+        .bind(app_id)
+        .bind(assignment.trigger_app_revision_id)
         .bind(node_target_id)
         .bind(runtime_assignment_id)
         .bind(&observation.observation_uuid)
@@ -431,8 +431,8 @@ impl DeployRepository {
             activate_site_revision_if_converged(
                 &mut transaction,
                 observation.tenant_id,
-                site_id,
-                assignment.trigger_site_revision_id,
+                app_id,
+                assignment.trigger_app_revision_id,
                 &ingested_at,
             )
             .await?
@@ -566,7 +566,7 @@ async fn latest_runtime_assignment_for_target(
 ) -> DeployServiceResult<Option<RuntimeAssignmentState>> {
     let row = sqlx::query(
         "SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
-                t.node_uuid, t.environment, a.trigger_site_revision_id,
+                t.node_uuid, t.environment, a.trigger_app_revision_id,
                 a.generation, a.snapshot_uuid, a.snapshot_sha256,
                 a.desired_state_sha256,
                 CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
@@ -590,7 +590,7 @@ async fn runtime_assignment_by_uuid(
 ) -> DeployServiceResult<Option<RuntimeAssignmentState>> {
     let row = sqlx::query(
         "SELECT a.uuid AS assignment_uuid, t.uuid AS target_uuid, a.tenant_id,
-                t.node_uuid, t.environment, a.trigger_site_revision_id,
+                t.node_uuid, t.environment, a.trigger_app_revision_id,
                 a.generation, a.snapshot_uuid, a.snapshot_sha256,
                 a.desired_state_sha256,
                 CAST(a.runtime_set_json AS TEXT) AS runtime_set_json, a.publish_status,
@@ -609,21 +609,21 @@ async fn runtime_assignment_by_uuid(
 async fn activate_site_revision_if_converged(
     transaction: &mut Transaction<'static, Postgres>,
     tenant_id: i64,
-    site_id: Option<i64>,
+    app_id: Option<i64>,
     site_revision_id: Option<i64>,
     activated_at: &str,
 ) -> DeployServiceResult<bool> {
-    let (Some(site_id), Some(site_revision_id)) = (site_id, site_revision_id) else {
+    let (Some(app_id), Some(site_revision_id)) = (app_id, site_revision_id) else {
         return Ok(false);
     };
     let counts = sqlx::query(
         "SELECT COUNT(*) AS assignment_count,
                 SUM(CASE WHEN a.publish_status = 'PUBLISHED' AND EXISTS (
-                    SELECT 1 FROM deploy_site_target_observation o
+                    SELECT 1 FROM deploy_app_target_observation o
                     WHERE o.runtime_assignment_id = a.id AND o.state = 'ACTIVE'
                 ) THEN 1 ELSE 0 END) AS active_count
          FROM deploy_runtime_assignment a
-         WHERE a.tenant_id = $1 AND a.trigger_site_revision_id = $2",
+         WHERE a.tenant_id = $1 AND a.trigger_app_revision_id = $2",
     )
     .bind(tenant_id)
     .bind(site_revision_id)
@@ -642,18 +642,18 @@ async fn activate_site_revision_if_converged(
     }
 
     let updated = sqlx::query(
-        "UPDATE deploy_site
+        "UPDATE deploy_app
          SET current_revision_id = $3, updated_at = CAST($4 AS TIMESTAMPTZ), version = version + 1
          WHERE id = $1 AND tenant_id = $2 AND desired_revision_id = $3
            AND (current_revision_id IS NULL OR current_revision_id <> $3)",
     )
-    .bind(site_id)
+    .bind(app_id)
     .bind(tenant_id)
     .bind(site_revision_id)
     .bind(activated_at)
     .execute(&mut **transaction)
     .await
-    .map_err(|error| store_error("activate converged site revision", error))?;
+    .map_err(|error| store_error("activate converged app revision", error))?;
     Ok(updated.rows_affected() == 1)
 }
 
@@ -684,8 +684,8 @@ fn map_assignment_row(row: &PgRow) -> DeployServiceResult<RuntimeAssignmentState
             &row.try_get::<String, _>("environment")
                 .map_err(|error| DeployServiceError::Internal(error.to_string()))?,
         )?,
-        trigger_site_revision_id: row
-            .try_get("trigger_site_revision_id")
+        trigger_app_revision_id: row
+            .try_get("trigger_app_revision_id")
             .map_err(|error| DeployServiceError::Internal(error.to_string()))?,
         generation: generation.try_into().map_err(|_| {
             DeployServiceError::Internal("stored runtime generation is negative".to_owned())

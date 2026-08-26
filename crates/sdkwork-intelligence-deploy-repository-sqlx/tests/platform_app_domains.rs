@@ -20,7 +20,7 @@ async fn test_repository() -> (DeployRepository, PgPool) {
 
 async fn seed_control_plane(pool: &PgPool) {
     sqlx::query(
-        "INSERT INTO deploy_site (
+        "INSERT INTO deploy_app (
             id,uuid,tenant_id,organization_id,name,slug,site_type,status,runtime_config,
             metadata,created_at,updated_at,version
          ) VALUES (10,'site-10',7,9,'Shop','shop',1,1,'{}','{}',
@@ -28,10 +28,10 @@ async fn seed_control_plane(pool: &PgPool) {
     )
     .execute(pool)
     .await
-    .expect("seed deploy_site");
+    .expect("seed deploy_app");
     sqlx::query(
         "INSERT INTO deploy_app (
-            id,uuid,tenant_id,organization_id,name,slug,app_kind,app_status,site_id,
+            id,uuid,tenant_id,organization_id,name,slug,app_kind,app_status,app_id,
             default_environment,created_at,updated_at,version
          ) VALUES (20,'app-20',7,9,'Shop','shop','WEB','ACTIVE',10,'production',
                    '2026-07-22T00:00:00Z','2026-07-22T00:00:00Z',0)",
@@ -46,8 +46,8 @@ async fn seed_control_plane(pool: &PgPool) {
 async fn seed_revision(pool: &PgPool, revision_no: i64, descriptor: &serde_json::Value) -> String {
     let sha256 = sdkwork_utils_rust::crypto::sha256_hash(&serde_json::to_vec(descriptor).unwrap());
     sqlx::query(
-        "INSERT INTO deploy_site_revision (
-            id,uuid,tenant_id,organization_id,site_id,revision_no,environment,
+        "INSERT INTO deploy_app_revision (
+            id,uuid,tenant_id,organization_id,app_id,revision_no,environment,
             descriptor_schema_version,descriptor_json,descriptor_sha256,compiler_version,
             source_config_version,idempotency_key,request_sha256,validation_status,created_by,
             created_at
@@ -62,8 +62,8 @@ async fn seed_revision(pool: &PgPool, revision_no: i64, descriptor: &serde_json:
     .bind(&sha256)
     .execute(pool)
     .await
-    .expect("seed deploy_site_revision");
-    sqlx::query("UPDATE deploy_site SET current_revision_id = $1 WHERE id = 10")
+    .expect("seed deploy_app_revision");
+    sqlx::query("UPDATE deploy_app SET current_revision_id = $1 WHERE id = 10")
         .bind(revision_no)
         .execute(pool)
         .await
@@ -76,12 +76,12 @@ fn descriptor() -> serde_json::Value {
         "schemaVersion": "sdkwork.website-runtime.v1",
         "kind": "sdkwork.website-runtime.descriptor",
         "revisionUuid": "revision-0001",
-        "siteUuid": "site-10",
+        "appUuid": "site-10",
         "tenantScopeHash": "1111111111111111111111111111111111111111111111111111111111111111",
         "environment": "production",
         "compilerVersion": "test-compiler/1",
         "descriptorSha256": "0".repeat(64),
-        "siteDefaultVariantUuid": "variant-desktop",
+        "appDefaultVariantUuid": "variant-desktop",
         "bindings": [],
         "variants": [],
         "variantRules": [],
@@ -168,8 +168,8 @@ async fn resolves_active_binding_to_latest_valid_revision() {
         .await
         .expect("resolve")
         .expect("default app domain must resolve");
-    assert_eq!(resolved.site_uuid, "site-10");
-    assert_eq!(resolved.site_slug, "shop");
+    assert_eq!(resolved.app_uuid, "site-10");
+    assert_eq!(resolved.app_slug, "shop");
     assert_eq!(resolved.hostname, "shop.app.sdkwork.com");
     assert_eq!(resolved.path_prefix, "/");
     assert_eq!(resolved.action_type, "SERVE");
@@ -177,7 +177,7 @@ async fn resolves_active_binding_to_latest_valid_revision() {
     assert_eq!(resolved.revision_no, 1);
     assert_eq!(resolved.descriptor_sha256, sha256);
     assert_eq!(
-        resolved.descriptor_json["siteUuid"],
+        resolved.descriptor_json["appUuid"],
         serde_json::json!("site-10")
     );
 
@@ -223,8 +223,8 @@ async fn resolves_custom_domains_and_respects_environment() {
     .expect("insert custom domain");
     let domain_id: i64 = domain_row.try_get("id").expect("domain id");
     sqlx::query(
-        "INSERT INTO deploy_site_binding (
-            id,uuid,tenant_id,organization_id,site_id,binding_key,domain_id,hostname_ascii,
+        "INSERT INTO deploy_app_binding (
+            id,uuid,tenant_id,organization_id,app_id,binding_key,domain_id,hostname_ascii,
             environment,path_prefix,action_type,is_canonical,status,verified_at,activated_at,
             created_by,updated_by,created_at,updated_at,version
          ) VALUES (95,'binding-95',7,9,10,'custom-1',$1,'mysite.example.com','production',

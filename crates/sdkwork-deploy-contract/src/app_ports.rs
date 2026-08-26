@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
+use crate::app_composition::{AppCompositionResponse, UpdateAppCompositionRequest};
 use crate::app_delivery::*;
 use crate::dto::*;
 use crate::problem::DeployServiceResult;
-use crate::site_composition::{SiteCompositionResponse, UpdateSiteCompositionRequest};
 use crate::usage::{IngestUsageEventsRequest, UsageIngestResult};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -55,15 +55,21 @@ pub struct UsageEventQuery {
     pub until: Option<String>,
 }
 
+/// App list filters (the unified app surface carries the former site
+/// dimensions: type/status/keyword).
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct ListSitesQuery {
+pub struct ListAppsQuery {
     #[serde(default = "crate::dto::default_page")]
     pub page: i32,
     #[serde(default = "crate::dto::default_page_size")]
     pub page_size: i32,
+    /// Web publishing type (1..6).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub app_type: Option<i32>,
+    /// App status (0=DRAFT, 1=ACTIVE, 2=PAUSED, 3=ARCHIVED).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub status: Option<i32>,
-    // PAGINATION_SPEC §3：query 参数使用 lower_snake_case 规范词汇。
-    pub site_type: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub keyword: Option<String>,
 }
 
@@ -198,219 +204,215 @@ pub trait DeployAppApi: Send + Sync {
         ))
     }
 
-    async fn list_sites(
+    async fn update_app_composition(
         &self,
-        context: &DeployAppRequestContext,
-        query: &ListSitesQuery,
-    ) -> DeployServiceResult<SitePage>;
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _expected_app_version: i64,
+        _idempotency_key: &str,
+        _request: &UpdateAppCompositionRequest,
+    ) -> DeployServiceResult<AppCompositionResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "app composition API is not implemented".to_owned(),
+        ))
+    }
 
-    async fn create_site(
+    async fn activate_app(
         &self,
-        context: &DeployAppRequestContext,
-        request: &CreateSiteRequest,
-    ) -> DeployServiceResult<SiteResponse>;
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+    ) -> DeployServiceResult<AppResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "app activation API is not implemented".to_owned(),
+        ))
+    }
 
-    async fn retrieve_site(
+    async fn pause_app(
         &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-    ) -> DeployServiceResult<SiteResponse>;
-
-    async fn update_site(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        request: &UpdateSiteRequest,
-    ) -> DeployServiceResult<SiteResponse>;
-
-    async fn update_site_composition(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        expected_site_version: i64,
-        idempotency_key: &str,
-        request: &UpdateSiteCompositionRequest,
-    ) -> DeployServiceResult<SiteCompositionResponse>;
-
-    async fn delete_site(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-    ) -> DeployServiceResult<()>;
-
-    async fn activate_site(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-    ) -> DeployServiceResult<SiteResponse>;
-
-    async fn pause_site(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-    ) -> DeployServiceResult<SiteResponse>;
-
-    async fn list_deployments(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        page: i32,
-        page_size: i32,
-        status: Option<i32>,
-        cursor: Option<&str>,
-    ) -> DeployServiceResult<DeploymentPage>;
-
-    async fn create_deployment(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        request: &CreateDeploymentRequest,
-    ) -> DeployServiceResult<DeploymentResponse>;
-
-    async fn retrieve_deployment(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        deployment_id: &str,
-    ) -> DeployServiceResult<DeploymentResponse>;
-
-    async fn rollback_deployment(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        deployment_id: &str,
-    ) -> DeployServiceResult<DeploymentResponse>;
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+    ) -> DeployServiceResult<AppResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "app pause API is not implemented".to_owned(),
+        ))
+    }
 
     async fn list_artifacts(
         &self,
-        context: &DeployAppRequestContext,
-        page: i32,
-        page_size: i32,
-    ) -> DeployServiceResult<ArtifactPage>;
+        _context: &DeployAppRequestContext,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<ArtifactPage> {
+        Err(crate::DeployServiceError::Internal(
+            "artifact API is not implemented".to_owned(),
+        ))
+    }
 
     async fn create_artifact(
         &self,
-        context: &DeployAppRequestContext,
-        request: &CreateArtifactRequest,
-    ) -> DeployServiceResult<ArtifactResponse>;
+        _context: &DeployAppRequestContext,
+        _request: &CreateArtifactRequest,
+    ) -> DeployServiceResult<ArtifactResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "artifact API is not implemented".to_owned(),
+        ))
+    }
 
     async fn retrieve_artifact(
         &self,
-        context: &DeployAppRequestContext,
-        artifact_id: &str,
-    ) -> DeployServiceResult<ArtifactResponse>;
+        _context: &DeployAppRequestContext,
+        _artifact_id: &str,
+    ) -> DeployServiceResult<ArtifactResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "artifact API is not implemented".to_owned(),
+        ))
+    }
 
     async fn retain_artifact(
         &self,
-        context: &DeployAppRequestContext,
-        artifact_id: &str,
-    ) -> DeployServiceResult<()>;
-
-    async fn list_releases(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        page: i32,
-        page_size: i32,
-    ) -> DeployServiceResult<ReleasePage>;
-
-    async fn retrieve_release(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        release_id: &str,
-    ) -> DeployServiceResult<ReleaseResponse>;
-
-    async fn create_release(
-        &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        request: &CreateReleaseRequest,
-    ) -> DeployServiceResult<ReleaseResponse>;
+        _context: &DeployAppRequestContext,
+        _artifact_id: &str,
+    ) -> DeployServiceResult<()> {
+        Err(crate::DeployServiceError::Internal(
+            "artifact API is not implemented".to_owned(),
+        ))
+    }
 
     async fn list_env_variables(
         &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        environment: Option<&str>,
-    ) -> DeployServiceResult<EnvVariablePage>;
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _environment: Option<&str>,
+    ) -> DeployServiceResult<EnvVariablePage> {
+        Err(crate::DeployServiceError::Internal(
+            "env variable API is not implemented".to_owned(),
+        ))
+    }
 
     async fn create_env_variable(
         &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        request: &CreateEnvVariableRequest,
-    ) -> DeployServiceResult<EnvVariableResponse>;
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _request: &CreateEnvVariableRequest,
+    ) -> DeployServiceResult<EnvVariableResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "env variable API is not implemented".to_owned(),
+        ))
+    }
 
     async fn list_certificates(
         &self,
-        context: &DeployAppRequestContext,
-        page: i32,
-        page_size: i32,
-    ) -> DeployServiceResult<CertificatePage>;
+        _context: &DeployAppRequestContext,
+        _page: i32,
+        _page_size: i32,
+    ) -> DeployServiceResult<CertificatePage> {
+        Err(crate::DeployServiceError::Internal(
+            "certificate API is not implemented".to_owned(),
+        ))
+    }
 
     async fn create_certificate(
         &self,
-        context: &DeployAppRequestContext,
-        idempotency_key: &str,
-        request: &CreateCertificateRequest,
-    ) -> DeployServiceResult<CertificateResponse>;
+        _context: &DeployAppRequestContext,
+        _idempotency_key: &str,
+        _request: &CreateCertificateRequest,
+    ) -> DeployServiceResult<CertificateResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "certificate API is not implemented".to_owned(),
+        ))
+    }
 
     async fn retrieve_certificate(
         &self,
-        context: &DeployAppRequestContext,
-        certificate_id: &str,
-    ) -> DeployServiceResult<CertificateResponse>;
+        _context: &DeployAppRequestContext,
+        _certificate_id: &str,
+    ) -> DeployServiceResult<CertificateResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "certificate API is not implemented".to_owned(),
+        ))
+    }
 
     async fn delete_certificate(
         &self,
-        context: &DeployAppRequestContext,
-        certificate_id: &str,
-    ) -> DeployServiceResult<()>;
+        _context: &DeployAppRequestContext,
+        _certificate_id: &str,
+    ) -> DeployServiceResult<()> {
+        Err(crate::DeployServiceError::Internal(
+            "certificate API is not implemented".to_owned(),
+        ))
+    }
 
     async fn renew_certificate(
         &self,
-        context: &DeployAppRequestContext,
-        certificate_id: &str,
-    ) -> DeployServiceResult<CertificateResponse>;
+        _context: &DeployAppRequestContext,
+        _certificate_id: &str,
+    ) -> DeployServiceResult<CertificateResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "certificate API is not implemented".to_owned(),
+        ))
+    }
 
     async fn list_health_checks(
         &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-    ) -> DeployServiceResult<HealthCheckPage>;
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+    ) -> DeployServiceResult<HealthCheckPage> {
+        Err(crate::DeployServiceError::Internal(
+            "health check API is not implemented".to_owned(),
+        ))
+    }
 
     async fn create_health_check(
         &self,
-        context: &DeployAppRequestContext,
-        site_id: &str,
-        request: &CreateHealthCheckRequest,
-    ) -> DeployServiceResult<HealthCheckResponse>;
+        _context: &DeployAppRequestContext,
+        _app_id: &str,
+        _request: &CreateHealthCheckRequest,
+    ) -> DeployServiceResult<HealthCheckResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "health check API is not implemented".to_owned(),
+        ))
+    }
 
     async fn create_upload_session(
         &self,
-        context: &DeployAppRequestContext,
-        request: &CreateDeployUploadSessionRequest,
-    ) -> DeployServiceResult<DeployUploadSessionResponse>;
+        _context: &DeployAppRequestContext,
+        _request: &CreateDeployUploadSessionRequest,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "upload session API is not implemented".to_owned(),
+        ))
+    }
 
     async fn retrieve_upload_session(
         &self,
-        context: &DeployAppRequestContext,
-        upload_session_id: &str,
-    ) -> DeployServiceResult<DeployUploadSessionResponse>;
+        _context: &DeployAppRequestContext,
+        _upload_session_id: &str,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "upload session API is not implemented".to_owned(),
+        ))
+    }
 
     async fn complete_upload_session(
         &self,
-        context: &DeployAppRequestContext,
-        upload_session_id: &str,
-        request: &CompleteDeployUploadSessionRequest,
-    ) -> DeployServiceResult<DeployUploadSessionResponse>;
+        _context: &DeployAppRequestContext,
+        _upload_session_id: &str,
+        _request: &CompleteDeployUploadSessionRequest,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "upload session API is not implemented".to_owned(),
+        ))
+    }
 
     async fn cancel_upload_session(
         &self,
-        context: &DeployAppRequestContext,
-        upload_session_id: &str,
-    ) -> DeployServiceResult<DeployUploadSessionResponse>;
+        _context: &DeployAppRequestContext,
+        _upload_session_id: &str,
+    ) -> DeployServiceResult<DeployUploadSessionResponse> {
+        Err(crate::DeployServiceError::Internal(
+            "upload session API is not implemented".to_owned(),
+        ))
+    }
 
     async fn list_apps(
         &self,

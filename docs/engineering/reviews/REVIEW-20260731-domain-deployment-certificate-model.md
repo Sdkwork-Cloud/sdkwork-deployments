@@ -1,4 +1,4 @@
-# REVIEW-20260731 Domain, Deployment, And Certificate Model
+﻿# REVIEW-20260731 Domain, Deployment, And Certificate Model
 
 Status: implementation-active
 Owner: SDKWork Deploy, IAM, and Web Server maintainers
@@ -72,7 +72,7 @@ Implemented and aligned:
 
 - `deploy_dns_zone` is the root-domain authority.
 - `deploy_domain` is a hostname asset independent of an application.
-- `deploy_site_binding` is the application/hostname relation and carries routing state.
+- `deploy_app_binding` is the application/hostname relation and carries routing state.
 - `deploy_certificate_identifier` provides certificate/hostname many-to-many coverage.
 - `deploy_certificate_version` stores immutable metadata plus `secret_bundle_ref`.
 - `deploy_listener_certificate_binding` selects explicit certificate versions and enforces one
@@ -111,16 +111,16 @@ Current standalone gaps are P0:
 
 | Current shape | Risk | Target |
 | --- | --- | --- |
-| `web_domain.site_id` | Domain asset and application binding share one row; no relation lifecycle or multi-application history. | `web_site_binding` relation with active-route uniqueness. |
+| `web_domain.app_id` | Domain asset and application binding share one row; no relation lifecycle or multi-application history. | `web_site_binding` relation with active-route uniqueness. |
 | `web_domain.is_primary`, `ssl_enabled`, `ssl_provider`, `redirect_target` | Application routing/TLS policy leaks into hostname inventory. | Move routing fields to site binding and TLS policy tables. |
-| `web_certificate.domain_id` and `site_id` | One certificate cannot cover multiple hostnames; application scope is duplicated. | `web_certificate_identifier`; derive application visibility through active bindings. |
+| `web_certificate.domain_id` and `app_id` | One certificate cannot cover multiple hostnames; application scope is duplicated. | `web_certificate_identifier`; derive application visibility through active bindings. |
 | `san_list TEXT` | Unqueryable, unvalidated duplicate association. | Normalized certificate identifiers with ordered positions. |
 | `cert_path`, `key_path`, `chain_path` | Private material paths are mutable ordinary columns and may expose local topology. | Immutable `web_certificate_version.secret_bundle_ref`. |
 | SQLx `sqlite` + `any` authoritative repository | Conflicts with the PostgreSQL-only database manifest and server storage standard. | PostgreSQL repository and real PostgreSQL integration suite. |
 | Compatibility-first REQ/ADR/API text | Prelaunch debt preserves known-wrong paths and singular `domainId`. | Replace with canonical Zone/hostname/binding/certificate contracts and regenerate SDKs. |
 
 The current root-domain list also derives bound, HTTPS, and deployment counts from
-`web_domain.site_id` and `ssl_enabled`; those projections must join the new relation and listener
+`web_domain.app_id` and `ssl_enabled`; those projections must join the new relation and listener
 tables. Deployment state itself must remain in `web_deployment`.
 
 ## 5. API And Product Contract

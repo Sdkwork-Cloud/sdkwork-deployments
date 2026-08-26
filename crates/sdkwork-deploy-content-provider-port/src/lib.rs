@@ -7,7 +7,7 @@ mod website_event_delivery;
 
 use async_trait::async_trait;
 use sdkwork_deploy_contract::{
-    ContentProviderResourceSource, DeployServiceResult, SiteResourceDefinition,
+    AppResourceDefinition, ContentProviderResourceSource, DeployServiceResult,
 };
 use sdkwork_deploy_runtime_compiler::{RuntimeProviderType, RuntimeResourceCapabilities};
 
@@ -31,8 +31,8 @@ pub struct ProviderRequestCredentials {
 #[derive(Clone, Debug)]
 pub struct ValidateContentProviderResourceCommand {
     pub tenant_id: i64,
-    pub site_uuid: String,
-    pub resource: SiteResourceDefinition,
+    pub app_uuid: String,
+    pub resource: AppResourceDefinition,
 }
 
 #[derive(Clone, Debug)]

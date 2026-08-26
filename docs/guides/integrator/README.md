@@ -1,4 +1,4 @@
-# Integrator Guide
+﻿# Integrator Guide
 
 ## API And SDK Surfaces
 
@@ -16,7 +16,7 @@ clients unwrap `data` by default. Success uses `{ code: 0, data, traceId }`; HTT
 
 Use `@sdkwork/deployments-app-sdk`; do not call Deploy, Drive, Knowledgebase, or Web Server with raw HTTP
 or manually assembled credential headers. The active mutation is generated from
-`PUT /app/v3/api/sites/{siteId}/composition` with operation id `sites.composition.update`.
+`PUT /app/v3/api/apps/{appId}/composition` with operation id `apps.composition.update`.
 
 The request requires both `If-Match` and `Idempotency-Key`. The Site version is a decimal string.
 Resources use one of these exact discriminated sources:

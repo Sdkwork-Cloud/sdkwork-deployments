@@ -23,7 +23,7 @@ impl ContentProviderPort for MemoryContentProviderPort {
             match &source {
                 ContentProviderResourceSource::DriveDirectory { .. } => (
                     RuntimeProviderType::Drive,
-                    stable_memory_id("drive", command.tenant_id, &command.site_uuid, &key),
+                    stable_memory_id("drive", command.tenant_id, &command.app_uuid, &key),
                     "sdkwork.drive.website-root.v1".to_owned(),
                     RuntimeResourceCapabilities {
                         static_content: true,
@@ -55,9 +55,9 @@ impl ContentProviderPort for MemoryContentProviderPort {
     }
 }
 
-fn stable_memory_id(provider: &str, tenant_id: i64, site_uuid: &str, key: &str) -> String {
+fn stable_memory_id(provider: &str, tenant_id: i64, app_uuid: &str, key: &str) -> String {
     let digest = sdkwork_utils_rust::sha256_hash(
-        format!("{provider}:{tenant_id}:{site_uuid}:{key}").as_bytes(),
+        format!("{provider}:{tenant_id}:{app_uuid}:{key}").as_bytes(),
     );
     format!("memory-{provider}-{}", &digest[..32])
 }
