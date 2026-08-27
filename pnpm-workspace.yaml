@@ -29,6 +29,7 @@ packages:
   - "../sdkwork-drive/apps/sdkwork-drive-pc/packages/sdkwork-drive-pc-sandbox-explorer-sdk-adapter"
   - "../sdkwork-app-topology"
 
+  - "../sdkwork-iam/apps/sdkwork-iam-pc/packages/sdkwork-user-center-core-pc-react"
 catalog:
   "@monaco-editor/react": ^4.7.0
   "@playwright/test": ^1.52.0
@@ -138,3 +139,4 @@ catalog:
   vite-plugin-dts: ^4.5.4
   vitest: ^4.1.8
   zustand: ^5.0.12
+
