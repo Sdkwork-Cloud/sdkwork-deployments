@@ -4,44 +4,44 @@ info:
   description: SDKWork Deploy Server API
   version: 1.0.0
 servers:
-  - url: https://api.deploy.sdkwork.com
-    description: Production
-  - url: http://localhost:3900
-    description: Local Development
+- url: https://api.deploy.sdkwork.com
+  description: Production
+- url: http://localhost:3900
+  description: Local Development
 security:
-  - AuthToken: []
-    AccessToken: []
+- AuthToken: []
+  AccessToken: []
 paths:
   /backend/v3/api/nginx/configs:
     get:
       operationId: configs.list
       summary: 获取 Nginx 配置列表
       tags:
-        - nginx
+      - nginx
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
-        - name: site_id
-          in: query
-          schema:
-            type: string
-            format: uuid
-        - name: config_type
-          in: query
-          schema:
-            type: integer
-            enum:
-              - 1
-              - 2
-              - 3
-              - 4
-        - name: is_active
-          in: query
-          schema:
-            type: boolean
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
+      - name: site_id
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: config_type
+        in: query
+        schema:
+          type: integer
+          enum:
+          - 1
+          - 2
+          - 3
+          - 4
+      - name: is_active
+        in: query
+        schema:
+          type: boolean
       responses:
         '200':
           description: 成功
@@ -49,35 +49,35 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        additionalProperties: false
-                        required:
-                          - items
-                          - pageInfo
-                        properties:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
                           items:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/NginxConfigResponse'
-                          pageInfo:
-                            $ref: '#/components/schemas/PageInfo'
+                            $ref: '#/components/schemas/NginxConfigResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
     post:
       operationId: configs.create
       summary: 创建 Nginx 配置
       tags:
-        - nginx
+      - nginx
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-idempotent: true
       parameters:
-        - $ref: '#/components/parameters/IdempotencyKeyParam'
+      - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -91,34 +91,34 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        required:
-                          - item
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/NginxConfigResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/NginxConfigResponse'
   /backend/v3/api/nginx/configs/{configId}:
     parameters:
-      - name: configId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+    - name: configId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     get:
       operationId: configs.retrieve
       summary: 获取 Nginx 配置详情
       tags:
-        - nginx
+      - nginx
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
           description: 成功
@@ -126,32 +126,33 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        required:
-                          - item
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/NginxConfigResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/NginxConfigResponse'
         '404':
-          description: "资源不存在"
+          description: 资源不存在
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+      parameters: []
     put:
       operationId: configs.update
       summary: 更新 Nginx 配置
       tags:
-        - nginx
+      - nginx
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       requestBody:
         required: true
         content:
@@ -165,43 +166,44 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        required:
-                          - item
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/NginxConfigResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/NginxConfigResponse'
         '404':
-          description: "资源不存在"
+          description: 资源不存在
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+      parameters: []
   /backend/v3/api/nginx/configs/{configId}/validate:
     parameters:
-      - name: configId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+    - name: configId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     post:
       operationId: configs.validate
       summary: 校验 Nginx 配置
       tags:
-        - nginx
+      - nginx
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-idempotent: true
       parameters:
-        - $ref: '#/components/parameters/IdempotencyKeyParam'
+      - $ref: '#/components/parameters/IdempotencyKeyParam'
       responses:
         '200':
           description: 校验结果
@@ -209,37 +211,37 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        required:
-                          - item
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/NginxValidateResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/NginxValidateResponse'
   /backend/v3/api/nginx/configs/{configId}/deploy:
     parameters:
-      - name: configId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+    - name: configId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     post:
       operationId: configs.deploy
       summary: 部署 Nginx 配置
       tags:
-        - nginx
+      - nginx
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-idempotent: true
       parameters:
-        - $ref: '#/components/parameters/IdempotencyKeyParam'
+      - $ref: '#/components/parameters/IdempotencyKeyParam'
       responses:
         '200':
           description: 部署成功
@@ -247,20 +249,20 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        required:
-                          - item
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/NginxDeployResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/NginxDeployResponse'
         '400':
-          description: "请求参数错误"
+          description: 请求参数错误
           content:
             application/problem+json:
               schema:
@@ -268,43 +270,43 @@ paths:
   /backend/v3/api/nginx/reload:
     post:
       operationId: runtime.reload
-      summary: "热加载 Nginx"
+      summary: 热加载 Nginx
       tags:
-        - nginx
+      - nginx
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-idempotent: true
       parameters:
-        - $ref: '#/components/parameters/IdempotencyKeyParam'
+      - $ref: '#/components/parameters/IdempotencyKeyParam'
       responses:
         '200':
-          description: "热加载结果"
+          description: 热加载结果
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        required:
-                          - item
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/NginxReloadResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/NginxReloadResponse'
   /backend/v3/api/nginx/status:
     get:
       operationId: runtime.retrieve
-      summary: "获取 Nginx 状态"
+      summary: 获取 Nginx 状态
       tags:
-        - nginx
+      - nginx
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       responses:
         '200':
           description: 成功
@@ -312,36 +314,37 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        required:
-                          - item
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/NginxStatusResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/NginxStatusResponse'
+      parameters: []
   /backend/v3/api/servers:
     get:
       operationId: servers.list
-      summary: "获取服务器节点列表"
+      summary: 获取服务器节点列表
       tags:
-        - server
+      - server
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
-        - name: cluster_id
-          in: query
-          schema:
-            type: string
-            format: uuid
-          description: 按节点集群过滤
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
+      - name: cluster_id
+        in: query
+        schema:
+          type: string
+          format: uuid
+        description: 按节点集群过滤
       responses:
         '200':
           description: 成功
@@ -349,35 +352,35 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        additionalProperties: false
-                        required:
-                          - items
-                          - pageInfo
-                        properties:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
                           items:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/ServerResponse'
-                          pageInfo:
-                            $ref: '#/components/schemas/PageInfo'
+                            $ref: '#/components/schemas/ServerResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
     post:
       operationId: servers.create
-      summary: "注册服务器节点"
+      summary: 注册服务器节点
       tags:
-        - server
+      - server
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-idempotent: true
       parameters:
-        - $ref: '#/components/parameters/IdempotencyKeyParam'
+      - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -391,34 +394,34 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        required:
-                          - item
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/ServerResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/ServerResponse'
   /backend/v3/api/servers/{serverId}:
     put:
       operationId: servers.update
-      summary: "更新服务器节点"
+      summary: 更新服务器节点
       tags:
-        - server
+      - server
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       parameters:
-        - name: serverId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: serverId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         required: true
         content:
@@ -432,30 +435,30 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        required:
-                          - item
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/ServerResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/ServerResponse'
   /backend/v3/api/node_clusters:
     get:
       operationId: clusters.list
-      summary: "获取节点集群列表"
+      summary: 获取节点集群列表
       tags:
-        - cluster
+      - cluster
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
       responses:
         '200':
           description: 成功
@@ -463,35 +466,35 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        additionalProperties: false
-                        required:
-                          - items
-                          - pageInfo
-                        properties:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
                           items:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/NodeClusterResponse'
-                          pageInfo:
-                            $ref: '#/components/schemas/PageInfo'
+                            $ref: '#/components/schemas/NodeClusterResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
     post:
       operationId: clusters.create
-      summary: "创建节点集群"
+      summary: 创建节点集群
       tags:
-        - cluster
+      - cluster
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-idempotent: true
       parameters:
-        - $ref: '#/components/parameters/IdempotencyKeyParam'
+      - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
         required: true
         content:
@@ -505,34 +508,34 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        required:
-                          - item
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/NodeClusterResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/NodeClusterResponse'
   /backend/v3/api/node_clusters/{clusterId}:
     put:
       operationId: clusters.update
-      summary: "更新节点集群"
+      summary: 更新节点集群
       tags:
-        - cluster
+      - cluster
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       parameters:
-        - name: clusterId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: clusterId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         required: true
         content:
@@ -546,59 +549,60 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        required:
-                          - item
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/NodeClusterResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/NodeClusterResponse'
   /backend/v3/api/audit_logs:
     get:
       operationId: auditLogs.list
-      summary: "获取审计日志列表"
+      summary: 获取审计日志列表
       tags:
-        - audit
+      - audit
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
-        - name: target_type
-          in: query
-          schema:
-            type: string
-        - name: action
-          in: query
-          schema:
-            type: string
-        - name: operator_id
-          in: query
-          schema:
-            type: integer
-            format: int64
-        - name: start_date
-          in: query
-          schema:
-            type: string
-            format: date-time
-        - name: end_date
-          in: query
-          schema:
-            type: string
-            format: date-time
-        - name: cursor
-          in: query
-          description: "不透明 keyset 续页令牌（PAGINATION_SPEC §6），提供时走 cursor 模式且过滤器不适用"
-          schema:
-            type: string
-            maxLength: 512
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
+      - name: target_type
+        in: query
+        schema:
+          type: string
+      - name: action
+        in: query
+        schema:
+          type: string
+      - name: operator_id
+        in: query
+        schema:
+          type: string
+          format: int64
+          x-sdkwork-int64-string: true
+      - name: start_date
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: end_date
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: cursor
+        in: query
+        description: 不透明 keyset 续页令牌（PAGINATION_SPEC §6），提供时走 cursor 模式且过滤器不适用
+        schema:
+          type: string
+          maxLength: 512
       responses:
         '200':
           description: 成功
@@ -606,41 +610,42 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required:
-                      - data
-                    properties:
-                      data:
-                        type: object
-                        additionalProperties: false
-                        required:
-                          - items
-                          - pageInfo
-                        properties:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
                           items:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/AuditLogResponse'
-                          pageInfo:
-                            $ref: '#/components/schemas/PageInfo'
+                            $ref: '#/components/schemas/AuditLogResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
   /backend/v3/api/entitlements:
     get:
       operationId: entitlements.list
       summary: List Commerce-backed entitlement projections
-      description: >
-        Platform management surface. Tenant-scoped when the token carries a
-        tenant; platform-wide for platform operators. Deploy enforces these
-        projections on capacity creation when enforcement is enabled.
+      description: 'Platform management surface. Tenant-scoped when the token carries
+        a tenant; platform-wide for platform operators. Deploy enforces these projections
+        on capacity creation when enforcement is enabled.
+
+        '
       tags:
-        - entitlement
+      - entitlement
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
       responses:
         '200':
           description: Success
@@ -648,43 +653,47 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        additionalProperties: false
-                        required: [items, pageInfo]
-                        properties:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
                           items:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/EntitlementProjectionResponse'
-                          pageInfo:
-                            $ref: '#/components/schemas/PageInfo'
+                            $ref: '#/components/schemas/EntitlementProjectionResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
         '401':
-          description: "未认证"
+          description: 未认证
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
   /backend/v3/api/build_queue:
     get:
-      operationId: buildQueue.list
+      operationId: list
       summary: List queued builds waiting for or claimed by runners
-      description: >
-        Backend build fleet administration surface: QUEUED/PREPARING builds
+      description: 'Backend build fleet administration surface: QUEUED/PREPARING builds
         oldest first, tenant-scoped when the token carries a tenant.
+
+        '
       tags:
-        - buildQueue
+      - buildQueue
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
       responses:
         '200':
           description: Success
@@ -692,43 +701,47 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        additionalProperties: false
-                        required: [items, pageInfo]
-                        properties:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
                           items:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/BuildQueueItemResponse'
-                          pageInfo:
-                            $ref: '#/components/schemas/PageInfo'
+                            $ref: '#/components/schemas/BuildQueueItemResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
         '401':
-          description: "未认证"
+          description: 未认证
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
   /backend/v3/api/runners:
     get:
-      operationId: runners.list
+      operationId: list
       summary: List runner liveness and workload health
-      description: >
-        Backend build fleet administration surface: per-runner last seen,
+      description: 'Backend build fleet administration surface: per-runner last seen,
         completed/failed/active build counts.
+
+        '
       tags:
-        - runners
+      - runners
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
       responses:
         '200':
           description: Success
@@ -736,23 +749,26 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        additionalProperties: false
-                        required: [items, pageInfo]
-                        properties:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
                           items:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/RunnerHealthResponse'
-                          pageInfo:
-                            $ref: '#/components/schemas/PageInfo'
+                            $ref: '#/components/schemas/RunnerHealthResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
         '401':
-          description: "未认证"
+          description: 未认证
           content:
             application/problem+json:
               schema:
@@ -762,14 +778,14 @@ paths:
       operationId: tlsAccounts.list
       summary: List ACME accounts of the tenant
       tags:
-        - tls
+      - tls
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
       responses:
         '200':
           description: Success
@@ -777,23 +793,26 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        additionalProperties: false
-                        required: [items, pageInfo]
-                        properties:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
                           items:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/AcmeAccountResponse'
-                          pageInfo:
-                            $ref: '#/components/schemas/PageInfo'
+                            $ref: '#/components/schemas/AcmeAccountResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
         '401':
-          description: "未认证"
+          description: 未认证
           content:
             application/problem+json:
               schema:
@@ -801,16 +820,17 @@ paths:
     post:
       operationId: tlsAccounts.create
       summary: Create an ACME account binding
-      description: >
-        Registers the CA profile, directory URL, contact, and (optional)
-        external account digest for the tenant. The account key material is a
-        secret reference only; the ACME client boundary uses it during
-        issuance once credential integration exists.
+      description: 'Registers the CA profile, directory URL, contact, and (optional)
+        external account digest for the tenant. The account key material is a secret
+        reference only; the ACME client boundary uses it during issuance once credential
+        integration exists.
+
+        '
       tags:
-        - tls
+      - tls
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       requestBody:
@@ -826,35 +846,46 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        required: [item]
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/AcmeAccountResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/AcmeAccountResponse'
         '422':
-          description: "校验错误"
+          description: 校验错误
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
   /backend/v3/api/tls/orders:
     post:
-      operationId: tlsOrders.request
+      operationId: tlsOrders.create
       summary: Request a certificate order for a certificate
-      description: >
-        Creates an order (idempotent on the idempotency key) with one HTTP_01
-        (or DNS_01) challenge per certificate identifier. The order then walks
+      description: 'Creates an order (idempotent on the idempotency key) with one
+        HTTP_01 (or DNS_01) challenge per certificate identifier. The order then walks
         the canonical state machine via advance / challenge_result / versions.
+
+        '
       tags:
-        - tls
+      - tls
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       requestBody:
@@ -870,38 +901,48 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        required: [item]
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/CertificateOrderResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/CertificateOrderResponse'
         '422':
-          description: "校验错误"
+          description: 校验错误
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
-  /backend/v3/api/tls/orders/{orderId}/advance:
-    parameters:
-      - name: orderId
-        in: path
+      parameters:
+      - name: Idempotency-Key
+        in: header
         required: true
         schema:
           type: string
-          format: uuid
+          minLength: 1
+          maxLength: 128
+  /backend/v3/api/tls/orders/{orderId}/advance:
+    parameters:
+    - name: orderId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     post:
       operationId: tlsOrders.advance
       summary: Advance a certificate order one canonical state machine step
       tags:
-        - tls
+      - tls
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       responses:
         '200':
@@ -910,38 +951,41 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        required: [item]
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/CertificateOrderResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/CertificateOrderResponse'
         '409':
-          description: "冲突"
+          description: 冲突
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+      parameters: []
   /backend/v3/api/tls/orders/{orderId}/fail:
     parameters:
-      - name: orderId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+    - name: orderId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     post:
       operationId: tlsOrders.fail
       summary: Fail a certificate order with a stable error code
       tags:
-        - tls
+      - tls
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       requestBody:
         required: true
@@ -956,42 +1000,46 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        required: [item]
-                        properties:
-                          item:
-                            type: object
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          type: object
         '422':
-          description: "校验错误"
+          description: 校验错误
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+      parameters: []
   /backend/v3/api/tls/orders/{orderId}/challenge_result:
     parameters:
-      - name: orderId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+    - name: orderId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     post:
       operationId: tlsOrders.challengeResult
       summary: Record a challenge validation result
-      description: >
-        A valid result advances the order to FINALIZING; an invalid result
-        fails the order. The order keeps its state until all challenges are
-        recorded valid.
+      description: 'A valid result advances the order to FINALIZING; an invalid result
+        fails the order. The order keeps its state until all challenges are recorded
+        valid.
+
+        '
       tags:
-        - tls
+      - tls
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       requestBody:
         required: true
@@ -1006,43 +1054,46 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        required: [item]
-                        properties:
-                          item:
-                            type: object
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          type: object
         '422':
-          description: "校验错误"
+          description: 校验错误
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+      parameters: []
   /backend/v3/api/tls/orders/{orderId}/versions:
     parameters:
-      - name: orderId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+    - name: orderId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     post:
-      operationId: tlsOrders.storeVersion
+      operationId: tlsOrders.create
       summary: Store the issued certificate version and complete the order
-      description: >
-        Stores the certificate version (fingerprint/chain hashes, validity,
-        secret bundle reference), activates it on the certificate, supersedes
-        the previous version, and advances the order to VERSION_STORED in one
-        transaction.
+      description: 'Stores the certificate version (fingerprint/chain hashes, validity,
+        secret bundle reference), activates it on the certificate, supersedes the
+        previous version, and advances the order to VERSION_STORED in one transaction.
+
+        '
       tags:
-        - tls
+      - tls
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       requestBody:
         required: true
@@ -1057,42 +1108,45 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        required: [item]
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/CertificateOrderResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/CertificateOrderResponse'
         '409':
-          description: "冲突"
+          description: 冲突
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+      parameters: []
   /backend/v3/api/tls/orders/{orderId}/challenges:
     parameters:
-      - name: orderId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+    - name: orderId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     get:
-      operationId: tlsOrders.listChallenges
+      operationId: tlsOrders.list
       summary: List challenges of a certificate order
       tags:
-        - tls
+      - tls
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
       responses:
         '200':
           description: Success
@@ -1100,47 +1154,50 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        additionalProperties: false
-                        required: [items, pageInfo]
-                        properties:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
                           items:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/CertificateChallengeResponse'
-                          pageInfo:
-                            $ref: '#/components/schemas/PageInfo'
+                            $ref: '#/components/schemas/CertificateChallengeResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
         '401':
-          description: "未认证"
+          description: 未认证
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
   /backend/v3/api/certificates/{certificateId}/orders:
     parameters:
-      - name: certificateId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
+    - name: certificateId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     get:
       operationId: tlsOrders.list
       summary: List certificate orders of a certificate
       tags:
-        - tls
+      - tls
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
       responses:
         '200':
           description: Success
@@ -1148,41 +1205,45 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        additionalProperties: false
-                        required: [items, pageInfo]
-                        properties:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
                           items:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/CertificateOrderResponse'
-                          pageInfo:
-                            $ref: '#/components/schemas/PageInfo'
+                            $ref: '#/components/schemas/CertificateOrderResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
         '401':
-          description: "未认证"
+          description: 未认证
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
   /backend/v3/api/retention/run:
     post:
-      operationId: retention.run
+      operationId: run
       summary: Apply platform retention policies
-      description: >
-        Retires unreferenced packages and releases past their retention
-        windows and purges expired build log references. Retention windows
-        come from platform configuration (SDKWORK_DEPLOY_RETENTION_*_DAYS).
-        dryRun=true (default) reports candidates without mutating.
+      description: 'Retires unreferenced packages and releases past their retention
+        windows and purges expired build log references. Retention windows come from
+        platform configuration (SDKWORK_DEPLOY_RETENTION_*_DAYS). dryRun=true (default)
+        reports candidates without mutating.
+
+        '
       tags:
-        - retention
+      - retention
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       requestBody:
         required: true
@@ -1197,37 +1258,41 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        required: [item]
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/RetentionRunResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/RetentionRunResponse'
         '422':
-          description: "校验错误"
+          description: 校验错误
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+      parameters: []
   /backend/v3/api/usage/ingest:
     post:
-      operationId: usage.ingestTrafficEvents
+      operationId: create
       summary: Ingest Web Server traffic usage events (per-domain / per-server-IP)
-      description: >
-        Batch traffic usage facts submitted by Web Server nodes
-        (`traffic.requests`, `traffic.ingress_bytes`, `traffic.egress_bytes`).
-        Every event is deduplicated on (tenant, deduplicationKey); binding and
-        site uuids are resolved to internal ids and tenant attribution is
-        derived from the binding when the node could not attribute it.
+      description: 'Batch traffic usage facts submitted by Web Server nodes (`traffic.requests`,
+        `traffic.ingress_bytes`, `traffic.egress_bytes`). Every event is deduplicated
+        on (tenant, deduplicationKey); binding and site uuids are resolved to internal
+        ids and tenant attribution is derived from the binding when the node could
+        not attribute it.
+
+        '
       tags:
-        - usage
+      - usage
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       requestBody:
         required: true
@@ -1236,40 +1301,44 @@ paths:
             schema:
               $ref: '#/components/schemas/IngestUsageEventsRequest'
       responses:
-        '200':
+        '201':
           description: Success
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        required: [item]
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/UsageIngestResult'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/UsageIngestResult'
         '422':
-          description: "校验错误"
+          description: 校验错误
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+      parameters: []
   /backend/v3/api/usage/reconcile:
     post:
-      operationId: usage.reconcileDaily
+      operationId: create
       summary: Rebuild the daily usage aggregate from retained usage facts
-      description: >
-        Idempotent upsert of the reconcilable daily aggregate from the
+      description: 'Idempotent upsert of the reconcilable daily aggregate from the
         append-only usage events in the window (default: trailing 90 days).
+
+        '
       tags:
-        - usage
+      - usage
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       requestBody:
         required: true
@@ -1278,45 +1347,49 @@ paths:
             schema:
               $ref: '#/components/schemas/UsageReconciliationRequest'
       responses:
-        '200':
+        '201':
           description: Success
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        required: [item]
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/UsageReconciliationResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/UsageReconciliationResponse'
         '422':
-          description: "校验错误"
+          description: 校验错误
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+      parameters: []
   /backend/v3/api/signing_identity_health:
     get:
       operationId: signingIdentityHealth.list
       summary: List signing identity expiry health
-      description: >
-        Backend management surface: signing identities sorted by expiry
-        urgency with days-until-expiry observations. Tenant-scoped when the
-        token carries a tenant.
+      description: 'Backend management surface: signing identities sorted by expiry
+        urgency with days-until-expiry observations. Tenant-scoped when the token
+        carries a tenant.
+
+        '
       tags:
-        - signingHealth
+      - signingHealth
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
       responses:
         '200':
           description: Success
@@ -1324,43 +1397,47 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        additionalProperties: false
-                        required: [items, pageInfo]
-                        properties:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
                           items:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/SigningIdentityHealthResponse'
-                          pageInfo:
-                            $ref: '#/components/schemas/PageInfo'
+                            $ref: '#/components/schemas/SigningIdentityHealthResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
         '401':
-          description: "未认证"
+          description: 未认证
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
   /backend/v3/api/source_events:
     get:
-      operationId: sourceEvents.list
+      operationId: list
       summary: List ingested Git webhook events
-      description: >
-        Backend management surface over the CI event log (deduplicated per
-        repository commit). Tenant-scoped when the token carries a tenant.
+      description: 'Backend management surface over the CI event log (deduplicated
+        per repository commit). Tenant-scoped when the token carries a tenant.
+
+        '
       tags:
-        - sourceEvents
+      - sourceEvents
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/PageSizeParam'
+      - $ref: '#/components/parameters/PageParam'
+      - $ref: '#/components/parameters/PageSizeParam'
       responses:
         '200':
           description: Success
@@ -1368,41 +1445,45 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        additionalProperties: false
-                        required: [items, pageInfo]
-                        properties:
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      additionalProperties: false
+                      required:
+                      - items
+                      - pageInfo
+                      properties:
+                        items:
+                          type: array
                           items:
-                            type: array
-                            items:
-                              $ref: '#/components/schemas/SourceEventResponse'
-                          pageInfo:
-                            $ref: '#/components/schemas/PageInfo'
+                            $ref: '#/components/schemas/SourceEventResponse'
+                        pageInfo:
+                          $ref: '#/components/schemas/PageInfo'
         '401':
-          description: "未认证"
+          description: 未认证
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
     post:
-      operationId: sourceEvents.ingest
+      operationId: create
       summary: Ingest a Git webhook push event and trigger builds
-      description: >
-        GitHub-compatible webhook endpoint. The X-Hub-Signature-256 HMAC
-        header is verified against SDKWORK_DEPLOY_WEBHOOK_SECRET (endpoint
-        fails closed without it). Push events on the repository's default
-        branch trigger builds for every active platform target with a
-        governed template; events are deduplicated per commit.
+      description: 'GitHub-compatible webhook endpoint. The X-Hub-Signature-256 HMAC
+        header is verified against SDKWORK_DEPLOY_WEBHOOK_SECRET (endpoint fails closed
+        without it). Push events on the repository''s default branch trigger builds
+        for every active platform target with a governed template; events are deduplicated
+        per commit.
+
+        '
       tags:
-        - sourceEvents
+      - sourceEvents
       security:
-        - AuthToken: []
-          AccessToken: []
+      - AuthToken: []
+        AccessToken: []
       x-sdkwork-permission: false
       requestBody:
         required: true
@@ -1410,36 +1491,40 @@ paths:
           application/json:
             schema:
               type: object
-              description: "GitHub push webhook payload (ref, repository.clone_url, head_commit)"
+              description: GitHub push webhook payload (ref, repository.clone_url,
+                head_commit)
       responses:
-        '200':
+        '201':
           description: Success
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/SdkWorkApiResponse'
-                  - type: object
-                    required: [data]
-                    properties:
-                      data:
-                        type: object
-                        required: [item]
-                        properties:
-                          item:
-                            $ref: '#/components/schemas/SourceEventIngestResponse'
+                - $ref: '#/components/schemas/SdkWorkApiResponse'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - item
+                      properties:
+                        item:
+                          $ref: '#/components/schemas/SourceEventIngestResponse'
         '401':
-          description: "签名校验失败"
+          description: 签名校验失败
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
         '422':
-          description: "校验错误"
+          description: 校验错误
           content:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+      parameters: []
 components:
   securitySchemes:
     AuthToken:
@@ -1460,7 +1545,7 @@ components:
         type: string
         minLength: 1
         maxLength: 128
-        pattern: '^[A-Za-z0-9._:-]+$'
+        pattern: ^[A-Za-z0-9._:-]+$
     PageParam:
       name: page
       in: query
@@ -1481,11 +1566,11 @@ components:
       type: object
       additionalProperties: true
       required:
-        - type
-        - title
-        - status
-        - code
-        - traceId
+      - type
+      - title
+      - status
+      - code
+      - traceId
       properties:
         type:
           type: string
@@ -1511,7 +1596,8 @@ components:
           description: Optional stable localization key such as errors.result.40001.
         locale:
           type: string
-          description: Optional effective BCP 47 locale used by framework message mapping.
+          description: Optional effective BCP 47 locale used by framework message
+            mapping.
         errors:
           type: array
           items:
@@ -1519,17 +1605,17 @@ components:
     CreateNginxConfigRequest:
       type: object
       required:
-        - configType
-        - configName
-        - configContent
+      - configType
+      - configName
+      - configContent
       properties:
         configType:
           type: integer
           enum:
-            - 1
-            - 2
-            - 3
-            - 4
+          - 1
+          - 2
+          - 3
+          - 4
         configName:
           type: string
           maxLength: 200
@@ -1586,8 +1672,9 @@ components:
           items:
             $ref: '#/components/schemas/NginxConfigResponse'
         total:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
     NginxValidateResponse:
       type: object
       properties:
@@ -1605,9 +1692,9 @@ components:
               severity:
                 type: string
                 enum:
-                  - error
-                  - warning
-                  - info
+                - error
+                - warning
+                - info
     NginxDeployResponse:
       type: object
       properties:
@@ -1654,9 +1741,9 @@ components:
     CreateServerRequest:
       type: object
       required:
-        - name
-        - host
-        - sshPort
+      - name
+      - host
+      - sshPort
       properties:
         name:
           type: string
@@ -1699,10 +1786,10 @@ components:
         status:
           type: integer
           enum:
-            - 0
-            - 1
-            - 2
-            - 3
+          - 0
+          - 1
+          - 2
+          - 3
           description: 状态：0=未连接，1=在线，2=离线，3=维护中
     ServerResponse:
       type: object
@@ -1741,12 +1828,13 @@ components:
           items:
             $ref: '#/components/schemas/ServerResponse'
         total:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
     CreateNodeClusterRequest:
       type: object
       required:
-        - name
+      - name
       properties:
         name:
           type: string
@@ -1769,8 +1857,8 @@ components:
         status:
           type: integer
           enum:
-            - 0
-            - 1
+          - 0
+          - 1
           description: 状态：0=启用，1=停用
     NodeClusterResponse:
       type: object
@@ -1787,8 +1875,9 @@ components:
         status:
           type: integer
         nodeCount:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         createdAt:
           type: string
           format: date-time
@@ -1800,8 +1889,9 @@ components:
           items:
             $ref: '#/components/schemas/NodeClusterResponse'
         total:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
     AuditLogResponse:
       type: object
       properties:
@@ -1809,8 +1899,9 @@ components:
           type: string
           format: uuid
         operatorId:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         operatorType:
           type: string
         action:
@@ -1818,8 +1909,9 @@ components:
         targetType:
           type: string
         targetId:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         targetUuid:
           type: string
         ipAddress:
@@ -1837,21 +1929,22 @@ components:
           items:
             $ref: '#/components/schemas/AuditLogResponse'
         total:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
     SdkWorkApiResponse:
       type: object
       additionalProperties: false
       required:
-        - code
-        - data
-        - traceId
+      - code
+      - data
+      - traceId
       properties:
         code:
           type: integer
           format: int32
           enum:
-            - 0
+          - 0
           default: 0
           minimum: 0
           maximum: 0
@@ -1865,7 +1958,7 @@ components:
       type: object
       additionalProperties: false
       required:
-        - item
+      - item
       properties:
         item:
           type: object
@@ -1875,8 +1968,8 @@ components:
       type: object
       additionalProperties: false
       required:
-        - items
-        - pageInfo
+      - items
+      - pageInfo
       properties:
         items:
           type: array
@@ -1889,7 +1982,7 @@ components:
       type: object
       additionalProperties: false
       required:
-        - accepted
+      - accepted
       properties:
         accepted:
           type: boolean
@@ -1902,13 +1995,13 @@ components:
       type: object
       additionalProperties: false
       required:
-        - mode
+      - mode
       properties:
         mode:
           type: string
           enum:
-            - offset
-            - cursor
+          - offset
+          - cursor
         page:
           type: integer
           minimum: 1
@@ -1924,8 +2017,8 @@ components:
           minimum: 0
         nextCursor:
           type:
-            - string
-            - 'null'
+          - string
+          - 'null'
         hasMore:
           type: boolean
     SdkWorkPlatformErrorCode:
@@ -1938,8 +2031,8 @@ components:
       type: object
       additionalProperties: false
       required:
-        - field
-        - message
+      - field
+      - message
       properties:
         field:
           type: string
@@ -1956,57 +2049,58 @@ components:
           type: object
           additionalProperties:
             oneOf:
-              - type: string
-              - type: number
-              - type: integer
-              - type: boolean
+            - type: string
+            - type: number
+            - type: integer
+            - type: boolean
     SdkWorkResourceResponse:
       allOf:
-        - $ref: '#/components/schemas/SdkWorkApiResponse'
-        - type: object
-          required:
-            - data
-          properties:
-            data:
-              $ref: '#/components/schemas/SdkWorkResourceData'
+      - $ref: '#/components/schemas/SdkWorkApiResponse'
+      - type: object
+        required:
+        - data
+        properties:
+          data:
+            $ref: '#/components/schemas/SdkWorkResourceData'
     SdkWorkListResponse:
       allOf:
-        - $ref: '#/components/schemas/SdkWorkApiResponse'
-        - type: object
-          required:
-            - data
-          properties:
-            data:
-              $ref: '#/components/schemas/SdkWorkPageData'
+      - $ref: '#/components/schemas/SdkWorkApiResponse'
+      - type: object
+        required:
+        - data
+        properties:
+          data:
+            $ref: '#/components/schemas/SdkWorkPageData'
     SdkWorkCommandResponse:
       allOf:
-        - $ref: '#/components/schemas/SdkWorkApiResponse'
-        - type: object
-          required:
-            - data
-          properties:
-            data:
-              $ref: '#/components/schemas/SdkWorkCommandData'
+      - $ref: '#/components/schemas/SdkWorkApiResponse'
+      - type: object
+        required:
+        - data
+        properties:
+          data:
+            $ref: '#/components/schemas/SdkWorkCommandData'
     EntitlementProjectionResponse:
       type: object
       additionalProperties: false
       required:
-        - id
-        - tenantId
-        - sourceSystem
-        - sourceSubscriptionUuid
-        - entitlements
-        - effectiveAt
-        - projectionStatus
-        - createdAt
-        - updatedAt
+      - id
+      - tenantId
+      - sourceSystem
+      - sourceSubscriptionUuid
+      - entitlements
+      - effectiveAt
+      - projectionStatus
+      - createdAt
+      - updatedAt
       properties:
         id:
           type: string
           format: uuid
         tenantId:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         sourceSystem:
           type: string
         sourceSubscriptionUuid:
@@ -2017,7 +2111,8 @@ components:
           type: string
         entitlements:
           type: object
-          description: "dimension limits keyed by snake_case dimension names (active_apps, build_concurrency, package_storage_bytes, ...)"
+          description: dimension limits keyed by snake_case dimension names (active_apps,
+            build_concurrency, package_storage_bytes, ...)
         effectiveAt:
           type: string
           format: date-time
@@ -2035,7 +2130,14 @@ components:
     BuildQueueItemResponse:
       type: object
       additionalProperties: false
-      required: [id, appId, platformTargetId, buildNumber, buildStatus, createdAt, updatedAt]
+      required:
+      - id
+      - appId
+      - platformTargetId
+      - buildNumber
+      - buildStatus
+      - createdAt
+      - updatedAt
       properties:
         id:
           type: string
@@ -2047,8 +2149,9 @@ components:
           type: string
           format: uuid
         buildNumber:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         buildStatus:
           type: string
         runnerNodeUuid:
@@ -2062,7 +2165,12 @@ components:
     RunnerHealthResponse:
       type: object
       additionalProperties: false
-      required: [runnerNodeUuid, lastSeenAt, buildsCompleted, buildsFailed, activeBuilds]
+      required:
+      - runnerNodeUuid
+      - lastSeenAt
+      - buildsCompleted
+      - buildsFailed
+      - activeBuilds
       properties:
         runnerNodeUuid:
           type: string
@@ -2072,25 +2180,38 @@ components:
           type: string
           format: date-time
         buildsCompleted:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         buildsFailed:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         activeBuilds:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
     AcmeAccountResponse:
       type: object
       additionalProperties: false
-      required: [id, tenantId, caProfile, directoryUrl, contactEmail, status, createdAt, updatedAt, version]
+      required:
+      - id
+      - tenantId
+      - caProfile
+      - directoryUrl
+      - contactEmail
+      - status
+      - createdAt
+      - updatedAt
+      - version
       properties:
         id:
           type: string
           format: uuid
         tenantId:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         caProfile:
           type: string
         directoryUrl:
@@ -2112,11 +2233,16 @@ components:
     CreateAcmeAccountRequest:
       type: object
       additionalProperties: false
-      required: [caProfile, directoryUrl, contactEmail]
+      required:
+      - caProfile
+      - directoryUrl
+      - contactEmail
       properties:
         caProfile:
           type: string
-          enum: [LETS_ENCRYPT_STAGING, LETS_ENCRYPT_PRODUCTION]
+          enum:
+          - LETS_ENCRYPT_STAGING
+          - LETS_ENCRYPT_PRODUCTION
         directoryUrl:
           type: string
         contactEmail:
@@ -2126,7 +2252,9 @@ components:
     RequestCertificateOrderRequest:
       type: object
       additionalProperties: false
-      required: [certificateId, idempotencyKey]
+      required:
+      - certificateId
+      - idempotencyKey
       properties:
         certificateId:
           type: string
@@ -2135,32 +2263,35 @@ components:
           type: string
         challengeType:
           type: string
-          enum: [HTTP_01, DNS_01]
+          enum:
+          - HTTP_01
+          - DNS_01
           default: HTTP_01
     CertificateOrderResponse:
       type: object
       additionalProperties: false
       required:
-        - id
-        - tenantId
-        - certificateId
-        - acmeAccountId
-        - requestedVersionNo
-        - requestSha256
-        - idempotencyKey
-        - status
-        - attemptCount
-        - deadlineAt
-        - createdAt
-        - updatedAt
-        - version
+      - id
+      - tenantId
+      - certificateId
+      - acmeAccountId
+      - requestedVersionNo
+      - requestSha256
+      - idempotencyKey
+      - status
+      - attemptCount
+      - deadlineAt
+      - createdAt
+      - updatedAt
+      - version
       properties:
         id:
           type: string
           format: uuid
         tenantId:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         certificateId:
           type: string
           format: uuid
@@ -2168,8 +2299,9 @@ components:
           type: string
           format: uuid
         requestedVersionNo:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         requestSha256:
           type: string
         idempotencyKey:
@@ -2197,14 +2329,27 @@ components:
     CertificateChallengeResponse:
       type: object
       additionalProperties: false
-      required: [id, tenantId, orderId, identifierId, hostname, challengeType, proofSha256, status, attemptCount, createdAt, updatedAt, version]
+      required:
+      - id
+      - tenantId
+      - orderId
+      - identifierId
+      - hostname
+      - challengeType
+      - proofSha256
+      - status
+      - attemptCount
+      - createdAt
+      - updatedAt
+      - version
       properties:
         id:
           type: string
           format: uuid
         tenantId:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         orderId:
           type: string
           format: uuid
@@ -2243,14 +2388,16 @@ components:
     FailCertificateOrderRequest:
       type: object
       additionalProperties: false
-      required: [errorCode]
+      required:
+      - errorCode
       properties:
         errorCode:
           type: string
     ChallengeResultRequest:
       type: object
       additionalProperties: false
-      required: [valid]
+      required:
+      - valid
       properties:
         challengeId:
           type: string
@@ -2261,25 +2408,26 @@ components:
       type: object
       additionalProperties: false
       required:
-        - orderId
-        - versionNo
-        - serialSha256
-        - fingerprintSha256
-        - spkiSha256
-        - chainSha256
-        - issuer
-        - subject
-        - keyAlgorithm
-        - notBefore
-        - notAfter
-        - secretBundleRef
+      - orderId
+      - versionNo
+      - serialSha256
+      - fingerprintSha256
+      - spkiSha256
+      - chainSha256
+      - issuer
+      - subject
+      - keyAlgorithm
+      - notBefore
+      - notAfter
+      - secretBundleRef
       properties:
         orderId:
           type: string
           format: uuid
         versionNo:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         serialSha256:
           type: string
         fingerprintSha256:
@@ -2294,7 +2442,9 @@ components:
           type: string
         keyAlgorithm:
           type: string
-          enum: [RSA, ECDSA]
+          enum:
+          - RSA
+          - ECDSA
         notBefore:
           type: string
           format: date-time
@@ -2306,7 +2456,8 @@ components:
     RetentionRunRequest:
       type: object
       additionalProperties: false
-      required: [dryRun]
+      required:
+      - dryRun
       properties:
         dryRun:
           type: boolean
@@ -2315,34 +2466,40 @@ components:
       type: object
       additionalProperties: false
       required:
-        - dryRun
-        - packagesRetired
-        - releasesRetired
-        - buildLogsPurged
-        - packageRetentionDays
-        - releaseRetentionDays
-        - buildLogRetentionDays
+      - dryRun
+      - packagesRetired
+      - releasesRetired
+      - buildLogsPurged
+      - packageRetentionDays
+      - releaseRetentionDays
+      - buildLogRetentionDays
       properties:
         dryRun:
           type: boolean
         packagesRetired:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         releasesRetired:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         buildLogsPurged:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         packageRetentionDays:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         releaseRetentionDays:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         buildLogRetentionDays:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
     UsageEventAttribution:
       type: object
       additionalProperties: false
@@ -2368,14 +2525,23 @@ components:
     UsageEventIngestItem:
       type: object
       additionalProperties: false
-      required: [tenantId, periodStart, dimension, quantity, unit, deduplicationKey, attribution]
+      required:
+      - tenantId
+      - periodStart
+      - dimension
+      - quantity
+      - unit
+      - deduplicationKey
+      - attribution
       properties:
         tenantId:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         organizationId:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         siteUuid:
           type: string
         bindingUuid:
@@ -2386,8 +2552,9 @@ components:
         dimension:
           type: string
         quantity:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         unit:
           type: string
         deduplicationKey:
@@ -2400,7 +2567,8 @@ components:
     IngestUsageEventsRequest:
       type: object
       additionalProperties: false
-      required: [events]
+      required:
+      - events
       properties:
         nodeUuid:
           type: string
@@ -2412,17 +2580,23 @@ components:
     UsageIngestResult:
       type: object
       additionalProperties: false
-      required: [ingested, duplicates, rejected]
+      required:
+      - ingested
+      - duplicates
+      - rejected
       properties:
         ingested:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         duplicates:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         rejected:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
     UsageReconciliationRequest:
       type: object
       additionalProperties: false
@@ -2436,11 +2610,15 @@ components:
     UsageReconciliationResponse:
       type: object
       additionalProperties: false
-      required: [rebuiltRows, windowStart, windowEnd]
+      required:
+      - rebuiltRows
+      - windowStart
+      - windowEnd
       properties:
         rebuiltRows:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         windowStart:
           type: string
           format: date-time
@@ -2450,14 +2628,20 @@ components:
     SigningIdentityHealthResponse:
       type: object
       additionalProperties: false
-      required: [id, tenantId, identityName, signingKind, identityStatus]
+      required:
+      - id
+      - tenantId
+      - identityName
+      - signingKind
+      - identityStatus
       properties:
         id:
           type: string
           format: uuid
         tenantId:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         identityName:
           type: string
         signingKind:
@@ -2466,32 +2650,34 @@ components:
           type: string
           format: date-time
         daysUntilExpiry:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         identityStatus:
           type: string
     SourceEventResponse:
       type: object
       additionalProperties: false
       required:
-        - id
-        - tenantId
-        - appId
-        - sourceRepositoryId
-        - eventKind
-        - sourceRef
-        - sourceCommit
-        - payloadSha256
-        - eventStatus
-        - buildsTriggered
-        - createdAt
+      - id
+      - tenantId
+      - appId
+      - sourceRepositoryId
+      - eventKind
+      - sourceRef
+      - sourceCommit
+      - payloadSha256
+      - eventStatus
+      - buildsTriggered
+      - createdAt
       properties:
         id:
           type: string
           format: uuid
         tenantId:
-          type: integer
+          type: string
           format: int64
+          x-sdkwork-int64-string: true
         appId:
           type: string
           format: uuid
@@ -2524,7 +2710,11 @@ components:
     SourceEventIngestResponse:
       type: object
       additionalProperties: false
-      required: [eventId, eventStatus, buildsTriggered, duplicate]
+      required:
+      - eventId
+      - eventStatus
+      - buildsTriggered
+      - duplicate
       properties:
         eventId:
           type: string
@@ -2538,19 +2728,19 @@ components:
           type: boolean
   responses:
     BadRequest:
-      description: "请求参数错误"
+      description: 请求参数错误
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetail'
     Unauthorized:
-      description: "未认证"
+      description: 未认证
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ProblemDetail'
     NotFound:
-      description: "资源不存在"
+      description: 资源不存在
       content:
         application/problem+json:
           schema:

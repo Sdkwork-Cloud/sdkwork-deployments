@@ -1,12 +1,233 @@
 {
   "schemaVersion": 3,
   "kind": "sdkwork.app",
-  "app": { "key": "sdkwork-deployments-pc", "name": "SDKWork Deployments PC", "displayName": "SDKWork Deployments", "description": "Application publishing control-plane console and operations application.", "vendor": "SDKWork", "officialWebsiteUrl": "https://sdkwork.com/apps/sdkwork-deployments-pc", "supportUrl": "https://sdkwork.com/support", "privacyPolicyUrl": "https://sdkwork.com/privacy", "termsOfServiceUrl": "https://sdkwork.com/terms", "appType": "APP_REACT", "versionSource": "package.json", "identifiers": { "packageName": null, "bundleId": null, "desktopAppId": null, "containerImage": null } },
-  "backend": { "profileKey": "backend-root-admin", "ownerMode": "tenant", "grantMode": "current", "platform": "WEB", "appId": "sdkwork-deployments-pc", "tenantId": "100001", "organizationId": "0", "accessTokenPermissionScope": ["deploy.sites.read", "deploy.sites.write", "deploy.domains.read", "deploy.certificates.read", "deploy.certificates.write", "deploy.artifacts.read", "deploy.artifacts.write", "deploy.releases.read", "deploy.deployments.read", "deploy.healthChecks.read", "deploy.nginx.write", "deploy.servers.read", "deploy.servers.write", "deploy.clusters.read", "deploy.clusters.write", "deploy.auditLogs.read", "drive.uploads.write"] },
-  "runtime": { "family": "web", "framework": "react", "runtimes": ["WEB", "BROWSER"], "deliveryModes": ["WEB_URL"], "defaultPlatform": "WEB", "defaultArchitecture": "universal", "supportedDeploymentProfiles": ["cloud"], "defaultDeploymentProfile": "cloud" },
-  "publish": { "status": "DRAFT", "platforms": ["WEB"], "installPlatforms": ["WEB"], "config": { "workspaceRoot": "apps/sdkwork-deployments-pc", "framework": "react", "managedBy": "sdkwork-deployments" } },
-  "release": { "currentVersion": "0.1.0", "defaultChannel": "DEV", "latest": { "DEV": "0.1.0" } },
-  "security": { "checksumRequired": true, "signatureRequired": true, "sbomRequired": true },
-  "metadata": { "standardOwner": "sdkwork-platform", "component": "sdkwork-deployments-pc", "surface": "pc", "deploymentConfig": "etc/sdkwork.deployment.config.json" }
+  "app": {
+    "key": "sdkwork-deployments-pc",
+    "name": "SDKWork Deployments PC",
+    "displayName": "SDKWork Deployments",
+    "description": "Application publishing control-plane console and operations application.",
+    "vendor": "SDKWork",
+    "officialWebsiteUrl": "https://sdkwork.com/apps/sdkwork-deployments-pc",
+    "supportUrl": "https://sdkwork.com/support",
+    "privacyPolicyUrl": "https://sdkwork.com/privacy",
+    "termsOfServiceUrl": "https://sdkwork.com/terms",
+    "appType": "APP_REACT",
+    "versionSource": "package.json",
+    "identifiers": {
+      "packageName": null,
+      "bundleId": null,
+      "desktopAppId": null,
+      "containerImage": null
+    }
+  },
+  "backend": {
+    "profileKey": "backend-root-admin",
+    "ownerMode": "tenant",
+    "grantMode": "current",
+    "platform": "WEB",
+    "appId": "sdkwork-deployments-pc",
+    "tenantId": "100001",
+    "organizationId": "0",
+    "accessTokenPermissionScope": [
+      "deploy.sites.read",
+      "deploy.sites.write",
+      "deploy.domains.read",
+      "deploy.certificates.read",
+      "deploy.certificates.write",
+      "deploy.artifacts.read",
+      "deploy.artifacts.write",
+      "deploy.releases.read",
+      "deploy.deployments.read",
+      "deploy.healthChecks.read",
+      "deploy.nginx.write",
+      "deploy.servers.read",
+      "deploy.servers.write",
+      "deploy.clusters.read",
+      "deploy.clusters.write",
+      "deploy.auditLogs.read",
+      "drive.uploads.write"
+    ]
+  },
+  "runtime": {
+    "family": "web",
+    "framework": "react",
+    "runtimes": [
+      "WEB",
+      "BROWSER"
+    ],
+    "deliveryModes": [
+      "WEB_URL"
+    ],
+    "defaultPlatform": "WEB",
+    "defaultArchitecture": "universal",
+    "supportedDeploymentProfiles": [
+      "cloud"
+    ],
+    "defaultDeploymentProfile": "cloud"
+  },
+  "media": {
+    "icons": {
+      "primary": {
+        "id": "sdkwork-deployments-pc-primary-icon",
+        "type": "ICON",
+        "purpose": "PRIMARY",
+        "url": "https://cdn.sdkwork.com/apps/sdkwork-deployments-pc/assets/icon-1024.png",
+        "platform": "APP",
+        "locale": "en-US",
+        "width": 1024,
+        "height": 1024,
+        "format": "PNG",
+        "fileSizeBytes": 524288,
+        "alphaChannel": false,
+        "sortOrder": 0,
+        "enabled": true,
+        "metadata": {
+          "generatedPlaceholder": true
+        }
+      },
+      "platform": [],
+      "metadata": {
+        "generatedPlaceholder": true
+      }
+    },
+    "screenshots": [
+      {
+        "id": "sdkwork-deployments-pc-web-screenshot",
+        "type": "SCREENSHOT",
+        "purpose": "CATALOG_SCREENSHOT",
+        "url": "https://cdn.sdkwork.com/apps/sdkwork-deployments-pc/media/web-screenshot.png",
+        "platform": "WEB",
+        "locale": "en-US",
+        "deviceClass": "BROWSER",
+        "displayType": "WEB_DESKTOP",
+        "width": 1920,
+        "height": 1080,
+        "format": "PNG",
+        "fileSizeBytes": 1048576,
+        "alphaChannel": false,
+        "caption": "SDKWork Deployments product screenshot.",
+        "sortOrder": 0,
+        "enabled": true,
+        "metadata": {
+          "generatedPlaceholder": true,
+          "altText": "SDKWork Deployments app screenshot."
+        }
+      }
+    ],
+    "previews": [
+      {
+        "id": "sdkwork-deployments-pc-catalog-preview",
+        "type": "PREVIEW_IMAGE",
+        "purpose": "CATALOG_PREVIEW",
+        "url": "https://cdn.sdkwork.com/apps/sdkwork-deployments-pc/media/preview-cover.png",
+        "platform": "WEB",
+        "locale": "en-US",
+        "width": 1600,
+        "height": 900,
+        "format": "PNG",
+        "fileSizeBytes": 786432,
+        "alphaChannel": false,
+        "caption": "SDKWork Deployments preview.",
+        "sortOrder": 0,
+        "enabled": true,
+        "metadata": {
+          "generatedPlaceholder": true,
+          "altText": "SDKWork Deployments preview cover."
+        }
+      }
+    ],
+    "metadata": {
+      "assetVersion": "0.1.0",
+      "defaultLocale": "en-US"
+    }
+  },
+  "publish": {
+    "status": "DRAFT",
+    "platforms": [
+      "WEB"
+    ],
+    "installPlatforms": [
+      "WEB"
+    ],
+    "config": {
+      "workspaceRoot": "apps/sdkwork-deployments-pc",
+      "framework": "react",
+      "managedBy": "sdkwork-deployments"
+    },
+    "defaultPackageId": "linux-x64-cloud-server-tar-gz",
+    "installSkill": {
+      "name": "sdkwork-skills-app"
+    },
+    "stores": [],
+    "storeUrl": "https://sdkwork.com/apps/sdkwork-deployments-pc"
+  },
+  "artifacts": {
+    "installConfig": {
+      "defaultPackageId": "linux-x64-cloud-server-tar-gz",
+      "installCommand": "sdkwork install sdkwork-deployments-pc",
+      "launchCommand": "sdkwork open sdkwork-deployments-pc",
+      "uninstallCommand": "sdkwork uninstall sdkwork-deployments-pc",
+      "packages": [
+        {
+          "id": "linux-x64-cloud-server-tar-gz",
+          "name": "Sdkwork Deployments Pc cloud server archive",
+          "sourceType": "BINARY_URL",
+          "packageFormat": "TAR_GZ",
+          "platform": "API",
+          "url": "https://cdn.sdkwork.com/apps/sdkwork-deployments-pc/STABLE/0.1.0/linux-x64-cloud-server-tar-gz-0.1.0.tar.gz",
+          "architecture": "x64",
+          "checksumAlgorithm": "SHA-256",
+          "checksum": "5315674087edd840d25cf4e82badd4fd8f3bf8da26d6b30e4997fffdea6e721a",
+          "deploymentProfile": "cloud",
+          "runtimeTarget": "server",
+          "profileBinding": "fixed",
+          "enabled": true,
+          "metadata": {
+            "releaseBuildDeferred": false
+          }
+        }
+      ]
+    }
+  },
+  "release": {
+    "currentVersion": "0.1.0",
+    "defaultChannel": "DEV",
+    "latest": {
+      "STABLE": "0.1.0",
+      "DEV": "0.1.0"
+    },
+    "notes": [
+      {
+        "version": "0.1.0",
+        "releaseChannel": "DEV",
+        "title": "SDKWork Deployments 0.1.0",
+        "summary": "SDKWork Deployments initialized standard release.",
+        "content": "Initial SDKWork App Standard v3 manifest for SDKWork Deployments.",
+        "highlights": [
+          "SDKWork App Standard v3 configuration initialized",
+          "platform_app projection metadata standardized",
+          "Download package matrix normalized"
+        ],
+        "packageIds": [
+          "linux-x64-cloud-server-tar-gz"
+        ],
+        "publishedAt": "2026-05-07T00:00:00Z",
+        "current": true,
+        "forceUpdate": false,
+        "minSupportedVersion": "0.1.0",
+        "metadata": {}
+      }
+    ]
+  },
+  "security": {
+    "checksumRequired": true,
+    "signatureRequired": true,
+    "sbomRequired": true
+  },
+  "metadata": {
+    "standardOwner": "sdkwork-platform",
+    "component": "sdkwork-deployments-pc",
+    "surface": "pc",
+    "deploymentConfig": "etc/sdkwork.deployment.config.json"
+  }
 }
-
