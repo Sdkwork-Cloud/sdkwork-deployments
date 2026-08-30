@@ -13,17 +13,6 @@
 -- Date: 2026-06-14
 
 
-
-
-CREATE INDEX IF NOT EXISTS idx_deploy_app_tenant_status_updated
-    ON deploy_app (tenant_id, organization_id, status, updated_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_deploy_app_user_updated
-    ON deploy_app (tenant_id, user_id, updated_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_deploy_app_slug
-    ON deploy_app (tenant_id, slug);
-
 CREATE TABLE IF NOT EXISTS deploy_dns_zone (
     id              BIGINT       NOT NULL,
     uuid            VARCHAR(36)  NOT NULL,
@@ -173,8 +162,7 @@ CREATE TABLE IF NOT EXISTS deploy_nginx_config (
     updated_at      TIMESTAMPTZ  NOT NULL,
     version         BIGINT       NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
-    CONSTRAINT uk_deploy_nginx_config_uuid UNIQUE (uuid),
-    CONSTRAINT fk_deploy_nginx_config_app FOREIGN KEY (app_id) REFERENCES deploy_app(id)
+    CONSTRAINT uk_deploy_nginx_config_uuid UNIQUE (uuid)
 );
 
 COMMENT ON TABLE deploy_nginx_config IS 'Nginx配置版本表';
@@ -358,7 +346,6 @@ CREATE TABLE IF NOT EXISTS deploy_deployment (
     PRIMARY KEY (id),
     CONSTRAINT uk_deploy_deployment_uuid UNIQUE (uuid),
     CONSTRAINT uk_deploy_deployment_idempotency UNIQUE (tenant_id, idempotency_key),
-    CONSTRAINT fk_deploy_deployment_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
     CONSTRAINT fk_deploy_deployment_rollback FOREIGN KEY (rollback_from_deployment_id) REFERENCES deploy_deployment(id),
     CONSTRAINT chk_deploy_deployment_percentage CHECK (percentage IS NULL OR (percentage >= 1 AND percentage <= 100))
 );
@@ -439,8 +426,7 @@ CREATE TABLE IF NOT EXISTS deploy_health_check (
     updated_at      TIMESTAMPTZ  NOT NULL,
     version         BIGINT       NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
-    CONSTRAINT uk_deploy_health_check_uuid UNIQUE (uuid),
-    CONSTRAINT fk_deploy_health_check_app FOREIGN KEY (app_id) REFERENCES deploy_app(id)
+    CONSTRAINT uk_deploy_health_check_uuid UNIQUE (uuid)
 );
 
 COMMENT ON TABLE deploy_health_check IS '健康检查配置表';
@@ -687,8 +673,7 @@ CREATE TABLE IF NOT EXISTS deploy_release (
     deleted_at          TIMESTAMPTZ  NULL,
     version             BIGINT       NOT NULL DEFAULT 1,
     PRIMARY KEY (id),
-    CONSTRAINT uk_deploy_release_uuid UNIQUE (uuid),
-    CONSTRAINT fk_deploy_release_app FOREIGN KEY (app_id) REFERENCES deploy_app(id)
+    CONSTRAINT uk_deploy_release_uuid UNIQUE (uuid)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_release_app_target_version
@@ -735,7 +720,6 @@ CREATE TABLE IF NOT EXISTS deploy_app_resource (
     deleted_at                TIMESTAMPTZ NULL,
     CONSTRAINT uk_deploy_app_resource_uuid UNIQUE (uuid),
     CONSTRAINT uk_deploy_app_resource_key UNIQUE (app_id, resource_key),
-    CONSTRAINT fk_deploy_app_resource_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
     CONSTRAINT chk_deploy_app_resource_provider CHECK (provider_type IN ('DRIVE', 'KNOWLEDGEBASE')),
     CONSTRAINT chk_deploy_app_resource_status CHECK (status IN ('PENDING', 'VALID', 'INVALID', 'UNAVAILABLE', 'REVOKED'))
 );
@@ -768,7 +752,6 @@ CREATE TABLE IF NOT EXISTS deploy_app_variant (
     deleted_at      TIMESTAMPTZ NULL,
     CONSTRAINT uk_deploy_app_variant_uuid UNIQUE (uuid),
     CONSTRAINT uk_deploy_app_variant_key UNIQUE (app_id, variant_key),
-    CONSTRAINT fk_deploy_app_variant_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
     CONSTRAINT chk_deploy_app_variant_client CHECK (client_class IN ('DESKTOP', 'MOBILE', 'TABLET', 'TV', 'BOT', 'OTHER')),
     CONSTRAINT chk_deploy_app_variant_status CHECK (status IN ('ACTIVE', 'DISABLED'))
 );
@@ -800,7 +783,6 @@ CREATE TABLE IF NOT EXISTS deploy_app_variant_rule (
     deleted_at        TIMESTAMPTZ NULL,
     CONSTRAINT uk_deploy_app_variant_rule_uuid UNIQUE (uuid),
     CONSTRAINT uk_deploy_app_variant_rule_key UNIQUE (app_id, rule_key),
-    CONSTRAINT fk_deploy_app_variant_rule_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
     CONSTRAINT fk_deploy_app_variant_rule_variant FOREIGN KEY (target_variant_id) REFERENCES deploy_app_variant(id),
     CONSTRAINT chk_deploy_app_variant_rule_type CHECK (rule_type IN ('PATH_PREFIX', 'CLIENT_CLASS')),
     CONSTRAINT chk_deploy_app_variant_rule_status CHECK (status IN ('ACTIVE', 'DISABLED')),
@@ -836,7 +818,6 @@ CREATE TABLE IF NOT EXISTS deploy_app_mount (
     CONSTRAINT uk_deploy_app_mount_uuid UNIQUE (uuid),
     CONSTRAINT uk_deploy_app_mount_key UNIQUE (app_id, mount_key),
     CONSTRAINT uk_deploy_app_mount_prefix UNIQUE (variant_id, path_prefix),
-    CONSTRAINT fk_deploy_app_mount_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
     CONSTRAINT fk_deploy_app_mount_variant FOREIGN KEY (variant_id) REFERENCES deploy_app_variant(id),
     CONSTRAINT fk_deploy_app_mount_resource FOREIGN KEY (resource_id) REFERENCES deploy_app_resource(id),
     CONSTRAINT chk_deploy_app_mount_mode CHECK (mount_mode IN ('ROOT', 'ALIAS')),
@@ -879,7 +860,6 @@ CREATE TABLE IF NOT EXISTS deploy_app_binding (
     version              BIGINT NOT NULL DEFAULT 1,
     deleted_at           TIMESTAMPTZ NULL,
     CONSTRAINT uk_deploy_app_binding_uuid UNIQUE (uuid),
-    CONSTRAINT fk_deploy_app_binding_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
     CONSTRAINT fk_deploy_app_binding_domain FOREIGN KEY (domain_id) REFERENCES deploy_domain(id),
     CONSTRAINT fk_deploy_app_binding_default_variant FOREIGN KEY (default_variant_id) REFERENCES deploy_app_variant(id),
     CONSTRAINT fk_deploy_app_binding_forced_variant FOREIGN KEY (forced_variant_id) REFERENCES deploy_app_variant(id),
@@ -1006,7 +986,6 @@ CREATE TABLE IF NOT EXISTS deploy_app_revision (
     CONSTRAINT uk_deploy_app_revision_no UNIQUE (app_id, revision_no),
     CONSTRAINT uk_deploy_app_revision_hash UNIQUE (app_id, descriptor_sha256),
     CONSTRAINT uk_deploy_app_revision_idempotency UNIQUE (tenant_id, app_id, idempotency_key),
-    CONSTRAINT fk_deploy_app_revision_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
     CONSTRAINT fk_deploy_app_revision_supersedes FOREIGN KEY (supersedes_revision_id) REFERENCES deploy_app_revision(id),
     CONSTRAINT chk_deploy_app_revision_environment CHECK (environment IN ('development', 'test', 'staging', 'production')),
     CONSTRAINT chk_deploy_app_revision_validation CHECK (validation_status IN ('VALID', 'INVALID'))
@@ -1109,7 +1088,6 @@ CREATE TABLE IF NOT EXISTS deploy_app_target_observation (
     CONSTRAINT uk_deploy_app_target_observation_uuid UNIQUE (uuid),
     CONSTRAINT uk_deploy_app_target_observation_remote UNIQUE (remote_observation_uuid),
     CONSTRAINT uk_deploy_app_target_observation_state UNIQUE (runtime_assignment_id, state),
-    CONSTRAINT fk_deploy_app_target_observation_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
     CONSTRAINT fk_deploy_app_target_observation_revision FOREIGN KEY (site_revision_id) REFERENCES deploy_app_revision(id),
     CONSTRAINT fk_deploy_app_target_observation_target FOREIGN KEY (node_target_id) REFERENCES deploy_web_node_target(id),
     CONSTRAINT fk_deploy_app_target_observation_assignment FOREIGN KEY (runtime_assignment_id) REFERENCES deploy_runtime_assignment(id),
@@ -1391,12 +1369,6 @@ CREATE TABLE IF NOT EXISTS deploy_app (
     deleted_at      TIMESTAMPTZ,
     version         BIGINT       NOT NULL DEFAULT 1,
     CONSTRAINT pk_deploy_app PRIMARY KEY (id),
-    CONSTRAINT fk_deploy_app_default_variant
-        FOREIGN KEY (default_variant_id) REFERENCES deploy_app_variant(id),
-    CONSTRAINT fk_deploy_app_current_revision
-        FOREIGN KEY (current_revision_id) REFERENCES deploy_app_revision(id),
-    CONSTRAINT fk_deploy_app_desired_revision
-        FOREIGN KEY (desired_revision_id) REFERENCES deploy_app_revision(id),
     CONSTRAINT chk_deploy_app_type CHECK (type BETWEEN 1 AND 6),
     CONSTRAINT chk_deploy_app_status CHECK (app_status IN ('DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED'))
 );
@@ -1407,9 +1379,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_uuid
 CREATE UNIQUE INDEX IF NOT EXISTS uk_deploy_app_tenant_slug
     ON deploy_app (tenant_id, slug)
     WHERE deleted_at IS NULL;
-
-CREATE INDEX IF NOT EXISTS idx_deploy_app_tenant_status_updated
-    ON deploy_app (tenant_id, app_status, updated_at DESC);
 
 -- Governed build recipe. Created before deploy_app_platform_target /
 -- deploy_build below: PostgreSQL validates FK target relations at
@@ -1553,7 +1522,6 @@ CREATE TABLE IF NOT EXISTS deploy_build (
     deleted_at      TIMESTAMPTZ,
     version         BIGINT       NOT NULL DEFAULT 1,
     CONSTRAINT pk_deploy_build PRIMARY KEY (id),
-    CONSTRAINT fk_deploy_build_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
     CONSTRAINT fk_deploy_build_target
         FOREIGN KEY (platform_target_id) REFERENCES deploy_app_platform_target(id),
     CONSTRAINT fk_deploy_build_template
@@ -1636,7 +1604,6 @@ CREATE TABLE IF NOT EXISTS deploy_package (
     deleted_at      TIMESTAMPTZ,
     version         BIGINT       NOT NULL DEFAULT 1,
     CONSTRAINT pk_deploy_package PRIMARY KEY (id),
-    CONSTRAINT fk_deploy_package_app FOREIGN KEY (app_id) REFERENCES deploy_app(id),
     CONSTRAINT fk_deploy_package_target
         FOREIGN KEY (platform_target_id) REFERENCES deploy_app_platform_target(id),
     CONSTRAINT fk_deploy_package_build FOREIGN KEY (build_id) REFERENCES deploy_build(id),
@@ -2064,3 +2031,65 @@ CREATE INDEX IF NOT EXISTS idx_deploy_release_target
 
 CREATE INDEX IF NOT EXISTS idx_deploy_release_package
     ON deploy_release (package_id);
+
+
+-- ============================================================================
+-- Deferred circular foreign keys (fold-order repair).
+-- The folded baseline declared FKs pointing at deploy_app before the folded
+-- 0007_deploy_app_delivery migration creates it, and deploy_app itself
+-- references deploy_app_variant / deploy_app_revision. All of them are
+-- re-added here, after every table exists, idempotently.
+-- ============================================================================
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_app_binding_app') THEN
+        ALTER TABLE deploy_app_binding ADD CONSTRAINT fk_deploy_app_binding_app FOREIGN KEY (app_id) REFERENCES deploy_app(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_app_current_revision') THEN
+        ALTER TABLE deploy_app ADD CONSTRAINT fk_deploy_app_current_revision FOREIGN KEY (current_revision_id) REFERENCES deploy_app_revision(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_app_default_variant') THEN
+        ALTER TABLE deploy_app ADD CONSTRAINT fk_deploy_app_default_variant FOREIGN KEY (default_variant_id) REFERENCES deploy_app_variant(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_app_desired_revision') THEN
+        ALTER TABLE deploy_app ADD CONSTRAINT fk_deploy_app_desired_revision FOREIGN KEY (desired_revision_id) REFERENCES deploy_app_revision(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_app_mount_app') THEN
+        ALTER TABLE deploy_app_mount ADD CONSTRAINT fk_deploy_app_mount_app FOREIGN KEY (app_id) REFERENCES deploy_app(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_app_resource_app') THEN
+        ALTER TABLE deploy_app_resource ADD CONSTRAINT fk_deploy_app_resource_app FOREIGN KEY (app_id) REFERENCES deploy_app(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_app_revision_app') THEN
+        ALTER TABLE deploy_app_revision ADD CONSTRAINT fk_deploy_app_revision_app FOREIGN KEY (app_id) REFERENCES deploy_app(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_app_target_observation_app') THEN
+        ALTER TABLE deploy_app_target_observation ADD CONSTRAINT fk_deploy_app_target_observation_app FOREIGN KEY (app_id) REFERENCES deploy_app(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_app_variant_app') THEN
+        ALTER TABLE deploy_app_variant ADD CONSTRAINT fk_deploy_app_variant_app FOREIGN KEY (app_id) REFERENCES deploy_app(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_app_variant_rule_app') THEN
+        ALTER TABLE deploy_app_variant_rule ADD CONSTRAINT fk_deploy_app_variant_rule_app FOREIGN KEY (app_id) REFERENCES deploy_app(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_build_app') THEN
+        ALTER TABLE deploy_build ADD CONSTRAINT fk_deploy_build_app FOREIGN KEY (app_id) REFERENCES deploy_app(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_deployment_app') THEN
+        ALTER TABLE deploy_deployment ADD CONSTRAINT fk_deploy_deployment_app FOREIGN KEY (app_id) REFERENCES deploy_app(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_health_check_app') THEN
+        ALTER TABLE deploy_health_check ADD CONSTRAINT fk_deploy_health_check_app FOREIGN KEY (app_id) REFERENCES deploy_app(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_nginx_config_app') THEN
+        ALTER TABLE deploy_nginx_config ADD CONSTRAINT fk_deploy_nginx_config_app FOREIGN KEY (app_id) REFERENCES deploy_app(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_package_app') THEN
+        ALTER TABLE deploy_package ADD CONSTRAINT fk_deploy_package_app FOREIGN KEY (app_id) REFERENCES deploy_app(id);
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_constraint WHERE conname = 'fk_deploy_release_app') THEN
+        ALTER TABLE deploy_release ADD CONSTRAINT fk_deploy_release_app FOREIGN KEY (app_id) REFERENCES deploy_app(id);
+    END IF;
+END
+$$;
+
