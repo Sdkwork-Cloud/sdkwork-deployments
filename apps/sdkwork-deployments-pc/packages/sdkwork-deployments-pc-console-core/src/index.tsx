@@ -43,7 +43,12 @@ export interface DeploymentsConsoleClients {
 }
 
 export interface DeploymentsDeliveryService {
-  listDomainZones(params?: { page?: number; pageSize?: number; status?: "ACTIVE" | "PAUSED"; keyword?: string }): Promise<{ items: DomainZoneResponse[]; pageInfo: PageInfo }>;
+  listDomainZones(params?: {
+    page?: number | undefined
+    pageSize?: number | undefined
+    status?: ("ACTIVE" | "PAUSED") | undefined
+    keyword?: string | undefined
+  }): Promise<{ items: DomainZoneResponse[]; pageInfo: PageInfo }>;
   createDomainZone(body: CreateDomainZoneRequest): Promise<DomainZoneResponse>;
   retrieveDomainZone(zoneId: string): Promise<DomainZoneResponse>;
   updateDomainZone(zoneId: string, body: UpdateDomainZoneRequest): Promise<DomainZoneResponse>;
@@ -90,7 +95,15 @@ export function useDeploymentsConsoleClients(): DeploymentsConsoleClients {
 export function createDeploymentsDeliveryService(client: SdkworkDeployAppClient): DeploymentsDeliveryService {
   const zones = client.domain.domainZones;
   return {
-    listDomainZones: (params) => zones.list(params),
+    listDomainZones: (params) =>
+      zones.list(
+        params && {
+          ...(params.page === undefined ? {} : { page: params.page }),
+          ...(params.pageSize === undefined ? {} : { pageSize: params.pageSize }),
+          ...(params.status === undefined ? {} : { status: params.status }),
+          ...(params.keyword === undefined ? {} : { keyword: params.keyword }),
+        },
+      ),
     createDomainZone: (body) => zones.create(body, idempotencyParams()),
     retrieveDomainZone: (zoneId) => zones.retrieve(zoneId),
     updateDomainZone: (zoneId, body) => zones.update(zoneId, body),
@@ -116,7 +129,14 @@ export function createDeploymentsConsoleRegistry(clients: DeploymentsConsoleClie
   const client = clients.deploy;
   return {
     sites: source(
-      (query) => client.site.list({ page: query.page, pageSize: query.pageSize, keyword: query.search }),
+      (query) => client.site.list({
+        page: query.page,
+        pageSize: query.pageSize,
+        // Generated request params keep `keyword?: string`; unset members are
+        // omitted instead of being passed as `undefined`
+        // (exactOptionalPropertyTypes forbids the explicit undefined).
+        ...(query.search === undefined ? {} : { keyword: query.search }),
+      }),
       [
         action("create", "Create application", { name: "", slug: "", description: "", siteType: 1 }, (context) =>
           client.site.create(
@@ -133,7 +153,9 @@ export function createDeploymentsConsoleRegistry(clients: DeploymentsConsoleClie
       ],
     ),
     configuration: scoped(
-      (query) => client.envVariable.sites.envVariables.list(requiredSiteId(query.scopeId), { environment: query.search }),
+      (query) => client.envVariable.sites.envVariables.list(requiredSiteId(query.scopeId), {
+        ...(query.search === undefined ? {} : { environment: query.search }),
+      }),
       [
         action("variable", "Add variable", { key: "", value: "", environment: "production", isSecret: false }, (context) =>
           client.envVariable.sites.envVariables.create(
@@ -150,7 +172,11 @@ export function createDeploymentsConsoleRegistry(clients: DeploymentsConsoleClie
       ],
     ),
     domains: source(
-      (query) => client.domain.domainZones.list({ page: query.page, pageSize: query.pageSize, keyword: query.search }),
+      (query) => client.domain.domainZones.list({
+        page: query.page,
+        pageSize: query.pageSize,
+        ...(query.search === undefined ? {} : { keyword: query.search }),
+      }),
       [],
     ),
     certificates: source((query) => client.certificate.list({ page: query.page, pageSize: query.pageSize }), []),
@@ -171,13 +197,16 @@ export function createDeploymentsConsoleRegistry(clients: DeploymentsConsoleClie
             originalFileName: file.name,
             contentType: file.type || "application/octet-stream",
           });
+          // The uploader's checksum is optional on the Drive side, so omit the
+          // member entirely when neither source produced one.
+          const checksumSha256 = stringValue(context.body.checksumSha256) || uploaded.uploadItem.checksumSha256Hex;
           return client.artifact.create({
             siteId,
             packageType: Number(context.body.packageType ?? 1),
             fileName: file.name,
             contentType: file.type || "application/octet-stream",
             contentLength: String(file.size),
-            checksumSha256: stringValue(context.body.checksumSha256) || uploaded.uploadItem.checksumSha256Hex,
+            ...(checksumSha256 === undefined ? {} : { checksumSha256 }),
             driveUploadSessionId: uploaded.uploadSession.id,
             driveUploadItemId: uploaded.uploadItem.id,
             driveSpaceId: uploaded.uploadItem.spaceId,

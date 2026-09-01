@@ -261,6 +261,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
@@ -335,6 +336,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
@@ -609,6 +611,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
@@ -1102,8 +1105,9 @@
             "name": "operator_id",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "format": "int64"
+              "type": "string",
+              "format": "int64",
+              "x-sdkwork-int64-string": true
             }
           },
           {
@@ -1267,7 +1271,7 @@
     },
     "/backend/v3/api/build_queue": {
       "get": {
-        "operationId": "buildQueue.list",
+        "operationId": "list",
         "summary": "List queued builds waiting for or claimed by runners",
         "description": "Backend build fleet administration surface: QUEUED/PREPARING builds oldest first, tenant-scoped when the token carries a tenant.\n",
         "tags": [
@@ -1349,7 +1353,7 @@
     },
     "/backend/v3/api/runners": {
       "get": {
-        "operationId": "runners.list",
+        "operationId": "list",
         "summary": "List runner liveness and workload health",
         "description": "Backend build fleet administration surface: per-runner last seen, completed/failed/active build counts.\n",
         "tags": [
@@ -1578,6 +1582,18 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
@@ -1587,7 +1603,7 @@
     },
     "/backend/v3/api/tls/orders": {
       "post": {
-        "operationId": "tlsOrders.request",
+        "operationId": "tlsOrders.create",
         "summary": "Request a certificate order for a certificate",
         "description": "Creates an order (idempotent on the idempotency key) with one HTTP_01 (or DNS_01) challenge per certificate identifier. The order then walks the canonical state machine via advance / challenge_result / versions.\n",
         "tags": [
@@ -1655,6 +1671,18 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
@@ -1731,6 +1759,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
@@ -1817,6 +1846,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
@@ -1904,6 +1934,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
@@ -1924,7 +1955,7 @@
         }
       ],
       "post": {
-        "operationId": "tlsOrders.storeVersion",
+        "operationId": "tlsOrders.create",
         "summary": "Store the issued certificate version and complete the order",
         "description": "Stores the certificate version (fingerprint/chain hashes, validity, secret bundle reference), activates it on the certificate, supersedes the previous version, and advances the order to VERSION_STORED in one transaction.\n",
         "tags": [
@@ -1991,11 +2022,13 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token"
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-idempotent": true
       }
     },
     "/backend/v3/api/tls/orders/{orderId}/challenges": {
@@ -2011,7 +2044,7 @@
         }
       ],
       "get": {
-        "operationId": "tlsOrders.listChallenges",
+        "operationId": "tlsOrders.list",
         "summary": "List challenges of a certificate order",
         "tags": [
           "tls"
@@ -2184,7 +2217,7 @@
     },
     "/backend/v3/api/retention/run": {
       "post": {
-        "operationId": "retention.run",
+        "operationId": "run",
         "summary": "Apply platform retention policies",
         "description": "Retires unreferenced packages and releases past their retention windows and purges expired build log references. Retention windows come from platform configuration (SDKWORK_DEPLOY_RETENTION_*_DAYS). dryRun=true (default) reports candidates without mutating.\n",
         "tags": [
@@ -2251,6 +2284,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
@@ -2258,9 +2292,87 @@
         "x-sdkwork-auth-mode": "dual-token"
       }
     },
+    "/backend/v3/api/usage/ingest": {
+      "post": {
+        "operationId": "create",
+        "summary": "Ingest Web Server traffic usage events (per-domain / per-server-IP)",
+        "description": "Batch traffic usage facts submitted by Web Server nodes (`traffic.requests`, `traffic.ingress_bytes`, `traffic.egress_bytes`). Every event is deduplicated on (tenant, deduplicationKey); binding and site uuids are resolved to internal ids and tenant attribution is derived from the binding when the node could not attribute it.\n",
+        "tags": [
+          "usage"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestUsageEventsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SdkWorkApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "data"
+                      ],
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "item"
+                          ],
+                          "properties": {
+                            "item": {
+                              "$ref": "#/components/schemas/UsageIngestResult"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "校验错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [],
+        "x-sdkwork-api-surface": "backend-api",
+        "x-sdkwork-owner": "sdkwork-deploy",
+        "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-idempotent": true
+      }
+    },
     "/backend/v3/api/usage/reconcile": {
       "post": {
-        "operationId": "usage.reconcileDaily",
+        "operationId": "create",
         "summary": "Rebuild the daily usage aggregate from retained usage facts",
         "description": "Idempotent upsert of the reconcilable daily aggregate from the append-only usage events in the window (default: trailing 90 days).\n",
         "tags": [
@@ -2283,7 +2395,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Success",
             "content": {
               "application/json": {
@@ -2327,11 +2439,13 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token"
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-idempotent": true
       }
     },
     "/backend/v3/api/signing_identity_health": {
@@ -2418,7 +2532,7 @@
     },
     "/backend/v3/api/source_events": {
       "get": {
-        "operationId": "sourceEvents.list",
+        "operationId": "list",
         "summary": "List ingested Git webhook events",
         "description": "Backend management surface over the CI event log (deduplicated per repository commit). Tenant-scoped when the token carries a tenant.\n",
         "tags": [
@@ -2498,7 +2612,7 @@
         "x-sdkwork-auth-mode": "dual-token"
       },
       "post": {
-        "operationId": "sourceEvents.ingest",
+        "operationId": "create",
         "summary": "Ingest a Git webhook push event and trigger builds",
         "description": "GitHub-compatible webhook endpoint. The X-Hub-Signature-256 HMAC header is verified against SDKWORK_DEPLOY_WEBHOOK_SECRET (endpoint fails closed without it). Push events on the repository's default branch trigger builds for every active platform target with a governed template; events are deduplicated per commit.\n",
         "tags": [
@@ -2522,7 +2636,7 @@
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": "Success",
             "content": {
               "application/json": {
@@ -2576,11 +2690,13 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token"
+        "x-sdkwork-auth-mode": "dual-token",
+        "x-sdkwork-idempotent": true
       }
     }
   },
@@ -2782,8 +2898,9 @@
             }
           },
           "total": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -3006,8 +3123,9 @@
             }
           },
           "total": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -3072,8 +3190,9 @@
             "type": "integer"
           },
           "nodeCount": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "createdAt": {
             "type": "string",
@@ -3091,8 +3210,9 @@
             }
           },
           "total": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -3104,8 +3224,9 @@
             "format": "uuid"
           },
           "operatorId": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "operatorType": {
             "type": "string"
@@ -3117,8 +3238,9 @@
             "type": "string"
           },
           "targetId": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "targetUuid": {
             "type": "string"
@@ -3145,8 +3267,9 @@
             }
           },
           "total": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -3399,8 +3522,9 @@
             "format": "uuid"
           },
           "tenantId": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "sourceSystem": {
             "type": "string"
@@ -3465,8 +3589,9 @@
             "format": "uuid"
           },
           "buildNumber": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "buildStatus": {
             "type": "string"
@@ -3506,16 +3631,19 @@
             "format": "date-time"
           },
           "buildsCompleted": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "buildsFailed": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "activeBuilds": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -3539,8 +3667,9 @@
             "format": "uuid"
           },
           "tenantId": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "caProfile": {
             "type": "string"
@@ -3646,8 +3775,9 @@
             "format": "uuid"
           },
           "tenantId": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "certificateId": {
             "type": "string",
@@ -3658,8 +3788,9 @@
             "format": "uuid"
           },
           "requestedVersionNo": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "requestSha256": {
             "type": "string"
@@ -3720,8 +3851,9 @@
             "format": "uuid"
           },
           "tenantId": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "orderId": {
             "type": "string",
@@ -3825,8 +3957,9 @@
             "format": "uuid"
           },
           "versionNo": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "serialSha256": {
             "type": "string"
@@ -3896,28 +4029,168 @@
             "type": "boolean"
           },
           "packagesRetired": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "releasesRetired": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "buildLogsPurged": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "packageRetentionDays": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "releaseRetentionDays": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "buildLogRetentionDays": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
+          }
+        }
+      },
+      "UsageEventAttribution": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "hostname": {
+            "type": "string"
+          },
+          "serverIp": {
+            "type": "string"
+          },
+          "serverPort": {
+            "type": "integer"
+          },
+          "listenerId": {
+            "type": "string"
+          },
+          "appId": {
+            "type": "string"
+          },
+          "appSlug": {
+            "type": "string"
+          },
+          "siteUuid": {
+            "type": "string"
+          },
+          "bindingUuid": {
+            "type": "string"
+          },
+          "statusClass": {
+            "type": "string"
+          }
+        }
+      },
+      "UsageEventIngestItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tenantId",
+          "periodStart",
+          "dimension",
+          "quantity",
+          "unit",
+          "deduplicationKey",
+          "attribution"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
+          },
+          "organizationId": {
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
+          },
+          "siteUuid": {
+            "type": "string"
+          },
+          "bindingUuid": {
+            "type": "string"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dimension": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
+          },
+          "unit": {
+            "type": "string"
+          },
+          "deduplicationKey": {
+            "type": "string"
+          },
+          "attribution": {
+            "$ref": "#/components/schemas/UsageEventAttribution"
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IngestUsageEventsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "events"
+        ],
+        "properties": {
+          "nodeUuid": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "maxItems": 10000,
+            "items": {
+              "$ref": "#/components/schemas/UsageEventIngestItem"
+            }
+          }
+        }
+      },
+      "UsageIngestResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ingested",
+          "duplicates",
+          "rejected"
+        ],
+        "properties": {
+          "ingested": {
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
+          },
+          "duplicates": {
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
+          },
+          "rejected": {
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -3945,8 +4218,9 @@
         ],
         "properties": {
           "rebuiltRows": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "windowStart": {
             "type": "string",
@@ -3974,8 +4248,9 @@
             "format": "uuid"
           },
           "tenantId": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "identityName": {
             "type": "string"
@@ -3988,8 +4263,9 @@
             "format": "date-time"
           },
           "daysUntilExpiry": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "identityStatus": {
             "type": "string"
@@ -4018,8 +4294,9 @@
             "format": "uuid"
           },
           "tenantId": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "appId": {
             "type": "string",

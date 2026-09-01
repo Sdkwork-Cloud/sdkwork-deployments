@@ -18,7 +18,7 @@ export async function retrieveApplicationPublishSite(
   siteId: string,
   signal?: AbortSignal,
 ): Promise<ApplicationPublishSiteEvidence> {
-  const value = await client.site.retrieve(siteId, { signal, timeout: undefined });
+  const value = await client.site.retrieve(siteId, requestOptions(signal));
   const responseId = requireSiteId(value, 'resolveSite');
   if (responseId !== siteId) {
     throw new ApplicationPublishError(
@@ -77,7 +77,7 @@ async function findExactMatch(
 ): Promise<ExactSiteMatch | undefined> {
   const page = await client.site.list(
     { page: 1, pageSize: SITE_LOOKUP_PAGE_SIZE, keyword },
-    { signal, timeout: undefined },
+    requestOptions(signal),
   );
   if (page.pageInfo.hasMore) {
     throw new ApplicationPublishError(
@@ -122,4 +122,8 @@ function requireSiteId(
 function normalizedOptionalText(value: string | undefined): string | undefined {
   const normalized = value?.trim();
   return normalized || undefined;
+}
+
+function requestOptions(signal: AbortSignal | undefined): { signal?: AbortSignal } {
+  return signal !== undefined ? { signal } : {};
 }

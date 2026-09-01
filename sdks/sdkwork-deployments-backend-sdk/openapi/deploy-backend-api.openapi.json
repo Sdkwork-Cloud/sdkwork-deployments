@@ -261,13 +261,13 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.configs.read",
-        "parameters": []
+        "x-sdkwork-permission": "deploy.configs.read"
       },
       "put": {
         "operationId": "configs.update",
@@ -336,13 +336,13 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.configs.write",
-        "parameters": []
+        "x-sdkwork-permission": "deploy.configs.write"
       }
     },
     "/backend/v3/api/nginx/configs/{configId}/validate": {
@@ -611,13 +611,13 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "x-sdkwork-permission": "deploy.runtime.read",
-        "parameters": []
+        "x-sdkwork-permission": "deploy.runtime.read"
       }
     },
     "/backend/v3/api/servers": {
@@ -1582,11 +1582,6 @@
             }
           }
         },
-        "x-sdkwork-api-surface": "backend-api",
-        "x-sdkwork-owner": "sdkwork-deploy",
-        "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -1598,7 +1593,12 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-sdkwork-api-surface": "backend-api",
+        "x-sdkwork-owner": "sdkwork-deploy",
+        "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token"
       }
     },
     "/backend/v3/api/tls/orders": {
@@ -1671,11 +1671,6 @@
             }
           }
         },
-        "x-sdkwork-api-surface": "backend-api",
-        "x-sdkwork-owner": "sdkwork-deploy",
-        "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
-        "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
         "parameters": [
           {
             "name": "Idempotency-Key",
@@ -1687,7 +1682,12 @@
               "maxLength": 128
             }
           }
-        ]
+        ],
+        "x-sdkwork-api-surface": "backend-api",
+        "x-sdkwork-owner": "sdkwork-deploy",
+        "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token"
       }
     },
     "/backend/v3/api/tls/orders/{orderId}/advance": {
@@ -1759,12 +1759,12 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "parameters": []
+        "x-sdkwork-auth-mode": "dual-token"
       }
     },
     "/backend/v3/api/tls/orders/{orderId}/fail": {
@@ -1846,12 +1846,12 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "parameters": []
+        "x-sdkwork-auth-mode": "dual-token"
       }
     },
     "/backend/v3/api/tls/orders/{orderId}/challenge_result": {
@@ -1934,12 +1934,12 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
-        "x-sdkwork-auth-mode": "dual-token",
-        "parameters": []
+        "x-sdkwork-auth-mode": "dual-token"
       }
     },
     "/backend/v3/api/tls/orders/{orderId}/versions": {
@@ -2022,12 +2022,13 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "parameters": []
+        "x-sdkwork-idempotent": true
       }
     },
     "/backend/v3/api/tls/orders/{orderId}/challenges": {
@@ -2283,12 +2284,90 @@
             }
           }
         },
+        "parameters": [],
+        "x-sdkwork-api-surface": "backend-api",
+        "x-sdkwork-owner": "sdkwork-deploy",
+        "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
+        "x-sdkwork-request-context": "WebRequestContext",
+        "x-sdkwork-auth-mode": "dual-token"
+      }
+    },
+    "/backend/v3/api/usage/ingest": {
+      "post": {
+        "operationId": "create",
+        "summary": "Ingest Web Server traffic usage events (per-domain / per-server-IP)",
+        "description": "Batch traffic usage facts submitted by Web Server nodes (`traffic.requests`, `traffic.ingress_bytes`, `traffic.egress_bytes`). Every event is deduplicated on (tenant, deduplicationKey); binding and site uuids are resolved to internal ids and tenant attribution is derived from the binding when the node could not attribute it.\n",
+        "tags": [
+          "usage"
+        ],
+        "security": [
+          {
+            "AuthToken": [],
+            "AccessToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestUsageEventsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SdkWorkApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "data"
+                      ],
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "item"
+                          ],
+                          "properties": {
+                            "item": {
+                              "$ref": "#/components/schemas/UsageIngestResult"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "校验错误",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "parameters": []
+        "x-sdkwork-idempotent": true
       }
     },
     "/backend/v3/api/usage/reconcile": {
@@ -2360,12 +2439,13 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "parameters": []
+        "x-sdkwork-idempotent": true
       }
     },
     "/backend/v3/api/signing_identity_health": {
@@ -2610,12 +2690,13 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "backend-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-backend-api",
         "x-sdkwork-request-context": "WebRequestContext",
         "x-sdkwork-auth-mode": "dual-token",
-        "parameters": []
+        "x-sdkwork-idempotent": true
       }
     }
   },
@@ -3973,6 +4054,140 @@
             "x-sdkwork-int64-string": true
           },
           "buildLogRetentionDays": {
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
+          }
+        }
+      },
+      "UsageEventAttribution": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "hostname": {
+            "type": "string"
+          },
+          "serverIp": {
+            "type": "string"
+          },
+          "serverPort": {
+            "type": "integer"
+          },
+          "listenerId": {
+            "type": "string"
+          },
+          "appId": {
+            "type": "string"
+          },
+          "appSlug": {
+            "type": "string"
+          },
+          "siteUuid": {
+            "type": "string"
+          },
+          "bindingUuid": {
+            "type": "string"
+          },
+          "statusClass": {
+            "type": "string"
+          }
+        }
+      },
+      "UsageEventIngestItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tenantId",
+          "periodStart",
+          "dimension",
+          "quantity",
+          "unit",
+          "deduplicationKey",
+          "attribution"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
+          },
+          "organizationId": {
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
+          },
+          "siteUuid": {
+            "type": "string"
+          },
+          "bindingUuid": {
+            "type": "string"
+          },
+          "periodStart": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dimension": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
+          },
+          "unit": {
+            "type": "string"
+          },
+          "deduplicationKey": {
+            "type": "string"
+          },
+          "attribution": {
+            "$ref": "#/components/schemas/UsageEventAttribution"
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IngestUsageEventsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "events"
+        ],
+        "properties": {
+          "nodeUuid": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "maxItems": 10000,
+            "items": {
+              "$ref": "#/components/schemas/UsageEventIngestItem"
+            }
+          }
+        }
+      },
+      "UsageIngestResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ingested",
+          "duplicates",
+          "rejected"
+        ],
+        "properties": {
+          "ingested": {
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
+          },
+          "duplicates": {
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
+          },
+          "rejected": {
             "type": "string",
             "format": "int64",
             "x-sdkwork-int64-string": true

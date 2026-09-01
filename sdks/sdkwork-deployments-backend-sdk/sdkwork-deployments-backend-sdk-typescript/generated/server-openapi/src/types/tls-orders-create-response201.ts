@@ -1,6 +1,6 @@
 import type { CertificateOrderResponse } from './certificate-order-response';
 
-export interface TlsOrdersRequestResponse201 {
+export interface TlsOrdersCreateResponse201 {
   code: 0;
   data: unknown & { item: CertificateOrderResponse; };
   /** Server-owned request correlation id. */

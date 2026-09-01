@@ -4,7 +4,7 @@ import type { ApiRequestOptions, HttpClient } from '../http/client';
 import type { RetentionRunRequest, RetentionRunResponse } from '../types';
 
 
-export class RetentionApi {
+export class RetentionRunApi {
   private client: HttpClient;
 
   constructor(client: HttpClient) {
@@ -13,9 +13,18 @@ export class RetentionApi {
 
 
 /** Apply platform retention policies */
-  async run(body: RetentionRunRequest, requestOptions?: ApiRequestOptions): Promise<RetentionRunResponse> {
+  async create(body: RetentionRunRequest, requestOptions?: ApiRequestOptions): Promise<RetentionRunResponse> {
     return this.client.request<RetentionRunResponse>(backendApiPath(`/retention/run`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
+}
+
+export class RetentionApi {
+  public readonly run: RetentionRunApi;
+
+  constructor(client: HttpClient) {
+    this.run = new RetentionRunApi(client);
+  }
+
 }
 
 export function createRetentionApi(client: HttpClient): RetentionApi {

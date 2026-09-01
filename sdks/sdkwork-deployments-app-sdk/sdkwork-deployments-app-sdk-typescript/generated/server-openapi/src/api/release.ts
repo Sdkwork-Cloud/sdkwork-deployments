@@ -27,7 +27,7 @@ export class ReleaseChannelsRolloutsApi {
   }
 }
 
-export interface ReleaseChannelsPromoteParams {
+export interface ReleaseChannelsCreateParams {
   idempotencyKey: string;
 }
 
@@ -52,7 +52,7 @@ export class ReleaseChannelsApi {
   }
 
 /** Promote a release into a channel with immutable rollout history */
-  async promote(appId: string, channelId: string, body: PromoteChannelRequest, params: ReleaseChannelsPromoteParams, requestOptions?: ApiRequestOptions): Promise<ChannelRolloutResponse> {
+  async create(appId: string, channelId: string, body: PromoteChannelRequest, params: ReleaseChannelsCreateParams, requestOptions?: ApiRequestOptions): Promise<ChannelRolloutResponse> {
     const requestHeaders = buildRequestHeaders(
       {
         'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },

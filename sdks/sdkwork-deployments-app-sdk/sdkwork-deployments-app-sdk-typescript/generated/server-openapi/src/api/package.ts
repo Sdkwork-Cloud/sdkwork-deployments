@@ -9,7 +9,7 @@ export interface PackageListParams {
   pageSize?: number;
 }
 
-export interface PackageRegisterParams {
+export interface PackageCreateParams {
   idempotencyKey: string;
 }
 
@@ -31,7 +31,7 @@ export class PackageApi {
   }
 
 /** Register an immutable deployment package */
-  async register(appId: string, body: RegisterPackageRequest, params: PackageRegisterParams, requestOptions?: ApiRequestOptions): Promise<PackageResponse> {
+  async create(appId: string, body: RegisterPackageRequest, params: PackageCreateParams, requestOptions?: ApiRequestOptions): Promise<PackageResponse> {
     const requestHeaders = buildRequestHeaders(
       {
         'Idempotency-Key': { value: params.idempotencyKey, style: 'simple', explode: false },

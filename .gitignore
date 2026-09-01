@@ -52,5 +52,26 @@ Thumbs.db
 .DS_Store
 Thumbs.db
 
+# TypeScript in-place emit (REPOSITORY_BASELINE_SPEC section 2).
+# Every declared build here runs `tsc` with --noEmit or emits into dist/, so a .js/.d.ts sitting
+# next to a .ts source is stray output from an ad-hoc run. Left in place it shadows the source:
+# Vite resolves .js before .ts, and tsc compiles a .d.ts under an `include`d directory as an input,
+# so stale declarations report symbols that no longer exist.
+*.js.map
+*.d.ts.map
+**/src/**/*.js
+**/src/**/*.d.ts
+**/composed/**/*.js
+**/composed/**/*.d.ts
+# Authored ambient declarations are source, not emit.
+!**/src/**/env.d.ts
+!**/src/**/vite-env.d.ts
+!**/src/**/global.d.ts
+!**/src/**/shims.d.ts
+!**/src/**/*.d.mts
+
 # Runtime-generated env config (modified by local dev server)
 **/public/runtime-env.json
+# Local artifacts and build output (do not commit)
+node_modules.stale.*/
+sdks/**/package-lock.json

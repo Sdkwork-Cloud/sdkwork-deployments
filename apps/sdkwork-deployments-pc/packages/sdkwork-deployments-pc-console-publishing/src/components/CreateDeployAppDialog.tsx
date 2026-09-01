@@ -1,59 +1,90 @@
 /**
- * CreateDeployAppDialog — 创建/发布 deploy_app 应用对话框。
+ * CreateDeployAppDialog — 创建/发布 deploy_app 应用对话框（v3）。
  *
- * 需求覆盖：
- *   1. 目录选择（可更换；支持关联已存在 deploy_app 或创建新应用并填写名称）
- *   2. 应用类型（静态资源 / 小程序 / Flutter iOS / Flutter 安卓 / 原生 / 鸿蒙 / API）
- *   3. 多级分类级联
- *   4. 应用 icon 上传
- *   5. 封面图上传
- *   6. 截图与预览图（App Store 预览图规格：尺寸校验 + 每类 ≤10 张）
- *   7. 版本号（语义化校验）
- *   8. 应用描述
- *   9. release notes
+ * 交互流程（v3.2：框架选择并入目录步骤，参照 sdkwork-specs）：
+ *   1. 应用类型 grid（icon + 应用类型名称）
+ *   2. 项目目录（双路径）+ 框架与架构：应用根路径（宿主 inspectDirectory 按
+ *      sdkwork 规范自动发现表面根路径并自动完善）+ 构建产物相对路径；框架
+ *      依据目录标记（detectDirectories）自动检测（带"检测到"徽标），在路径
+ *      下方手动可改
+ *   3. 应用：按当前登录用户，搜索关联已有应用或新建应用（含分类级联）
+ *   4. 应用资料（可选）：图标/封面/截图
+ *   5. 环境与发布：ENVIRONMENT_SPEC 规范环境（开发/测试/预发/演示/线上）+
+ *      standalone|cloud 部署形态 + 版本/描述/release notes
  *
  * 持久化严格走 sdkwork-deployments 现有表结构：
  *   deploy_app（name/slug/app_kind/description/metadata）、
- *   deploy_app_platform_target、deploy_app.metadata(JSONB: category/media/version/releaseNotes)。
+ *   deploy_app_platform_target、deploy_app.metadata(JSONB:
+ *   category/media/version/releaseNotes/environment/deploymentMode/
+ *   applicationCode/surface/framework/buildOutputPath)。
  *
- * 组件为纯 props 输入（两个生成式 client + locale + 目录选择端口），不依赖
+ * 组件为纯 props 输入（两个生成式 client + locale + 宿主端口），不依赖
  * console context，deployments 控制台与 BirdCoder 插件均可复用（高内聚低耦合）。
  */
-import { useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { AppKind, AppResponse, SdkworkDeployAppClient } from "@sdkwork/deployments-app-sdk";
 import type { SdkworkDriveAppClient } from "@sdkwork/drive-app-sdk";
 import type { DeploymentsLocale } from "@sdkwork/deployments-pc-commons";
 import { publishingTranslator, type PublishingTranslator } from "../i18n.ts";
 import {
   createDeployAppPublishingService,
+  detectFrameworkId,
   deriveAppSlug,
+  frameworksOfCard,
   isValidSemver,
-  toDeployAppMediaRef,
+  resolveDeployAppType,
+  DEPLOY_APP_TYPE_CARDS,
   type CreateDeployAppInput,
   type DeployAppMediaGroup,
-  type DeployAppPublishingService,
   type DeployAppTypeOption,
 } from "../service/deploy-app-publishing.ts";
+import {
+  buildOutputExists,
+  deriveSurfaceDirectory,
+  detectBuildOutputCandidates,
+  detectSdkworkProject,
+  resolveSourceDirectory,
+  type DeployDeploymentMode,
+  type DeployEnvironmentId,
+  type DeployProjectDetection,
+  type DeployProjectInspection,
+} from "../service/project-detection.ts";
 import { CategoryCascadeSelect } from "./CategoryCascadeSelect.tsx";
+import { DeployAppTypeGrid } from "./DeployAppTypeGrid.tsx";
+import { DeployFrameworkSelect } from "./DeployFrameworkSelect.tsx";
 import {
   DeployAppMediaFields,
   type DeployAppMediaFiles,
 } from "./DeployAppMediaFields.tsx";
-import { DeployAppTypeSelect } from "./DeployAppTypeSelect.tsx";
+import { DeployProjectDirectoryFields } from "./DeployProjectDirectoryFields.tsx";
+import { DeployEnvironmentSelect } from "./DeployEnvironmentSelect.tsx";
 import css from "./create-deploy-app.module.css";
+
+/** 当前登录用户（宿主 IAM 会话投影），用于"按当前用户选择/新建应用"。 */
+export interface DeployDialogCurrentUser {
+  readonly id: string
+  readonly displayName?: string
+  readonly avatarUrl?: string
+}
 
 export interface CreateDeployAppDialogProps {
   readonly deployClient: SdkworkDeployAppClient
   readonly driveClient: SdkworkDriveAppClient
   readonly locale: DeploymentsLocale
-  /** 需求 1: 初始目录。 */
-  readonly initialDirectory?: string
-  /** 需求 1: 目录更换端口（宿主提供：浏览器目录选择 / 桌面原生选择器）。 */
-  readonly pickDirectory?: (current: string | undefined) => Promise<string | undefined>
+  /** v2: 显式初始目录（deployments 控制台直传）。 */
+  readonly initialDirectory?: string | undefined
+  /** v2: 当前会话/项目的默认目录（宿主下发，自动检测的第一候选）。 */
+  readonly defaultDirectory?: string | undefined
+  /** v2: 目录检测端口（宿主提供目录列举；缺省时跳过自动发现）。 */
+  readonly inspectDirectory?: ((path: string) => Promise<DeployProjectInspection | undefined>) | undefined
+  /** v2: 当前登录用户（宿主 IAM 会话）。 */
+  readonly currentUser?: DeployDialogCurrentUser | undefined
+  /** 目录更换端口（宿主提供：原生选择器 / 浏览器目录选择）。 */
+  readonly pickDirectory?: ((current: string | undefined) => Promise<string | undefined>) | undefined
   /** 主题（驱动组件内建 CSS 变量切换；缺省浅色）。 */
-  readonly theme?: "light" | "dark"
+  readonly theme?: ("light" | "dark") | undefined
   readonly onClose: () => void
-  readonly onPublished?: (result: { app: AppResponse; media: DeployAppMediaGroup }) => void
+  readonly onPublished?: ((result: { app: AppResponse; media: DeployAppMediaGroup }) => void) | undefined
 }
 
 export interface DeployAppPublishResult {
@@ -61,13 +92,18 @@ export interface DeployAppPublishResult {
   media: DeployAppMediaGroup
 }
 
-const STEP_COUNT = 4
+const STEP_COUNT = 5
+/** Debounce for directory auto-detection keystrokes (ms). */
+const INSPECT_DEBOUNCE_MS = 400
 
 export function CreateDeployAppDialog({
   deployClient,
   driveClient,
   locale,
   initialDirectory,
+  defaultDirectory,
+  inspectDirectory,
+  currentUser,
   pickDirectory,
   theme = "light",
   onClose,
@@ -80,7 +116,13 @@ export function CreateDeployAppDialog({
   )
 
   const [step, setStep] = useState(1)
-  const [directory, setDirectory] = useState<string | undefined>(initialDirectory)
+  const [directory, setDirectory] = useState<string | undefined>(initialDirectory ?? defaultDirectory)
+  const [cardId, setCardId] = useState<string>()
+  const [frameworkId, setFrameworkId] = useState<string>()
+  const [buildOutputPath, setBuildOutputPath] = useState("")
+  const [detection, setDetection] = useState<DeployProjectDetection>()
+  const [detectionRoot, setDetectionRoot] = useState<string>()
+  const [inspecting, setInspecting] = useState(false)
   const [mode, setMode] = useState<"associate" | "create">("create")
   const [apps, setApps] = useState<AppResponse[]>([])
   const [appsSearch, setAppsSearch] = useState("")
@@ -88,16 +130,77 @@ export function CreateDeployAppDialog({
   const [associateId, setAssociateId] = useState<string>()
   const [name, setName] = useState("")
   const [slug, setSlug] = useState("")
-  const [type, setType] = useState<DeployAppTypeOption>()
   const [category, setCategory] = useState<CreateDeployAppInput["category"]>()
   const [media, setMedia] = useState<DeployAppMediaFiles>({ screenshots: {} })
   const [version, setVersion] = useState("1.0.0")
   const [description, setDescription] = useState("")
   const [releaseNotes, setReleaseNotes] = useState("")
+  const [environment, setEnvironment] = useState<DeployEnvironmentId>("development")
+  const [deploymentMode, setDeploymentMode] = useState<DeployDeploymentMode>("standalone")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
   const [uploadingLabel, setUploadingLabel] = useState<string>()
   const pickedAppsRef = useRef(false)
+  const inspectSequenceRef = useRef(0)
+
+  const type: DeployAppTypeOption | undefined = useMemo(
+    () => resolveDeployAppType(cardId, frameworkId),
+    [cardId, frameworkId],
+  )
+  const frameworks = useMemo(() => frameworksOfCard(cardId), [cardId])
+  const suggestedCardId = useMemo(() => {
+    if (detection === undefined || type === undefined || type.surface === undefined) return undefined
+    return detection.surfaces.some((surface) => surface.surface === type.surface)
+      ? cardId
+      : undefined
+  }, [detection, type, cardId])
+  const matchedSurfacePath = useMemo(() => {
+    if (detection === undefined || type?.surface === undefined || directory === undefined) return undefined
+    return resolveSourceDirectory(detection, type.surface, detectionRoot ?? directory)
+  }, [detection, type, directory, detectionRoot])
+  // v3.3: 规范路径推导（不依赖宿主列举）—— 目录是 sdkwork-<code> 仓库根时，
+  // 按 APPLICATION_SPEC 推导 apps/sdkwork-<code>-<suffix> 表面根；当前目录已
+  // 是其他表面根（apps/ 下）时推导同级表面目录。检测结果可用时以检测为准。
+  const specSurfacePath = useMemo(
+    () => (directory === undefined || type?.surface === undefined
+      ? undefined
+      : deriveSurfaceDirectory(directory, type.surface)),
+    [directory, type],
+  )
+  // v3: 构建产物路径验证与候选 —— 依据选中表面目录的子目录列举。
+  const matchedSurfaceChildren = useMemo(
+    () => detection?.surfaces.find((surface) => surface.surface === type?.surface)?.childDirectories,
+    [detection, type],
+  )
+  const buildOutputDetected = useMemo(
+    () => buildOutputExists(buildOutputPath, matchedSurfaceChildren),
+    [buildOutputPath, matchedSurfaceChildren],
+  )
+  const buildCandidates = useMemo(
+    () => detectBuildOutputCandidates(matchedSurfaceChildren),
+    [matchedSurfaceChildren],
+  )
+  // v3.2: 依据目录标记信号自动检测框架（.dart_tool→Flutter、unpackage→uni-app、
+  // src-tauri→Tauri、android/ios→RN 等，见 detectDirectories 注册表）。
+  const autoDetectedId = useMemo(
+    () => detectFrameworkId(frameworks, matchedSurfaceChildren),
+    [frameworks, matchedSurfaceChildren],
+  )
+
+  const selectCard = (nextCardId: string) => {
+    setCardId(nextCardId)
+    const card = DEPLOY_APP_TYPE_CARDS.find((candidate) => candidate.id === nextCardId)
+    const nextFrameworkId = card?.defaultFrameworkId
+    setFrameworkId(nextFrameworkId)
+    const framework = card?.frameworks.find((candidate) => candidate.id === nextFrameworkId)
+    setBuildOutputPath(framework?.buildOutputPath ?? "")
+  }
+
+  const selectFramework = (nextFrameworkId: string) => {
+    setFrameworkId(nextFrameworkId)
+    const framework = frameworks.find((candidate) => candidate.id === nextFrameworkId)
+    setBuildOutputPath(framework?.buildOutputPath ?? "")
+  }
 
   const loadApps = async (keyword: string) => {
     setAppsLoading(true)
@@ -127,13 +230,80 @@ export function CreateDeployAppDialog({
     }
   }
 
-  const canNext = (): boolean => {
-    if (step === 1) {
-      if (mode === "associate") return Boolean(directory && associateId)
-      return Boolean(directory && name.trim())
+  // v2: 目录自动检测 —— 目录变化（含初始默认目录）后防抖触发宿主 inspection。
+  useEffect(() => {
+    const path = directory?.trim()
+    if (inspectDirectory === undefined || path === undefined || path === "") {
+      setDetection(undefined)
+      setDetectionRoot(undefined)
+      return
     }
-    if (step === 2) return Boolean(type)
-    if (step === 3) return true
+    const sequence = ++inspectSequenceRef.current
+    setInspecting(true)
+    const timer = window.setTimeout(() => {
+      void inspectDirectory(path)
+        .then((inspection) => {
+          if (inspectSequenceRef.current !== sequence) return
+          if (inspection === undefined) {
+            setDetection(undefined)
+            setDetectionRoot(undefined)
+            return
+          }
+          setDetection(detectSdkworkProject(inspection))
+          setDetectionRoot(inspection.rootPath)
+        })
+        .catch(() => {
+          if (inspectSequenceRef.current !== sequence) return
+          setDetection(undefined)
+          setDetectionRoot(undefined)
+        })
+        .finally(() => {
+          if (inspectSequenceRef.current === sequence) setInspecting(false)
+        })
+    }, INSPECT_DEBOUNCE_MS)
+    return () => { window.clearTimeout(timer) }
+  }, [directory, inspectDirectory])
+
+  // v3.3: 目录自动完善 —— 两条互补路径：
+  // ① 检测驱动（宿主列举验证过的表面根）：仅在目录为空/仍是检测根/仍是上次
+  //    自动填充值时应用，不覆盖手动修改；
+  // ② 规范推导驱动（specSurfacePath，纯路径推导）：目录本身是规范仓库根或
+  //    apps/ 下的表面目录时始终完善 —— 这是确定性推导，选择应用类型后立即
+  //    得到正确的表面根路径（如 h5 → <repo>/apps/sdkwork-<code>-h5）。
+  const lastAutoDirectoryRef = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    const target = matchedSurfacePath ?? specSurfacePath
+    if (target === undefined || target === directory) return
+    if (specSurfacePath === undefined) {
+      const autoFillable =
+        directory === undefined
+        || directory.trim() === ""
+        || directory === detectionRoot
+        || directory === lastAutoDirectoryRef.current
+      if (!autoFillable) return
+    }
+    lastAutoDirectoryRef.current = target
+    setDirectory(target)
+  }, [matchedSurfacePath, specSurfacePath, detectionRoot, directory])
+
+  // v3.2: 框架自动检测 —— 目录标记命中注册表时自动应用并同步构建产物默认
+  // 值；用户手动选择不被覆盖（仅在检测信号或应用类型变化时重新应用）。
+  useEffect(() => {
+    if (autoDetectedId === undefined) return
+    setFrameworkId(autoDetectedId)
+    setBuildOutputPath(frameworks.find((candidate) => candidate.id === autoDetectedId)?.buildOutputPath ?? "")
+    // cardId 入依赖：切卡后重放目录信号（优先于 selectCard 的默认框架）。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoDetectedId, cardId])
+
+  const canNext = (): boolean => {
+    if (step === 1) return cardId !== undefined
+    if (step === 2) return Boolean(directory?.trim()) && frameworkId !== undefined
+    if (step === 3) {
+      if (mode === "associate") return Boolean(associateId)
+      return Boolean(name.trim())
+    }
+    if (step === 4) return true
     return isValidSemver(version)
   }
 
@@ -182,7 +352,7 @@ export function CreateDeployAppDialog({
   }
 
   const submit = async () => {
-    if (!directory || !type || !isValidSemver(version)) {
+    if (directory === undefined || type === undefined || !isValidSemver(version)) {
       setError(t("publishRequiredFields"))
       return
     }
@@ -196,10 +366,15 @@ export function CreateDeployAppDialog({
         name: mode === "create" ? name.trim() : undefined,
         slug: mode === "create" ? slug.trim() || deriveAppSlug(name) : undefined,
         type,
+        framework: frameworkId,
+        buildOutputPath: buildOutputPath.trim(),
         category,
         version,
         description,
         releaseNotes,
+        environment,
+        deploymentMode,
+        applicationCode: detection?.applicationCode,
       }
 
       // 1) 创建（或关联更新）deploy_app。
@@ -243,43 +418,95 @@ export function CreateDeployAppDialog({
         </div>
 
         <div className={css.body}>
-          {step === 1 && <StepApplication
-            directory={directory}
-            mode={mode}
-            apps={apps}
-            appsLoading={appsLoading}
-            appsSearch={appsSearch}
-            associateId={associateId}
-            name={name}
-            slug={slug}
-            pickedRef={pickedAppsRef}
-            t={t}
-            onDirectoryChange={setDirectory}
-            onChangeDirectory={() => { void changeDirectory() }}
-            onModeChange={setMode}
-            onAppsSearchChange={setAppsSearch}
-            onSearchApps={searchApps}
-            onLoadApps={(keyword) => { void loadApps(keyword) }}
-            onAssociateChange={setAssociateId}
-            onNameChange={setName}
-            onSlugChange={setSlug}
-          />}
-
-          {step === 2 && (
-            <div className={css.field}>
-              <span className={css.fieldLabel}>{t("appType")}</span>
-              <span className={css.fieldHint}>{t("appTypeHint")}</span>
-              <DeployAppTypeSelect value={type} onChange={setType} t={t} />
-              <span className={css.fieldLabel}>{t("category")}</span>
-              <span className={css.fieldHint}>{t("categoryHint")}</span>
-              <CategoryCascadeSelect appKind={type?.appKind as AppKind | undefined} value={category} onChange={setCategory} t={t} />
-            </div>
+          {step === 1 && (
+            <DeployAppTypeGrid
+              cardId={cardId}
+              suggestedCardId={suggestedCardId}
+              t={t}
+              onChange={selectCard}
+            />
           )}
 
-          {step === 3 && <DeployAppMediaFields value={media} onChange={setMedia} t={t} />}
-
-          {step === 4 && (
+          {step === 2 && (
             <>
+              <DeployProjectDirectoryFields
+                directory={directory ?? ""}
+                buildOutputPath={buildOutputPath}
+                detection={detection}
+                inspecting={inspecting}
+                selectedSurface={type?.surface}
+                matchedSurfacePath={matchedSurfacePath}
+                buildOutputDetected={buildOutputDetected}
+                buildCandidates={buildCandidates}
+                t={t}
+                onDirectoryChange={setDirectory}
+                onBuildOutputChange={setBuildOutputPath}
+                onChangeDirectoryClick={() => { void changeDirectory() }}
+                onReinspect={() => {
+                  // 触发重检测：先清空再写回同一目录，走防抖 effect。
+                  const current = directory
+                  setDirectory(undefined)
+                  window.setTimeout(() => { setDirectory(current) }, 0)
+                }}
+              />
+              {/* v3.2: 框架选择并入目录步骤（路径下方），依据目录信号自动检测。 */}
+              <DeployFrameworkSelect
+                frameworks={frameworks}
+                frameworkId={frameworkId}
+                autoDetectedId={autoDetectedId}
+                t={t}
+                onChange={selectFramework}
+              />
+            </>
+          )}
+
+          {step === 3 && (
+            <>
+              <div className={css.publishAsRow}>
+                <span className={css.fieldLabel}>{t("publishAs")}</span>
+                <span className={css.userChip}>
+                  {currentUser?.avatarUrl !== undefined && <img className={css.userAvatar} src={currentUser.avatarUrl} alt="" />}
+                  <span>{currentUser?.displayName ?? currentUser?.id ?? t("userUnknown")}</span>
+                </span>
+              </div>
+              <StepApplication
+                mode={mode}
+                apps={apps}
+                appsLoading={appsLoading}
+                appsSearch={appsSearch}
+                associateId={associateId}
+                name={name}
+                slug={slug}
+                suggestedName={detection?.applicationCode}
+                pickedRef={pickedAppsRef}
+                t={t}
+                onModeChange={setMode}
+                onAppsSearchChange={setAppsSearch}
+                onSearchApps={searchApps}
+                onLoadApps={(keyword) => { void loadApps(keyword) }}
+                onAssociateChange={setAssociateId}
+                onNameChange={setName}
+                onSlugChange={setSlug}
+              />
+              <div className={css.field}>
+                <span className={css.fieldLabel}>{t("category")}</span>
+                <span className={css.fieldHint}>{t("categoryHint")}</span>
+                <CategoryCascadeSelect appKind={type?.appKind as AppKind | undefined} value={category} onChange={setCategory} t={t} theme={theme} />
+              </div>
+            </>
+          )}
+
+          {step === 4 && <DeployAppMediaFields value={media} onChange={setMedia} t={t} />}
+
+          {step === 5 && (
+            <>
+              <DeployEnvironmentSelect
+                environment={environment}
+                deploymentMode={deploymentMode}
+                onEnvironmentChange={setEnvironment}
+                onDeploymentModeChange={setDeploymentMode}
+                t={t}
+              />
               <div className={css.field}>
                 <span className={css.fieldLabel}>{t("version")}</span>
                 <input
@@ -343,7 +570,6 @@ export function CreateDeployAppDialog({
 }
 
 interface StepApplicationProps {
-  directory: string | undefined
   mode: "associate" | "create"
   apps: readonly AppResponse[]
   appsLoading: boolean
@@ -351,10 +577,10 @@ interface StepApplicationProps {
   associateId: string | undefined
   name: string
   slug: string
+  /** 目录检测得到的应用代码，用于预填新应用名称。 */
+  suggestedName: string | undefined
   pickedRef: { current: boolean }
   t: PublishingTranslator
-  onDirectoryChange: (value: string) => void
-  onChangeDirectory: () => void
   onModeChange: (mode: "associate" | "create") => void
   onAppsSearchChange: (value: string) => void
   onSearchApps: (event: FormEvent) => void
@@ -366,66 +592,33 @@ interface StepApplicationProps {
 
 function StepApplication(props: StepApplicationProps) {
   const {
-    directory, mode, apps, appsLoading, appsSearch, associateId, name, slug, pickedRef,
-    t, onDirectoryChange, onChangeDirectory, onModeChange, onAppsSearchChange, onSearchApps,
+    mode, apps, appsLoading, appsSearch, associateId, name, slug, suggestedName, pickedRef,
+    t, onModeChange, onAppsSearchChange, onSearchApps,
     onLoadApps, onAssociateChange, onNameChange, onSlugChange,
   } = props
 
   return (
-    <>
-      <div className={css.field}>
-        <span className={css.fieldLabel}>{t("sourceDirectory")}</span>
-        <span className={css.fieldHint}>{t("sourceDirectoryHint")}</span>
-        <div className={css.directoryRow}>
-          <input
-            className={css.input}
-            value={directory ?? ""}
-            data-empty={!directory}
-            placeholder={t("noDirectory")}
-            onChange={(event) => { onDirectoryChange(event.target.value) }}
-          />
-          <button type="button" className={css.secondaryButton} onClick={onChangeDirectory}>
-            {t("changeDirectory")}
-          </button>
-        </div>
-      </div>
-
-      <div className={css.field}>
-        <span className={css.fieldLabel}>{t("appAssociation")}</span>
-        <div className={css.radioGroup}>
+    <div className={css.field}>
+      <span className={css.fieldLabel}>{t("appAssociation")}</span>
+      <div className={css.radioGroup}>
+        {/* 两个模式选项固定一行展示，详情面板（输入框/搜索列表）在行下方切换。 */}
+        <div className={css.modeRow}>
           <label className={css.radioRow} data-selected={mode === "create"}>
             <input
               type="radio"
               name="app-mode"
               checked={mode === "create"}
-              onChange={() => { onModeChange("create") }}
+              onChange={() => {
+                onModeChange("create")
+                // 检测到应用代码时预填名称，减少一次输入。
+                if (name === "" && suggestedName !== undefined) onNameChange(suggestedName)
+              }}
             />
             <span className={css.radioLabel}>
               <strong>{t("createNew")}</strong>
               <small>{t("applicationNameHint")}</small>
             </span>
           </label>
-          {mode === "create" && (
-            <>
-              <div className={css.field}>
-                <input
-                  className={css.input}
-                  value={name}
-                  placeholder={t("applicationNamePlaceholder")}
-                  onChange={(event) => { onNameChange(event.target.value) }}
-                />
-              </div>
-              <div className={css.field}>
-                <input
-                  className={css.input}
-                  value={slug}
-                  placeholder={t("appSlug")}
-                  onChange={(event) => { onSlugChange(event.target.value) }}
-                />
-                <span className={css.fieldHint}>{t("appSlugHint")}</span>
-              </div>
-            </>
-          )}
 
           <label className={css.radioRow} data-selected={mode === "associate"}>
             <input
@@ -445,40 +638,63 @@ function StepApplication(props: StepApplicationProps) {
               <small>{t("associateHint")}</small>
             </span>
           </label>
-          {mode === "associate" && (
-            <>
-              <form className={css.appSearch} onSubmit={onSearchApps}>
-                <input
-                  className={css.input}
-                  value={appsSearch}
-                  placeholder={t("searchApps")}
-                  onChange={(event) => { onAppsSearchChange(event.target.value) }}
-                />
-                <button type="submit" className={css.secondaryButton}>{t("searchApps")}</button>
-              </form>
-              <div className={css.appList} aria-busy={appsLoading}>
-                {appsLoading && <div className={css.appEmpty}>{t("appSearching")}</div>}
-                {!appsLoading && apps.length === 0 && <div className={css.appEmpty}>{t("noApps")}</div>}
-                {!appsLoading && apps.map((app) => (
-                  <button
-                    key={app.id}
-                    type="button"
-                    className={css.appRow}
-                    data-selected={associateId === app.id}
-                    onClick={() => { onAssociateChange(app.id) }}
-                  >
-                    <span className={css.appRowMeta}>
-                      <strong>{app.name}</strong>
-                      <small>{app.appKind}{app.slug ? ` · ${app.slug}` : ""}</small>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
         </div>
+
+        {mode === "create" && (
+          <>
+            <div className={css.field}>
+              <input
+                className={css.input}
+                value={name}
+                placeholder={t("applicationNamePlaceholder")}
+                onChange={(event) => { onNameChange(event.target.value) }}
+              />
+            </div>
+            <div className={css.field}>
+              <input
+                className={css.input}
+                value={slug}
+                placeholder={t("appSlug")}
+                onChange={(event) => { onSlugChange(event.target.value) }}
+              />
+              <span className={css.fieldHint}>{t("appSlugHint")}</span>
+            </div>
+          </>
+        )}
+
+        {mode === "associate" && (
+          <>
+            <form className={css.appSearch} onSubmit={onSearchApps}>
+              <input
+                className={css.input}
+                value={appsSearch}
+                placeholder={t("searchApps")}
+                onChange={(event) => { onAppsSearchChange(event.target.value) }}
+              />
+              <button type="submit" className={css.secondaryButton}>{t("searchApps")}</button>
+            </form>
+            <div className={css.appList} aria-busy={appsLoading}>
+              {appsLoading && <div className={css.appEmpty}>{t("appSearching")}</div>}
+              {!appsLoading && apps.length === 0 && <div className={css.appEmpty}>{t("noApps")}</div>}
+              {!appsLoading && apps.map((app) => (
+                <button
+                  key={app.id}
+                  type="button"
+                  className={css.appRow}
+                  data-selected={associateId === app.id}
+                  onClick={() => { onAssociateChange(app.id) }}
+                >
+                  <span className={css.appRowMeta}>
+                    <strong>{app.name}</strong>
+                    <small>{app.appKind}{app.slug ? ` · ${app.slug}` : ""}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
-    </>
+    </div>
   )
 }
 
@@ -486,5 +702,3 @@ function errorText(cause: unknown, t: PublishingTranslator): string {
   const message = cause instanceof Error && cause.message ? cause.message : String(cause)
   return t("publishFailed", { message })
 }
-
-export type { ReactNode };

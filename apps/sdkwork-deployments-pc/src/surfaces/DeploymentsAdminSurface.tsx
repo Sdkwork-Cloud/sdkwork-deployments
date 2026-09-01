@@ -16,10 +16,10 @@ export interface DeploymentsAdminSurfaceProps {
   modules: readonly DeploymentsPcModuleDefinition[];
   onSignOut(): void;
   permissionScope: readonly string[];
-  resourcePages?: DeploymentsResourcePages;
+  resourcePages?: DeploymentsResourcePages | undefined;
   sandboxExplorerPort?: SandboxExplorerPort | null;
   tokenManager: AuthTokenManager;
-  userLabel?: string;
+  userLabel?: string | undefined;
 }
 
 export function DeploymentsAdminSurface({

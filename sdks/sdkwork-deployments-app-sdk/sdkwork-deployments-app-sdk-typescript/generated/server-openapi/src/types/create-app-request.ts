@@ -7,10 +7,7 @@ export interface CreateAppRequest {
   description?: string;
   siteId?: string;
   defaultEnvironment?: string;
-  /**
-   * Free-form JSONB persisted verbatim into deploy_app.metadata.
-   * The create-deploy-app dialog stores { category, media, version, releaseNotes } here.
-   */
+  /** Free-form JSONB persisted into deploy_app.metadata (category, media, version, releaseNotes). */
   metadata?: Record<string, unknown>;
   idempotencyKey?: string;
 }

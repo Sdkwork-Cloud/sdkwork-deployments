@@ -8,29 +8,34 @@ import type { DeploymentsAction, DeploymentsDataSource, DeploymentsModuleEntry, 
 export interface DeploymentsWorkspaceProps {
   locale: DeploymentsLocale;
   modules: readonly DeploymentsPcModuleDefinition[];
-  onSignOut?(): void;
+  onSignOut?: (() => void) | undefined;
   permissionScope: readonly string[];
   registry: DeploymentsRegistry;
-  resourcePages?: DeploymentsResourcePages;
+  resourcePages?: DeploymentsResourcePages | undefined;
   surface: "app-console" | "backend-admin";
-  userLabel?: string;
+  userLabel?: string | undefined;
 }
 
 export function DeploymentsWorkspace({ locale, modules, onSignOut, permissionScope, registry, resourcePages, surface, userLabel }: DeploymentsWorkspaceProps) {
   const t = translator(locale);
   const entries = useMemo(() => modules.flatMap((module) => module.entries).filter((entry) => permissionScope.length === 0 || !entry.permission || permissionScope.includes(entry.permission)).sort((a, b) => a.order - b.order), [modules, permissionScope]);
+  // Destructuring keeps the "at least one visible entry" invariant in the
+  // types: `entries[0]` would widen to `DeploymentsModuleEntry | undefined`
+  // under `noUncheckedIndexedAccess` and push a non-null assertion down into
+  // the default redirect below.
+  const [firstEntry] = entries;
   const base = surface === "backend-admin" ? "/admin" : "/console";
-  if (entries.length === 0) return <main className="empty-access" role="alert"><Shield size={22} /><h1>{t("access.title")}</h1><p>{t("access.description")}</p></main>;
+  if (!firstEntry) return <main className="empty-access" role="alert"><Shield size={22} /><h1>{t("access.title")}</h1><p>{t("access.description")}</p></main>;
   return <div className="app-layout">
     <aside className="sidebar"><div className="brand"><span className="brand-mark"><Boxes size={19} /></span><div><strong>{t("brand.name")}</strong><small>{t(`surface.${surface}`)}</small></div></div><nav aria-label={t("nav.primary")}>{entries.map((entry) => <NavLink key={entry.resource} to={`${base}/${entry.resource}`} title={resourceText(t, entry.resource, "label")}><span className="nav-icon">{resourceIcon(entry.resource)}</span><span className="nav-label">{resourceText(t, entry.resource, "label")}</span></NavLink>)}</nav><div className="sidebar-footer"><span title={userLabel}>{userLabel ?? t("auth.user")}</span>{onSignOut && <button className="icon-button" type="button" title={t("auth.signOut")} onClick={onSignOut}><LogOut size={17} /></button>}</div></aside>
     <main className="workspace"><Routes>{entries.map((entry) => {
       const ResourcePage = resourcePages?.[entry.resource];
       return <Route key={entry.resource} path={`${entry.resource}/*`} element={ResourcePage ? <Suspense fallback={<div className="resource-loading" aria-busy="true"><RefreshCw size={20} /></div>}><ResourcePage locale={locale} /></Suspense> : <Page entry={entry} locale={locale} source={registry[entry.resource]} />} />;
-    })}<Route path="*" element={<Navigate to={`${base}/${entries[0].resource}`} replace />} /></Routes></main>
+    })}<Route path="*" element={<Navigate to={`${base}/${firstEntry.resource}`} replace />} /></Routes></main>
   </div>;
 }
 
-function Page({ entry, locale, source }: { entry: DeploymentsModuleEntry; locale: DeploymentsLocale; source?: DeploymentsDataSource }) {
+function Page({ entry, locale, source }: { entry: DeploymentsModuleEntry; locale: DeploymentsLocale; source?: DeploymentsDataSource | undefined }) {
   const t = translator(locale);
   const [items, setItems] = useState<readonly Record<string, unknown>[]>([]);
   const [page, setPage] = useState(1);
@@ -67,7 +72,7 @@ function Page({ entry, locale, source }: { entry: DeploymentsModuleEntry; locale
   </section>;
 }
 
-function Dialog({ action, close, done, label, locale, scopeId, selected }: { action: DeploymentsAction; close(): void; done(): void; label: string; locale: DeploymentsLocale; scopeId?: string; selected?: Record<string, unknown> }) {
+function Dialog({ action, close, done, label, locale, scopeId, selected }: { action: DeploymentsAction; close(): void; done(): void; label: string; locale: DeploymentsLocale; scopeId?: string | undefined; selected?: Record<string, unknown> | undefined }) {
   const t = translator(locale);
   const [body, setBody] = useState<Record<string, unknown>>(() => ({ ...action.bodyTemplate }));
   const [file, setFile] = useState<File>();

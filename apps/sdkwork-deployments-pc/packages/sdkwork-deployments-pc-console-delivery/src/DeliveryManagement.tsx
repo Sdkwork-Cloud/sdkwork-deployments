@@ -29,7 +29,6 @@ import {
 } from "lucide-react";
 import {
   useEffect,
-  useMemo,
   useState,
   type FormEvent,
   type ReactNode,
@@ -132,8 +131,8 @@ function DomainZoneList({ locale }: { locale: DeploymentsLocale }) {
       {!busy && zones.length === 0 && <div className="empty-state"><Globe2 size={24} />{t("noRootDomains")}</div>}
     </div>
     <Pagination page={page} pageInfo={pageInfo} busy={busy} setPage={setPage} t={t} />
-    {dialog?.kind === "create" && <ZoneFormDialog locale={locale} t={t} close={() => setDialog(undefined)} submit={async (body) => { await service.createDomainZone(body); closeAndReload(); }} />}
-    {dialog?.kind === "edit" && <ZoneFormDialog locale={locale} t={t} zone={dialog.zone} close={() => setDialog(undefined)} submit={async (body) => { await service.updateDomainZone(dialog.zone.id, body); closeAndReload(); }} />}
+    {dialog?.kind === "create" && <ZoneFormDialog t={t} close={() => setDialog(undefined)} submit={async (body) => { await service.createDomainZone(toDomainZoneRequestBody(body)); closeAndReload(); }} />}
+    {dialog?.kind === "edit" && <ZoneFormDialog t={t} zone={dialog.zone} close={() => setDialog(undefined)} submit={async (body) => { await service.updateDomainZone(dialog.zone.id, toDomainZoneRequestBody(body)); closeAndReload(); }} />}
     {dialog?.kind === "status" && <ConfirmDialog
       title={dialog.zone.status === "ACTIVE" ? t("pauseZoneTitle") : t("resumeZoneTitle")}
       message={dialog.zone.status === "ACTIVE" ? t("pauseZoneConfirm") : t("resumeZoneConfirm")}
@@ -146,12 +145,36 @@ function DomainZoneList({ locale }: { locale: DeploymentsLocale }) {
   </section>;
 }
 
-function ZoneFormDialog({ close, locale, submit, t, zone }: {
+/** Zone form payload: every optional member is a genuine "left blank" state. */
+export interface DomainZoneFormBody {
+  apexHostname: string;
+  displayName?: string | undefined;
+  dnsProvider?: string | undefined;
+  providerZoneRef?: string | undefined;
+}
+
+/**
+ * Map the form payload onto the generated create/update request.
+ *
+ * Generated request types declare their optionals as `field?: string`, so an
+ * explicit `undefined` is rejected under `exactOptionalPropertyTypes`; hand
+ * editing generated output is forbidden, so blank fields are omitted here. The
+ * wire treats an absent key and an explicit `undefined` identically.
+ */
+export function toDomainZoneRequestBody(body: DomainZoneFormBody) {
+  return {
+    apexHostname: body.apexHostname,
+    ...(body.displayName === undefined ? {} : { displayName: body.displayName }),
+    ...(body.dnsProvider === undefined ? {} : { dnsProvider: body.dnsProvider }),
+    ...(body.providerZoneRef === undefined ? {} : { providerZoneRef: body.providerZoneRef }),
+  };
+}
+
+function ZoneFormDialog({ close, submit, t, zone }: {
   close(): void;
-  locale: DeploymentsLocale;
-  submit(body: { apexHostname: string; displayName?: string; dnsProvider?: string; providerZoneRef?: string }): Promise<void>;
+  submit(body: DomainZoneFormBody): Promise<void>;
   t: Translator;
-  zone?: DomainZoneResponse;
+  zone?: DomainZoneResponse | undefined;
 }) {
   const [apexHostname, setApexHostname] = useState(zone?.apexHostname ?? "");
   const [displayName, setDisplayName] = useState(zone?.displayName ?? "");
@@ -354,7 +377,7 @@ export function CertificateManagementPage({ locale }: DeploymentsResourcePagePro
 
 function CertificateFormDialog({ close, initialDomain, submit, t }: {
   close(): void;
-  initialDomain?: { id: string; hostname: string; zoneId?: string };
+  initialDomain?: { id: string; hostname: string; zoneId?: string | undefined } | undefined;
   submit(body: { certName: string; domainIds: string[]; caProfile: "LETS_ENCRYPT_STAGING" | "LETS_ENCRYPT_PRODUCTION"; preferredKeyAlgorithm: "RSA" | "ECDSA" }): Promise<void>;
   t: Translator;
 }) {

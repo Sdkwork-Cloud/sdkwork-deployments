@@ -277,6 +277,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -360,6 +361,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -403,6 +405,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -661,6 +664,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -754,6 +758,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -797,6 +802,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -1203,6 +1209,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -1297,6 +1304,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -1341,6 +1349,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -1933,6 +1942,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -2274,6 +2284,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -2644,6 +2655,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -2688,6 +2700,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -2943,6 +2956,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -3346,6 +3360,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -3381,6 +3396,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -3450,6 +3466,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -3767,6 +3784,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -3840,6 +3858,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -3924,6 +3943,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -4088,6 +4108,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -4172,6 +4193,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -4336,6 +4358,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -4572,6 +4595,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -4828,6 +4852,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -4857,7 +4882,7 @@
         }
       ],
       "patch": {
-        "operationId": "builds.stateUpdate",
+        "operationId": "builds.update",
         "summary": "Report a build state transition from the build runner",
         "tags": [
           "build"
@@ -4923,6 +4948,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -5022,7 +5048,7 @@
         "x-sdkwork-auth-mode": "dual-token"
       },
       "post": {
-        "operationId": "packages.register",
+        "operationId": "packages.create",
         "summary": "Register an immutable deployment package",
         "tags": [
           "package"
@@ -5179,6 +5205,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -5445,6 +5472,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -5529,6 +5557,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -5614,6 +5643,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -5643,7 +5673,7 @@
         }
       ],
       "post": {
-        "operationId": "channels.promote",
+        "operationId": "channels.create",
         "summary": "Promote a release into a channel with immutable rollout history",
         "tags": [
           "release"
@@ -6072,6 +6102,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -6308,6 +6339,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -6557,6 +6589,18 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -6642,6 +6686,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -6716,6 +6761,18 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -6891,6 +6948,18 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -6985,6 +7054,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -7151,6 +7221,18 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -7236,6 +7318,7 @@
             }
           }
         },
+        "parameters": [],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -7310,6 +7393,18 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -7339,7 +7434,7 @@
         }
       ],
       "get": {
-        "operationId": "appEnvironments.listPromotions",
+        "operationId": "appEnvironments.list",
         "summary": "List the immutable promotion history of an environment",
         "tags": [
           "appEnvironment"
@@ -7418,7 +7513,7 @@
         "x-sdkwork-auth-mode": "dual-token"
       },
       "post": {
-        "operationId": "appEnvironments.promote",
+        "operationId": "appEnvironments.create",
         "summary": "Promote a release into the environment",
         "description": "Sets the environment's current release pointer and appends an immutable promotion record. When fromEnvironmentId is provided the release must be the source environment's current release (chain enforcement).\n",
         "tags": [
@@ -7486,6 +7581,18 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        ],
         "x-sdkwork-api-surface": "app-api",
         "x-sdkwork-owner": "sdkwork-deploy",
         "x-sdkwork-api-authority": "sdkwork-deploy-app-api",
@@ -8523,8 +8630,9 @@
             }
           },
           "total": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "page": {
             "type": "integer"
@@ -8629,24 +8737,28 @@
             ]
           },
           "hostnameCount": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "x-sdkwork-int64-string": true
           },
           "verifiedHostnameCount": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "x-sdkwork-int64-string": true
           },
           "certificateCount": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "x-sdkwork-int64-string": true
           },
           "bindingCount": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "x-sdkwork-int64-string": true
           },
           "updatedAt": {
             "type": "string",
@@ -8748,14 +8860,16 @@
             ]
           },
           "certificateCount": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "x-sdkwork-int64-string": true
           },
           "bindingCount": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 0
+            "minimum": 0,
+            "x-sdkwork-int64-string": true
           },
           "createdAt": {
             "type": "string",
@@ -8879,8 +8993,9 @@
             "format": "date-time"
           },
           "durationMs": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "createdAt": {
             "type": "string",
@@ -8898,8 +9013,9 @@
             }
           },
           "total": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -8959,8 +9075,9 @@
             }
           },
           "total": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -9119,8 +9236,9 @@
             }
           },
           "total": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -9191,8 +9309,9 @@
             }
           },
           "total": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -9217,8 +9336,9 @@
             "type": "string"
           },
           "contentLength": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "checksumSha256": {
             "type": "string"
@@ -9273,9 +9393,10 @@
             "maxLength": 255
           },
           "contentLength": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 1
+            "minimum": 1,
+            "x-sdkwork-int64-string": true
           },
           "checksumSha256": {
             "type": "string",
@@ -9314,8 +9435,9 @@
             }
           },
           "total": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -9377,8 +9499,9 @@
             }
           },
           "total": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           }
         }
       },
@@ -9408,8 +9531,9 @@
             "type": "string"
           },
           "contentLength": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "checksum": {
             "type": "string"
@@ -9441,8 +9565,9 @@
             "type": "string"
           },
           "contentLength": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "checksum": {
             "type": "string"
@@ -9481,8 +9606,9 @@
         ],
         "properties": {
           "partNo": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "etag": {
             "type": "string"
@@ -9499,8 +9625,9 @@
             "type": "string"
           },
           "contentLength": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "contentType": {
             "type": "string"
@@ -9956,6 +10083,11 @@
             "type": "string",
             "maxLength": 16
           },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Free-form JSONB persisted into deploy_app.metadata (category, media, version, releaseNotes)."
+          },
           "idempotencyKey": {
             "type": "string",
             "maxLength": 128
@@ -10003,9 +10135,15 @@
           "defaultEnvironment": {
             "type": "string"
           },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Echo of deploy_app.metadata."
+          },
           "platformTargetCount": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "latestReleaseTag": {
             "type": "string"
@@ -10041,6 +10179,11 @@
           "defaultEnvironment": {
             "type": "string",
             "maxLength": 16
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Free-form JSONB merged into deploy_app.metadata."
           }
         }
       },
@@ -10456,8 +10599,9 @@
             "format": "uuid"
           },
           "buildNumber": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "sourceRepositoryId": {
             "type": "string",
@@ -10497,8 +10641,9 @@
             "format": "date-time"
           },
           "durationMs": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "createdAt": {
             "type": "string",
@@ -10586,9 +10731,10 @@
             "maxLength": 128
           },
           "packageSizeBytes": {
-            "type": "integer",
+            "type": "string",
             "format": "int64",
-            "minimum": 1
+            "minimum": 1,
+            "x-sdkwork-int64-string": true
           },
           "checksumSha256": {
             "type": "string",
@@ -10676,8 +10822,9 @@
             "type": "string"
           },
           "packageSizeBytes": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "checksumSha256": {
             "type": "string"
@@ -10787,8 +10934,9 @@
             "type": "string"
           },
           "buildNumber": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "releaseStatus": {
             "$ref": "#/components/schemas/ReleaseStatus"
@@ -11168,8 +11316,9 @@
             "format": "uuid"
           },
           "tenantId": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "siteId": {
             "type": "string",
@@ -11184,8 +11333,9 @@
             "description": "usage dimension (build_minutes | package_storage_bytes | deployment_count)"
           },
           "quantity": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "unit": {
             "type": "string"
@@ -11327,8 +11477,9 @@
             "type": "string"
           },
           "migrationCount": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "createdAt": {
             "type": "string",
@@ -11599,8 +11750,9 @@
             "type": "string"
           },
           "promotedBy": {
-            "type": "integer",
-            "format": "int64"
+            "type": "string",
+            "format": "int64",
+            "x-sdkwork-int64-string": true
           },
           "note": {
             "type": "string"

@@ -108,7 +108,7 @@ const params = {
   page_size: 2,
   target_type: 'target_type',
   action: 'action',
-  operator_id: 5,
+  operator_id: 'operator_id',
   start_date: 'start_date',
   end_date: 'end_date',
   cursor: 'cursor',
@@ -167,18 +167,20 @@ const result = await client.tls.tlsAccounts.list(params);
 const body = {
   dryRun: true,
 };
-const result = await client.retention.run(body);
+const result = await client.retention.run.create(body);
 ```
 
 ### usage
 
 ```typescript
-// Rebuild the daily usage aggregate from retained usage facts
+// Ingest Web Server traffic usage events (per-domain / per-server-IP)
 const body = {
-  windowStart: 'windowStart',
-  windowEnd: 'windowEnd',
+  nodeUuid: 'nodeUuid',
+  events: [
+    {},
+  ],
 };
-const result = await client.usage.reconcileDaily(body);
+const result = await client.usage.ingest.create(body);
 ```
 
 ### signing_health

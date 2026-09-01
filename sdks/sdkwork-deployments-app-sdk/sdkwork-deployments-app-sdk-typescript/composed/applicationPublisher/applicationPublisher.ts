@@ -69,13 +69,17 @@ export function createDeployApplicationPublisher(
           } else {
             completeStage('resolveSite');
             startStage('createSite');
+            const siteName = request.site.name.trim();
+            const siteSlug = normalizedOptionalText(request.site.slug);
+            const siteDescription = normalizedOptionalText(request.site.description);
+            const siteRuntimeConfig = request.site.runtimeConfig;
             const created = await options.deployClient.site.create(
               {
-                name: request.site.name.trim(),
-                slug: normalizedOptionalText(request.site.slug),
-                description: normalizedOptionalText(request.site.description),
+                name: siteName,
                 siteType: request.site.siteType,
-                runtimeConfig: request.site.runtimeConfig,
+                ...(siteSlug !== undefined ? { slug: siteSlug } : {}),
+                ...(siteDescription !== undefined ? { description: siteDescription } : {}),
+                ...(siteRuntimeConfig !== undefined ? { runtimeConfig: siteRuntimeConfig } : {}),
               },
               {
                 idempotencyKey: resolveIdempotencyKey(
@@ -84,7 +88,7 @@ export function createDeployApplicationPublisher(
                   'createSite',
                 ),
               },
-              { signal: request.signal, timeout: undefined },
+              apiRequestOptions(request.signal),
             );
             siteEvidence = createdApplicationPublishSiteEvidence(created);
             evidence.siteId = siteEvidence.id;
@@ -98,9 +102,9 @@ export function createDeployApplicationPublisher(
 
         throwIfAborted(request.signal, 'uploadArchive');
         startStage('uploadArchive');
+        const uploadTaskId = normalizedOptionalText(normalizedArtifact.taskId);
         const upload = await options.driveClient.uploader.uploadArchive({
           file: normalizedArtifact.file,
-          taskId: normalizedOptionalText(normalizedArtifact.taskId),
           appResourceType: 'deploy.artifact',
           appResourceId: siteEvidence.id,
           scene: normalizedOptionalText(normalizedArtifact.scene) ?? DEFAULT_UPLOAD_SCENE,
@@ -108,8 +112,11 @@ export function createDeployApplicationPublisher(
           originalFileName: normalizedArtifact.fileName,
           contentType: normalizedArtifact.contentType,
           checksumSha256Hex: normalizedArtifact.checksumSha256,
-          chunkSizeBytes: normalizedArtifact.chunkSizeBytes,
-          signal: request.signal,
+          ...(normalizedArtifact.chunkSizeBytes !== undefined
+            ? { chunkSizeBytes: normalizedArtifact.chunkSizeBytes }
+            : {}),
+          ...(uploadTaskId !== undefined ? { taskId: uploadTaskId } : {}),
+          ...(request.signal !== undefined ? { signal: request.signal } : {}),
           onProgress: (progress) => {
             evidence.uploadItemId = progress.uploadItemId;
             evidence.uploadSessionId = progress.uploadSessionId;
@@ -121,7 +128,7 @@ export function createDeployApplicationPublisher(
               totalBytes: progress.totalBytes,
               uploadedPartsCount: progress.uploadedPartsCount,
               totalParts: progress.totalParts,
-              partNo: progress.partNo,
+              ...(progress.partNo !== undefined ? { partNo: progress.partNo } : {}),
               evidence: { ...evidence },
             });
           },
@@ -153,7 +160,7 @@ export function createDeployApplicationPublisher(
             idempotencyKey: artifactIdempotencyKey,
           },
           { idempotencyKey: artifactIdempotencyKey },
-          { signal: request.signal, timeout: undefined },
+          apiRequestOptions(request.signal),
         );
         const artifactId = requireResponseId(
           artifact.id,
@@ -171,15 +178,16 @@ export function createDeployApplicationPublisher(
           createIdempotencyKey,
           'createRelease',
         );
+        const releaseVersionTag = normalizedOptionalText(request.release?.versionTag);
         const release = await options.deployClient.release.sites.releases.create(
           siteEvidence.id,
           {
             artifactId,
-            versionTag: normalizedOptionalText(request.release?.versionTag),
+            ...(releaseVersionTag !== undefined ? { versionTag: releaseVersionTag } : {}),
             idempotencyKey: releaseIdempotencyKey,
           },
           { idempotencyKey: releaseIdempotencyKey },
-          { signal: request.signal, timeout: undefined },
+          apiRequestOptions(request.signal),
         );
         const releaseId = requireResponseId(
           release.id,
@@ -208,7 +216,7 @@ export function createDeployApplicationPublisher(
                 idempotencyKey: deploymentIdempotencyKey,
               },
               { idempotencyKey: deploymentIdempotencyKey },
-              { signal: request.signal, timeout: undefined },
+              apiRequestOptions(request.signal),
             );
           const deploymentId = requireResponseId(
             deployment.id,
@@ -227,7 +235,7 @@ export function createDeployApplicationPublisher(
           upload: uploadEvidence,
           artifact: { id: artifactId, value: artifact },
           release: { id: releaseId, value: release },
-          deployment: deploymentEvidence,
+          ...(deploymentEvidence !== undefined ? { deployment: deploymentEvidence } : {}),
         };
         completeStage('complete');
         return result;
@@ -396,6 +404,12 @@ function requireText(value: string, field: string): string {
 function normalizedOptionalText(value: string | undefined): string | undefined {
   const normalized = value?.trim();
   return normalized || undefined;
+}
+
+function apiRequestOptions(
+  signal: AbortSignal | undefined,
+): { signal?: AbortSignal } {
+  return signal !== undefined ? { signal } : {};
 }
 
 function invalidRequest(message: string): ApplicationPublishError {

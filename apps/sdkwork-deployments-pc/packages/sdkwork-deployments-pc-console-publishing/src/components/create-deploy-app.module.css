@@ -1,49 +1,59 @@
 /**
  * Create-deploy-app dialog styles.
  *
- * Theme-adaptive via CSS custom properties: light values are the defaults and
- * a `data-theme="dark"` override flips the surfaces, so the same component
- * renders correctly inside the deployments console (light) and the BirdCoder
- * client (dark). No globals leak out of the `.publishDialog` root.
+ * Theme-adaptive via CSS custom properties: every surface resolves the
+ * application design tokens first (--dsw-*, defined by the harness on `body`
+ * with a `body[data-ds-dark-theme]` flip), so inside BirdCoder the dialog
+ * matches the current application theme automatically. The hardcoded neutral
+ * palette is kept as the var() fallback, so the deployments console — where
+ * the tokens are absent — renders with its own light values, and the
+ * `data-theme="dark"` attribute still flips the fallbacks. No globals leak
+ * out of the `.publishDialog` root.
  */
-.publishDialog {
-  --pda-bg: #ffffff;
-  --pda-surface: #f7f8fa;
-  --pda-border: #e2e5ea;
-  --pda-text: #1c2128;
-  --pda-text-muted: #6b7280;
-  --pda-accent: #2563eb;
-  --pda-accent-hover: #1d4ed8;
-  --pda-accent-soft: #eff4ff;
-  --pda-danger: #dc2626;
-  --pda-focus: rgba(37, 99, 235, 0.35);
-  --pda-radius: 10px;
-  --pda-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+/* 调色板同时作用于对话框根与级联面板 —— 面板经 portal 渲染在 body 下，
+   脱离 .publishDialog 作用域，必须自带同一套 --pda-* 变量。 */
+.publishDialog,
+.cascaderPanel {
+  --pda-bg: var(--dsw-specific-menu, #ffffff);
+  --pda-surface: var(--dsw-specific-input-major, #f7f8fa);
+  --pda-border: var(--dsw-alias-border-l2, #e2e5ea);
+  --pda-text: var(--dsw-alias-label-primary, #1c2128);
+  --pda-text-muted: var(--dsw-alias-label-tertiary, #6b7280);
+  --pda-accent: var(--dsw-alias-state-business-primary, #2563eb);
+  --pda-accent-hover: var(--dsw-alias-state-business-primary, #1d4ed8);
+  --pda-accent-soft: var(--dsw-alias-interactive-bg-hover-accent, #eff4ff);
+  --pda-danger: var(--dsw-alias-state-error-primary, #dc2626);
+  --pda-focus: color-mix(in srgb, var(--dsw-alias-state-business-primary, #2563eb) 35%, transparent);
+  --pda-radius: 12px;
+  --pda-shadow: var(--dsw-shadow-lv3, 0 24px 60px rgba(15, 23, 42, 0.28));
+}
 
+.publishDialog[data-theme="dark"],
+.cascaderPanel[data-theme="dark"] {
+  --pda-bg: var(--dsw-specific-menu, #1e2430);
+  --pda-surface: var(--dsw-specific-input-major, #161b26);
+  --pda-border: var(--dsw-alias-border-l2, #2c3444);
+  --pda-text: var(--dsw-alias-label-primary, #e6e9ef);
+  --pda-text-muted: var(--dsw-alias-label-tertiary, #9aa3b2);
+  --pda-accent: var(--dsw-alias-state-business-primary, #4f8cff);
+  --pda-accent-hover: var(--dsw-alias-state-business-primary, #3b7bf2);
+  --pda-accent-soft: var(--dsw-alias-interactive-bg-hover-accent, rgba(79, 140, 255, 0.14));
+  --pda-danger: var(--dsw-alias-state-error-primary, #f87171);
+  --pda-focus: color-mix(in srgb, var(--dsw-alias-state-business-primary, #4f8cff) 40%, transparent);
+  --pda-shadow: var(--dsw-shadow-lv3, 0 24px 60px rgba(0, 0, 0, 0.55));
+}
+
+.publishDialog {
   position: fixed;
   inset: 0;
   z-index: 1000;
   display: grid;
   place-items: center;
-  background: rgba(15, 23, 42, 0.45);
+  background: var(--dsw-alias-bg-mask-3, rgba(15, 23, 42, 0.45));
   color: var(--pda-text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--dsw-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif);
   font-size: 14px;
   line-height: 1.55;
-}
-
-.publishDialog[data-theme="dark"] {
-  --pda-bg: #1e2430;
-  --pda-surface: #161b26;
-  --pda-border: #2c3444;
-  --pda-text: #e6e9ef;
-  --pda-text-muted: #9aa3b2;
-  --pda-accent: #4f8cff;
-  --pda-accent-hover: #3b7bf2;
-  --pda-accent-soft: rgba(79, 140, 255, 0.14);
-  --pda-danger: #f87171;
-  --pda-focus: rgba(79, 140, 255, 0.4);
-  --pda-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
 }
 
 .dialog {
@@ -558,4 +568,525 @@
 .uploadingText {
   font-size: 11px;
   color: var(--pda-accent);
+}
+
+/* --- v2 第 1 步: 应用类型 grid (icon + 名称) --- */
+
+.typeCardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.typeCardTile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--pda-border);
+  border-radius: 10px;
+  background: var(--pda-surface);
+  color: var(--pda-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.typeCardTile:hover {
+  border-color: var(--pda-accent);
+}
+
+.typeCardTile[data-selected="true"] {
+  border-color: var(--pda-accent);
+  background: var(--pda-accent-soft);
+  box-shadow: inset 3px 0 0 var(--pda-accent);
+}
+
+.typeCardIcon {
+  display: inline-flex;
+  color: var(--pda-accent);
+}
+
+.typeCardTile[data-selected="false"] .typeCardIcon,
+.typeCardTile:not([data-selected="true"]) .typeCardIcon {
+  color: var(--pda-text-muted);
+}
+
+.typeCardName {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.typeCardHint {
+  font-size: 11px;
+  color: var(--pda-text-muted);
+}
+
+.typeCardBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--pda-accent-soft);
+  color: var(--pda-accent);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.subSelector {
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 3px;
+  border: 1px solid var(--pda-border);
+  border-radius: 8px;
+  background: var(--pda-surface);
+}
+
+.subOption {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--pda-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.subOption[data-selected="true"] {
+  background: var(--pda-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* --- v2 第 2 步: 目录自动检测面板 --- */
+
+.detectPanel {
+  margin-top: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--pda-border);
+  border-radius: 8px;
+  background: var(--pda-surface);
+  font-size: 12px;
+}
+
+.detectHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detectBadge {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-weight: 600;
+  background: var(--pda-accent-soft);
+  color: var(--pda-accent);
+}
+
+.detectBadge[data-conformance="partial"] {
+  background: color-mix(in srgb, #f59e0b 16%, transparent);
+  color: #b45309;
+}
+
+.detectBadge[data-conformance="unknown"] {
+  background: color-mix(in srgb, var(--pda-danger) 12%, transparent);
+  color: var(--pda-danger);
+}
+
+.detectCode code,
+.autoMatchNote code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--pda-accent-soft);
+  color: var(--pda-accent);
+  font-size: 11px;
+}
+
+.detectSection {
+  margin-top: 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.detectSectionLabel {
+  color: var(--pda-text-muted);
+  font-size: 11px;
+  min-width: 84px;
+}
+
+.surfaceBadges,
+.markerList {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.surfaceBadge {
+  padding: 1px 8px;
+  border: 1px solid var(--pda-border);
+  border-radius: 999px;
+  color: var(--pda-text-muted);
+  font-size: 11px;
+}
+
+.surfaceBadge[data-matched="true"] {
+  border-color: var(--pda-accent);
+  background: var(--pda-accent-soft);
+  color: var(--pda-accent);
+  font-weight: 600;
+}
+
+.markerChip {
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--pda-danger) 10%, transparent);
+  color: var(--pda-text-muted);
+  font-size: 11px;
+  font-family: var(--dsw-font-family-mono, ui-monospace, monospace);
+}
+
+.markerChip[data-present="true"] {
+  background: color-mix(in srgb, #10b981 14%, transparent);
+  color: #047857;
+}
+
+.autoMatchNote {
+  margin-top: 8px;
+  color: var(--pda-text-muted);
+}
+
+/* --- v2 第 3 步: 发布身份 --- */
+
+.publishAsRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.userChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 4px;
+  border: 1px solid var(--pda-border);
+  border-radius: 999px;
+  background: var(--pda-surface);
+  font-size: 12px;
+}
+
+.userAvatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* --- v2 第 5 步: 发布环境 --- */
+
+.envGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.envCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--pda-border);
+  border-radius: 10px;
+  background: var(--pda-surface);
+  color: var(--pda-text);
+  cursor: pointer;
+}
+
+.envCard:hover {
+  border-color: var(--pda-accent);
+}
+
+.envCard[data-selected="true"] {
+  border-color: var(--pda-accent);
+  background: var(--pda-accent-soft);
+  box-shadow: inset 3px 0 0 var(--pda-accent);
+}
+
+.envDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pda-text-muted);
+}
+
+.envDot[data-environment="development"] {
+  background: #10b981;
+}
+
+.envDot[data-environment="test"] {
+  background: #f59e0b;
+}
+
+.envDot[data-environment="staging"] {
+  background: #8b5cf6;
+}
+
+.envDot[data-environment="demo"] {
+  background: #06b6d4;
+}
+
+.envDot[data-environment="production"] {
+  background: #ef4444;
+}
+
+.envName {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.envId {
+  font-size: 10px;
+  color: var(--pda-text-muted);
+  font-family: var(--dsw-font-family-mono, ui-monospace, monospace);
+}
+
+.profilePreview {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--pda-text-muted);
+  font-size: 11px;
+  font-family: var(--dsw-font-family-mono, ui-monospace, monospace);
+}
+
+
+/* --- v3 第 2 步: 框架与架构选择 --- */
+
+.frameworkGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.frameworkTile {
+  position: relative; /* 承载 absolute 定位的「检测到」徽标 */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--pda-border);
+  border-radius: 8px;
+  background: var(--pda-surface);
+  color: var(--pda-text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.frameworkTile:hover {
+  border-color: var(--pda-accent);
+}
+
+.frameworkTile[data-selected="true"] {
+  border-color: var(--pda-accent);
+  box-shadow: 0 0 0 1px var(--pda-accent);
+  background: var(--pda-accent-soft);
+}
+
+.frameworkName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pda-text);
+}
+
+.frameworkBuildOutput {
+  font-size: 11px;
+  color: var(--pda-text-muted);
+}
+
+.frameworkBuildOutput code {
+  font-family: var(--dsw-font-family-mono, ui-monospace, monospace);
+  color: var(--pda-accent);
+}
+
+/* --- v3 第 3 步: 构建产物路径候选 --- */
+
+.buildCandidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.buildCandidates .markerChip {
+  cursor: pointer;
+  border: 1px solid var(--pda-border);
+  background: var(--pda-surface);
+  font-family: var(--dsw-font-family-mono, ui-monospace, monospace);
+}
+
+/* --- v3.1: 应用模式选项固定一行 --- */
+
+.modeRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 520px) {
+  .modeRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- v3.1: 分类多级级联（单下拉框列式面板） --- */
+
+.cascader {
+  position: relative;
+}
+
+.cascaderTrigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border: 1px solid var(--pda-border);
+  border-radius: 7px;
+  background: var(--pda-surface);
+  color: var(--pda-text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cascaderTrigger:hover {
+  border-color: var(--pda-accent);
+}
+
+.cascaderValue {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cascaderValue[data-empty="true"] {
+  color: var(--pda-text-muted);
+}
+
+.cascaderClear {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--pda-border);
+  color: var(--pda-text-muted);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.cascaderClear:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+.cascaderArrow {
+  flex: none;
+  font-size: 10px;
+  color: var(--pda-text-muted);
+  transition: transform 0.15s ease;
+}
+
+.cascaderArrow[data-open="true"] {
+  transform: rotate(180deg);
+}
+
+/* 面板经 portal 渲染到 body、fixed 定位：摆脱对话框 .body（overflow-y: auto）
+   与 .dialog（overflow: hidden）的裁剪/遮挡；具体坐标由组件按触发器
+   getBoundingClientRect 计算，空间不足时自动向上翻转。 */
+.cascaderPanel {
+  position: fixed;
+  z-index: 1100;
+  display: flex;
+  border: 1px solid var(--pda-border);
+  border-radius: 8px;
+  background: var(--pda-surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  font-family: var(--dsw-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif);
+  font-size: 13px;
+  color: var(--pda-text);
+}
+
+.cascaderColumn {
+  flex: 1 1 0;
+  min-width: 150px;
+  max-height: 240px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.cascaderColumn + .cascaderColumn {
+  border-left: 1px solid var(--pda-border);
+}
+
+.cascaderOption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 9px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--pda-text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cascaderOption:hover {
+  background: var(--pda-accent-soft);
+}
+
+.cascaderOption[data-selected="true"] {
+  background: var(--pda-accent-soft);
+  color: var(--pda-accent);
+  font-weight: 600;
+}
+
+.cascaderOptionLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cascaderMore {
+  flex: none;
+  color: var(--pda-text-muted);
+  font-size: 12px;
+}
+
+.cascaderEmpty {
+  padding: 12px;
+  color: var(--pda-text-muted);
+  font-size: 12px;
 }

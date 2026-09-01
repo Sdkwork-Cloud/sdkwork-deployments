@@ -1,6 +1,6 @@
 import type { PackageResponse } from './package-response';
 
-export interface PackagesRegisterResponse201 {
+export interface PackagesCreateResponse201 {
   code: 0;
   data: unknown & { item: PackageResponse; };
   /** Server-owned request correlation id. */

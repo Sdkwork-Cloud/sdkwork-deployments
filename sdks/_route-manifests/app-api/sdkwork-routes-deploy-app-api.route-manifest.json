@@ -1434,7 +1434,7 @@
     {
       "method": "PATCH",
       "path": "/app/v3/api/apps/{appId}/builds/{buildId}/state",
-      "operationId": "builds.stateUpdate",
+      "operationId": "builds.update",
       "tags": [
         "build"
       ],
@@ -1482,7 +1482,7 @@
     {
       "method": "POST",
       "path": "/app/v3/api/apps/{appId}/packages",
-      "operationId": "packages.register",
+      "operationId": "packages.create",
       "tags": [
         "package"
       ],
@@ -1650,7 +1650,7 @@
     {
       "method": "POST",
       "path": "/app/v3/api/apps/{appId}/channels/{channelId}/promotions",
-      "operationId": "channels.promote",
+      "operationId": "channels.create",
       "tags": [
         "release"
       ],
@@ -2130,7 +2130,7 @@
     {
       "method": "GET",
       "path": "/app/v3/api/apps/{appId}/environments/{environmentId}/promotions",
-      "operationId": "appEnvironments.listPromotions",
+      "operationId": "appEnvironments.list",
       "tags": [
         "appEnvironment"
       ],
@@ -2154,7 +2154,7 @@
     {
       "method": "POST",
       "path": "/app/v3/api/apps/{appId}/environments/{environmentId}/promotions",
-      "operationId": "appEnvironments.promote",
+      "operationId": "appEnvironments.create",
       "tags": [
         "appEnvironment"
       ],

@@ -92,7 +92,7 @@ export class BuildApi {
   }
 
 /** Report a build state transition from the build runner */
-  async stateUpdate(appId: string, buildId: string, body: UpdateBuildStateRequest, requestOptions?: ApiRequestOptions): Promise<BuildResponse> {
+  async update(appId: string, buildId: string, body: UpdateBuildStateRequest, requestOptions?: ApiRequestOptions): Promise<BuildResponse> {
     return this.client.request<BuildResponse>(appApiPath(`/apps/${serializePathParameter(appId, { name: 'appId', style: 'simple', explode: false })}/builds/${serializePathParameter(buildId, { name: 'buildId', style: 'simple', explode: false })}/state`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'PATCH' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }

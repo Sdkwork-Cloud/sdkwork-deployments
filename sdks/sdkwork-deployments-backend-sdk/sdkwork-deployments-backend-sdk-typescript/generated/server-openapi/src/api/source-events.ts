@@ -1,7 +1,7 @@
 import { backendApiPath } from './paths';
 import type { ApiRequestOptions, HttpClient } from '../http/client';
 
-import type { PageInfo, SourceEventIngestResponse, SourceEventResponse, SourceEventsIngestRequest } from '../types';
+import type { CreateRequest, PageInfo, SourceEventIngestResponse, SourceEventResponse } from '../types';
 
 
 export interface SourceEventsListParams {
@@ -27,7 +27,7 @@ export class SourceEventsApi {
   }
 
 /** Ingest a Git webhook push event and trigger builds */
-  async ingest(body: SourceEventsIngestRequest, requestOptions?: ApiRequestOptions): Promise<SourceEventIngestResponse> {
+  async create(body: CreateRequest, requestOptions?: ApiRequestOptions): Promise<SourceEventIngestResponse> {
     return this.client.request<SourceEventIngestResponse>(backendApiPath(`/source_events`), { ...(requestOptions?.signal !== undefined ? { signal: requestOptions.signal } : {}), ...(requestOptions?.timeout !== undefined ? { timeout: requestOptions.timeout } : {}), method: 'POST' as any, body, contentType: 'application/json', sdkworkUnwrapKind: 'item' });
   }
 }

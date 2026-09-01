@@ -1,9 +1,9 @@
-import type { CertificateOrderResponse } from './certificate-order-response';
+import type { CertificateChallengeResponse } from './certificate-challenge-response';
 import type { PageInfo } from './page-info';
 
 export interface TlsOrdersListResponse {
   code: 0;
-  data: unknown & { items: CertificateOrderResponse[]; pageInfo: PageInfo; };
+  data: unknown & { items: CertificateChallengeResponse[]; pageInfo: PageInfo; };
   /** Server-owned request correlation id. */
   traceId: string;
 }

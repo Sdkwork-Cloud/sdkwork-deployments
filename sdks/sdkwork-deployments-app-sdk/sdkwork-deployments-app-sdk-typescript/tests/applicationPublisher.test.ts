@@ -6,6 +6,7 @@ import type {
 } from '@sdkwork/drive-app-sdk';
 import {
   createDeployApplicationPublisher,
+  type ApplicationPublishDeployment,
   type ApplicationPublishProgress,
   type ApplicationPublishRequest,
   type ApplicationPublisherDeployClient,
@@ -30,8 +31,11 @@ function packageFile(): DriveUploaderBlobLike {
 }
 
 function publishRequest(
-  overrides: Partial<ApplicationPublishRequest> = {},
+  overrides: Omit<Partial<ApplicationPublishRequest>, 'deployment'> & {
+    deployment?: ApplicationPublishDeployment | undefined;
+  } = {},
 ): ApplicationPublishRequest {
+  const { deployment, ...rest } = overrides;
   return {
     site: {
       kind: 'resolveOrCreate',
@@ -48,8 +52,12 @@ function publishRequest(
       source: 'sdkwork-birdcoder-pc',
     },
     release: { versionTag: '1.2.3' },
-    deployment: { deployType: 1, environment: 'production' },
-    ...overrides,
+    ...(deployment !== undefined
+      ? { deployment }
+      : 'deployment' in overrides
+        ? {}
+        : { deployment: { deployType: 1, environment: 'production' } }),
+    ...rest,
   };
 }
 

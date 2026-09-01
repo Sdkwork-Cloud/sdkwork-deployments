@@ -25,34 +25,34 @@ catalogs:
       specifier: ^19.2.3
       version: 19.2.3
     '@vitejs/plugin-react':
-      specifier: ^6.0.1
-      version: 6.0.1
+      specifier: ^6.0.5
+      version: 6.1.1
     jsdom:
-      specifier: ^29.1.1
+      specifier: 29.1.1
       version: 29.1.1
     lucide-react:
-      specifier: ^1.7.0
-      version: 1.7.0
+      specifier: ^1.31.0
+      version: 1.38.0
     qrcode:
       specifier: ^1.5.4
       version: 1.5.4
     react:
-      specifier: ^19.2.4
-      version: 19.2.4
+      specifier: ^19.2.8
+      version: 19.2.8
     react-dom:
-      specifier: ^19.2.4
-      version: 19.2.4
+      specifier: ^19.2.8
+      version: 19.2.8
     typescript:
-      specifier: ~6.0.2
+      specifier: ^6.0.2
       version: 6.0.3
     vite:
       specifier: ^8.0.3
       version: 8.1.5
     vite-plugin-dts:
-      specifier: ^4.5.4
-      version: 4.5.4
+      specifier: ^5.0.3
+      version: 5.1.0
     vitest:
-      specifier: ^4.1.8
+      specifier: ^4.1.10
       version: 4.1.10
 
 overrides:
@@ -91,7 +91,7 @@ importers:
         version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       lucide-react:
         specifier: 'catalog:'
-        version: 1.7.0(react@19.2.4)
+        version: 1.38.0(react@19.2.4)
       react:
         specifier: '>=18.2.0 <20.0.0'
         version: 19.2.4
@@ -124,6 +124,15 @@ importers:
         specifier: ^17.0.7
         version: 17.0.10(i18next@26.3.6(typescript@6.0.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3)
 
+  ../sdkwork-appbase/sdks/sdkwork-base-data-backend-sdk/sdkwork-base-data-backend-sdk-typescript:
+    dependencies:
+      '@sdkwork/sdk-common':
+        specifier: workspace:*
+        version: link:../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
+      '@sdkwork/utils':
+        specifier: ^0.11.0
+        version: 0.11.0
+
   ../sdkwork-core/sdkwork-core-pc-react:
     dependencies:
       '@sdkwork/sdk-common':
@@ -132,7 +141,7 @@ importers:
     devDependencies:
       '@testing-library/react':
         specifier: ^16.3.2
-        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
@@ -144,10 +153,10 @@ importers:
         version: 29.1.1
       react:
         specifier: 'catalog:'
-        version: 19.2.4
+        version: 19.2.8
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.8(react@19.2.8)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -156,7 +165,7 @@ importers:
         version: 8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 4.5.4(@types/node@25.9.5)(rollup@4.62.2)(typescript@6.0.3)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
+        version: 5.1.0(@microsoft/api-extractor@7.58.11(@types/node@25.9.5))(esbuild@0.28.1)(rolldown@1.1.5)(rollup@4.62.2)(typescript@6.0.3)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
       vitest:
         specifier: ^4.1.2
         version: 4.1.10(@types/node@25.9.5)(jsdom@29.1.1)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
@@ -174,17 +183,17 @@ importers:
         version: link:../sdkwork-drive-pc-sandbox-contracts
       lucide-react:
         specifier: 'catalog:'
-        version: 1.7.0(react@19.2.4)
+        version: 1.38.0(react@19.2.8)
       react:
         specifier: 'catalog:'
-        version: 19.2.4
+        version: 19.2.8
     devDependencies:
       '@testing-library/dom':
         specifier: 'catalog:'
         version: 10.4.1
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14
@@ -376,7 +385,7 @@ importers:
         version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       lucide-react:
         specifier: 'catalog:'
-        version: 1.7.0(react@19.2.4)
+        version: 1.38.0(react@19.2.4)
       qrcode:
         specifier: 'catalog:'
         version: 1.5.4
@@ -757,16 +766,16 @@ importers:
         version: link:../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
       lucide-react:
         specifier: 'catalog:'
-        version: 1.7.0(react@19.2.4)
+        version: 1.38.0(react@19.2.8)
       react:
         specifier: 'catalog:'
-        version: 19.2.4
+        version: 19.2.8
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.4(react@19.2.4)
+        version: 19.2.8(react@19.2.8)
       react-router-dom:
         specifier: ^7.15.0
-        version: 7.18.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 7.18.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
     devDependencies:
       '@types/react':
         specifier: 'catalog:'
@@ -776,7 +785,7 @@ importers:
         version: 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react':
         specifier: 'catalog:'
-        version: 6.0.1(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
+        version: 6.1.1(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -809,7 +818,7 @@ importers:
         version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       react:
         specifier: 'catalog:'
-        version: 19.2.4
+        version: 19.2.8
 
   apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-admin-infrastructure:
     dependencies:
@@ -830,10 +839,10 @@ importers:
         version: link:../../../../../sdkwork-drive/apps/sdkwork-drive-pc/packages/sdkwork-drive-pc-sandbox-explorer
       lucide-react:
         specifier: 'catalog:'
-        version: 1.7.0(react@19.2.4)
+        version: 1.38.0(react@19.2.8)
       react:
         specifier: 'catalog:'
-        version: 19.2.4
+        version: 19.2.8
 
   apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-admin-nodes:
     dependencies:
@@ -848,19 +857,19 @@ importers:
         version: link:../sdkwork-deployments-pc-commons
       react:
         specifier: 'catalog:'
-        version: 19.2.4
+        version: 19.2.8
 
   apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-commons:
     dependencies:
       lucide-react:
         specifier: 'catalog:'
-        version: 1.7.0(react@19.2.4)
+        version: 1.38.0(react@19.2.8)
       react:
         specifier: 'catalog:'
-        version: 19.2.4
+        version: 19.2.8
       react-router-dom:
         specifier: ^7.15.0
-        version: 7.18.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 7.18.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
 
   apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-console-core:
     dependencies:
@@ -881,7 +890,7 @@ importers:
         version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
       react:
         specifier: 'catalog:'
-        version: 19.2.4
+        version: 19.2.8
 
   apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-console-delivery:
     dependencies:
@@ -893,13 +902,13 @@ importers:
         version: link:../sdkwork-deployments-pc-console-core
       lucide-react:
         specifier: 'catalog:'
-        version: 1.7.0(react@19.2.4)
+        version: 1.38.0(react@19.2.8)
       react:
         specifier: 'catalog:'
-        version: 19.2.4
+        version: 19.2.8
       react-router-dom:
         specifier: ^7.15.0
-        version: 7.18.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 7.18.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
 
   apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-console-monitoring:
     dependencies:
@@ -909,9 +918,21 @@ importers:
 
   apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-console-publishing:
     dependencies:
+      '@sdkwork/deployments-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../sdks/sdkwork-deployments-app-sdk/sdkwork-deployments-app-sdk-typescript
       '@sdkwork/deployments-pc-commons':
         specifier: workspace:*
         version: link:../sdkwork-deployments-pc-commons
+      '@sdkwork/drive-app-sdk':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript
+      '@sdkwork/utils':
+        specifier: workspace:*
+        version: link:../../../../../sdkwork-utils/packages/sdkwork-utils-typescript
+      react:
+        specifier: 'catalog:'
+        version: 19.2.8
 
   apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-console-shell:
     dependencies:
@@ -920,7 +941,7 @@ importers:
         version: link:../sdkwork-deployments-pc-commons
       react:
         specifier: 'catalog:'
-        version: 19.2.4
+        version: 19.2.8
 
   apps/sdkwork-deployments-pc/packages/sdkwork-deployments-pc-console-site-configuration:
     dependencies:
@@ -940,7 +961,7 @@ importers:
     dependencies:
       '@sdkwork/drive-app-sdk':
         specifier: ^0.1.1
-        version: 0.1.2
+        version: link:../../../../sdkwork-drive/sdks/sdkwork-drive-app-sdk/sdkwork-drive-app-sdk-typescript
       '@sdkwork/sdk-common':
         specifier: workspace:*
         version: link:../../../../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
@@ -1099,19 +1120,19 @@ packages:
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
     hasBin: true
 
-  '@csstools/color-helpers@6.1.0':
-    resolution: {integrity: sha512-064IFJdjTfUqnjpCVpMOdbr8FLQBhinbZj6yRv2An2E41O/pLEXqfFRWqGq/SxlE5PEUYTlvWsG2r8MswAVvkg==}
+  '@csstools/color-helpers@6.1.1':
+    resolution: {integrity: sha512-gLNsunvwf3mCi5u5o46/Z/JcJMnhbHSaZ69rkgPzNM3J4s8hWwpPUQB6/tt0EDFyCiWzxANlx+2LJwpYj4zS1w==}
     engines: {node: '>=20.19.0'}
 
-  '@csstools/css-calc@3.2.1':
-    resolution: {integrity: sha512-DtdHlgXh5ZkA43cwBcAm+huzgJiwx3ZTWVjBs94kwz2xKqSimDA3lBgCjphYgwgVUMWatSM0pDd8TILB1yrVVg==}
+  '@csstools/css-calc@3.3.0':
+    resolution: {integrity: sha512-c5ihYsPkdG6JCkU2zTMm4+k6r7RXuGxtWYhu5DHMIiF1FHzrfmHL5so11AoFpUv/tu61xfcmT4AmKoFfMPoqdQ==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@csstools/css-parser-algorithms': ^4.0.0
       '@csstools/css-tokenizer': ^4.0.0
 
-  '@csstools/css-color-parser@4.1.9':
-    resolution: {integrity: sha512-paQcIaOO53Rk5+YrBaBjm/SgrV4INImjo2BT1DtQRYr+XeTRbeAYlS+jxXp9drqvKmtFnWRJKIalDLhZZDu42A==}
+  '@csstools/css-color-parser@4.2.2':
+    resolution: {integrity: sha512-3QKjR/vxyjcSXBLgb6lP0S3MGdvwbmqSsvLPbYdVORqPDc8FX1HAJ0Spk38bxaRXgvENTA47tlhhbb5Z2e8hEg==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@csstools/css-parser-algorithms': ^4.0.0
@@ -1123,8 +1144,8 @@ packages:
     peerDependencies:
       '@csstools/css-tokenizer': ^4.0.0
 
-  '@csstools/css-syntax-patches-for-csstree@1.1.6':
-    resolution: {integrity: sha512-TcJCWFbXLPpJYq6z7bfOyjWYJDiDg2/I4gyUC9pqPNqHFRIey0EB0q0L5cSnQDfWJg8Jd6VadakxdIez/3zkqQ==}
+  '@csstools/css-syntax-patches-for-csstree@1.1.12':
+    resolution: {integrity: sha512-3vLQK+dXxhBMR2Wx99PTCifE+vHtW2ndZWyla8yK813ev6oGhyn8Lja8jCyGAWTJ+LEYZK7EVtJxrDj8ztevJw==}
     peerDependencies:
       css-tree: ^3.2.1
     peerDependenciesMeta:
@@ -2359,14 +2380,6 @@ packages:
   '@rushstack/ts-command-line@5.3.12':
     resolution: {integrity: sha512-Vg2n24arSf7JvUNga2DMHYTbxnVq9L5OtVCp4Gfr8YC/kmL/bmdR8FQhGcpMzMYNY9Vdw3+TaimG11Sf+z1Tpw==}
 
-  '@sdkwork/drive-app-sdk@0.1.2':
-    resolution: {integrity: sha512-KUyJXu5q1BC/H8NOxeLhT5k52TaL+VkmeNA1ValBjCTlTyDCHAmMU/k97ABUuoJxjDicBdzu1rV4b++UioFExA==}
-    peerDependencies:
-      '@sdkwork/iam-app-sdk': 0.1.3
-    peerDependenciesMeta:
-      '@sdkwork/iam-app-sdk':
-        optional: true
-
   '@sdkwork/iam-app-sdk@0.1.4':
     resolution: {integrity: sha512-1JOFZLE4GahQONeu03BP/6hGKyfl6PtSurdApXf4aKmXyBWJiXHyx4jhpqX6m9ab7z1hVb7tS+MDRF4biw+GIw==}
 
@@ -2667,6 +2680,22 @@ packages:
       '@rolldown/plugin-babel':
         optional: true
       babel-plugin-react-compiler:
+        optional: true
+
+  '@vitejs/plugin-react@6.1.1':
+    resolution: {integrity: sha512-yxLaQV9gkhS8ezJqCM6+ndU7mDY6gqAg75NQ+0IjwEI8IYOmQCgkRwHKVSfWXW076DsqMo0Dk+0FK1U+M5RgFw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    peerDependencies:
+      '@rolldown/plugin-babel': ^0.1.7 || ^0.2.0
+      babel-plugin-react-compiler: ^1.0.0
+      oxc-transform-react: ^0.145.0
+      vite: ^8.0.0
+    peerDependenciesMeta:
+      '@rolldown/plugin-babel':
+        optional: true
+      babel-plugin-react-compiler:
+        optional: true
+      oxc-transform-react:
         optional: true
 
   '@vitejs/plugin-vue@5.2.4':
@@ -3200,6 +3229,9 @@ packages:
     resolution: {integrity: sha512-XxwI8EOhVQgWp6iDL+3b0r86f4d6AX6zSU55HfB4ydCEuXLXc5FcYeOu+nnGftS4TEju/11rt4KJPTMgbfmv4A==}
     engines: {node: '>=10.13.0'}
 
+  glob-to-regexp@0.4.1:
+    resolution: {integrity: sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw==}
+
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
@@ -3422,6 +3454,11 @@ packages:
     resolution: {integrity: sha512-4pfM1Ff0x50o0tQwb5ucw/RzNyD0/YJME6IVcStalZuMWxdt3sR3huStTtxz4PUmvZfRguvDejasvQ2kifR11g==}
     engines: {node: 20 || >=22}
 
+  lucide-react@1.38.0:
+    resolution: {integrity: sha512-xZCyBd/wiVUDactoCc+42TjL0aB7EBOXsuX+tjz+W/sGzw2KhHpL1NOH3FIaVUcpimvUBpIYfz34Ofj9S5JEzQ==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   lucide-react@1.7.0:
     resolution: {integrity: sha512-yI7BeItCLZJTXikmK4KNUGCKoGzSvbKlfCvw44bU4fXAL6v3gYS4uHD1jzsLkfwODYwI6Drw5Tu9Z5ulDe0TSg==}
     peerDependencies:
@@ -3614,6 +3651,11 @@ packages:
     peerDependencies:
       react: ^19.2.4
 
+  react-dom@19.2.8:
+    resolution: {integrity: sha512-rVprimfGBG3DR+Tq0IQG2DT5PxKth1WIGDmj5yPmlzr4YBe7uyE+Du4oVqTDXZSHGGGXRtTJEGSSePyQCMBglQ==}
+    peerDependencies:
+      react: ^19.2.8
+
   react-hook-form@7.82.0:
     resolution: {integrity: sha512-Zw/uFZ2dO+02GHlBn7JFGn8kZJ7LdM33B/0BXOovzFay+CMhf94JMw5BVu+F1tVkUKjNvBuaE3fz5BJhga10Tg==}
     engines: {node: '>=18.0.0'}
@@ -3694,6 +3736,10 @@ packages:
 
   react@19.2.4:
     resolution: {integrity: sha512-9nfp2hYpCwOjAN+8TZFGhtWEwgvWHXqESH8qT89AT/lWklpLON22Lc8pEtnpsZz7VmawabSU0gCjnj8aC0euHQ==}
+    engines: {node: '>=0.10.0'}
+
+  react@19.2.8:
+    resolution: {integrity: sha512-PWaYA1L/q9u2u7xYQi+Y3L3Yfnie7XyLeaJICV1MGD6LprsBxcAqGjYyr0eY3p+QdsA+x/Irkt4Qif8D63+Sbw==}
     engines: {node: '>=0.10.0'}
 
   redent@3.0.0:
@@ -3870,11 +3916,11 @@ packages:
     resolution: {integrity: sha512-Bf+ILmBgretUrdJxzXM0SgXLZ3XfiaUuOj/IKQHuTXip+05Xn+uyEYdVg0kYDipTBcLrCVyUzAPz7QmArb0mmw==}
     engines: {node: '>=14.0.0'}
 
-  tldts-core@7.4.9:
-    resolution: {integrity: sha512-DxKfPBI52p2msTEu7MPhdpdDTBhhVQg1a/8PjQckeyAvO13eMYElX545grIp6nnTGIMZlRvFZPvFhvI/WIz2Vg==}
+  tldts-core@7.4.11:
+    resolution: {integrity: sha512-CW3WN2rIIE/Of21mulhgnGOwoDyEFNygyIBOONSdyAuSATgMMUCpLeUlB+E8sAwA5xRV9hYPl+kyZ9citHCaKg==}
 
-  tldts@7.4.9:
-    resolution: {integrity: sha512-3kZ8wQQ/k5DrChD4X4FVvr2D7E5uoRgAqkPyLpSCGUvqOvqu+JEdr3mwMUaVWb+vMHZaKhF5fp2PBigKsui7hA==}
+  tldts@7.4.11:
+    resolution: {integrity: sha512-aBiNayCfTQxuIJBm06M+xR14cYaYlDlSXZbgsnKzKNxDKUVq7KFwTjwBSsb7m9Y5xO8WfPnBc63WaYFMTGlvqw==}
     hasBin: true
 
   tough-cookie@6.0.2:
@@ -3925,8 +3971,8 @@ packages:
   undici-types@7.24.6:
     resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
 
-  undici@7.28.0:
-    resolution: {integrity: sha512-cRZYrTDwWznlnRiPjggAGxZXanty6M8RV1ff8Wm4LWXBp7/IG8v5DnOm74DtUBp9OONpK75YlPnIjQqX0dBDtA==}
+  undici@7.29.0:
+    resolution: {integrity: sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw==}
     engines: {node: '>=20.18.1'}
 
   unist-util-is@6.0.1:
@@ -3947,6 +3993,40 @@ packages:
   universalify@2.0.1:
     resolution: {integrity: sha512-gptHNQghINnc/vTGIk0SOFGFNXw7JVrlRUtConJRlvaw6DuX0wO5Jeko9sWrMBhh+PsYAZ7oXAiOnf/UKogyiw==}
     engines: {node: '>= 10.0.0'}
+
+  unplugin-dts@1.1.0:
+    resolution: {integrity: sha512-KZJ+qk+lmd9dJY/PJvDRFL9BUtVubKDiX7Ai/X6mlkCArcQNzwmupKjVqHbRA42uqO5ZfFRFc+o8/OCbQ1GonQ==}
+    peerDependencies:
+      '@microsoft/api-extractor': '>=7'
+      '@rspack/core': ^1
+      '@vue/language-core': ^3.1.5
+      esbuild: '*'
+      rolldown: '*'
+      rollup: '>=3'
+      typescript: '>=4'
+      vite: '>=3'
+      webpack: ^4 || ^5
+    peerDependenciesMeta:
+      '@microsoft/api-extractor':
+        optional: true
+      '@rspack/core':
+        optional: true
+      '@vue/language-core':
+        optional: true
+      esbuild:
+        optional: true
+      rolldown:
+        optional: true
+      rollup:
+        optional: true
+      vite:
+        optional: true
+      webpack:
+        optional: true
+
+  unplugin@2.3.11:
+    resolution: {integrity: sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==}
+    engines: {node: '>=18.12.0'}
 
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
@@ -3988,6 +4068,20 @@ packages:
       typescript: '*'
       vite: '*'
     peerDependenciesMeta:
+      vite:
+        optional: true
+
+  vite-plugin-dts@5.1.0:
+    resolution: {integrity: sha512-MfLc2G+mXPUDGGxpHQeYbdunavFP9UpT9yxiAsTgUXRxfEd3HqysSAM4E72jhz5eIz3OOexCHkqiVlQq8ok9/A==}
+    peerDependencies:
+      '@microsoft/api-extractor': '>=7'
+      rollup: '>=3'
+      vite: '>=3'
+    peerDependenciesMeta:
+      '@microsoft/api-extractor':
+        optional: true
+      rollup:
+        optional: true
       vite:
         optional: true
 
@@ -4140,6 +4234,9 @@ packages:
   webidl-conversions@8.0.1:
     resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
     engines: {node: '>=20'}
+
+  webpack-virtual-modules@0.6.2:
+    resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
 
   whatwg-mimetype@5.0.0:
     resolution: {integrity: sha512-sXcNcHOC51uPGF0P/D4NVtrkjSU2fNsm9iog4ZvZJsL3rjoDAzXZhkm2MWt1y+PUdggKAYVoMAIYcs78wJ51Cw==}
@@ -4319,8 +4416,8 @@ snapshots:
   '@asamuzakjp/css-color@5.1.11':
     dependencies:
       '@asamuzakjp/generational-cache': 1.0.1
-      '@csstools/css-calc': 3.2.1(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
-      '@csstools/css-color-parser': 4.1.9(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
+      '@csstools/css-calc': 3.3.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
+      '@csstools/css-color-parser': 4.2.2(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-tokenizer': 4.0.0
 
@@ -4361,17 +4458,17 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@csstools/color-helpers@6.1.0': {}
+  '@csstools/color-helpers@6.1.1': {}
 
-  '@csstools/css-calc@3.2.1(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
+  '@csstools/css-calc@3.3.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
     dependencies:
       '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-tokenizer': 4.0.0
 
-  '@csstools/css-color-parser@4.1.9(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
+  '@csstools/css-color-parser@4.2.2(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
     dependencies:
-      '@csstools/color-helpers': 6.1.0
-      '@csstools/css-calc': 3.2.1(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
+      '@csstools/color-helpers': 6.1.1
+      '@csstools/css-calc': 3.3.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
       '@csstools/css-tokenizer': 4.0.0
 
@@ -4379,7 +4476,7 @@ snapshots:
     dependencies:
       '@csstools/css-tokenizer': 4.0.0
 
-  '@csstools/css-syntax-patches-for-csstree@1.1.6(css-tree@3.2.1)':
+  '@csstools/css-syntax-patches-for-csstree@1.1.12(css-tree@3.2.1)':
     optionalDependencies:
       css-tree: 3.2.1
 
@@ -5419,11 +5516,6 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@sdkwork/drive-app-sdk@0.1.2':
-    dependencies:
-      '@sdkwork/sdk-common': link:../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
-      '@sdkwork/utils': 0.11.0
-
   '@sdkwork/iam-app-sdk@0.1.4':
     dependencies:
       '@sdkwork/sdk-common': link:../sdkwork-sdk-commons/sdkwork-sdk-common-typescript
@@ -5577,6 +5669,16 @@ snapshots:
       '@testing-library/dom': 10.4.1
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
+    optionalDependencies:
+      '@types/react': 19.2.14
+      '@types/react-dom': 19.2.3(@types/react@19.2.14)
+
+  '@testing-library/react@16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@babel/runtime': 7.29.7
+      '@testing-library/dom': 10.4.1
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
     optionalDependencies:
       '@types/react': 19.2.14
       '@types/react-dom': 19.2.3(@types/react@19.2.14)
@@ -5742,6 +5844,11 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-rc.7
       vite: 8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
 
+  '@vitejs/plugin-react@6.1.1(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))':
+    dependencies:
+      '@rolldown/pluginutils': 1.0.1
+      vite: 8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
+
   '@vitejs/plugin-vue@5.2.4(vite@5.4.21(@types/node@25.9.5)(lightningcss@1.32.0))(vue@3.5.40(typescript@6.0.2))':
     dependencies:
       vite: 5.4.21(@types/node@25.9.5)(lightningcss@1.32.0)
@@ -5865,19 +5972,6 @@ snapshots:
       path-browserify: 1.0.1
     optionalDependencies:
       typescript: 6.0.2
-
-  '@vue/language-core@2.2.0(typescript@6.0.3)':
-    dependencies:
-      '@volar/language-core': 2.4.28
-      '@vue/compiler-dom': 3.5.40
-      '@vue/compiler-vue2': 2.7.16
-      '@vue/shared': 3.5.40
-      alien-signals: 0.4.14
-      minimatch: 9.0.9
-      muggle-string: 0.4.1
-      path-browserify: 1.0.1
-    optionalDependencies:
-      typescript: 6.0.3
 
   '@vue/reactivity@3.5.40':
     dependencies:
@@ -6345,6 +6439,8 @@ snapshots:
     dependencies:
       is-glob: 4.0.3
 
+  glob-to-regexp@0.4.1: {}
+
   graceful-fs@4.2.11: {}
 
   has-flag@4.0.0: {}
@@ -6430,7 +6526,7 @@ snapshots:
       '@asamuzakjp/css-color': 5.1.11
       '@asamuzakjp/dom-selector': 7.1.1
       '@bramus/specificity': 2.4.2
-      '@csstools/css-syntax-patches-for-csstree': 1.1.6(css-tree@3.2.1)
+      '@csstools/css-syntax-patches-for-csstree': 1.1.12(css-tree@3.2.1)
       '@exodus/bytes': 1.15.1
       css-tree: 3.2.1
       data-urls: 7.0.0
@@ -6442,7 +6538,7 @@ snapshots:
       saxes: 6.0.0
       symbol-tree: 3.2.4
       tough-cookie: 6.0.2
-      undici: 7.28.0
+      undici: 7.29.0
       w3c-xmlserializer: 5.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
@@ -6540,6 +6636,14 @@ snapshots:
       p-locate: 5.0.0
 
   lru-cache@11.5.2: {}
+
+  lucide-react@1.38.0(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+
+  lucide-react@1.38.0(react@19.2.8):
+    dependencies:
+      react: 19.2.8
 
   lucide-react@1.7.0(react@19.2.4):
     dependencies:
@@ -6727,6 +6831,11 @@ snapshots:
       react: 19.2.4
       scheduler: 0.27.0
 
+  react-dom@19.2.8(react@19.2.8):
+    dependencies:
+      react: 19.2.8
+      scheduler: 0.27.0
+
   react-hook-form@7.82.0(react@19.2.4):
     dependencies:
       react: 19.2.4
@@ -6774,6 +6883,12 @@ snapshots:
       react-dom: 19.2.4(react@19.2.4)
       react-router: 7.18.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
+  react-router-dom@7.18.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+    dependencies:
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+      react-router: 7.18.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+
   react-router@7.18.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       cookie: 1.1.1
@@ -6781,6 +6896,14 @@ snapshots:
       set-cookie-parser: 2.7.2
     optionalDependencies:
       react-dom: 19.2.4(react@19.2.4)
+
+  react-router@7.18.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+    dependencies:
+      cookie: 1.1.1
+      react: 19.2.8
+      set-cookie-parser: 2.7.2
+    optionalDependencies:
+      react-dom: 19.2.8(react@19.2.8)
 
   react-style-singleton@2.2.3(@types/react@19.2.14)(react@19.2.4):
     dependencies:
@@ -6791,6 +6914,8 @@ snapshots:
       '@types/react': 19.2.14
 
   react@19.2.4: {}
+
+  react@19.2.8: {}
 
   redent@3.0.0:
     dependencies:
@@ -6980,15 +7105,15 @@ snapshots:
 
   tinyrainbow@3.1.0: {}
 
-  tldts-core@7.4.9: {}
+  tldts-core@7.4.11: {}
 
-  tldts@7.4.9:
+  tldts@7.4.11:
     dependencies:
-      tldts-core: 7.4.9
+      tldts-core: 7.4.11
 
   tough-cookie@6.0.2:
     dependencies:
-      tldts: 7.4.9
+      tldts: 7.4.11
 
   tr46@6.0.0:
     dependencies:
@@ -7018,7 +7143,7 @@ snapshots:
 
   undici-types@7.24.6: {}
 
-  undici@7.28.0: {}
+  undici@7.29.0: {}
 
   unist-util-is@6.0.1:
     dependencies:
@@ -7044,6 +7169,34 @@ snapshots:
       unist-util-visit-parents: 6.0.2
 
   universalify@2.0.1: {}
+
+  unplugin-dts@1.1.0(@microsoft/api-extractor@7.58.11(@types/node@25.9.5))(esbuild@0.28.1)(rolldown@1.1.5)(rollup@4.62.2)(typescript@6.0.3)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)):
+    dependencies:
+      '@rollup/pluginutils': 5.4.0(rollup@4.62.2)
+      '@volar/typescript': 2.4.28
+      compare-versions: 6.1.1
+      debug: 4.4.3
+      glob-to-regexp: 0.4.1
+      kolorist: 1.8.0
+      local-pkg: 1.2.1
+      magic-string: 0.30.21
+      typescript: 6.0.3
+      unplugin: 2.3.11
+    optionalDependencies:
+      '@microsoft/api-extractor': 7.58.11(@types/node@25.9.5)
+      esbuild: 0.28.1
+      rolldown: 1.1.5
+      rollup: 4.62.2
+      vite: 8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
+    transitivePeerDependencies:
+      - supports-color
+
+  unplugin@2.3.11:
+    dependencies:
+      '@jridgewell/remapping': 2.3.5
+      acorn: 8.17.0
+      picomatch: 4.0.5
+      webpack-virtual-modules: 0.6.2
 
   uri-js@4.4.1:
     dependencies:
@@ -7097,24 +7250,21 @@ snapshots:
       - rollup
       - supports-color
 
-  vite-plugin-dts@4.5.4(@types/node@25.9.5)(rollup@4.62.2)(typescript@6.0.3)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)):
+  vite-plugin-dts@5.1.0(@microsoft/api-extractor@7.58.11(@types/node@25.9.5))(esbuild@0.28.1)(rolldown@1.1.5)(rollup@4.62.2)(typescript@6.0.3)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)):
     dependencies:
-      '@microsoft/api-extractor': 7.58.11(@types/node@25.9.5)
-      '@rollup/pluginutils': 5.4.0(rollup@4.62.2)
-      '@volar/typescript': 2.4.28
-      '@vue/language-core': 2.2.0(typescript@6.0.3)
-      compare-versions: 6.1.1
-      debug: 4.4.3
-      kolorist: 1.8.0
-      local-pkg: 1.2.1
-      magic-string: 0.30.21
-      typescript: 6.0.3
+      unplugin-dts: 1.1.0(@microsoft/api-extractor@7.58.11(@types/node@25.9.5))(esbuild@0.28.1)(rolldown@1.1.5)(rollup@4.62.2)(typescript@6.0.3)(vite@8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
     optionalDependencies:
+      '@microsoft/api-extractor': 7.58.11(@types/node@25.9.5)
+      rollup: 4.62.2
       vite: 8.1.5(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
     transitivePeerDependencies:
-      - '@types/node'
-      - rollup
+      - '@rspack/core'
+      - '@vue/language-core'
+      - esbuild
+      - rolldown
       - supports-color
+      - typescript
+      - webpack
 
   vite@5.4.21(@types/node@25.9.5)(lightningcss@1.32.0):
     dependencies:
@@ -7237,6 +7387,8 @@ snapshots:
       xml-name-validator: 5.0.0
 
   webidl-conversions@8.0.1: {}
+
+  webpack-virtual-modules@0.6.2: {}
 
   whatwg-mimetype@5.0.0: {}
 

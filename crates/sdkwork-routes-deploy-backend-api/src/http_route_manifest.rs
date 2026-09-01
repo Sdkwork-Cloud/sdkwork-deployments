@@ -124,13 +124,13 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Get,
         "/backend/v3/api/build_queue",
         "buildQueue",
-        "buildQueue.list",
+        "list",
     ),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/runners",
         "runners",
-        "runners.list",
+        "list",
     ),
     HttpRoute::dual_token(
         HttpMethod::Get,
@@ -149,7 +149,7 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/backend/v3/api/tls/orders",
         "tls",
-        "tlsOrders.request",
+        "tlsOrders.create",
     )
     .with_idempotent(true),
     HttpRoute::dual_token(
@@ -174,13 +174,14 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/backend/v3/api/tls/orders/{orderId}/versions",
         "tls",
-        "tlsOrders.storeVersion",
-    ),
+        "tlsOrders.create",
+    )
+    .with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/tls/orders/{orderId}/challenges",
         "tls",
-        "tlsOrders.listChallenges",
+        "tlsOrders.list",
     ),
     HttpRoute::dual_token(
         HttpMethod::Get,
@@ -192,20 +193,22 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Post,
         "/backend/v3/api/retention/run",
         "retention",
-        "retention.run",
+        "run",
     ),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/usage/ingest",
         "usage",
-        "usage.ingestTrafficEvents",
-    ),
+        "create",
+    )
+    .with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/usage/reconcile",
         "usage",
-        "usage.reconcileDaily",
-    ),
+        "create",
+    )
+    .with_idempotent(true),
     HttpRoute::dual_token(
         HttpMethod::Get,
         "/backend/v3/api/signing_identity_health",
@@ -216,14 +219,15 @@ const HTTP_ROUTES: &[HttpRoute] = &[
         HttpMethod::Get,
         "/backend/v3/api/source_events",
         "sourceEvents",
-        "sourceEvents.list",
+        "list",
     ),
     HttpRoute::dual_token(
         HttpMethod::Post,
         "/backend/v3/api/source_events",
         "sourceEvents",
-        "sourceEvents.ingest",
-    ),
+        "create",
+    )
+    .with_idempotent(true),
 ];
 
 pub fn backend_route_manifest() -> HttpRouteManifest {

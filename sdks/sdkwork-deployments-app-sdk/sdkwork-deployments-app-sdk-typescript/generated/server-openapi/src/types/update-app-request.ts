@@ -5,6 +5,6 @@ export interface UpdateAppRequest {
   description?: string;
   appStatus?: AppStatus;
   defaultEnvironment?: string;
-  /** Free-form JSONB merged into deploy_app.metadata (shallow per-key merge). */
+  /** Free-form JSONB merged into deploy_app.metadata. */
   metadata?: Record<string, unknown>;
 }

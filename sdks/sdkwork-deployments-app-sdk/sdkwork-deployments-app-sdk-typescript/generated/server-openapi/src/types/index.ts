@@ -169,16 +169,16 @@ export type { BuildTemplatesRetrieveResponse } from './build-templates-retrieve-
 export type { BuildsListResponse } from './builds-list-response';
 export type { BuildsCreateResponse201 } from './builds-create-response201';
 export type { BuildsRetrieveResponse } from './builds-retrieve-response';
-export type { BuildsStateUpdateResponse } from './builds-state-update-response';
+export type { BuildsUpdateResponse } from './builds-update-response';
 export type { PackagesListResponse } from './packages-list-response';
-export type { PackagesRegisterResponse201 } from './packages-register-response201';
+export type { PackagesCreateResponse201 } from './packages-create-response201';
 export type { PackagesRetrieveResponse } from './packages-retrieve-response';
 export type { ReleasesListResponse } from './releases-list-response';
 export type { ReleasesCreateResponse201 } from './releases-create-response201';
 export type { ReleasesRetrieveResponse } from './releases-retrieve-response';
 export type { ChannelsListResponse } from './channels-list-response';
 export type { ChannelsRetrieveResponse } from './channels-retrieve-response';
-export type { ChannelsPromoteResponse201 } from './channels-promote-response201';
+export type { ChannelsCreateResponse201 } from './channels-create-response201';
 export type { ChannelsRolloutsListResponse } from './channels-rollouts-list-response';
 export type { DeploymentsListResponse } from './deployments-list-response';
 export type { DeploymentsCreateResponse201 } from './deployments-create-response201';
@@ -198,5 +198,5 @@ export type { AppEnvironmentsListResponse } from './app-environments-list-respon
 export type { AppEnvironmentsCreateResponse201 } from './app-environments-create-response201';
 export type { AppEnvironmentsRetrieveResponse } from './app-environments-retrieve-response';
 export type { AppEnvironmentsUpdateResponse } from './app-environments-update-response';
-export type { AppEnvironmentsListPromotionsResponse } from './app-environments-list-promotions-response';
-export type { AppEnvironmentsPromoteResponse201 } from './app-environments-promote-response201';
+export type { AppEnvironmentsListGetResponse } from './app-environments-list-get-response';
+export type { AppEnvironmentsCreatePostResponse201 } from './app-environments-create-post-response201';

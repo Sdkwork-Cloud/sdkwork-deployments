@@ -16,8 +16,8 @@ export interface DeployAppCategoryNode {
   /** Locale key for the display label. */
   readonly labelKey: PublishingMessageKey
   /** App kinds this subtree applies to; empty means all kinds. */
-  readonly appKinds?: readonly AppKind[]
-  readonly children?: readonly DeployAppCategoryNode[]
+  readonly appKinds?: readonly AppKind[] | undefined
+  readonly children?: readonly DeployAppCategoryNode[] | undefined
 }
 
 /** Full taxonomy: up to three levels per top category. */

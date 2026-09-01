@@ -24,8 +24,18 @@ export interface PreviewSizeTarget {
   readonly max: number
 }
 
-/** Apple documentation reference list of portrait preview sizes. */
-export const APP_STORE_PREVIEW_TARGETS: readonly PreviewSizeTarget[] = [
+/**
+ * Apple documentation reference list of portrait preview sizes.
+ *
+ * Declared as a non-empty readonly tuple, not `readonly PreviewSizeTarget[]`:
+ * the list is a module constant that always has a first element, and every
+ * consumer takes `APP_STORE_PREVIEW_TARGETS[0]` as the default target. Under
+ * `noUncheckedIndexedAccess` a plain array type would widen that index access
+ * to `PreviewSizeTarget | undefined` and force a non-null assertion or a
+ * runtime guard at each call site. The tuple keeps the invariant in the type
+ * where it belongs.
+ */
+export const APP_STORE_PREVIEW_TARGETS: readonly [PreviewSizeTarget, ...PreviewSizeTarget[]] = [
   { key: "iphone-67", labelKey: "screenshotTarget", width: 1290, height: 2796, device: "iphone", max: 10 },
   { key: "iphone-65", labelKey: "screenshotTarget", width: 1242, height: 2688, device: "iphone", max: 10 },
   { key: "iphone-61", labelKey: "screenshotTarget", width: 1179, height: 2556, device: "iphone", max: 10 },
