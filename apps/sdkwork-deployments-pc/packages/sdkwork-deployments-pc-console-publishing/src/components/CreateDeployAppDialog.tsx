@@ -1,16 +1,17 @@
 /**
  * CreateDeployAppDialog — 创建/发布 deploy_app 应用对话框（v3）。
  *
- * 交互流程（v3.2：框架选择并入目录步骤，参照 sdkwork-specs）：
+ * 交互流程（v3.4：环境/部署形态前移到目录步骤，参照 sdkwork-specs）：
  *   1. 应用类型 grid（icon + 应用类型名称）
- *   2. 项目目录（双路径）+ 框架与架构：应用根路径（宿主 inspectDirectory 按
- *      sdkwork 规范自动发现表面根路径并自动完善）+ 构建产物相对路径；框架
- *      依据目录标记（detectDirectories）自动检测（带"检测到"徽标），在路径
- *      下方手动可改
+ *   2. 环境与目录：ENVIRONMENT_SPEC 规范环境（开发/测试/预发/演示/线上）+
+ *      standalone|cloud 部署形态（决定 dist/<mode>/<envAlias> 产物子树）+
+ *      应用根路径（宿主 inspectDirectory 按 sdkwork 规范自动发现表面根路径
+ *      并自动完善，无宿主时按 APPLICATION_SPEC 从路径推导）+ 构建产物相对
+ *      路径（浏览器类表面随环境/形态联动）+ 框架架构（目录标记自动检测，
+ *      带徽标，路径下方手动可改）；「下一步」校验源目录与产物目录存在性
  *   3. 应用：按当前登录用户，搜索关联已有应用或新建应用（含分类级联）
  *   4. 应用资料（可选）：图标/封面/截图
- *   5. 环境与发布：ENVIRONMENT_SPEC 规范环境（开发/测试/预发/演示/线上）+
- *      standalone|cloud 部署形态 + 版本/描述/release notes
+ *   5. 发布：版本/描述/release notes
  *
  * 持久化严格走 sdkwork-deployments 现有表结构：
  *   deploy_app（name/slug/app_kind/description/metadata）、
@@ -39,6 +40,7 @@ import {
   type DeployAppTypeOption,
 } from "../service/deploy-app-publishing.ts";
 import {
+  browserDistOutputPath,
   buildOutputExists,
   deriveSurfaceDirectory,
   detectBuildOutputCandidates,
@@ -186,6 +188,19 @@ export function CreateDeployAppDialog({
     () => detectFrameworkId(frameworks, matchedSurfaceChildren),
     [frameworks, matchedSurfaceChildren],
   )
+  // v3.4: 浏览器类表面（pc/h5/static）的构建产物目录随 `<mode>.<environment>`
+  // 组合变化：dist/<deploymentProfile>/<envAlias>（FRONTEND_CODE_SPEC §7）——
+  // standalone 与 cloud 各自独立子树，绝不裸 dist/。其他表面不受环境影响。
+  const envBuildOutput = useMemo(
+    () => (type?.surface === "pc" || type?.surface === "h5" || type?.surface === "static"
+      ? browserDistOutputPath(deploymentMode, environment)
+      : undefined),
+    [type, deploymentMode, environment],
+  )
+  const frameworkDefaultBuildOutput = useMemo(
+    () => frameworks.find((candidate) => candidate.id === frameworkId)?.buildOutputPath,
+    [frameworks, frameworkId],
+  )
 
   const selectCard = (nextCardId: string) => {
     setCardId(nextCardId)
@@ -286,6 +301,24 @@ export function CreateDeployAppDialog({
     setDirectory(target)
   }, [matchedSurfacePath, specSurfacePath, detectionRoot, directory])
 
+  // v3.4: 产物目录跟随环境/部署形态切换（仅浏览器类表面）—— 当前值仍是框架
+  // 默认值或上次自动值（未被手动修改）时应用新的 dist/<mode>/<envAlias>，
+  // 手动自定义的路径不被覆盖。
+  const lastEnvBuildOutputRef = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (envBuildOutput === undefined) return
+    const current = buildOutputPath.trim()
+    const autoApplicable =
+      current === ""
+      || (frameworkDefaultBuildOutput !== undefined && current === frameworkDefaultBuildOutput)
+      || (lastEnvBuildOutputRef.current !== undefined && current === lastEnvBuildOutputRef.current)
+    if (!autoApplicable) return
+    lastEnvBuildOutputRef.current = envBuildOutput
+    setBuildOutputPath(envBuildOutput)
+    // buildOutputPath 刻意读取最新值：仅环境/形态/框架变化时联动。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [envBuildOutput, frameworkDefaultBuildOutput])
+
   // v3.2: 框架自动检测 —— 目录标记命中注册表时自动应用并同步构建产物默认
   // 值；用户手动选择不被覆盖（仅在检测信号或应用类型变化时重新应用）。
   useEffect(() => {
@@ -307,10 +340,31 @@ export function CreateDeployAppDialog({
     return isValidSemver(version)
   }
 
+  // v3.4: 目录步骤「下一步」前的存在性检查（宿主桥可用时）—— 源目录必须
+  // 能被宿主列举成功（detection 非 undefined），构建产物目录按表面子目录
+  // 列举判定存在性；无法判定（无列举能力）时放行，由发布时兜底。
+  const stepTwoDirectoryProblem = (): string | undefined => {
+    if (inspectDirectory !== undefined) {
+      if (inspecting) return t("publishCheckingDirectories")
+      if (detection === undefined) return t("sourceDirectoryMissing")
+    }
+    if (buildOutputDetected === false) {
+      return t("buildOutputMissing", { path: buildOutputPath.trim() })
+    }
+    return undefined
+  }
+
   const next = () => {
     if (!canNext()) {
       setError(t("publishRequiredFields"))
       return
+    }
+    if (step === 2) {
+      const directoryProblem = stepTwoDirectoryProblem()
+      if (directoryProblem !== undefined) {
+        setError(directoryProblem)
+        return
+      }
     }
     setError(undefined)
     setStep((current) => Math.min(STEP_COUNT, current + 1))
@@ -354,6 +408,12 @@ export function CreateDeployAppDialog({
   const submit = async () => {
     if (directory === undefined || type === undefined || !isValidSemver(version)) {
       setError(t("publishRequiredFields"))
+      return
+    }
+    // 发布前复检目录存在性（第 2 步校验的兜底，防止后续步骤中目录被删）。
+    const directoryProblem = stepTwoDirectoryProblem()
+    if (directoryProblem !== undefined) {
+      setError(directoryProblem)
       return
     }
     setBusy(true)
@@ -429,6 +489,17 @@ export function CreateDeployAppDialog({
 
           {step === 2 && (
             <>
+              {/* v3.4: 环境与部署形态提前到目录步骤 —— 不同的
+                  `<standalone|cloud>.<environment>` 组合对应不同的构建产物
+                  dist 子目录（dist/<mode>/<envAlias>，FRONTEND_CODE_SPEC §7），
+                  必须先于产物路径字段确定。 */}
+              <DeployEnvironmentSelect
+                environment={environment}
+                deploymentMode={deploymentMode}
+                onEnvironmentChange={setEnvironment}
+                onDeploymentModeChange={setDeploymentMode}
+                t={t}
+              />
               <DeployProjectDirectoryFields
                 directory={directory ?? ""}
                 buildOutputPath={buildOutputPath}
@@ -500,13 +571,8 @@ export function CreateDeployAppDialog({
 
           {step === 5 && (
             <>
-              <DeployEnvironmentSelect
-                environment={environment}
-                deploymentMode={deploymentMode}
-                onEnvironmentChange={setEnvironment}
-                onDeploymentModeChange={setDeploymentMode}
-                t={t}
-              />
+              {/* v3.4: 环境与部署形态已前移到目录步骤（步骤 2）——
+                  产物 dist 路径依赖该组合，此处仅保留版本与发布说明。 */}
               <div className={css.field}>
                 <span className={css.fieldLabel}>{t("version")}</span>
                 <input

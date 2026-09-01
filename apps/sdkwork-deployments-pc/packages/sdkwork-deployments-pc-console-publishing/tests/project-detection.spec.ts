@@ -7,10 +7,12 @@
 import { describe, expect, it } from "vitest";
 import {
   APP_SURFACE_DIRECTORY_SUFFIX,
+  browserDistOutputPath,
   buildOutputExists,
   canonicalEnvironment,
   deriveSurfaceDirectory,
   detectBuildOutputCandidates,
+  DEPLOY_DEPLOYMENT_MODES,
   DEPLOY_ENVIRONMENT_IDS,
   deployProfileId,
   detectSdkworkProject,
@@ -253,5 +255,31 @@ describe("deriveSurfaceDirectory (v3.3 spec path derivation)", () => {
     // api/static 发布仓库根本身，无 apps/ 表面目录。
     expect(deriveSurfaceDirectory(winRepo, "api")).toBeUndefined();
     expect(deriveSurfaceDirectory(winRepo, "static")).toBeUndefined();
+  });
+});
+
+describe("browserDistOutputPath (v3.4 environment-aware dist layout)", () => {
+  it("composes dist/<deploymentProfile>/<envAlias> per FRONTEND_CODE_SPEC §7", () => {
+    expect(browserDistOutputPath("standalone", "development")).toBe("dist/standalone/dev");
+    expect(browserDistOutputPath("standalone", "test")).toBe("dist/standalone/test");
+    expect(browserDistOutputPath("standalone", "staging")).toBe("dist/standalone/staging");
+    expect(browserDistOutputPath("standalone", "production")).toBe("dist/standalone/prod");
+    expect(browserDistOutputPath("cloud", "production")).toBe("dist/cloud/prod");
+    expect(browserDistOutputPath("cloud", "development")).toBe("dist/cloud/dev");
+  });
+
+  it("never returns a bare dist/ for any mode × environment combination", () => {
+    for (const mode of DEPLOY_DEPLOYMENT_MODES) {
+      for (const environment of DEPLOY_ENVIRONMENT_IDS) {
+        const output = browserDistOutputPath(mode, environment);
+        expect(output.startsWith(`dist/${mode}/`)).toBe(true);
+        expect(output).not.toBe("dist");
+      }
+    }
+  });
+
+  it("builds demo from the staging subtree (spec alias table lacks demo)", () => {
+    expect(browserDistOutputPath("standalone", "demo")).toBe("dist/standalone/staging");
+    expect(browserDistOutputPath("cloud", "demo")).toBe("dist/cloud/staging");
   });
 });

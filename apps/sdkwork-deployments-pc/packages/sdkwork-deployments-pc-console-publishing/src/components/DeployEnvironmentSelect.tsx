@@ -1,10 +1,11 @@
 /**
- * Publish-environment selector (v2 第 5 步).
+ * Publish-environment selector (v3.4: 目录步骤内、目录字段之前).
  *
  * Environments are the canonical sdkwork-specs ENVIRONMENT_SPEC set
  * (development/test/staging/demo/production — 开发/测试/预发/演示/线上) plus
  * the standalone|cloud deployment mode; together they compose the canonical
- * profile id `<mode>.<environment>`.
+ * profile id `<mode>.<environment>` — 该组合同时决定浏览器类应用的构建产物
+ * 子树 dist/<mode>/<envAlias>，因此必须先于产物路径字段确定。
  */
 import type { PublishingMessageKey, PublishingTranslator } from "../i18n.ts";
 import {

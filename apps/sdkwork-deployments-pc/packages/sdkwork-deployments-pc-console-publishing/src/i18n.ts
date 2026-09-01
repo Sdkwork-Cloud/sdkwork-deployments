@@ -96,10 +96,10 @@ const en = {
   fwHexo: "Hexo",
   fwVitepress: "VitePress",
 
-  // Step 3 — project directory & auto-detection (v3 dual paths)
+  // Step 2 — project directory & auto-detection (v3 dual paths; v3.4 env-aware)
   buildOutputPath: "Build output directory",
-  buildOutputPathHint: "Path of the built resource files, relative to the application root (e.g. dist). Prefilled from the selected framework.",
-  buildOutputPathPlaceholder: "e.g. dist",
+  buildOutputPathHint: "Path of the built resource files, relative to the application root. Browser apps follow sdkwork-specs: dist/<deploymentProfile>/<environment> (e.g. dist/standalone/dev, dist/cloud/prod). Prefilled from the selected environment and framework.",
+  buildOutputPathPlaceholder: "e.g. dist/standalone/dev",
   buildOutputDetected: "Detected",
   buildOutputNotDetected: "Not found in listing",
 
@@ -164,9 +164,10 @@ const en = {
   mediaSizeError: "{name} does not match the required {width}x{height} (tolerance {tolerance}).",
   mediaTypeError: "Unsupported file type. Expected {types}.",
 
-  // Step 5 — publish environment (ENVIRONMENT_SPEC)
+  // Step 2 — publish environment (ENVIRONMENT_SPEC; v3.4 moved into the
+  // directory step because <mode>.<environment> determines the dist subtree)
   publishEnvironment: "Publish environment",
-  publishEnvironmentHint: "Follows the sdkwork-specs environments; profile id = <mode>.<environment>.",
+  publishEnvironmentHint: "Follows the sdkwork-specs environments; profile id = <mode>.<environment>, which selects the dist/<mode>/<env> output subtree.",
   envDevelopment: "Development",
   envTest: "Test",
   envStaging: "Staging",
@@ -191,6 +192,9 @@ const en = {
   publishSucceeded: "Application published successfully.",
   publishFailed: "Publish failed: {message}",
   publishRequiredFields: "Please fill in the required fields before publishing.",
+  publishCheckingDirectories: "Checking directories…",
+  sourceDirectoryMissing: "The source directory does not exist or cannot be accessed. Check the path and retry.",
+  buildOutputMissing: "Build output directory does not exist under the application root: {path}. Build the app first or fix the path.",
   appCreated: "Application {name} created.",
   appAssociated: "Associated with existing application {name}.",
 
@@ -357,10 +361,10 @@ const zh: Record<keyof typeof en, string> = {
   fwHexo: "Hexo",
   fwVitepress: "VitePress",
 
-  // 第 3 步 — 项目目录与自动检测（v3 双路径）
+  // 第 2 步 — 项目目录与自动检测（v3 双路径；v3.4 产物目录随环境/形态联动）
   buildOutputPath: "构建产物目录",
-  buildOutputPathHint: "构建后资源文件所在目录，相对应用根路径（如 dist），已按所选框架预填。",
-  buildOutputPathPlaceholder: "例如：dist",
+  buildOutputPathHint: "构建后资源文件所在目录，相对应用根路径。浏览器类应用遵循 sdkwork-specs 规范：dist/<部署形态>/<环境>（如 dist/standalone/dev、dist/cloud/prod），已按所选环境与框架预填。",
+  buildOutputPathPlaceholder: "例如：dist/standalone/dev",
   buildOutputDetected: "已检测到",
   buildOutputNotDetected: "列举中未发现",
 
@@ -425,7 +429,7 @@ const zh: Record<keyof typeof en, string> = {
 
   // 第 5 步 — 发布环境（ENVIRONMENT_SPEC）
   publishEnvironment: "发布环境",
-  publishEnvironmentHint: "遵循 sdkwork-specs 环境规范；Profile ID = <形态>.<环境>。",
+  publishEnvironmentHint: "遵循 sdkwork-specs 环境规范；Profile ID = <形态>.<环境>，该组合决定 dist/<形态>/<环境> 产物子树。",
   envDevelopment: "开发",
   envTest: "测试",
   envStaging: "预发",
@@ -448,6 +452,9 @@ const zh: Record<keyof typeof en, string> = {
   publishSucceeded: "应用发布成功。",
   publishFailed: "发布失败：{message}",
   publishRequiredFields: "请先填写必填项再发布。",
+  publishCheckingDirectories: "正在检测目录…",
+  sourceDirectoryMissing: "源目录不存在或无法访问，请检查路径后重试。",
+  buildOutputMissing: "应用根路径下不存在构建产物目录：{path}。请先构建应用或修正路径。",
   appCreated: "应用 {name} 已创建。",
   appAssociated: "已关联已有应用 {name}。",
 

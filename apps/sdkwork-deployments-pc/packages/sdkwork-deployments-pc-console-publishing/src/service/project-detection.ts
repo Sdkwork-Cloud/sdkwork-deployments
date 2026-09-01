@@ -47,6 +47,33 @@ export function deployProfileId(mode: DeployDeploymentMode, environment: DeployE
   return `${mode}.${environment}`;
 }
 
+/**
+ * Dist directory segment aliases for browser builds (FRONTEND_CODE_SPEC.md §7,
+ * mirrored from sdkwork-specs tools/browser-dist-layout.mjs). The spec alias
+ * table covers the four lifecycle environments; the dialog additionally offers
+ * `demo`, which builds from the staging subtree (demo is a staging-shaped
+ * preview target, and the spec tool rejects unknown aliases).
+ */
+export const BROWSER_DIST_ENV_ALIASES: Readonly<Record<DeployEnvironmentId, string>> = {
+  development: "dev",
+  test: "test",
+  staging: "staging",
+  demo: "staging",
+  production: "prod",
+};
+
+/**
+ * v3.4: relative build-output directory for one browser application root
+ * (surfaces pc/h5/static): `dist/<deploymentProfile>/<envAlias>` — e.g.
+ * `dist/standalone/dev`, `dist/cloud/prod`. Every deployment profile owns its
+ * own environment subtree so standalone and cloud builds coexist; a bare
+ * `dist/` is never a valid build output (APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC.md
+ * §2.2 / ENVIRONMENT_SPEC.md §5.1).
+ */
+export function browserDistOutputPath(mode: DeployDeploymentMode, environment: DeployEnvironmentId): string {
+  return `dist/${mode}/${BROWSER_DIST_ENV_ALIASES[environment]}`;
+}
+
 /** Normalize a legacy alias; unknown values pass through unchanged. */
 export function canonicalEnvironment(value: string): string {
   return DEPLOY_ENVIRONMENT_ALIASES[value.trim().toLowerCase()] ?? value.trim();

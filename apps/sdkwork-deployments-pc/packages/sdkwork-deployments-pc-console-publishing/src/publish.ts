@@ -43,6 +43,8 @@ export type {
 } from "./service/deploy-app-publishing.ts";
 export {
   APP_SURFACE_DIRECTORY_SUFFIX,
+  browserDistOutputPath,
+  BROWSER_DIST_ENV_ALIASES,
   buildOutputExists,
   canonicalEnvironment,
   deriveSurfaceDirectory,
