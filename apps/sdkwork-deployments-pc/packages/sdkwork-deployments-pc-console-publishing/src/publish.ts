@@ -57,6 +57,7 @@ export {
   joinPath,
   KNOWN_BUILD_OUTPUT_DIRECTORY_NAMES,
   resolveSourceDirectory,
+  shouldSyncEnvironmentBuildOutput,
   surfaceOfDirectoryName,
 } from "./service/project-detection.ts";
 export type {

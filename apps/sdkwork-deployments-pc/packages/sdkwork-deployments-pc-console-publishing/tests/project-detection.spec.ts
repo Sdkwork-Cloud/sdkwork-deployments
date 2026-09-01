@@ -18,6 +18,7 @@ import {
   detectSdkworkProject,
   joinPath,
   resolveSourceDirectory,
+  shouldSyncEnvironmentBuildOutput,
   surfaceOfDirectoryName,
   type DeployProjectInspection,
 } from "../src/service/project-detection.ts";

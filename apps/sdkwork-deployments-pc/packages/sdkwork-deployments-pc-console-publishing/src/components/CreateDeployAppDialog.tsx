@@ -46,6 +46,7 @@ import {
   detectBuildOutputCandidates,
   detectSdkworkProject,
   resolveSourceDirectory,
+  shouldSyncEnvironmentBuildOutput,
   type DeployDeploymentMode,
   type DeployEnvironmentId,
   type DeployProjectDetection,
@@ -303,21 +304,29 @@ export function CreateDeployAppDialog({
 
   // v3.4: 产物目录跟随环境/部署形态切换（仅浏览器类表面）—— 当前值仍是框架
   // 默认值或上次自动值（未被手动修改）时应用新的 dist/<mode>/<envAlias>，
-  // 手动自定义的路径不被覆盖。
+  // 手动自定义的路径不被覆盖（判定逻辑见 shouldSyncEnvironmentBuildOutput）。
   const lastEnvBuildOutputRef = useRef<string | undefined>(undefined)
   useEffect(() => {
     if (envBuildOutput === undefined) return
-    const current = buildOutputPath.trim()
-    const autoApplicable =
-      current === ""
-      || (frameworkDefaultBuildOutput !== undefined && current === frameworkDefaultBuildOutput)
-      || (lastEnvBuildOutputRef.current !== undefined && current === lastEnvBuildOutputRef.current)
-    if (!autoApplicable) return
-    lastEnvBuildOutputRef.current = envBuildOutput
-    setBuildOutputPath(envBuildOutput)
     // buildOutputPath 刻意读取最新值：仅环境/形态/框架变化时联动。
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!shouldSyncEnvironmentBuildOutput(buildOutputPath, frameworkDefaultBuildOutput, lastEnvBuildOutputRef.current)) return
+    lastEnvBuildOutputRef.current = envBuildOutput
+    setBuildOutputPath(envBuildOutput)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [envBuildOutput, frameworkDefaultBuildOutput])
+
+  // v3.4: 候选 chip 拦截 —— 浏览器类表面点击裸 "dist" 候选时，specs 认定裸
+  // dist/ 不是有效产物目录（APP_CLIENT_ARCHITECTURE_ALIGNMENT_SPEC §2.2），
+  // 改落当前环境/形态对应的 dist/<mode>/<envAlias>；其余值原样透传。
+  const handleBuildOutputChange = (value: string) => {
+    if (envBuildOutput !== undefined && value.trim() === "dist") {
+      lastEnvBuildOutputRef.current = envBuildOutput
+      setBuildOutputPath(envBuildOutput)
+      return
+    }
+    setBuildOutputPath(value)
+  }
 
   // v3.2: 框架自动检测 —— 目录标记命中注册表时自动应用并同步构建产物默认
   // 值；用户手动选择不被覆盖（仅在检测信号或应用类型变化时重新应用）。
@@ -511,7 +520,7 @@ export function CreateDeployAppDialog({
                 buildCandidates={buildCandidates}
                 t={t}
                 onDirectoryChange={setDirectory}
-                onBuildOutputChange={setBuildOutputPath}
+                onBuildOutputChange={handleBuildOutputChange}
                 onChangeDirectoryClick={() => { void changeDirectory() }}
                 onReinspect={() => {
                   // 触发重检测：先清空再写回同一目录，走防抖 effect。

@@ -63,6 +63,23 @@ export const BROWSER_DIST_ENV_ALIASES: Readonly<Record<DeployEnvironmentId, stri
 };
 
 /**
+ * v3.4: should the environment-driven build-output sync apply over the
+ * current field value? The sync only overrides machine-owned values —
+ * empty, the framework's default build output, or the last auto-filled
+ * value. A manually customized path is never overwritten.
+ */
+export function shouldSyncEnvironmentBuildOutput(
+  current: string,
+  frameworkDefault: string | undefined,
+  lastAutoValue: string | undefined,
+): boolean {
+  const trimmed = current.trim();
+  if (trimmed === "") return true;
+  if (frameworkDefault !== undefined && trimmed === frameworkDefault) return true;
+  return lastAutoValue !== undefined && trimmed === lastAutoValue;
+}
+
+/**
  * v3.4: relative build-output directory for one browser application root
  * (surfaces pc/h5/static): `dist/<deploymentProfile>/<envAlias>` — e.g.
  * `dist/standalone/dev`, `dist/cloud/prod`. Every deployment profile owns its
