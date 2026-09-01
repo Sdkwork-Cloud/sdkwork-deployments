@@ -11,6 +11,13 @@ pub use bootstrap::{
     DomainCertificateBlocks,
 };
 
+// SDKWORK-ASSEMBLY-LIB-CUSTOM: the domain/certificate route manifest is part
+// of the assembly integration surface. Host applications (for example
+// sdkwork-webserver) compose their served OpenAPI and router inventory from
+// this manifest through the assembly boundary (API_ASSEMBLY_SPEC §4/§6.1) and
+// must not reach past the assembly into `sdkwork-routes-deploy-app-api`.
+pub use sdkwork_routes_deploy_app_api::domain_certificate_route_manifest;
+
 pub fn assembly_route_count() -> usize {
     generated::ROUTE_CRATE_COUNT
 }
