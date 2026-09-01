@@ -10,6 +10,8 @@ export interface AppResponse {
   description?: string;
   siteId?: string;
   defaultEnvironment: string;
+  /** Echo of deploy_app.metadata (category / media / version / releaseNotes). */
+  metadata?: Record<string, unknown>;
   platformTargetCount?: string;
   latestReleaseTag?: string;
   createdAt: string;

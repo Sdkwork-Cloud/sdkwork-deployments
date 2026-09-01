@@ -12,7 +12,11 @@
     }
   },
   "dependencies": {
-    "@sdkwork/deployments-pc-commons": "workspace:*"
+    "@sdkwork/deployments-app-sdk": "workspace:*",
+    "@sdkwork/deployments-pc-commons": "workspace:*",
+    "@sdkwork/drive-app-sdk": "workspace:*",
+    "@sdkwork/utils": "workspace:*",
+    "react": "catalog:"
   },
   "sdkwork": {
     "applicationCode": "deployments",

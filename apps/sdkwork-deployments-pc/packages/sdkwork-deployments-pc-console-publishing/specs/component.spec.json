@@ -56,7 +56,13 @@
     "runtimeEntrypoints": [],
     "routeManifest": null,
     "sdkClients": [],
-    "sdkDependencies": [],
+    "sdkDependencies": [
+      {
+        "workspace": "sdkwork-deployments-app-sdk",
+        "surface": "app-api",
+        "credentialMode": "authenticated-app-api"
+      }
+    ],
     "providedPorts": [],
     "requiredPorts": [],
     "permissionComposition": {
@@ -73,6 +79,7 @@
     "events": [],
     "configKeys": [],
     "permissions": [
+      "deploy.apps.read",
       "deploy.artifacts.read",
       "deploy.releases.read",
       "deploy.deployments.read"

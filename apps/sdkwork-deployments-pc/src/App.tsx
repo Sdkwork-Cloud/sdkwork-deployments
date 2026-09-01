@@ -6,11 +6,11 @@ import {
   LocalProjectsPage,
 } from "@sdkwork/deployments-pc-admin-local-projects";
 import { deploymentsModule as adminNodes } from "@sdkwork/deployments-pc-admin-nodes";
-import type { DeploymentsPcModuleDefinition } from "@sdkwork/deployments-pc-commons";
-import { createDeploymentsConsoleRegistry, DeploymentsConsoleProvider } from "@sdkwork/deployments-pc-console-core";
+import type { DeploymentsLocale, DeploymentsPcModuleDefinition } from "@sdkwork/deployments-pc-commons";
+import { createDeploymentsConsoleRegistry, DeploymentsConsoleProvider, useDeploymentsConsoleClients } from "@sdkwork/deployments-pc-console-core";
 import { deploymentsModule as delivery } from "@sdkwork/deployments-pc-console-delivery";
 import { deploymentsModule as monitoring } from "@sdkwork/deployments-pc-console-monitoring";
-import { deploymentsModule as publishing } from "@sdkwork/deployments-pc-console-publishing";
+import { deploymentsModule as publishing, PublishingAppsPage } from "@sdkwork/deployments-pc-console-publishing";
 import { DeploymentsConsoleShell } from "@sdkwork/deployments-pc-console-shell";
 import { deploymentsModule as configuration } from "@sdkwork/deployments-pc-console-site-configuration";
 import { deploymentsModule as sites } from "@sdkwork/deployments-pc-console-sites";
@@ -24,7 +24,18 @@ import type { BootstrappedDeploymentsRuntime } from "./bootstrap/runtime.ts";
 const consoleModules = [sites, configuration, delivery, publishing, monitoring] satisfies readonly DeploymentsPcModuleDefinition[];
 const LazyDomainManagementPage = lazy(() => import("@sdkwork/deployments-pc-console-delivery/management").then((module) => ({ default: module.DomainManagementPage })));
 const LazyCertificateManagementPage = lazy(() => import("@sdkwork/deployments-pc-console-delivery/management").then((module) => ({ default: module.CertificateManagementPage })));
-const consoleResourcePages = { domains: LazyDomainManagementPage, certificates: LazyCertificateManagementPage } as const;
+
+/**
+ * Console bridge for the reusable publishing page: the publishing package stays
+ * host-agnostic (clients arrive as props), and this app-level adapter pulls the
+ * console clients from the provider so the page can mount in the workspace.
+ */
+function PublishingAppsBridge({ locale }: { locale: DeploymentsLocale }) {
+  const { deploy, drive } = useDeploymentsConsoleClients();
+  return <PublishingAppsPage deployClient={deploy} driveClient={drive} locale={locale} />;
+}
+
+const consoleResourcePages = { apps: PublishingAppsBridge, domains: LazyDomainManagementPage, certificates: LazyCertificateManagementPage } as const;
 const adminModules = [localProjects, infrastructure, adminNodes, adminAudit] satisfies readonly DeploymentsPcModuleDefinition[];
 const adminResourcePages = { localProjects: LocalProjectsPage } as const;
 const LazyAuth = lazy(() => import("./auth/DeploymentsAuthRoutes.tsx").then((module) => ({ default: module.DeploymentsAuthRoutes })));

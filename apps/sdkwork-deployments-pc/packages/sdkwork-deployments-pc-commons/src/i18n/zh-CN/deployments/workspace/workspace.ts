@@ -36,6 +36,8 @@ export const deploymentsWorkspaceZhCn = {
   "resource.domains.description": "管理域名归属与路由",
   "resource.certificates.label": "证书",
   "resource.certificates.description": "管理受管证书元数据与续期状态",
+  "resource.apps.label": "应用发布",
+  "resource.apps.description": "创建并发布 deploy_app 应用",
   "resource.artifacts.label": "应用包",
   "resource.artifacts.description": "管理由 Drive 托管的不可变应用包",
   "resource.releases.label": "版本发布",

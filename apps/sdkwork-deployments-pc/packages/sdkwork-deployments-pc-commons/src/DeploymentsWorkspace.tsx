@@ -104,6 +104,7 @@ function resourceIcon(resource: DeploymentsResourceKey): ReactNode {
     configuration: Settings2,
     domains: Globe2,
     certificates: FileKey2,
+    apps: AppWindow,
     artifacts: Package,
     releases: Tags,
     deployments: Rocket,

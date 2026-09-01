@@ -36,6 +36,8 @@ export const deploymentsWorkspaceEnUs = {
   "resource.domains.description": "Domain ownership and routing",
   "resource.certificates.label": "Certificates",
   "resource.certificates.description": "Managed certificate metadata and renewal state",
+  "resource.apps.label": "Apps",
+  "resource.apps.description": "Create and publish deploy_app applications",
   "resource.artifacts.label": "Artifacts",
   "resource.artifacts.description": "Drive-backed immutable application packages",
   "resource.releases.label": "Releases",
