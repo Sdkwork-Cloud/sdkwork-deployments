@@ -155,12 +155,12 @@ impl DeployDrivePort for SdkDriveAppFacade {
                 .unwrap_or_else(|| upload_item_id.clone()),
             original_file_name: request.file_name.clone(),
             content_type: request.content_type.clone(),
-            content_length: request.content_length,
-            chunk_size_bytes: request.content_length.max(5 * 1024 * 1024),
+            content_length: request.content_length.to_string(),
+            chunk_size_bytes: request.content_length.max(5 * 1024 * 1024).to_string(),
             space_id: None,
             parent_node_id: None,
             retention: None,
-            now_epoch_ms: Some(sdkwork_utils_rust::to_unix_millis(now())),
+            now_epoch_ms: Some(sdkwork_utils_rust::to_unix_millis(now()).to_string()),
             scene: Some(DEPLOY_UPLOAD_SCENE.to_string()),
             source: Some(DEPLOY_APP_ID.to_string()),
             share_token: None,
@@ -221,7 +221,7 @@ impl DeployDrivePort for SdkDriveAppFacade {
                 .content_type
                 .clone()
                 .unwrap_or_else(|| "application/octet-stream".to_string()),
-            content_length: request.content_length.unwrap_or(0),
+            content_length: request.content_length.unwrap_or(0).to_string(),
             checksum_sha256_hex: request.checksum_sha256_hex.clone(),
             parts: request
                 .parts
@@ -245,7 +245,7 @@ impl DeployDrivePort for SdkDriveAppFacade {
             package_type: 1,
             file_name: "package.bin".to_string(),
             content_type: body.content_type.clone(),
-            content_length: body.content_length,
+            content_length: body.content_length.parse::<i64>().unwrap_or(0),
             checksum: Some(body.checksum_sha256_hex.clone()),
             status: STATUS_COMPLETED,
             drive_upload_session_id: drive_session_id.to_string(),

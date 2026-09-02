@@ -125,17 +125,19 @@ impl ContentProviderPort for SdkContentProviderPort {
                 root,
                 content_mode,
             } => {
+                let root_key = stable_root_key(command.tenant_id, &command.app_uuid, &key);
                 let created = self
                     .drive_app_client(credentials)?
                     .drive()
                     .website_roots_create(
                         website_space_id,
                         &CreateWebsiteRootRequest {
-                            root_key: stable_root_key(command.tenant_id, &command.app_uuid, &key),
+                            root_key: root_key.clone(),
                             display_name: format!("SDKWork Deploy {key}"),
                             source_root: drive_selector(root)?,
                             content_mode: content_mode.as_str().to_owned(),
                         },
+                        &root_key,
                     )
                     .await
                     .map_err(|error| map_provider_error("Drive", &error.to_string()))?;
