@@ -61,6 +61,7 @@ import {
 } from "./DeployAppMediaFields.tsx";
 import { DeployProjectDirectoryFields } from "./DeployProjectDirectoryFields.tsx";
 import { DeployEnvironmentSelect } from "./DeployEnvironmentSelect.tsx";
+import { BuildProgressDialog, type DeployDialogBuildPort } from "./BuildProgressDialog.tsx";
 import css from "./create-deploy-app.module.css";
 
 /** 当前登录用户（宿主 IAM 会话投影），用于"按当前用户选择/新建应用"。 */
@@ -84,6 +85,8 @@ export interface CreateDeployAppDialogProps {
   readonly currentUser?: DeployDialogCurrentUser | undefined
   /** 目录更换端口（宿主提供：原生选择器 / 浏览器目录选择）。 */
   readonly pickDirectory?: ((current: string | undefined) => Promise<string | undefined>) | undefined
+  /** v3.5: 一键打包端口（宿主 sdkwork-app-build 插件；缺省时隐藏打包入口）。 */
+  readonly buildPort?: DeployDialogBuildPort | undefined
   /** 主题（驱动组件内建 CSS 变量切换；缺省浅色）。 */
   readonly theme?: ("light" | "dark") | undefined
   readonly onClose: () => void
@@ -108,6 +111,7 @@ export function CreateDeployAppDialog({
   inspectDirectory,
   currentUser,
   pickDirectory,
+  buildPort,
   theme = "light",
   onClose,
   onPublished,
@@ -145,6 +149,9 @@ export function CreateDeployAppDialog({
   const [uploadingLabel, setUploadingLabel] = useState<string>()
   const pickedAppsRef = useRef(false)
   const inspectSequenceRef = useRef(0)
+  // v3.5: 一键打包弹窗（打开即启动构建）与最近一次构建结果（成功关闭后复检）。
+  const [buildDialog, setBuildDialog] = useState<{ cwd: string; script?: string }>()
+  const [buildOutcome, setBuildOutcome] = useState<"succeeded" | "failed" | "cancelled">()
 
   const type: DeployAppTypeOption | undefined = useMemo(
     () => resolveDeployAppType(cardId, frameworkId),
@@ -384,6 +391,19 @@ export function CreateDeployAppDialog({
     setStep((current) => Math.max(1, current - 1))
   }
 
+  // v3.5: 一键打包弹窗关闭 —— 构建成功时复检目录，让 dist 产物检测即时翻绿，
+  // 用户无需手动改动路径再触发防抖检测。
+  const closeBuildDialog = () => {
+    const succeeded = buildOutcome === "succeeded"
+    setBuildDialog(undefined)
+    setBuildOutcome(undefined)
+    if (succeeded) {
+      const current = directory
+      setDirectory(undefined)
+      window.setTimeout(() => { setDirectory(current) }, 0)
+    }
+  }
+
   const uploadMedia = async (appId: string, files: DeployAppMediaFiles): Promise<DeployAppMediaGroup> => {
     const upload = async (kind: "icon" | "cover" | "screenshot", file: File, targetKey?: string) => {
       setUploadingLabel(t("mediaUploading", { name: file.name }))
@@ -537,6 +557,23 @@ export function CreateDeployAppDialog({
                 t={t}
                 onChange={selectFramework}
               />
+              {/* v3.5: 产物缺失 + 宿主构建端口可用 → 一键打包入口。构建目标
+                  优先规范推导的表面根（源目录是仓库根时自动落到对应表面）。 */}
+              {buildPort !== undefined && directory !== undefined && buildOutputDetected === false && (
+                <div className={css.buildTriggerRow}>
+                  <span className={css.fieldHint}>{t("buildTriggerHint")}</span>
+                  <button
+                    type="button"
+                    className={css.secondaryButton}
+                    onClick={() => {
+                      setBuildOutcome(undefined)
+                      setBuildDialog({ cwd: matchedSurfacePath ?? specSurfacePath ?? directory })
+                    }}
+                  >
+                    {t("buildTrigger")}
+                  </button>
+                </div>
+              )}
             </>
           )}
 
@@ -621,7 +658,10 @@ export function CreateDeployAppDialog({
         <footer className={css.footer}>
           {error && <div className={css.errorBanner} role="alert">{error}</div>}
           {uploadingLabel && <div className={css.uploadingText}>{uploadingLabel}</div>}
-          <div className={css.footerSpacer} />
+          {/* spacer 仅在没有 error 横幅时把按钮推到右侧；errorBanner 与 spacer
+              同为 flex:1 会各分一半自由宽度，提示文案被挤压换行（用户可见回归）。
+              uploadingText 无 flex:1，单独出现时仍需 spacer 维持按钮靠右。 */}
+          {!error && <div className={css.footerSpacer} />}
           {step > 1 && (
             <button type="button" className={css.secondaryButton} disabled={busy} onClick={previous}>
               {t("previous")}
@@ -640,6 +680,19 @@ export function CreateDeployAppDialog({
             )}
         </footer>
       </div>
+
+      {/* v3.5: 一键打包进度弹窗（覆盖在发布对话框之上，自带遮罩）。 */}
+      {buildDialog !== undefined && buildPort !== undefined && (
+        <BuildProgressDialog
+          locale={locale}
+          theme={theme}
+          cwd={buildDialog.cwd}
+          script={buildDialog.script}
+          port={buildPort}
+          onFinished={setBuildOutcome}
+          onClose={closeBuildDialog}
+        />
+      )}
     </div>
   )
 }

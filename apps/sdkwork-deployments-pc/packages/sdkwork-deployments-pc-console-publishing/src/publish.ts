@@ -6,6 +6,8 @@
  */
 export { CreateDeployAppDialog } from "./components/CreateDeployAppDialog.tsx";
 export type { CreateDeployAppDialogProps, DeployAppPublishResult } from "./components/CreateDeployAppDialog.tsx";
+export { BuildProgressDialog } from "./components/BuildProgressDialog.tsx";
+export type { BuildProgressDialogProps, DeployDialogBuildFrame, DeployDialogBuildPort } from "./components/BuildProgressDialog.tsx";
 export { PublishingAppsPage } from "./components/PublishingAppsPage.tsx";
 export type { PublishingAppsPageProps } from "./components/PublishingAppsPage.tsx";
 export { CategoryCascadeSelect } from "./components/CategoryCascadeSelect.tsx";

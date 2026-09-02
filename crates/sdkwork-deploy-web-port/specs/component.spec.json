@@ -32,7 +32,7 @@
       {
         "name": "webInternalSdk",
         "export": ".",
-        "provider": "sdkwork-web-internal-sdk"
+        "provider": "sdkwork-webserver-internal-sdk"
       }
     ],
     "runtimeEntrypoints": [],
@@ -40,11 +40,11 @@
     "sdkClients": ["SdkworkCustomClient"],
     "sdkDependencies": [
       {
-        "workspace": "sdkwork-web-internal-sdk",
+        "workspace": "sdkwork-webserver-internal-sdk",
         "surface": "internal-api",
         "credentialMode": "ingress-token",
         "apiAuthority": "sdkwork-web-internal-api",
-        "packageByLanguage": {"rust": "sdkwork-web-internal-sdk"}
+        "packageByLanguage": {"rust": "sdkwork-webserver-internal-sdk"}
       }
     ],
     "dependencyApiExports": [],

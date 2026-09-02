@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use sdkwork_deploy_contract::{DeployServiceError, DeployServiceResult};
 use sdkwork_deploy_runtime_compiler::CompiledRuntimeSet;
 use sdkwork_utils_rust::string::trim;
-use sdkwork_web_internal_sdk::{
+use sdkwork_webserver_internal_sdk::{
     PublishRuntimeAssignmentRequest, RuntimeAssignment, RuntimeObservation, SdkworkCustomClient,
     SdkworkError, WebsiteRuntimeSetSnapshot,
 };

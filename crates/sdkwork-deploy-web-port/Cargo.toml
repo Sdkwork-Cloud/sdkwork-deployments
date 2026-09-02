@@ -8,5 +8,5 @@ async-trait.workspace = true
 serde_json.workspace = true
 sdkwork-deploy-contract.workspace = true
 sdkwork-deploy-runtime-compiler.workspace = true
-sdkwork-web-internal-sdk.workspace = true
+sdkwork-webserver-internal-sdk.workspace = true
 sdkwork-utils-rust.workspace = true
