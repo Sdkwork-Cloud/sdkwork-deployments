@@ -5,11 +5,22 @@
  * Clients arrive as props (no console-core context dependency), so the same
  * page can be embedded by any host that can construct the two generated
  * clients — the deployments console shell and the BirdCoder plugin alike.
+ *
+ * 全部用户可见文案走 publishingTranslator 目录（I18N_SPEC v2.0 §1：用户可见
+ * 文本必须来自 message catalog）；枚举值经 APP_KIND/APP_STATUS 映射表本地化，
+ * 未覆盖的新枚举值回退原文展示。
  */
 import { useEffect, useMemo, useState } from "react";
-import type { AppResponse, SdkworkDeployAppClient } from "@sdkwork/deployments-app-sdk";
+import type { AppKind, AppResponse, AppStatus, SdkworkDeployAppClient } from "@sdkwork/deployments-app-sdk";
 import type { SdkworkDriveAppClient } from "@sdkwork/drive-app-sdk";
 import type { DeploymentsLocale } from "@sdkwork/deployments-pc-commons";
+import {
+  publishingTranslator,
+  APP_KIND_LABEL_KEYS,
+  APP_STATUS_LABEL_KEYS,
+  type PublishingMessageKey,
+  type PublishingTranslator,
+} from "../i18n.ts";
 import { createDeployAppPublishingService } from "../service/deploy-app-publishing.ts";
 import { CreateDeployAppDialog } from "./CreateDeployAppDialog.tsx";
 import "./create-deploy-app.module.css";
@@ -22,7 +33,14 @@ export interface PublishingAppsPageProps {
   readonly pickDirectory?: (current: string | undefined) => Promise<string | undefined>
 }
 
+/** 枚举 → 本地化文案；映射表未覆盖的新枚举值回退原文。 */
+function enumLabel(kind: AppKind | AppStatus, table: Readonly<Record<string, PublishingMessageKey>>, t: PublishingTranslator): string {
+  const key: PublishingMessageKey | undefined = table[kind];
+  return key !== undefined ? t(key) : kind;
+}
+
 export function PublishingAppsPage({ deployClient, driveClient, locale, pickDirectory }: PublishingAppsPageProps) {
+  const t = useMemo(() => publishingTranslator(locale), [locale])
   const service = useMemo(
     () => createDeployAppPublishingService({ deployClient, driveClient }),
     [deployClient, driveClient],
@@ -40,27 +58,30 @@ export function PublishingAppsPage({ deployClient, driveClient, locale, pickDire
     void service.listApps({ page: 1, pageSize: 50 }).then((result) => {
       if (active) setApps(result.items)
     }).catch((cause) => {
-      if (active) setError(cause instanceof Error ? cause.message : String(cause))
+      if (active) {
+        const message = cause instanceof Error ? cause.message : String(cause)
+        setError(t("appsLoadFailed", { message }))
+      }
     }).finally(() => {
       if (active) setBusy(false)
     })
     return () => { active = false }
-  }, [refresh, service])
+  }, [refresh, service, t])
 
   return (
     <section className="resource-page publishing-apps-page">
       <header className="page-header">
         <div>
-          <span className="eyebrow">apps</span>
-          <h1>Apps</h1>
-          <p>Create and publish deploy_app applications</p>
+          <span className="eyebrow">{t("appsPageEyebrow")}</span>
+          <h1>{t("appsPageTitle")}</h1>
+          <p>{t("appsPageDescription")}</p>
         </div>
         <div className="actions">
           <button type="button" className="command-button" disabled={busy} onClick={() => { setRefresh((value) => value + 1) }}>
-            Refresh
+            {t("refresh")}
           </button>
           <button type="button" className="command-button" onClick={() => { setCreateOpen(true) }}>
-            + Publish application
+            + {t("publishApp")}
           </button>
         </div>
       </header>
@@ -69,13 +90,13 @@ export function PublishingAppsPage({ deployClient, driveClient, locale, pickDire
         <table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Slug</th>
-              <th>Kind</th>
-              <th>Status</th>
-              <th>Platform targets</th>
-              <th>Version</th>
-              <th>Updated</th>
+              <th>{t("columnName")}</th>
+              <th>{t("columnSlug")}</th>
+              <th>{t("columnKind")}</th>
+              <th>{t("columnStatus")}</th>
+              <th>{t("columnPlatformTargets")}</th>
+              <th>{t("columnVersion")}</th>
+              <th>{t("columnUpdated")}</th>
             </tr>
           </thead>
           <tbody>
@@ -83,8 +104,8 @@ export function PublishingAppsPage({ deployClient, driveClient, locale, pickDire
               <tr key={app.id}>
                 <td><strong>{app.name}</strong></td>
                 <td>{app.slug}</td>
-                <td>{app.appKind}</td>
-                <td><span className={`status-badge status-${app.appStatus.toLowerCase()}`}>{app.appStatus}</span></td>
+                <td>{enumLabel(app.appKind, APP_KIND_LABEL_KEYS, t)}</td>
+                <td><span className={`status-badge status-${app.appStatus.toLowerCase()}`}>{enumLabel(app.appStatus, APP_STATUS_LABEL_KEYS, t)}</span></td>
                 <td>{app.platformTargetCount ?? "-"}</td>
                 <td>{app.latestReleaseTag ?? "-"}</td>
                 <td>{new Date(app.updatedAt).toLocaleString(locale)}</td>
@@ -92,7 +113,7 @@ export function PublishingAppsPage({ deployClient, driveClient, locale, pickDire
             ))}
           </tbody>
         </table>
-        {!busy && apps.length === 0 && <div className="empty-state">No applications yet. Publish the first one.</div>}
+        {!busy && apps.length === 0 && <div className="empty-state">{t("appsEmpty")}</div>}
       </div>
       {createOpen && (
         <CreateDeployAppDialog

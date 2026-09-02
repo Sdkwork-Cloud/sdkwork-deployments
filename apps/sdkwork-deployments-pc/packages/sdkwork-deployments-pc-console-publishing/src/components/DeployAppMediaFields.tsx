@@ -185,7 +185,7 @@ export function DeployAppMediaFields({ value, onChange, t }: DeployAppMediaField
         <div className={css.mediaFileRow}>
           {value.icon && <span className={css.mediaFileName}>{value.icon.name}</span>}
           <button type="button" className={css.secondaryButton} onClick={() => { iconInputRef.current?.click() }}>
-            {value.icon ? t("changeDirectory") : t("chooseDirectory")}
+            {value.icon ? t("changeImage") : t("chooseImage")}
           </button>
           <input ref={iconInputRef} className={css.fileInputHidden} type="file" accept={accept} onChange={onIconInput} />
         </div>
@@ -201,7 +201,7 @@ export function DeployAppMediaFields({ value, onChange, t }: DeployAppMediaField
         <div className={css.mediaFileRow}>
           {value.cover && <span className={css.mediaFileName}>{value.cover.name}</span>}
           <button type="button" className={css.secondaryButton} onClick={() => { coverInputRef.current?.click() }}>
-            {value.cover ? t("changeDirectory") : t("chooseDirectory")}
+            {value.cover ? t("changeImage") : t("chooseImage")}
           </button>
           <input ref={coverInputRef} className={css.fileInputHidden} type="file" accept={accept} onChange={onCoverInput} />
         </div>

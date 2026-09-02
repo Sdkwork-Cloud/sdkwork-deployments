@@ -26,7 +26,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { AppKind, AppResponse, SdkworkDeployAppClient } from "@sdkwork/deployments-app-sdk";
 import type { SdkworkDriveAppClient } from "@sdkwork/drive-app-sdk";
 import type { DeploymentsLocale } from "@sdkwork/deployments-pc-commons";
-import { publishingTranslator, type PublishingTranslator } from "../i18n.ts";
+import { publishingTranslator, APP_KIND_LABEL_KEYS, type PublishingMessageKey, type PublishingTranslator } from "../i18n.ts";
 import {
   createDeployAppPublishingService,
   detectFrameworkId,
@@ -761,7 +761,7 @@ function StepApplication(props: StepApplicationProps) {
                 >
                   <span className={css.appRowMeta}>
                     <strong>{app.name}</strong>
-                    <small>{app.appKind}{app.slug ? ` · ${app.slug}` : ""}</small>
+                    <small>{appKindLabel(app.appKind, t)}{app.slug ? ` · ${app.slug}` : ""}</small>
                   </span>
                 </button>
               ))}
@@ -776,4 +776,13 @@ function StepApplication(props: StepApplicationProps) {
 function errorText(cause: unknown, t: PublishingTranslator): string {
   const message = cause instanceof Error && cause.message ? cause.message : String(cause)
   return t("publishFailed", { message })
+}
+
+/**
+ * deploy_app.app_kind 枚举的本地化展示；服务端出现映射表未覆盖的新枚举值时
+ * 回退原文，保证列表不因枚举演进而空白。
+ */
+function appKindLabel(appKind: AppKind, t: PublishingTranslator): string {
+  const key: PublishingMessageKey | undefined = APP_KIND_LABEL_KEYS[appKind];
+  return key !== undefined ? t(key) : appKind;
 }

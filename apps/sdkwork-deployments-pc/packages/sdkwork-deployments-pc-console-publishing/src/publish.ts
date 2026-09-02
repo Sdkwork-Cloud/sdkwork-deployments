@@ -87,5 +87,5 @@ export {
   validatePreviewSize,
 } from "./service/app-store-preview-spec.ts";
 export type { PreviewSizeTarget, PreviewValidationResult } from "./service/app-store-preview-spec.ts";
-export { publishingText, publishingTranslator } from "./i18n.ts";
+export { publishingText, publishingTranslator, APP_KIND_LABEL_KEYS, APP_STATUS_LABEL_KEYS } from "./i18n.ts";
 export type { PublishingMessageKey, PublishingTranslator } from "./i18n.ts";

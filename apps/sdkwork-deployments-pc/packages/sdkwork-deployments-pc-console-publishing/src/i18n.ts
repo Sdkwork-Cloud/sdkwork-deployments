@@ -1,3 +1,4 @@
+import type { AppKind, AppStatus } from "@sdkwork/deployments-app-sdk";
 import type { DeploymentsLocale } from "@sdkwork/deployments-pc-commons";
 
 /**
@@ -158,6 +159,8 @@ const en = {
   screenshotLimit: "Screenshots {count}/{max}",
   addScreenshot: "Add screenshot",
   remove: "Remove",
+  chooseImage: "Choose image",
+  changeImage: "Change",
   mediaUploading: "Uploading {name}...",
   mediaUploaded: "Uploaded {name}",
   mediaUploadFailed: "Upload failed for {name}: {message}",
@@ -197,6 +200,27 @@ const en = {
   buildOutputMissing: "Build output directory does not exist under the application root: {path}. Build the app first or fix the path.",
   appCreated: "Application {name} created.",
   appAssociated: "Associated with existing application {name}.",
+
+  // Console apps page (PublishingAppsPage)
+  appsPageEyebrow: "Apps",
+  appsPageTitle: "Applications",
+  appsPageDescription: "Create and publish deploy_app applications",
+  refresh: "Refresh",
+  columnName: "Name",
+  columnSlug: "Slug",
+  columnKind: "Kind",
+  columnStatus: "Status",
+  columnPlatformTargets: "Platform targets",
+  columnVersion: "Version",
+  columnUpdated: "Updated",
+  appsEmpty: "No applications yet. Publish the first one.",
+  appsLoadFailed: "Failed to load applications: {message}",
+  statusDraft: "Draft",
+  statusReady: "Ready",
+  statusActive: "Active",
+  statusPaused: "Paused",
+  statusArchived: "Archived",
+  statusFailed: "Failed",
 
   // Category taxonomy labels
   catBusiness: "Business",
@@ -421,6 +445,8 @@ const zh: Record<keyof typeof en, string> = {
   screenshotLimit: "截图 {count}/{max}",
   addScreenshot: "添加截图",
   remove: "删除",
+  chooseImage: "选择图片",
+  changeImage: "更换",
   mediaUploading: "正在上传 {name}...",
   mediaUploaded: "已上传 {name}",
   mediaUploadFailed: "{name} 上传失败：{message}",
@@ -457,6 +483,27 @@ const zh: Record<keyof typeof en, string> = {
   buildOutputMissing: "应用根路径下不存在构建产物目录：{path}。请先构建应用或修正路径。",
   appCreated: "应用 {name} 已创建。",
   appAssociated: "已关联已有应用 {name}。",
+
+  // 控制台应用页（PublishingAppsPage）
+  appsPageEyebrow: "应用",
+  appsPageTitle: "应用管理",
+  appsPageDescription: "创建并发布 deploy_app 应用",
+  refresh: "刷新",
+  columnName: "名称",
+  columnSlug: "标识",
+  columnKind: "类型",
+  columnStatus: "状态",
+  columnPlatformTargets: "平台目标",
+  columnVersion: "版本",
+  columnUpdated: "更新时间",
+  appsEmpty: "暂无应用，发布第一个应用吧。",
+  appsLoadFailed: "应用列表加载失败：{message}",
+  statusDraft: "草稿",
+  statusReady: "就绪",
+  statusActive: "已上线",
+  statusPaused: "已暂停",
+  statusArchived: "已归档",
+  statusFailed: "失败",
 
   catBusiness: "商务",
   catBusinessFinance: "金融",
@@ -552,3 +599,28 @@ export type PublishingTranslator = (
 export function publishingTranslator(locale: DeploymentsLocale): PublishingTranslator {
   return (key, values = {}) => publishingText(locale, key, values);
 }
+
+/**
+ * deploy_app.app_kind 枚举 → 文案键映射（关联列表与控制台表格共用，避免
+ * 裸枚举值外显）。服务端新增枚举值时在此补行；未知值由调用点回退原文。
+ */
+export const APP_KIND_LABEL_KEYS: Readonly<Record<AppKind, PublishingMessageKey>> = {
+  STATIC_WEB: "typeStaticWeb",
+  SPA_WEB: "typeSpaWeb",
+  API_SERVICE: "typeApiService",
+  WECHAT_MINIPROGRAM: "typeWechatMiniProgram",
+  DOUYIN_MINIPROGRAM: "typeDouyinMiniProgram",
+  IOS_APP: "typeIos",
+  ANDROID_APP: "typeAndroid",
+  HARMONYOS_APP: "typeHarmonyos",
+};
+
+/** deploy_app.app_status 枚举 → 文案键映射（控制台状态列）。 */
+export const APP_STATUS_LABEL_KEYS: Readonly<Record<AppStatus, PublishingMessageKey>> = {
+  DRAFT: "statusDraft",
+  READY: "statusReady",
+  ACTIVE: "statusActive",
+  PAUSED: "statusPaused",
+  ARCHIVED: "statusArchived",
+  FAILED: "statusFailed",
+};
