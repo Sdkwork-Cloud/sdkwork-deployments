@@ -7,8 +7,8 @@ mod generated;
 
 pub use bootstrap::{
     assemble_api_router, assemble_api_router_with_pool, assemble_business_routes,
-    assemble_domain_certificate_blocks, migrate_database_from_env, ApiAssembly,
-    DomainCertificateBlocks,
+    assemble_domain_certificate_blocks, migrate_database_from_env, web_module,
+    web_module_with_pool, ApiAssembly, DomainCertificateBlocks,
 };
 
 // SDKWORK-ASSEMBLY-LIB-CUSTOM: the domain/certificate route manifest is part

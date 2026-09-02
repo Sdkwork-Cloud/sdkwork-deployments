@@ -43,7 +43,7 @@
         "workspace": "sdkwork-webserver-internal-sdk",
         "surface": "internal-api",
         "credentialMode": "ingress-token",
-        "apiAuthority": "sdkwork-web-internal-api",
+        "apiAuthority": "sdkwork-webserver-internal-api",
         "packageByLanguage": {"rust": "sdkwork-webserver-internal-sdk"}
       }
     ],

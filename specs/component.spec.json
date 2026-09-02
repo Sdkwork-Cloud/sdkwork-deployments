@@ -128,12 +128,12 @@
         }
       },
       {
-        "workspace": "sdkwork-web-internal-sdk",
+        "workspace": "sdkwork-webserver-internal-sdk",
         "surface": "internal-api",
         "credentialMode": "ingress-token",
-        "apiAuthority": "sdkwork-web-internal-api",
+        "apiAuthority": "sdkwork-webserver-internal-api",
         "packageByLanguage": {
-          "rust": "sdkwork-web-internal-sdk"
+          "rust": "sdkwork-webserver-internal-sdk"
         }
       }
     ],
@@ -170,8 +170,8 @@
         "authMode": "ingress-token"
       },
       {
-        "family": "sdkwork-web-internal-sdk",
-        "apiAuthority": "sdkwork-web-internal-api",
+        "family": "sdkwork-webserver-internal-sdk",
+        "apiAuthority": "sdkwork-webserver-internal-api",
         "surface": "internal-api",
         "integrationMode": "external-sdk"
       }

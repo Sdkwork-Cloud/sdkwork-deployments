@@ -2723,7 +2723,6 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 2.0.18",
- "tokio",
 ]
 
 [[package]]
@@ -2764,7 +2763,6 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 2.0.18",
- "tokio",
  "tracing",
 ]
 
@@ -2951,7 +2949,7 @@ dependencies = [
  "sdkwork-deploy-contract",
  "sdkwork-deploy-runtime-compiler",
  "sdkwork-utils-rust",
- "sdkwork-web-internal-sdk",
+ "sdkwork-webserver-internal-sdk-generated-rust",
  "serde_json",
 ]
 
@@ -3277,17 +3275,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sdkwork-web-internal-sdk"
-version = "1.0.0"
-dependencies = [
- "http",
- "reqwest 0.13.4",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
-]
-
-[[package]]
 name = "sdkwork-webserver-contract"
 version = "0.1.0"
 dependencies = [
@@ -3337,6 +3324,17 @@ dependencies = [
  "thiserror 2.0.18",
  "time",
  "tokio",
+]
+
+[[package]]
+name = "sdkwork-webserver-internal-sdk-generated-rust"
+version = "1.0.0"
+dependencies = [
+ "http",
+ "reqwest 0.13.4",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

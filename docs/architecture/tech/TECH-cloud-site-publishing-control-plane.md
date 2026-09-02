@@ -22,7 +22,7 @@ The prelaunch control plane now has executable foundations rather than a Release
 - golden compatibility tests that feed Deploy output into the Web Server's real descriptor and
   runtime-set compilers;
 - `sdkwork-deploy-web-port`, which publishes through the generated
-  `sdkwork-web-internal-sdk`, reads the latest authenticated Node observation through the same
+  `sdkwork-webserver-internal-sdk`, reads the latest authenticated Node observation through the same
   generated SDK family, reads the ingress credential from a rotatable secret file, and redacts
   transport failures;
 - a durable assignment/outbox service with same-state idempotency, transactionally serialized
