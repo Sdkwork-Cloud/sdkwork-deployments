@@ -43,6 +43,9 @@
     "@sdkwork/utils": "workspace:*",
     "react": "catalog:"
   },
+  "devDependencies": {
+    "@types/react": "catalog:"
+  },
   "sdkwork": {
     "applicationCode": "deployments",
     "architecture": "pc-react",

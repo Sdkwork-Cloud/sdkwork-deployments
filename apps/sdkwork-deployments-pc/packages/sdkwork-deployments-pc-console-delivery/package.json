@@ -23,6 +23,9 @@
     "react": "catalog:",
     "react-router-dom": "^7.15.0"
   },
+  "devDependencies": {
+    "@types/react": "catalog:"
+  },
   "sdkwork": {
     "applicationCode": "deployments",
     "architecture": "pc-react",
