@@ -23,7 +23,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -78,7 +77,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -130,7 +128,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -165,7 +162,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       requestBody:
         required: true
         content:
@@ -212,7 +208,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '204':
           description: Deleted
@@ -240,7 +235,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -283,7 +277,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -342,7 +335,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -377,7 +369,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       requestBody:
         required: true
         content:
@@ -430,7 +421,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '204':
           description: Deleted
@@ -459,7 +449,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -807,7 +796,6 @@ paths:
       - AuthToken: []
         AccessToken: []
       x-sdkwork-idempotent: true
-      x-sdkwork-permission: deploy.sites.write
       parameters:
       - $ref: '#/components/parameters/IfMatchParam'
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -1331,7 +1319,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -1368,7 +1355,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -1408,7 +1394,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: 成功
@@ -1450,7 +1435,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '204':
           description: 撤销成功
@@ -1479,7 +1463,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -1701,7 +1684,6 @@ paths:
       - AuthToken: []
         AccessToken: []
       x-sdkwork-idempotent: true
-      x-sdkwork-permission: deploy.artifacts.write
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
@@ -1923,7 +1905,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -1966,7 +1947,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -2023,7 +2003,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -2058,7 +2037,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       requestBody:
         required: true
         content:
@@ -2107,7 +2085,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -2148,7 +2125,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -2205,7 +2181,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -2248,7 +2223,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -2289,7 +2263,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -2346,7 +2319,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -2382,7 +2354,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -2425,7 +2396,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -2476,7 +2446,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -2519,7 +2488,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -2562,7 +2530,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -2619,7 +2586,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -2668,7 +2634,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       requestBody:
         required: true
         content:
@@ -2717,7 +2682,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -2760,7 +2724,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -2817,7 +2780,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -2860,7 +2822,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -2903,7 +2864,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -2966,7 +2926,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -3009,7 +2968,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -3064,7 +3022,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -3113,7 +3070,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -3170,7 +3126,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -3221,7 +3176,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -3264,7 +3218,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -3321,7 +3274,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -3357,7 +3309,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -3400,7 +3351,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       parameters:
       - $ref: '#/components/parameters/IdempotencyKeyParam'
@@ -3451,7 +3401,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -3492,7 +3441,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -3543,7 +3491,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -3591,7 +3538,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       requestBody:
         required: true
@@ -3654,7 +3600,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -3689,7 +3634,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       requestBody:
         required: true
@@ -3752,7 +3696,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -3795,7 +3738,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       requestBody:
         required: true
@@ -3864,7 +3806,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -3907,7 +3848,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -3950,7 +3890,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       requestBody:
         required: true
@@ -4013,7 +3952,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       responses:
         '200':
           description: Success
@@ -4048,7 +3986,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       requestBody:
         required: true
@@ -4111,7 +4048,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       parameters:
       - $ref: '#/components/parameters/PageParam'
       - $ref: '#/components/parameters/PageSizeParam'
@@ -4159,7 +4095,6 @@ paths:
       security:
       - AuthToken: []
         AccessToken: []
-      x-sdkwork-permission: false
       x-sdkwork-idempotent: true
       requestBody:
         required: true
